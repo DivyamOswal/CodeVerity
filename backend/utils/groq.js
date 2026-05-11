@@ -2,15 +2,14 @@ import Groq from "groq-sdk";
 import path from "path";
 
 const GITHUB_API = "https://api.github.com";
+//  GitHub helpers
 
-/** Parse   https://github.com/owner/repo   →  { owner, repo } */
 function parseGitHubUrl(url) {
   const match = url.match(/github\.com\/([^/]+)\/([^/]+?)(?:\.git)?(?:\/|$)/);
   if (!match) throw new Error(`Invalid GitHub URL: ${url}`);
   return { owner: match[1], repo: match[2] };
 }
 
-/** Recursively fetch every file path in a repo tree */
 async function fetchRepoTree(owner, repo, branch = "main") {
   for (const ref of [branch, "main", "master"]) {
     const res = await fetch(
@@ -25,7 +24,6 @@ async function fetchRepoTree(owner, repo, branch = "main") {
   throw new Error(`Could not fetch repo tree for ${owner}/${repo}`);
 }
 
-/** Fetch raw text content of one file (base64-decoded) */
 async function fetchFileContent(owner, repo, filePath) {
   const res = await fetch(
     `${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`,
@@ -45,8 +43,7 @@ const CODE_EXTENSIONS = new Set([
   ".c", ".cpp", ".cs", ".php",
   ".rb", ".swift", ".kt",
   ".html", ".css", ".scss",
-  ".json", ".yaml", ".yml",
-  ".md",
+  ".json", ".yaml", ".yml", ".md",
 ]);
 
 function isCodeFile(filePath) {
@@ -58,18 +55,15 @@ function isCodeFile(filePath) {
 export async function fetchRepoContents(repoUrl, { maxChars = 28_000, branch = "main" } = {}) {
   const { owner, repo } = parseGitHubUrl(repoUrl);
   console.log(`📦 Fetching tree for ${owner}/${repo}…`);
-
-  const tree = await fetchRepoTree(owner, repo, branch);
+  const tree      = await fetchRepoTree(owner, repo, branch);
   const codeFiles = tree.filter((f) => isCodeFile(f.path));
   console.log(`📂 ${codeFiles.length} code files found`);
 
   let combined = `# Repository: ${owner}/${repo}\n\n`;
-
   for (const file of codeFiles) {
     if (combined.length >= maxChars) break;
     const content = await fetchFileContent(owner, repo, file.path);
     if (!content) continue;
-
     const block = `\n\n## FILE: ${file.path}\n\`\`\`\n${content}\n\`\`\``;
     if (combined.length + block.length > maxChars) {
       combined += block.slice(0, maxChars - combined.length) + "\n… [truncated]";
@@ -77,101 +71,183 @@ export async function fetchRepoContents(repoUrl, { maxChars = 28_000, branch = "
     }
     combined += block;
   }
-
   return combined;
 }
 
-// ─────────────────────────────────────────────
-//  JSON extraction — handles all common LLM output patterns
-// ─────────────────────────────────────────────
+//  JSON extraction
 
-/**
- * Robustly extract JSON from messy LLM output:
- *  - Strips ```json … ``` fences
- *  - Strips leading/trailing prose
- *  - Finds the outermost { … } object
- */
 function extractJSON(raw) {
-  // 1. Strip markdown code fences
-  let cleaned = raw
-    .replace(/```json\s*/gi, "")
-    .replace(/```\s*/g, "")
-    .trim();
-
-  // 2. Find outermost JSON object
+  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
   const start = cleaned.indexOf("{");
   const end   = cleaned.lastIndexOf("}");
-
   if (start === -1 || end === -1 || end <= start) {
     throw new Error("No JSON object found in AI response");
   }
-
-  const jsonStr = cleaned.slice(start, end + 1);
-
-  // 3. Parse — throws on invalid JSON
-  return JSON.parse(jsonStr);
+  return JSON.parse(cleaned.slice(start, end + 1));
 }
 
-// ─────────────────────────────────────────────
-//  Prompt — Code Audit
-// ─────────────────────────────────────────────
+//  SYSTEM PROMPT — Code Audit
+//
+//  GRADING RUBRIC (explicit — Groq must follow this):
+//
+//  Grade is computed from the WEIGHTED AVERAGE of four scores:
+//    codeQuality    × 30%
+//    security       × 30%
+//    performance    × 20%
+//    maintainability× 20%
+//
+//  Weighted average → grade:
+//    90–100  →  A+
+//    85–89   →  A
+//    80–84   →  A-
+//    75–79   →  B+
+//    70–74   →  B
+//    65–69   →  B-
+//    60–64   →  C+
+//    55–59   →  C
+//    50–54   →  C-
+//    45–49   →  D+
+//    40–44   →  D
+//    35–39   →  D-
+//    0–34    →  F
+//
+//  Score criteria per dimension:
+//
+//  codeQuality (0–100):
+//    90–100  Clean, idiomatic, DRY, well-named, no obvious smells
+//    70–89   Minor issues: some duplication, inconsistent naming, minor smells
+//    50–69   Moderate issues: clear duplication, poor error handling, mixed concerns
+//    30–49   Significant issues: spaghetti logic, missing abstractions, dead code
+//    0–29    Severe: unreadable, no structure, completely ad-hoc
+//
+//  security (0–100):
+//    90–100  No exposed secrets, input validated, auth guarded, dependencies clean
+//    70–89   Minor risks: one missing validation, weak token handling
+//    50–69   Moderate risks: hardcoded creds in comments, unguarded routes
+//    30–49   High risks: SQL injection vectors, exposed API keys, no auth checks
+//    0–29    Critical: plaintext passwords, open admin endpoints, RCE vectors
+//
+//  performance (0–100):
+//    90–100  Efficient algorithms, caching, lazy loading, no N+1 queries
+//    70–89   Minor issues: one unnecessary loop, missing indexes
+//    50–69   Moderate: synchronous blocking in hot paths, no pagination
+//    30–49   Serious: O(n²) in critical paths, no connection pooling
+//    0–29    Severe: infinite loops possible, memory leaks, unbounded queries
+//
+//  maintainability (0–100):
+//    90–100  Modular, documented, tested, clear separation of concerns
+//    70–89   Mostly modular, light docs, some test coverage
+//    50–69   Mixed concerns, minimal docs, no tests
+//    30–49   Monolithic files, no docs, tightly coupled
+//    0–29    No structure, impossible to extend safely
 
 const SYSTEM_PROMPT = `You are a PRINCIPAL SOFTWARE ARCHITECT performing a FORMAL CODE AUDIT.
 
 You MUST respond with ONLY a valid JSON object — no preamble, no explanation, no markdown fences, no trailing text.
 Start your response with { and end with }.
 
-The JSON must follow this exact structure:
+
+SCORING CRITERIA (apply these strictly)
+
+
+Score each dimension 0–100 based on what you observe in the code:
+
+SCORE BANDS (apply to all four dimensions):
+  90–100  Excellent — production-grade, no significant issues
+  70–89   Good      — minor issues only, generally solid
+  50–69   Fair      — several clear problems affecting quality
+  30–49   Poor      — significant issues, needs rework
+  0–29    Critical  — severe problems, not production-ready
+
+codeQuality — measures readability, DRY principle, naming, structure, error handling.
+  Deduct for: duplication, dead code, inconsistent naming, missing error handling, 
+              god functions, deeply nested logic, missing abstractions.
+
+security — measures protection against threats.
+  Deduct for: exposed secrets/API keys, hardcoded credentials, missing input validation,
+              unguarded routes, SQL/NoSQL injection vectors, missing HTTPS enforcement,
+              insecure JWT handling, CORS misconfiguration.
+
+performance — measures runtime efficiency.
+  Deduct for: O(n²) loops in hot paths, N+1 query patterns, missing pagination,
+              synchronous blocking operations, no caching, unbounded data fetches,
+              memory leaks, heavy computation on main thread.
+
+maintainability — measures how easy the code is to change and extend.
+  Deduct for: no tests, no documentation, tightly coupled modules, mixed concerns,
+              monolithic files, magic numbers, no separation of config from logic.
+
+GRADE FORMULA (you MUST follow this exactly)
+
+
+Step 1 — compute weighted average:
+  weightedAvg = (codeQuality × 0.30) + (security × 0.30) + (performance × 0.20) + (maintainability × 0.20)
+
+Step 2 — map to grade:
+  90–100 → "A+"   85–89 → "A"   80–84 → "A-"
+  75–79  → "B+"   70–74 → "B"   65–69 → "B-"
+  60–64  → "C+"   55–59 → "C"   50–54 → "C-"
+  45–49  → "D+"   40–44 → "D"   35–39 → "D-"
+  0–34   → "F"
+
+Example: codeQuality=72, security=60, performance=80, maintainability=65
+  weightedAvg = (72×0.30)+(60×0.30)+(80×0.20)+(65×0.20) = 21.6+18+16+13 = 68.6 → "B-"
+
+
+OUTPUT STRUCTURE
+
 
 {
-  "summary": "8-10 sentence professional overview of the codebase",
+  "summary": "15–20 sentence professional overview. Cover: what the project does, tech stack detected, overall architecture pattern, top strengths, top weaknesses, and one key recommendation.",
   "architecture": [
     {
-      "component": "Frontend | Backend | Database | DevOps",
-      "description": "How it is currently designed",
-      "recommendation": "Professional improvement suggestion"
+      "component": "Frontend | Backend | Database | DevOps | Security | Testing",
+      "description": "How this layer is currently implemented",
+      "recommendation": "Specific, actionable improvement for this component"
     }
   ],
   "bugs": [
     {
-      "title": "Issue title",
+      "title": "Short descriptive title",
       "impact": "Low | Medium | High",
-      "fix": "Exact fix or refactor"
+      "location": "File or function where the bug exists",
+      "fix": "Exact code change or refactor needed"
     }
   ],
   "securityIssues": [
     {
-      "issue": "Security risk name",
-      "recommendation": "Mitigation strategy"
+      "issue": "Security risk name (e.g. Exposed API Key, Missing Rate Limiting)",
+      "severity": "Low | Medium | High | Critical",
+      "location": "Where in the code this risk exists",
+      "recommendation": "Specific mitigation steps"
     }
   ],
   "futureRoadmap": [
     {
       "phase": "Short-term | Mid-term | Long-term",
-      "details": "Concrete upgrade plan"
+      "details": "Concrete, specific upgrade plan with technology suggestions"
     }
   ],
-  "toolsAndPackages": ["list", "of", "detected", "tools"],
+  "toolsAndPackages": ["only", "what", "you", "see", "imported", "or", "used"],
   "scores": {
-    "codeQuality": 75,
-    "security": 70,
-    "performance": 68,
-    "maintainability": 72
+    "codeQuality": 0,
+    "security": 0,
+    "performance": 0,
+    "maintainability": 0
   },
-  "grade": "B",
-  "finalVerdict": "2-3 sentence professional verdict"
+  "grade": "computed from formula above",
+  "finalVerdict": "2–3 sentences summarising the most important finding and the single highest-priority action."
 }
 
 RULES:
-- Analyse ONLY what is present in the actual code provided
-- Do NOT use placeholder values — every score must reflect real observations
+- Analyse ONLY what is present in the actual code provided — do not invent issues
+- Apply the scoring criteria strictly — do not be generous without evidence
+- Apply the grade formula exactly — do not override it with subjective judgment
+- Every score must reflect real observations from the code
 - If a section has nothing to report, return an empty array []
-- toolsAndPackages must list only what you see imported or used in the code`;
+- toolsAndPackages must list only what you see imported or used`;
 
-// ─────────────────────────────────────────────
-//  Prompt — Test Case Generator
-// ─────────────────────────────────────────────
-
+//  SYSTEM PROMPT — Test Case Generator
 const TEST_GENERATOR_SYSTEM_PROMPT = `You are an EXPERT SOFTWARE TEST ENGINEER specialising in JavaScript/Node.js.
 
 Your job is to analyse source code and generate comprehensive test suites using Jest (or Vitest if detected).
@@ -247,13 +323,10 @@ RULES:
 - Prefer jest.fn() for mocks unless vitest is detected (then use vi.fn())
 - If a section has nothing to report, return an empty array []`;
 
-// ─────────────────────────────────────────────
-//  Fallback results
-// ─────────────────────────────────────────────
 
+//  Fallbacks
 const FALLBACK_RESULT = {
-  summary:
-    "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
+  summary: "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
   architecture: [],
   bugs: [],
   securityIssues: [],
@@ -283,188 +356,76 @@ const FALLBACK_TEST_RESULT = {
   },
 };
 
-// ─────────────────────────────────────────────
-//  Core Groq call  (with model fallback chain)
-// ─────────────────────────────────────────────
 
+//  Groq call with model fallback chain
 const MODELS_TO_TRY = [
   process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
   "llama-3.1-70b-versatile",
   "llama-3.1-8b-instant",
 ];
 
-/**
- * Internal: call Groq with a given system prompt and user content.
- * Tries each model in MODELS_TO_TRY; returns parsed JSON on first success.
- *
- * @param {Groq}   groq          Initialised Groq client
- * @param {string} systemPrompt  System prompt to use
- * @param {string} userContent   User message (source code)
- * @returns {Promise<object|null>}
- */
 async function callGroqWithRetry(groq, systemPrompt, userContent) {
   let lastError;
-
   for (const model of MODELS_TO_TRY) {
     try {
       console.log(`🤖 Trying model: ${model}`);
-
       const completion = await groq.chat.completions.create({
         model,
         temperature: 0.1,
-        max_tokens: 6000,
+        max_tokens:  6000,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user",   content: userContent },
+          { role: "user",   content: userContent  },
         ],
       });
-
-      const raw = completion.choices[0].message.content;
-      console.log(`📝 Raw response: ${raw.length} chars`);
-
+      const raw    = completion.choices[0].message.content;
       const parsed = extractJSON(raw);
       console.log(`✅ Parsed successfully with model: ${model}`);
       return parsed;
-
     } catch (err) {
-      console.warn(`⚠️  Model ${model} failed: ${err.message}`);
+      console.warn(`⚠️ Model ${model} failed: ${err.message}`);
       lastError = err;
     }
   }
-
-  console.error("❌ All models failed. Last error:", lastError?.message);
+  console.error("❌ All models failed:", lastError?.message);
   return null;
 }
 
-// ─────────────────────────────────────────────
-//  Public API — Code Audit
-// ─────────────────────────────────────────────
-
-/**
- * Analyse raw code/text input.
- *
- * @param {string} input  Concatenated source code (or any text)
- * @returns {Promise<object>} Structured analysis result
- */
+//  Public API
 export async function analyzeWithGroq(input) {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const userContent = input.slice(0, 20_000);
-  const result = await callGroqWithRetry(groq, SYSTEM_PROMPT, userContent);
+  const groq   = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const result = await callGroqWithRetry(groq, SYSTEM_PROMPT, input.slice(0, 20_000));
   return result ?? FALLBACK_RESULT;
 }
 
-/**
- * Fetch a public GitHub repo by URL, then analyse it with Groq.
- *
- * @param {string} repoUrl   e.g. "https://github.com/owner/repo"
- * @param {object} [options]
- * @param {string} [options.branch="main"]   Branch to read
- * @param {number} [options.maxChars=28000]  Max source chars to send
- * @returns {Promise<object>} Structured analysis result
- */
 export async function analyzeRepoFromUrl(repoUrl, options = {}) {
   const contents = await fetchRepoContents(repoUrl, options);
   console.log(`🔍 Sending ${contents.length} chars to Groq…`);
   return analyzeWithGroq(contents);
 }
 
-// ─────────────────────────────────────────────
-//  Public API — 🧪 Test Case Generator
-// ─────────────────────────────────────────────
-
-/**
- * Generate a full test suite (unit tests, edge cases, integration tests,
- * mocks, and coverage summary) from raw source code.
- *
- * Optimised for JavaScript / Node.js projects but works with any language
- * that Groq's model understands.
- *
- * @param {string} input  Raw source code to analyse
- * @returns {Promise<object>} Structured test suite result with the shape:
- *   {
- *     framework, setupInstructions,
- *     testFiles,       // ready-to-write complete test file(s)
- *     unitTests,       // per-function unit test cases
- *     edgeCases,       // boundary / error-path cases
- *     integrationTests,
- *     mocks,
- *     coverageSummary
- *   }
- *
- * @example
- * import fs from "fs";
- * const src = fs.readFileSync("src/utils.js", "utf-8");
- * const tests = await generateTests(src);
- * console.log(tests.testFiles[0].testCode);
- */
 export async function generateTests(input) {
-  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  console.log(`🧪 Generating tests for ${input.length} chars of source…`);
-
-  // Keep a slightly smaller slice so the response has room in the context window
-  const userContent = input.slice(0, 18_000);
-  const result = await callGroqWithRetry(groq, TEST_GENERATOR_SYSTEM_PROMPT, userContent);
+  const groq   = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  console.log(`🧪 Generating tests for ${input.length} chars…`);
+  const result = await callGroqWithRetry(groq, TEST_GENERATOR_SYSTEM_PROMPT, input.slice(0, 18_000));
   return result ?? FALLBACK_TEST_RESULT;
 }
 
-/**
- * Fetch a public GitHub repo by URL, then generate tests for it.
- *
- * @param {string} repoUrl   e.g. "https://github.com/owner/repo"
- * @param {object} [options]
- * @param {string} [options.branch="main"]   Branch to read
- * @param {number} [options.maxChars=28000]  Max source chars to fetch
- * @returns {Promise<object>} Structured test suite result
- *
- * @example
- * const tests = await generateTestsFromUrl("https://github.com/you/your-repo");
- * tests.testFiles.forEach(f => {
- *   fs.writeFileSync(f.fileName, f.testCode);
- * });
- */
 export async function generateTestsFromUrl(repoUrl, options = {}) {
   const contents = await fetchRepoContents(repoUrl, options);
-  console.log(`🔍 Sending ${contents.length} chars to Groq for test generation…`);
   return generateTests(contents);
 }
 
-/**
- * Write generated test files to disk.
- *
- * Convenience helper — call after generateTests() or generateTestsFromUrl()
- * to materialise the generated test files in your project.
- *
- * @param {object}   testResult          Return value of generateTests()
- * @param {object}   [options]
- * @param {string}   [options.outDir=""] Directory prefix for output paths
- *                                       (defaults to paths inside testResult)
- * @param {Function} [options.write]     Custom write function (path, content) → void
- *                                       Defaults to fs.writeFileSync
- *
- * @example
- * import { generateTests, writeTestFiles } from "./groq.js";
- * const result = await generateTests(src);
- * await writeTestFiles(result, { outDir: "./tests" });
- */
 export async function writeTestFiles(testResult, { outDir = "", write } = {}) {
-  // Lazy-load fs so this file stays importable in environments without Node fs
-  const fs = await import("fs");
+  const fs     = await import("fs");
   const fsPath = await import("path");
-
   const writeFn = write ?? ((filePath, content) => {
-    const dir = fsPath.dirname(filePath);
-    fs.mkdirSync(dir, { recursive: true });
+    fs.mkdirSync(fsPath.dirname(filePath), { recursive: true });
     fs.writeFileSync(filePath, content, "utf-8");
     console.log(`✅ Written: ${filePath}`);
   });
-
-  if (!testResult?.testFiles?.length) {
-    console.warn("⚠️  No test files to write.");
-    return;
-  }
-
+  if (!testResult?.testFiles?.length) { console.warn("⚠️ No test files."); return; }
   for (const { fileName, testCode } of testResult.testFiles) {
-    const dest = outDir ? fsPath.join(outDir, fileName) : fileName;
-    writeFn(dest, testCode);
+    writeFn(outDir ? fsPath.join(outDir, fileName) : fileName, testCode);
   }
 }
