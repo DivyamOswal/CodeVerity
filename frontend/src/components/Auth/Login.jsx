@@ -4,13 +4,15 @@ import { useNavigate, NavLink } from "react-router-dom";
 import axios from "../../api/axios";
 import { useAuth } from "../../App";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
 export default function Login() {
-  const navigate      = useNavigate();
-  const { login }     = useAuth();         
-  const [email,    setEmail]    = useState("");
+  const navigate = useNavigate();
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error,    setError]    = useState("");
-  const [loading,  setLoading]  = useState(false);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -21,9 +23,7 @@ export default function Login() {
     try {
       const res = await axios.post("/auth/login", { email, password });
       const token = res.data.token;
-
       login(token);
-
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.error ?? "Login failed. Please try again.");
@@ -32,77 +32,138 @@ export default function Login() {
     }
   };
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black flex items-center justify-center p-6">
-      <div className="w-full max-w-md">
+  // Full-page redirect — OAuth requires the backend to hand off to the
+  // provider (Passport or similar), an axios call can't do this handshake.
+  const handleOAuth = (provider) => {
+    window.location.href = `${API_URL}/auth/${provider}`;
+  };
 
+  return (
+    <div className="min-h-screen bg-neutral-950 flex items-center justify-center p-6">
+      <div className="w-full max-w-sm">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Welcome back</h1>
-          <p className="text-gray-400 text-sm">Sign in to your Devguard AI account</p>
+          <h1 className="text-2xl font-semibold text-white tracking-tight">Welcome back</h1>
+          <p className="text-neutral-500 text-sm mt-1.5">Sign in to your DevGuard AI account</p>
         </div>
 
-        <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-8 shadow-2xl space-y-5">
-
+        <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 space-y-5">
           {error && (
             <div className="text-red-400 text-sm bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3">
-              ⚠️ {error}
+              {error}
             </div>
           )}
 
+          {/* OAuth options */}
+          <div className="space-y-2.5">
+            <button
+              type="button"
+              onClick={() => handleOAuth("github")}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-sm font-medium
+                bg-white/5 border border-white/10 text-neutral-200
+                hover:bg-white/10 hover:border-white/20 transition-colors"
+            >
+              <GitHubIcon className="w-4 h-4" />
+              Continue with GitHub
+            </button>
+            <button
+              type="button"
+              onClick={() => handleOAuth("google")}
+              className="w-full flex items-center justify-center gap-2.5 py-2.5 rounded-xl text-sm font-medium
+                bg-white/5 border border-white/10 text-neutral-200
+                hover:bg-white/10 hover:border-white/20 transition-colors"
+            >
+              <GoogleIcon className="w-4 h-4" />
+              Continue with Google
+            </button>
+          </div>
+
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-px bg-white/10" />
+            <span className="text-xs text-neutral-600 font-mono uppercase tracking-wide">or</span>
+            <div className="flex-1 h-px bg-white/10" />
+          </div>
+
+          {/* Email / password */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div className="space-y-1.5">
-              <label className="text-sm text-gray-400">Email</label>
+              <label className="text-sm text-neutral-400">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="you@example.com"
-                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10
-                  text-white placeholder-gray-600 text-sm
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autoComplete="email"
+                className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10
+                  text-white placeholder-neutral-600 text-sm
+                  focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
 
             <div className="space-y-1.5">
-              <label className="text-sm text-gray-400">Password</label>
+              <div className="flex items-center justify-between">
+                <label className="text-sm text-neutral-400">Password</label>
+                <NavLink to="/forgot-password" className="text-xs text-neutral-500 hover:text-neutral-300">
+                  Forgot password?
+                </NavLink>
+              </div>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                className="w-full px-4 py-3 rounded-xl bg-black/40 border border-white/10
-                  text-white placeholder-gray-600 text-sm
-                  focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                autoComplete="current-password"
+                className="w-full px-4 py-2.5 rounded-xl bg-black/40 border border-white/10
+                  text-white placeholder-neutral-600 text-sm
+                  focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
               />
             </div>
 
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 rounded-xl font-semibold text-sm
-                bg-gradient-to-r from-indigo-500 to-purple-600
-                hover:from-indigo-400 hover:to-purple-500
-                disabled:opacity-50 disabled:cursor-not-allowed
-                transition-all hover:scale-[1.02] active:scale-100 mt-2"
+              className="w-full py-2.5 rounded-xl font-semibold text-sm text-white
+                bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600
+                disabled:opacity-50 disabled:cursor-not-allowed transition-colors mt-1"
             >
               {loading ? (
                 <span className="flex items-center justify-center gap-2">
-                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
                   Signing in…
                 </span>
-              ) : "Sign in"}
+              ) : (
+                "Sign in"
+              )}
             </button>
           </form>
 
-          <p className="text-center text-sm text-gray-500">
+          <p className="text-center text-sm text-neutral-500">
             Don't have an account?{" "}
-            <NavLink to="/register" className="text-indigo-400 hover:underline">
+            <NavLink to="/register" className="text-indigo-400 hover:text-indigo-300">
               Register
             </NavLink>
           </p>
         </div>
       </div>
     </div>
+  );
+}
+
+function GitHubIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M12 0C5.37 0 0 5.5 0 12.3c0 5.44 3.44 10.05 8.21 11.68.6.12.82-.27.82-.6 0-.3-.01-1.08-.02-2.12-3.34.75-4.04-1.64-4.04-1.64-.55-1.44-1.34-1.82-1.34-1.82-1.09-.77.08-.75.08-.75 1.21.09 1.84 1.28 1.84 1.28 1.07 1.87 2.81 1.33 3.5 1.02.11-.79.42-1.33.76-1.64-2.67-.31-5.47-1.38-5.47-6.15 0-1.36.47-2.47 1.24-3.34-.12-.31-.54-1.57.12-3.28 0 0 1.01-.33 3.3 1.28a11.3 11.3 0 0 1 6 0c2.29-1.61 3.3-1.28 3.3-1.28.66 1.71.24 2.97.12 3.28.77.87 1.24 1.98 1.24 3.34 0 4.78-2.81 5.83-5.49 6.14.43.38.82 1.13.82 2.29 0 1.65-.02 2.98-.02 3.39 0 .33.22.72.83.6C20.57 22.34 24 17.73 24 12.3 24 5.5 18.63 0 12 0Z" />
+    </svg>
+  );
+}
+
+function GoogleIcon({ className }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" aria-hidden="true">
+      <path fill="#4285F4" d="M23.52 12.27c0-.85-.08-1.67-.22-2.45H12v4.64h6.47c-.28 1.5-1.13 2.77-2.4 3.62v3h3.88c2.27-2.09 3.57-5.17 3.57-8.81Z" />
+      <path fill="#34A853" d="M12 24c3.24 0 5.96-1.07 7.95-2.92l-3.88-3c-1.08.72-2.45 1.15-4.07 1.15-3.13 0-5.78-2.11-6.73-4.95H1.26v3.1A11.998 11.998 0 0 0 12 24Z" />
+      <path fill="#FBBC05" d="M5.27 14.28A7.2 7.2 0 0 1 4.89 12c0-.79.14-1.56.38-2.28v-3.1H1.26A12 12 0 0 0 0 12c0 1.94.46 3.77 1.26 5.38l4.01-3.1Z" />
+      <path fill="#EA4335" d="M12 4.77c1.77 0 3.35.61 4.6 1.8l3.44-3.44C17.95 1.19 15.24 0 12 0 7.31 0 3.26 2.69 1.26 6.62l4.01 3.1C6.22 6.88 8.87 4.77 12 4.77Z" />
+    </svg>
   );
 }
