@@ -14,7 +14,7 @@ async function fetchRepoTree(owner, repo, branch = "main") {
   for (const ref of [branch, "main", "master"]) {
     const res = await fetch(
       `${GITHUB_API}/repos/${owner}/${repo}/git/trees/${ref}?recursive=1`,
-      { headers: { Accept: "application/vnd.github+json" } }
+      { headers: { Accept: "application/vnd.github+json" } },
     );
     if (res.ok) {
       const data = await res.json();
@@ -25,61 +25,130 @@ async function fetchRepoTree(owner, repo, branch = "main") {
 }
 
 async function fetchFileContent(owner, repo, filePath) {
-  const res = await fetch(
-    `${GITHUB_API}/repos/${owner}/${repo}/contents/${encodeURIComponent(filePath)}`,
-    { headers: { Accept: "application/vnd.github+json" } }
-  );
-  if (!res.ok) return null;
-  const data = await res.json();
-  if (data.encoding === "base64") {
-    return Buffer.from(data.content, "base64").toString("utf-8");
+  const url = `${GITHUB_API}/repos/${owner}/${repo}/contents/${filePath}`;
+
+  const res = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": "CodeForge",
+      ...(process.env.GITHUB_TOKEN
+        ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` }
+        : {}),
+    },
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+
+    console.error(
+      `❌ GitHub file fetch failed: ${filePath}`,
+      res.status,
+      errorText.slice(0, 500),
+    );
+
+    return null;
   }
+
+  const data = await res.json();
+
+  if (data.encoding === "base64" && data.content) {
+    return Buffer.from(data.content.replace(/\s/g, ""), "base64").toString(
+      "utf-8",
+    );
+  }
+
+  console.warn(`⚠️ No readable content: ${filePath}`);
+
   return null;
 }
 
 const CODE_EXTENSIONS = new Set([
-  ".js", ".jsx", ".ts", ".tsx",
-  ".py", ".java", ".go", ".rs",
-  ".c", ".cpp", ".cs", ".php",
-  ".rb", ".swift", ".kt",
-  ".html", ".css", ".scss",
-  ".json", ".yaml", ".yml", ".md",
+  ".js",
+  ".jsx",
+  ".ts",
+  ".tsx",
+  ".py",
+  ".java",
+  ".go",
+  ".rs",
+  ".c",
+  ".cpp",
+  ".cs",
+  ".php",
+  ".rb",
+  ".swift",
+  ".kt",
+  ".html",
+  ".css",
+  ".scss",
+  ".json",
+  ".yaml",
+  ".yml",
+  ".md",
 ]);
 
 function isCodeFile(filePath) {
   const lower = filePath.toLowerCase();
-  if (/(node_modules|dist\/|build\/|\.lock$|package-lock\.json)/.test(lower)) return false;
+  if (/(node_modules|dist\/|build\/|\.lock$|package-lock\.json)/.test(lower))
+    return false;
   return CODE_EXTENSIONS.has(path.extname(lower));
 }
 
-export async function fetchRepoContents(repoUrl, { maxChars = 28_000, branch = "main" } = {}) {
+export async function fetchRepoContents(
+  repoUrl,
+  { maxChars = 28_000, branch = "main" } = {},
+) {
   const { owner, repo } = parseGitHubUrl(repoUrl);
   console.log(`📦 Fetching tree for ${owner}/${repo}…`);
-  const tree      = await fetchRepoTree(owner, repo, branch);
+  const tree = await fetchRepoTree(owner, repo, branch);
   const codeFiles = tree.filter((f) => isCodeFile(f.path));
   console.log(`📂 ${codeFiles.length} code files found`);
 
   let combined = `# Repository: ${owner}/${repo}\n\n`;
+  let successfulFiles = 0;
+  let failedFiles = 0;
+
   for (const file of codeFiles) {
     if (combined.length >= maxChars) break;
+
+    console.log(`📄 Fetching: ${file.path}`);
+
     const content = await fetchFileContent(owner, repo, file.path);
-    if (!content) continue;
+
+    if (!content) {
+      failedFiles++;
+      console.warn(`⚠️ Skipped: ${file.path}`);
+      continue;
+    }
+
+    successfulFiles++;
+
     const block = `\n\n## FILE: ${file.path}\n\`\`\`\n${content}\n\`\`\``;
+
     if (combined.length + block.length > maxChars) {
-      combined += block.slice(0, maxChars - combined.length) + "\n… [truncated]";
+      combined +=
+        block.slice(0, maxChars - combined.length) + "\n… [truncated]";
       break;
     }
+
     combined += block;
   }
+
+  console.log(`✅ Successfully fetched: ${successfulFiles}`);
+  console.log(`❌ Failed to fetch: ${failedFiles}`);
+  console.log(`📦 Final source size: ${combined.length} chars`);
   return combined;
 }
 
 //  JSON extraction
 
 function extractJSON(raw) {
-  let cleaned = raw.replace(/```json\s*/gi, "").replace(/```\s*/g, "").trim();
+  let cleaned = raw
+    .replace(/```json\s*/gi, "")
+    .replace(/```\s*/g, "")
+    .trim();
   const start = cleaned.indexOf("{");
-  const end   = cleaned.lastIndexOf("}");
+  const end = cleaned.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
     throw new Error("No JSON object found in AI response");
   }
@@ -323,17 +392,27 @@ RULES:
 - Prefer jest.fn() for mocks unless vitest is detected (then use vi.fn())
 - If a section has nothing to report, return an empty array []`;
 
-
 //  Fallbacks
 const FALLBACK_RESULT = {
-  summary: "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
+  summary:
+    "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
   architecture: [],
   bugs: [],
   securityIssues: [],
   futureRoadmap: [
-    { phase: "Short-term",  details: "Retry the analysis with a larger max_tokens value." },
-    { phase: "Mid-term",    details: "Switch to a more capable model such as llama-3.3-70b-versatile." },
-    { phase: "Long-term",   details: "Add automated retries and structured output validation." },
+    {
+      phase: "Short-term",
+      details: "Retry the analysis with a larger max_tokens value.",
+    },
+    {
+      phase: "Mid-term",
+      details:
+        "Switch to a more capable model such as llama-3.3-70b-versatile.",
+    },
+    {
+      phase: "Long-term",
+      details: "Add automated retries and structured output validation.",
+    },
   ],
   toolsAndPackages: [],
   scores: { codeQuality: 0, security: 0, performance: 0, maintainability: 0 },
@@ -343,7 +422,8 @@ const FALLBACK_RESULT = {
 
 const FALLBACK_TEST_RESULT = {
   framework: "jest",
-  setupInstructions: "Test generation failed. Please retry or check your GROQ_API_KEY.",
+  setupInstructions:
+    "Test generation failed. Please retry or check your GROQ_API_KEY.",
   testFiles: [],
   unitTests: [],
   edgeCases: [],
@@ -356,12 +436,10 @@ const FALLBACK_TEST_RESULT = {
   },
 };
 
-
 //  Groq call with model fallback chain
 const MODELS_TO_TRY = [
-  process.env.GROQ_MODEL || "llama-3.3-70b-versatile",
-  "llama-3.1-70b-versatile",
-  "llama-3.1-8b-instant",
+  process.env.GROQ_MODEL || "openai/gpt-oss-20b",
+  "openai/gpt-oss-120b",
 ];
 
 async function callGroqWithRetry(groq, systemPrompt, userContent) {
@@ -372,13 +450,13 @@ async function callGroqWithRetry(groq, systemPrompt, userContent) {
       const completion = await groq.chat.completions.create({
         model,
         temperature: 0.1,
-        max_tokens:  6000,
+        max_tokens: 6000,
         messages: [
           { role: "system", content: systemPrompt },
-          { role: "user",   content: userContent  },
+          { role: "user", content: userContent },
         ],
       });
-      const raw    = completion.choices[0].message.content;
+      const raw = completion.choices[0].message.content;
       const parsed = extractJSON(raw);
       console.log(`✅ Parsed successfully with model: ${model}`);
       return parsed;
@@ -393,8 +471,12 @@ async function callGroqWithRetry(groq, systemPrompt, userContent) {
 
 //  Public API
 export async function analyzeWithGroq(input) {
-  const groq   = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const result = await callGroqWithRetry(groq, SYSTEM_PROMPT, input.slice(0, 20_000));
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const result = await callGroqWithRetry(
+    groq,
+    SYSTEM_PROMPT,
+    input.slice(0, 20_000),
+  );
   return result ?? FALLBACK_RESULT;
 }
 
@@ -405,9 +487,13 @@ export async function analyzeRepoFromUrl(repoUrl, options = {}) {
 }
 
 export async function generateTests(input) {
-  const groq   = new Groq({ apiKey: process.env.GROQ_API_KEY });
+  const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   console.log(`🧪 Generating tests for ${input.length} chars…`);
-  const result = await callGroqWithRetry(groq, TEST_GENERATOR_SYSTEM_PROMPT, input.slice(0, 18_000));
+  const result = await callGroqWithRetry(
+    groq,
+    TEST_GENERATOR_SYSTEM_PROMPT,
+    input.slice(0, 18_000),
+  );
   return result ?? FALLBACK_TEST_RESULT;
 }
 
@@ -417,14 +503,19 @@ export async function generateTestsFromUrl(repoUrl, options = {}) {
 }
 
 export async function writeTestFiles(testResult, { outDir = "", write } = {}) {
-  const fs     = await import("fs");
+  const fs = await import("fs");
   const fsPath = await import("path");
-  const writeFn = write ?? ((filePath, content) => {
-    fs.mkdirSync(fsPath.dirname(filePath), { recursive: true });
-    fs.writeFileSync(filePath, content, "utf-8");
-    console.log(`✅ Written: ${filePath}`);
-  });
-  if (!testResult?.testFiles?.length) { console.warn("⚠️ No test files."); return; }
+  const writeFn =
+    write ??
+    ((filePath, content) => {
+      fs.mkdirSync(fsPath.dirname(filePath), { recursive: true });
+      fs.writeFileSync(filePath, content, "utf-8");
+      console.log(`✅ Written: ${filePath}`);
+    });
+  if (!testResult?.testFiles?.length) {
+    console.warn("⚠️ No test files.");
+    return;
+  }
   for (const { fileName, testCode } of testResult.testFiles) {
     writeFn(outDir ? fsPath.join(outDir, fileName) : fileName, testCode);
   }

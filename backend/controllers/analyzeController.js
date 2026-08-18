@@ -14,9 +14,8 @@ export const analyzeCode = async (req, res) => {
 
     console.log(`📥 /api/analyze — received ${code.length} chars`);
 
-    const result = await analyzeWithGroq(code);
+    const result = await analyzeWithGroq(code);   // ✅ use the code the frontend already fetched
 
-    // Echo _sourceCode back so frontend can use it for test generation
     return res.status(200).json({
       ...result,
       _sourceCode: code,

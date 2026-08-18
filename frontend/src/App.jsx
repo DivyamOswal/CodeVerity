@@ -18,9 +18,9 @@ import {
   fetchRepoContents,
 } from "./api/analyze";
 
-// ─────────────────────────────────────────────
+
 //  Auth Context — single source of truth
-// ─────────────────────────────────────────────
+
 export const AuthContext = createContext(null);
 
 export function useAuth() {
@@ -49,9 +49,7 @@ function AuthProvider({ children }) {
   );
 }
 
-// ─────────────────────────────────────────────
 //  /analyze page
-// ─────────────────────────────────────────────
 function AnalyzePage() {
   const [inputMode, setInputMode] = useState("paste");
   const [codeInput, setCodeInput] = useState("");
@@ -285,9 +283,8 @@ function AnalyzePage() {
   );
 }
 
-// ─────────────────────────────────────────────
+
 //  Layout
-// ─────────────────────────────────────────────
 function Layout() {
   const location = useLocation();
   const { isAuth } = useAuth();
