@@ -41,7 +41,7 @@ export default function Register() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-white tracking-tight">Create your account</h1>
-          <p className="text-neutral-500 text-sm mt-1.5">Start auditing repos with DevGuard AI</p>
+          <p className="text-neutral-500 text-sm mt-1.5">Start auditing repos with CodeVerity</p>
         </div>
 
         <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 space-y-5">
