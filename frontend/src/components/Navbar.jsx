@@ -104,7 +104,7 @@ export default function Navbar() {
               WebkitTextFillColor: 'transparent',
             }}
           >
-            Devguard AI
+            CodeVerity
           </span>
         </NavLink>
 

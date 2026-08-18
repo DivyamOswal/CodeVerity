@@ -5,11 +5,13 @@ import { useNavigate } from "react-router-dom";
 import Result from "../components/Result";
 
 /*
-  THEME
-  Single accent: indigo-500 (#6366f1). No gradients anywhere — flat
-  surfaces on a graphite base, distinguished by border + elevation,
-  not color. Grade badges keep their own color coding because that
-  encodes real severity data, not brand decoration.
+  THEME — fixed, use across all pages
+  Base:      bg-gray-950
+  Surface:   bg-white/5, border-white/10
+  Accent:    indigo-500 (#6366f1) — buttons, active states, key numbers
+  Text:      white (primary) / gray-400 (secondary) / gray-500 (tertiary, sparingly)
+             — never below gray-400 for anything meant to be read comfortably
+  No gradients. Grade badges keep their own color coding (real data, not decoration).
 */
 
 /*  DASHBOARD  */
@@ -112,10 +114,10 @@ export default function Dashboard() {
   /* LOADING SCREEN */
   if (!data) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-neutral-950">
+      <div className="min-h-screen flex items-center justify-center bg-gray-950">
         <div className="flex flex-col items-center gap-4">
           <div className="w-10 h-10 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin" />
-          <p className="text-neutral-500 text-sm font-mono">loading dashboard…</p>
+          <p className="text-gray-400 text-sm font-mono">loading dashboard…</p>
         </div>
       </div>
     );
@@ -135,14 +137,14 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
+    <div className="min-h-screen bg-gray-950 text-white">
       {/* ── TOP BAR ─────────────────────────────── */}
-      <div className="bg-neutral-950/90 backdrop-blur border-b border-white/10 px-5 sm:px-8 py-4 flex items-center gap-4 sticky top-0 z-10">
+      <div className="bg-gray-950/90 backdrop-blur border-b border-white/10 px-5 sm:px-8 py-4 flex items-center gap-4 sticky top-0 z-10">
         <h1 className="text-lg font-semibold tracking-tight">Dashboard</h1>
         {activeView === "result" && (
           <button
             onClick={() => setActiveView("home")}
-            className="ml-auto sm:ml-0 text-sm text-neutral-400 hover:text-white transition-colors flex items-center gap-1"
+            className="ml-auto sm:ml-0 text-sm text-gray-400 hover:text-white transition-colors flex items-center gap-1"
           >
             ← Back
           </button>
@@ -170,16 +172,16 @@ export default function Dashboard() {
           </div>
 
           {/* ── ANALYZER ─────────────────────────── */}
-          <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 sm:p-6">
-            <h2 className="text-lg font-semibold">Analyze a GitHub repository</h2>
-            <p className="text-neutral-500 text-sm mt-1 mb-4">
+          <div className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6">
+            <h2 className="text-lg font-semibold text-white">Analyze a GitHub repository</h2>
+            <p className="text-gray-400 text-sm mt-1 mb-4">
               Paste a public repo URL for an AI-powered audit and generated test coverage.
             </p>
 
             <div className="flex flex-col sm:flex-row gap-3">
               <input
                 className="flex-1 min-w-0 px-4 py-3 rounded-xl bg-black/40 border border-white/10 text-white
-                  placeholder-neutral-600 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500
+                  placeholder-gray-500 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500
                   focus:border-indigo-500 transition-colors"
                 placeholder="https://github.com/username/repository"
                 value={repoUrl}
@@ -195,7 +197,7 @@ export default function Dashboard() {
                 className={`px-6 py-3 rounded-xl text-sm font-semibold transition-colors shrink-0
                   ${
                     loading
-                      ? "bg-white/10 text-neutral-500 cursor-not-allowed"
+                      ? "bg-white/10 text-gray-400 cursor-not-allowed"
                       : "bg-indigo-500 text-white hover:bg-indigo-400 active:bg-indigo-600"
                   }`}
               >
@@ -220,7 +222,7 @@ export default function Dashboard() {
               {["Architecture", "Bugs", "Security", "Tests", "Roadmap"].map((f) => (
                 <span
                   key={f}
-                  className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-neutral-400"
+                  className="px-2.5 py-1 text-xs rounded-full bg-white/5 border border-white/10 text-gray-300"
                 >
                   {f}
                 </span>
@@ -230,9 +232,9 @@ export default function Dashboard() {
 
           {/* ── RECENT REPORTS ───────────────────── */}
           {data.recentReports?.length > 0 && (
-            <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-5 sm:p-6">
+            <div className="bg-white/5 border border-white/10 rounded-2xl p-5 sm:p-6">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-base font-semibold">Recent reports</h2>
+                <h2 className="text-base font-semibold text-white">Recent reports</h2>
                 <span
                   key={statsKey}
                   className="flex items-center gap-1.5 text-xs text-indigo-400 animate-[fadeUp_0.25s_ease_both]"
@@ -276,14 +278,14 @@ function StatCard({ label, value, sub, delay }) {
 
   return (
     <div
-      className="bg-white/[0.03] border border-white/10 rounded-2xl p-5
+      className="bg-white/5 border border-white/10 rounded-2xl p-5
         transition-colors duration-200 hover:border-white/20
         animate-[fadeUp_0.45s_ease_both]"
       style={{ animationDelay: delay, animationFillMode: "both" }}
     >
-      <p className="text-neutral-500 text-xs uppercase tracking-wide font-mono">{label}</p>
+      <p className="text-gray-400 text-xs uppercase tracking-wide font-mono">{label}</p>
       <p className="text-3xl font-bold tabular-nums mt-2 text-indigo-400">{animated}</p>
-      <p className="text-neutral-600 text-xs mt-1">{sub}</p>
+      <p className="text-gray-500 text-xs mt-1">{sub}</p>
     </div>
   );
 }
@@ -298,7 +300,7 @@ function ReportRow({ report, onView }) {
       C: "text-amber-400 bg-amber-500/10",
       D: "text-orange-400 bg-orange-500/10",
       F: "text-red-400 bg-red-500/10",
-    }[grade[0]] ?? "text-neutral-400 bg-white/5";
+    }[grade[0]] ?? "text-gray-300 bg-white/5";
 
   const avg = report.scores
     ? Math.round(
@@ -325,7 +327,7 @@ function ReportRow({ report, onView }) {
         <span className={`text-sm font-bold px-2 py-0.5 rounded-lg shrink-0 ${gradeColor}`}>{grade}</span>
         <div className="min-w-0">
           <p className="text-sm text-white font-medium truncate">{repoName}</p>
-          <p className="text-xs text-neutral-500">
+          <p className="text-xs text-gray-400">
             {date} · avg score {avg}%
           </p>
         </div>

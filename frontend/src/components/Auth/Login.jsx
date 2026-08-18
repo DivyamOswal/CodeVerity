@@ -44,7 +44,7 @@ export default function Login() {
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-2xl font-semibold text-white tracking-tight">Welcome back</h1>
-          <p className="text-neutral-500 text-sm mt-1.5">Sign in to your DevGuard AI account</p>
+          <p className="text-neutral-500 text-sm mt-1.5">Sign in to your CodeVerity account</p>
         </div>
 
         <div className="bg-white/[0.03] border border-white/10 rounded-2xl p-7 space-y-5">
