@@ -1,276 +1,659 @@
-import { useState, useRef, useEffect, useMemo } from "react"
-import { NavLink, useNavigate, useLocation } from "react-router-dom"
-import { useAuth } from "../App"
+import { useState, useRef, useEffect, useMemo } from "react";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
+import { useAuth } from "../App";
 
 function getInitials(token) {
-  if (!token) return "U"
+  if (!token) return "U";
+
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]))
-    const name = payload.name ?? payload.email ?? ""
-    return name.split(" ").map(n => n[0]).join("").toUpperCase().slice(0, 2) || "U"
-  } catch { return "U" }
+    const payload = JSON.parse(atob(token.split(".")[1]));
+    const name = payload.name ?? payload.email ?? "";
+
+    return (
+      name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2) || "U"
+    );
+  } catch {
+    return "U";
+  }
 }
 
 function getUserInfo(token) {
-  if (!token) return { name: "", email: "" }
+  if (!token) {
+    return {
+      name: "",
+      email: "",
+    };
+  }
+
   try {
-    const payload = JSON.parse(atob(token.split(".")[1]))
-    return { name: payload.name ?? "", email: payload.email ?? "" }
-  } catch { return { name: "", email: "" } }
+    const payload = JSON.parse(atob(token.split(".")[1]));
+
+    return {
+      name: payload.name ?? "",
+      email: payload.email ?? "",
+    };
+  } catch {
+    return {
+      name: "",
+      email: "",
+    };
+  }
 }
 
-function DropItem({ icon, label, onClick }) {
+function Icon({ name, size = 16 }) {
+  const icons = {
+    dashboard: (
+      <>
+        <rect x="3" y="3" width="7" height="7" rx="1" />
+        <rect x="14" y="3" width="7" height="7" rx="1" />
+        <rect x="3" y="14" width="7" height="7" rx="1" />
+        <rect x="14" y="14" width="7" height="7" rx="1" />
+      </>
+    ),
+
+    history: (
+      <>
+        <path d="M3 12a9 9 0 1 0 3-6.7" />
+        <path d="M3 4v5h5" />
+        <path d="M12 7v5l3 2" />
+      </>
+    ),
+
+    profile: (
+      <>
+        <circle cx="12" cy="8" r="3.5" />
+        <path d="M5 21a7 7 0 0 1 14 0" />
+      </>
+    ),
+
+    settings: (
+      <>
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.7 1.7 0 0 0 .34 1.88l.06.06-1.41 1.41-.06-.06a1.7 1.7 0 0 0-1.88-.34 1.7 1.7 0 0 0-1.03 1.56V20h-2v-.49a1.7 1.7 0 0 0-1.03-1.56 1.7 1.7 0 0 0-1.88.34l-.06.06-1.41-1.41.06-.06A1.7 1.7 0 0 0 9.4 15a1.7 1.7 0 0 0-1.56-1.03H7v-2h.84A1.7 1.7 0 0 0 9.4 11a1.7 1.7 0 0 0-.34-1.88L9 9.06l1.41-1.41.06.06a1.7 1.7 0 0 0 1.88.34A1.7 1.7 0 0 0 13.38 6.5V6h2v.5a1.7 1.7 0 0 0 1.03 1.55 1.7 1.7 0 0 0 1.88-.34l.06-.06 1.41 1.41-.06.06a1.7 1.7 0 0 0-.34 1.88 1.7 1.7 0 0 0 1.56 1.03H21v2h-.5A1.7 1.7 0 0 0 19.4 15Z" />
+      </>
+    ),
+
+    logout: (
+      <>
+        <path d="M10 17l5-5-5-5" />
+        <path d="M15 12H3" />
+        <path d="M21 3v18" />
+      </>
+    ),
+
+    chevron: <path d="m6 9 6 6 6-6" />,
+
+    logo: (
+      <>
+        <circle cx="12" cy="12" r="8.5" />
+        <circle
+          cx="12"
+          cy="12"
+          r="2.2"
+          fill="currentColor"
+          stroke="none"
+        />
+
+        <path d="M12 3.5v4" />
+        <path d="M12 16.5v4" />
+        <path d="M3.5 12h4" />
+        <path d="M16.5 12h4" />
+
+        <path d="M6 6l2.8 2.8" />
+        <path d="M15.2 15.2L18 18" />
+
+        <path d="M18 6l-2.8 2.8" />
+        <path d="M8.8 15.2L6 18" />
+      </>
+    ),
+  };
+
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.8"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      {icons[name]}
+    </svg>
+  );
+}
+
+function DropdownItem({
+  icon,
+  label,
+  onClick,
+  danger = false,
+}) {
   return (
     <button
+      type="button"
       onClick={onClick}
-      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-150"
-      style={{ color: 'rgba(255,255,255,0.55)' }}
-      onMouseEnter={e => {
-        e.currentTarget.style.background = 'rgba(139,92,246,0.08)'
-        e.currentTarget.style.color = 'rgba(255,255,255,0.9)'
-      }}
-      onMouseLeave={e => {
-        e.currentTarget.style.background = 'transparent'
-        e.currentTarget.style.color = 'rgba(255,255,255,0.55)'
-      }}
+      className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition ${
+        danger
+          ? "text-[#f85149] hover:bg-[#f85149]/10"
+          : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+      }`}
     >
-      <span>{icon}</span>{label}
+      <span
+        className={`flex h-7 w-7 items-center justify-center rounded-lg ${
+          danger
+            ? "bg-[#f85149]/5 text-[#f85149]"
+            : "bg-[#21262d] text-[#8b949e] group-hover:text-[#58a6ff]"
+        }`}
+      >
+        {icon}
+      </span>
+
+      <span>{label}</span>
     </button>
-  )
+  );
 }
 
 export default function Navbar() {
-  const navigate  = useNavigate()
-  const location  = useLocation()
-  const { isAuth, token, logout } = useAuth()
-  const [menuOpen, setMenuOpen] = useState(false)
-  const [dropOpen, setDropOpen] = useState(false)
-  const dropRef = useRef(null)
+  const navigate = useNavigate();
+  const location = useLocation();
+
+  const { isAuth, token, logout } = useAuth();
+
+  const [dropOpen, setDropOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+
+  const dropRef = useRef(null);
+
+  const initials = useMemo(
+    () => getInitials(token),
+    [token]
+  );
+
+  const userInfo = useMemo(
+    () => getUserInfo(token),
+    [token]
+  );
 
   useEffect(() => {
-    const handler = e => {
-      if (dropRef.current && !dropRef.current.contains(e.target)) setDropOpen(false)
-    }
-    document.addEventListener("mousedown", handler)
-    return () => document.removeEventListener("mousedown", handler)
-  }, [])
-
-  useEffect(() => { setMenuOpen(false); setDropOpen(false) }, [location.pathname])
-
-  const initials = useMemo(() => getInitials(token), [token])
-  const userInfo = useMemo(() => getUserInfo(token), [token])
-
-  const handleLogout = () => { setDropOpen(false); logout(); navigate("/login") }
-
-  const NavItem = ({ to, label }) => (
-    <NavLink
-      to={to}
-      className={({ isActive }) =>
-        `px-3.5 py-1.5 rounded-lg text-[13px] font-medium transition-all duration-150
-        ${isActive
-          ? 'text-violet-300 bg-violet-500/10 border border-violet-500/20'
-          : 'text-gray-400 hover:text-white'}`
+    const handleOutsideClick = (event) => {
+      if (
+        dropRef.current &&
+        !dropRef.current.contains(event.target)
+      ) {
+        setDropOpen(false);
       }
-    >
-      {label}
-    </NavLink>
-  )
+    };
+
+    document.addEventListener(
+      "mousedown",
+      handleOutsideClick
+    );
+
+    return () => {
+      document.removeEventListener(
+        "mousedown",
+        handleOutsideClick
+      );
+    };
+  }, []);
+
+  useEffect(() => {
+    setDropOpen(false);
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  const handleLogout = () => {
+    setDropOpen(false);
+    logout();
+    navigate("/login");
+  };
+
+  const NavigationItem = ({
+    to,
+    label,
+    icon,
+  }) => {
+    return (
+      <NavLink
+        to={to}
+        className={({ isActive }) =>
+          `relative flex h-9 items-center gap-2 rounded-lg px-3 text-[12px] font-medium transition-all duration-200 ${
+            isActive
+              ? "bg-[#1f6feb]/10 text-[#58a6ff]"
+              : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+          }`
+        }
+      >
+        {({ isActive }) => (
+          <>
+            <span
+              className={
+                isActive
+                  ? "text-[#58a6ff]"
+                  : "text-[#484f58]"
+              }
+            >
+              <Icon
+                name={icon}
+                size={14}
+              />
+            </span>
+
+            <span>{label}</span>
+
+            {isActive && (
+              <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-[#58a6ff]" />
+            )}
+          </>
+        )}
+      </NavLink>
+    );
+  };
 
   return (
-    <nav
-      className="sticky top-0 z-50 px-6 py-3"
-      style={{
-        background: 'rgba(7,7,15,0.75)',
-        backdropFilter: 'blur(20px)',
-        WebkitBackdropFilter: 'blur(20px)',
-        borderBottom: '1px solid rgba(139,92,246,0.12)',
-      }}
-    >
-      <div className="flex items-center justify-between gap-4 max-w-6xl mx-auto">
+    <nav className="sticky top-0 z-50 h-16 border-b border-[#30363d] bg-[#161b22]">
 
-        {/* Logo */}
-        <NavLink to="/" className="flex items-center gap-2 shrink-0">
-          <div
-            className="w-7 h-7 rounded-lg flex items-center justify-center text-sm"
-            style={{ background: 'linear-gradient(135deg,#7c3aed,#a21caf)' }}
+      {/* =====================================================
+          SAME CONTAINER WIDTH AS HISTORY PAGE
+      ===================================================== */}
+
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+
+        {/* ===================================================
+            LEFT - LOGO
+        =================================================== */}
+
+        <div className="flex min-w-0 items-center">
+
+          <NavLink
+            to="/"
+            className="group flex items-center gap-2.5"
           >
-            🛡️
-          </div>
-          <span
-            className="font-bold text-[17px] hidden sm:block"
-            style={{
-              background: 'linear-gradient(135deg, #a78bfa, #e879f9)',
-              WebkitBackgroundClip: 'text',
-              WebkitTextFillColor: 'transparent',
-            }}
-          >
-            CodeVerity
-          </span>
-        </NavLink>
 
-        {/* Desktop links */}
-        {isAuth && (
-          <div className="hidden md:flex items-center gap-1">
-            <NavItem to="/dashboard" label="Dashboard" />
-            <NavItem to="/history"   label="History"   />
-          </div>
-        )}
+            {/* Custom CodeVerity Logo */}
 
-        {/* Right side */}
-        <div className="flex items-center gap-3">
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] text-[#58a6ff] shadow-[0_0_18px_rgba(88,166,255,0.08)] transition-all duration-200 group-hover:border-[#58a6ff]/40 group-hover:shadow-[0_0_20px_rgba(88,166,255,0.15)]">
+
+              <div className="absolute inset-[3px] rounded-lg border border-[#7c3aed]/20" />
+
+              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#3b82f6]/10 via-transparent to-[#8b5cf6]/10" />
+
+              <Icon
+                name="logo"
+                size={19}
+              />
+
+              <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-[#161b22] bg-[#00d084]" />
+
+            </div>
+
+            {/* Brand */}
+
+            <div className="hidden sm:block">
+
+              <div className="flex items-center text-[15px] font-bold leading-none tracking-tight">
+
+                <span className="text-[#f0f6fc]">
+                  Code
+                </span>
+
+                <span className="bg-gradient-to-r from-[#58a6ff] to-[#a371f7] bg-clip-text text-transparent">
+                  Verity
+                </span>
+
+              </div>
+
+              <p className="mt-1 text-[8px] font-medium uppercase leading-none tracking-[0.2em] text-[#484f58]">
+                AI Code Intelligence
+              </p>
+
+            </div>
+
+          </NavLink>
+
+        </div>
+
+        {/* ===================================================
+            CENTER NAVIGATION
+        =================================================== */}
+
+        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
+
+          {isAuth && (
+            <>
+              <NavigationItem
+                to="/dashboard"
+                label="Dashboard"
+                icon="dashboard"
+              />
+
+              <NavigationItem
+                to="/history"
+                label="History"
+                icon="history"
+              />
+            </>
+          )}
+
+        </div>
+
+        {/* ===================================================
+            RIGHT - USER
+        =================================================== */}
+
+        <div className="flex items-center">
+
           {isAuth ? (
-            <div className="relative" ref={dropRef}>
-              {/* Avatar button */}
+            <div
+              ref={dropRef}
+              className="relative"
+            >
+
               <button
-                onClick={() => setDropOpen(p => !p)}
-                aria-label="Open user menu"
-                aria-expanded={dropOpen}
-                className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold text-white transition-all duration-150 hover:scale-105"
-                style={{
-                  background: 'linear-gradient(135deg,#7c3aed,#a21caf)',
-                  boxShadow: dropOpen ? '0 0 20px rgba(139,92,246,0.4)' : '0 0 12px rgba(139,92,246,0.2)',
-                }}
+                type="button"
+                onClick={() =>
+                  setDropOpen(
+                    (previous) => !previous
+                  )
+                }
+                className={`flex h-10 items-center gap-2 rounded-lg px-1.5 transition-all ${
+                  dropOpen
+                    ? "bg-[#21262d]"
+                    : "hover:bg-[#21262d]"
+                }`}
               >
-                {initials}
+
+                {/* Avatar */}
+
+                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#3b82f6] to-[#7c3aed] text-[10px] font-bold text-white">
+
+                  {initials}
+
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#161b22] bg-[#00d084]" />
+
+                </div>
+
+                {/* User information */}
+
+                <div className="hidden text-left lg:block">
+
+                  <p className="max-w-[100px] truncate text-[11px] font-semibold leading-3 text-[#f0f6fc]">
+                    {userInfo.name || initials}
+                  </p>
+
+                  <p className="mt-1 text-[8px] leading-3 text-[#484f58]">
+                    Developer
+                  </p>
+
+                </div>
+
+                <span
+                  className={`ml-1 hidden text-[#484f58] transition-transform sm:block ${
+                    dropOpen
+                      ? "rotate-180"
+                      : ""
+                  }`}
+                >
+                  <Icon
+                    name="chevron"
+                    size={12}
+                  />
+                </span>
+
               </button>
 
-              {/* Dropdown */}
+              {/* User Dropdown */}
+
               {dropOpen && (
-                <div
-                  className="absolute right-0 top-12 w-54 overflow-hidden z-50"
-                  style={{
-                    background: 'rgba(10,10,20,0.95)',
-                    border: '1px solid rgba(139,92,246,0.2)',
-                    borderRadius: 16,
-                    boxShadow: '0 24px 60px rgba(0,0,0,0.6), 0 0 0 1px rgba(139,92,246,0.08)',
-                    backdropFilter: 'blur(20px)',
-                    animation: 'fadeDown 0.18s ease both',
-                  }}
-                >
-                  {/* User info */}
-                  <div
-                    className="px-4 py-3"
-                    style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
-                  >
-                    <p className="text-[13px] font-semibold text-white truncate">
-                      {userInfo.name || initials}
-                    </p>
-                    <p className="text-[11px] mt-0.5 truncate" style={{ color: 'rgba(255,255,255,0.35)' }}>
-                      {userInfo.email || "Signed in"}
-                    </p>
+                <div className="absolute right-0 top-[50px] z-50 w-64 overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/50">
+
+                  <div className="border-b border-[#30363d] p-4">
+
+                    <div className="flex items-center gap-3">
+
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#7c3aed] text-xs font-bold text-white">
+                        {initials}
+                      </div>
+
+                      <div className="min-w-0">
+
+                        <p className="truncate text-sm font-semibold text-[#f0f6fc]">
+                          {userInfo.name || initials}
+                        </p>
+
+                        <p className="truncate text-[11px] text-[#484f58]">
+                          {userInfo.email || "Signed in"}
+                        </p>
+
+                      </div>
+
+                    </div>
+
                   </div>
 
-                  <div className="py-1">
-                    <DropItem icon="👤" label="Profile"   onClick={() => navigate("/profile")}   />
-                    <DropItem icon="⚙️" label="Settings"  onClick={() => navigate("/settings")}  />
-                    <DropItem icon="📋" label="History"   onClick={() => navigate("/history")}   />
-                    <DropItem icon="📊" label="Dashboard" onClick={() => navigate("/dashboard")} />
+                  <div className="py-2">
+
+                    <DropdownItem
+                      icon={
+                        <Icon
+                          name="profile"
+                          size={15}
+                        />
+                      }
+                      label="Profile"
+                      onClick={() =>
+                        navigate("/profile")
+                      }
+                    />
+
+                    <DropdownItem
+                      icon={
+                        <Icon
+                          name="settings"
+                          size={15}
+                        />
+                      }
+                      label="Settings"
+                      onClick={() =>
+                        navigate("/settings")
+                      }
+                    />
+
+                    <DropdownItem
+                      icon={
+                        <Icon
+                          name="history"
+                          size={15}
+                        />
+                      }
+                      label="Review History"
+                      onClick={() =>
+                        navigate("/history")
+                      }
+                    />
+
+                    <DropdownItem
+                      icon={
+                        <Icon
+                          name="dashboard"
+                          size={15}
+                        />
+                      }
+                      label="Dashboard"
+                      onClick={() =>
+                        navigate("/dashboard")
+                      }
+                    />
+
                   </div>
 
-                  <div style={{ borderTop: '1px solid rgba(255,255,255,0.06)' }} className="py-1">
-                    <button
+                  <div className="border-t border-[#30363d] py-2">
+
+                    <DropdownItem
+                      danger
+                      icon={
+                        <Icon
+                          name="logout"
+                          size={15}
+                        />
+                      }
+                      label="Sign out"
                       onClick={handleLogout}
-                      className="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-left transition-colors duration-150"
-                      style={{ color: '#f87171' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                    >
-                      <span>🚪</span> Sign out
-                    </button>
+                    />
+
                   </div>
+
                 </div>
               )}
+
             </div>
           ) : (
-            <div className="flex gap-2">
+
+            <div className="hidden items-center gap-2 sm:flex">
+
               <NavLink
                 to="/login"
-                className="px-4 py-1.5 text-[13px] rounded-lg font-medium transition-all duration-150"
-                style={{
-                  border: '1px solid rgba(139,92,246,0.25)',
-                  color: 'rgba(255,255,255,0.6)',
-                  background: 'rgba(139,92,246,0.06)',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'rgba(139,92,246,0.14)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'rgba(139,92,246,0.06)'}
+                className="rounded-lg border border-[#30363d] bg-[#0d1117] px-3.5 py-2 text-[12px] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc]"
               >
                 Sign in
               </NavLink>
+
               <NavLink
                 to="/register"
-                className="px-4 py-1.5 text-[13px] rounded-lg font-semibold text-white transition-all duration-150 hover:scale-105"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#a21caf)' }}
+                className="rounded-lg bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-3.5 py-2 text-[12px] font-semibold text-white transition hover:opacity-90"
               >
-                Register
+                Get started
               </NavLink>
+
             </div>
+
           )}
 
-          {/* Mobile hamburger */}
-          {isAuth && (
-            <button
-              onClick={() => setMenuOpen(p => !p)}
-              aria-label={menuOpen ? "Close menu" : "Open menu"}
-              className="md:hidden text-[18px] transition-colors duration-150"
-              style={{ color: menuOpen ? '#a78bfa' : 'rgba(255,255,255,0.4)' }}
-            >
-              {menuOpen ? "✕" : "☰"}
-            </button>
-          )}
+          {/* Mobile Menu */}
+
+          <button
+            type="button"
+            onClick={() =>
+              setMenuOpen(
+                (previous) => !previous
+              )
+            }
+            className="ml-2 flex h-9 w-9 items-center justify-center rounded-lg border border-[#30363d] bg-[#0d1117] text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] md:hidden"
+          >
+            {menuOpen ? "×" : "☰"}
+          </button>
+
         </div>
+
       </div>
 
-      {/* Mobile menu */}
+      {/* =====================================================
+          MOBILE NAVIGATION
+      ===================================================== */}
+
       {isAuth && menuOpen && (
-        <div
-          className="md:hidden mt-3 pt-3 pb-2 flex flex-col gap-1"
-          style={{ borderTop: '1px solid rgba(139,92,246,0.12)' }}
-        >
-          {[
-            ["/dashboard", "📊 Dashboard"],
-            ["/history",   "📋 History"  ],
-            ["/profile",   "👤 Profile"  ],
-            ["/settings",  "⚙️ Settings" ],
-          ].map(([to, label]) => (
+        <div className="border-t border-[#30363d] bg-[#161b22] md:hidden">
+
+          <div className="mx-auto max-w-7xl space-y-1 px-4 py-3">
+
             <NavLink
-              key={to}
-              to={to}
-              onClick={() => setMenuOpen(false)}
+              to="/dashboard"
               className={({ isActive }) =>
-                `px-4 py-2.5 rounded-xl text-[13px] transition-colors duration-150
-                ${isActive
-                  ? 'bg-violet-500/10 text-violet-300 border border-violet-500/15'
-                  : 'text-gray-400 hover:text-white'}`
+                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                  isActive
+                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
+                    : "text-[#8b949e] hover:bg-[#21262d]"
+                }`
               }
-              onMouseEnter={e => {
-                if (!e.currentTarget.className.includes('text-violet')) {
-                  e.currentTarget.style.background = 'rgba(255,255,255,0.04)'
-                }
-              }}
-              onMouseLeave={e => {
-                if (!e.currentTarget.className.includes('text-violet')) {
-                  e.currentTarget.style.background = 'transparent'
-                }
-              }}
             >
-              {label}
+              <Icon
+                name="dashboard"
+                size={16}
+              />
+
+              Dashboard
             </NavLink>
-          ))}
-          <button
-            onClick={handleLogout}
-            className="px-4 py-2.5 text-[13px] rounded-xl text-left transition-colors duration-150"
-            style={{ color: '#f87171' }}
-            onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.08)'}
-            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-          >
-            🚪 Sign out
-          </button>
+
+            <NavLink
+              to="/history"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                  isActive
+                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
+                    : "text-[#8b949e] hover:bg-[#21262d]"
+                }`
+              }
+            >
+              <Icon
+                name="history"
+                size={16}
+              />
+
+              History
+            </NavLink>
+
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                  isActive
+                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
+                    : "text-[#8b949e] hover:bg-[#21262d]"
+                }`
+              }
+            >
+              <Icon
+                name="profile"
+                size={16}
+              />
+
+              Profile
+            </NavLink>
+
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                  isActive
+                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
+                    : "text-[#8b949e] hover:bg-[#21262d]"
+                }`
+              }
+            >
+              <Icon
+                name="settings"
+                size={16}
+              />
+
+              Settings
+            </NavLink>
+
+            <button
+              type="button"
+              onClick={handleLogout}
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-[#f85149] hover:bg-[#f85149]/10"
+            >
+              <Icon
+                name="logout"
+                size={16}
+              />
+
+              Sign out
+            </button>
+
+          </div>
+
         </div>
       )}
 
-      <style>{`
-        @keyframes fadeDown { from { transform:translateY(-8px); opacity:0 } to { transform:translateY(0); opacity:1 } }
-      `}</style>
     </nav>
-  )
+  );
 }
