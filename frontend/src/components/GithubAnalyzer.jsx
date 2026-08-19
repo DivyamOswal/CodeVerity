@@ -2,11 +2,62 @@ import { useState } from "react";
 import { analyzeGithub, generateTests } from "../api/github";
 import Result from "./Result";
 
+// -----------------------------------------------------------------
+// Mini components – same as Home / CodeInput
+// -----------------------------------------------------------------
+
+function CodeVerityLogo() {
+  return (
+    <div className="flex items-center justify-center">
+      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
+        <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="relative text-green-400"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
+          <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
+        </div>
+        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+function ScanLine() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+      <div
+        className="absolute left-0 right-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg,transparent,rgba(63,185,80,0.65),transparent)",
+          animation: "scanline 2.8s ease-in-out infinite",
+        }}
+      />
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------
+// Main component
+// -----------------------------------------------------------------
+
 export default function GithubAnalyzer({ setData }) {
-  const [repo,      setRepo]      = useState("");
-  const [loading,   setLoading]   = useState(false);
-  const [error,     setError]     = useState("");
-  const [analysis,  setAnalysis]  = useState(null); // ← owns the result locally
+  const [repo, setRepo] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
+  const [analysis, setAnalysis] = useState(null);
 
   const analyze = async () => {
     if (!repo.startsWith("https://github.com/")) {
@@ -21,10 +72,7 @@ export default function GithubAnalyzer({ setData }) {
       const res = await analyzeGithub({ repoUrl: repo });
       const data = res.data.analysis;
 
-      // Keep parent in sync if setData was passed (for History, Dashboard, etc.)
       if (setData) setData(data);
-
-      // Store locally so we can pass generateTestsFn to Result
       setAnalysis(data);
     } catch (err) {
       setError(err.response?.data?.error || "Analysis failed");
@@ -40,28 +88,30 @@ export default function GithubAnalyzer({ setData }) {
     if (setData) setData(null);
   };
 
-  // Results view
+  // ---- Results View ----
   if (analysis) {
     return (
-      <div className="min-h-screen bg-[#0a0a0b]">
-        {/* Back bar */}
-        <div className="sticky top-0 z-50 bg-[#0a0a0b]/90 backdrop-blur border-b border-white/10 px-6 py-3 flex items-center gap-4">
+      <div>
+        {/* Sticky bar – now green themed */}
+        <div className="sticky top-0 z-50 bg-[#0d1117]/80 backdrop-blur border-b border-[#30363d] px-6 py-3 flex items-center gap-4">
           <button
             onClick={handleReset}
-            className="flex items-center gap-1.5 text-sm text-neutral-400 hover:text-indigo-400 transition-colors"
+            className="text-sm text-[#8b949e] hover:text-[#f0f6fc] transition flex items-center gap-2"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M15 18l-6-6 6-6" />
+              <path d="M19 12H5" />
+              <path d="M12 19l-7-7 7-7" />
             </svg>
             New Analysis
           </button>
-          <span className="font-mono text-xs text-neutral-600 truncate max-w-xs">{repo}</span>
+          <span className="text-xs text-[#484f58] truncate max-w-xs">{repo}</span>
+          <span className="ml-auto flex items-center gap-2 text-xs text-[#3fb950]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
+            Analyzed
+          </span>
         </div>
 
-        {/*
-          analysis._sourceCode  → set by githubController.js, read by Result internally
-          generateTestsFn       → calls POST /api/github/generate-tests
-        */}
+        {/* Result component – its internal styling should also be updated, but we keep it as is */}
         <Result
           data={analysis}
           generateTestsFn={generateTests}
@@ -71,7 +121,8 @@ export default function GithubAnalyzer({ setData }) {
             });
             const url = URL.createObjectURL(blob);
             Object.assign(document.createElement("a"), {
-              href: url, download: "audit-report.json",
+              href: url,
+              download: "audit-report.json",
             }).click();
             URL.revokeObjectURL(url);
           }}
@@ -80,147 +131,125 @@ export default function GithubAnalyzer({ setData }) {
     );
   }
 
-  // Input view
+  // ---- Input View ----
   return (
-    <div className="min-h-screen bg-[#0a0a0b] flex items-center justify-center p-6 relative overflow-hidden">
-      {/* Signature: same scanline field used across the auth pages, kept consistent app-wide */}
-      <style>{`
-        @keyframes cv-scan-sweep {
-          0% { transform: translateY(-100%); opacity: 0; }
-          15% { opacity: 1; }
-          85% { opacity: 1; }
-          100% { transform: translateY(320px); opacity: 0; }
-        }
-        @keyframes cv-blink {
-          0%, 45% { opacity: 1; }
-          50%, 95% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        .cv-sweep { animation: cv-scan-sweep 2.4s ease-in-out 1; }
-        .cv-caret { animation: cv-blink 1.1s steps(1) infinite; }
-        @media (prefers-reduced-motion: reduce) {
-          .cv-sweep { animation: none; opacity: 0; }
-          .cv-caret { animation: none; }
-        }
-      `}</style>
-
-      {/* ambient background: sparse dot grid, single accent color, very low opacity */}
+    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] px-4 py-8 sm:px-6 lg:px-10 relative overflow-hidden">
+      {/* Background glows – same as Home */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
+          background:
+            "radial-gradient(ellipse at center, rgba(35,134,54,0.10) 0%, transparent 65%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(16,185,129,0.07) 0%, transparent 70%)",
         }}
       />
 
-      <div className="w-full max-w-3xl relative">
-
-        {/* Wordmark */}
-        <div className="text-center mb-6">
-          <div className="inline-flex items-center gap-2 mb-3">
-            <span className="w-6 h-6 rounded-md bg-indigo-500/15 border border-indigo-500/30 flex items-center justify-center">
-              <span className="w-2 h-2 rounded-sm bg-indigo-400" />
-            </span>
-            <span className="font-mono text-sm tracking-[0.2em] text-neutral-400 uppercase">
-              CodeVerify
-            </span>
-          </div>
-        </div>
-
-        {/* Card with scan-corner framing */}
-        <div className="relative">
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-indigo-500/50 rounded-tl-2xl" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-indigo-500/50 rounded-tr-2xl" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-indigo-500/50 rounded-bl-2xl" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-indigo-500/50 rounded-br-2xl" />
-
-          <div className="relative overflow-hidden bg-[#111113] border border-white/10 rounded-2xl shadow-2xl shadow-black/30 p-6">
-            {/* one-time verification sweep line */}
-            <div className="cv-sweep pointer-events-none absolute left-0 right-0 h-px bg-indigo-400/70 shadow-[0_0_12px_2px_rgba(99,102,241,0.6)]" />
-
-            {/* Header */}
-            <div className="mb-5">
-              <h2 className="text-2xl font-semibold text-white tracking-tight">
-                GitHub Repository Analyzer
-              </h2>
-              <p className="font-mono text-xs text-neutral-600 mt-2">
-                <span className="text-indigo-400">$</span> analyze any public repo with AI insights
-                <span className="cv-caret text-indigo-400">_</span>
-              </p>
+      <div className="mx-auto max-w-3xl relative z-10">
+        {/* Card – same style as CodeInput editor card */}
+        <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
+          {/* Header with logo */}
+          <div className="border-b border-[#30363d] bg-[#0d1117] px-4 py-4 sm:px-6 flex items-center gap-3">
+            <CodeVerityLogo />
+            <div>
+              <p className="text-sm font-bold tracking-wide text-[#f0f6fc]">CODEVERITY</p>
+              <p className="text-xs text-[#8b949e]">GitHub Repository Intelligence</p>
             </div>
+          </div>
 
-            {/* Input */}
-            <div className="space-y-1.5">
-              <label className="font-mono text-[11px] uppercase tracking-wide text-neutral-500">
-                Repository URL
-              </label>
-              <div className="relative">
-                <input
-                  className="w-full px-4 py-3 pr-11 rounded-xl bg-black/40 border border-white/10
-                    text-white text-sm placeholder-neutral-600 font-mono
-                    focus:outline-none focus:ring-1 focus:ring-indigo-500 focus:border-indigo-500 transition-colors"
-                  placeholder="https://github.com/username/repository"
-                  value={repo}
-                  onChange={(e) => setRepo(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && analyze()}
-                />
-                <svg
-                  className="absolute right-4 top-1/2 -translate-y-1/2 text-neutral-600"
-                  width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"
-                >
-                  <path d="M10 13a5 5 0 0 0 7.07 0l2.83-2.83a5 5 0 0 0-7.07-7.07l-1.5 1.5" />
-                  <path d="M14 11a5 5 0 0 0-7.07 0L4.1 13.83a5 5 0 0 0 7.07 7.07l1.5-1.5" />
-                </svg>
-              </div>
+          <div className="p-6">
+            <h2 className="text-2xl font-bold tracking-tight">
+              GitHub Repository Analyzer
+            </h2>
+            <p className="text-sm text-[#8b949e] mt-1">
+              Analyze any public repo with AI insights ⚡
+            </p>
+
+            {/* Input field – green focus ring */}
+            <div className="relative mt-5">
+              <input
+                className="w-full p-4 pr-12 rounded-xl bg-[#0d1117] text-[#f0f6fc] border border-[#30363d] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[#484f58]"
+                placeholder="https://github.com/username/repository"
+                value={repo}
+                onChange={(e) => setRepo(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && analyze()}
+              />
+              <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#484f58]">🔗</span>
             </div>
 
             {/* Error */}
             {error && (
-              <div className="mt-3 font-mono text-xs text-red-400 bg-red-500/10 border border-red-500/20 px-4 py-3 rounded-xl">
-                error: {error}
+              <div className="mt-3 text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+                {error}
               </div>
             )}
 
             {/* Actions */}
             <div className="flex justify-between items-center mt-5">
-              <span className="font-mono text-[11px] text-neutral-600">
+              <span className="text-xs text-[#484f58]">
                 Supports public repositories only
               </span>
 
               <button
                 onClick={analyze}
                 disabled={loading}
-                className={`px-6 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors
-                  ${loading
-                    ? "bg-white/[0.04] text-neutral-600 border border-white/10 cursor-not-allowed"
-                    : "bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600"
-                  }`}
+                className="group relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[#30363d] disabled:text-[#484f58] disabled:shadow-none hover:scale-[1.02] active:scale-95"
+                style={
+                  loading
+                    ? {}
+                    : {
+                        background: "linear-gradient(135deg,#238636,#2ea043)",
+                        boxShadow: "0 0 30px rgba(35,134,54,0.25)",
+                      }
+                }
               >
                 {loading ? (
-                  <span className="flex items-center gap-2 font-mono text-xs">
-                    <span className="w-3.5 h-3.5 border-2 border-white/40 border-t-white rounded-full animate-spin" />
-                    verifying…
-                  </span>
+                  <div className="flex items-center gap-2">
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                    Analyzing...
+                  </div>
                 ) : (
-                  "Generate Report"
+                  <>
+                    <ScanLine />
+                    <span className="relative z-10 flex items-center gap-2">
+                      Generate Report
+                      <span className="text-white/50 transition-transform group-hover:translate-x-0.5">→</span>
+                    </span>
+                  </>
                 )}
               </button>
             </div>
 
             {/* Tip */}
-            <div className="mt-6 font-mono text-[11px] text-neutral-600 border-t border-white/10 pt-3">
-              tip: try popular repos like{" "}
-              <span className="text-indigo-400">
-                https://github.com/facebook/react
-              </span>
+            <div className="mt-6 text-xs text-[#30363d] border-t border-[#30363d] pt-4">
+              💡 Tip: Try popular repos like{" "}
+              <span className="text-green-400">https://github.com/facebook/react</span>
             </div>
           </div>
         </div>
 
-        <p className="text-center font-mono text-[11px] text-neutral-700 mt-6 tracking-wide">
-          codeverify · repo analysis, verified
-        </p>
+        {/* Footer */}
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-[#30363d]">
+          <span>Powered by</span>
+          <span className="font-semibold text-[#484f58]">CodeVerity AI</span>
+          <span>•</span>
+          <span>Built for developers</span>
+        </div>
       </div>
+
+      <style>{`
+        @keyframes scanline {
+          0% { top: -2px; opacity: 0; }
+          8% { opacity: 1; }
+          92% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
+        }
+      `}</style>
     </div>
   );
 }

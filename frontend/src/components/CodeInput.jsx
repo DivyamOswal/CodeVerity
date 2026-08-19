@@ -1,15 +1,135 @@
 import { useState } from "react";
 import { analyzeCode } from "../api/analyze";
 
+// -----------------------------------------------------------------
+// Reusable mini components (same style as Home)
+// -----------------------------------------------------------------
+
+function CodeVerityLogo() {
+  return (
+    <div className="flex items-center justify-center">
+      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
+        <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+
+        {/* Shield + checkmark icon */}
+        <svg
+          width="18"
+          height="18"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="relative text-green-400"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
+
+        {/* Small code brackets */}
+        <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
+          <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
+        </div>
+
+        {/* Status dot */}
+        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+      </div>
+    </div>
+  );
+}
+
+function ScanLine() {
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+      <div
+        className="absolute left-0 right-0 h-px"
+        style={{
+          background:
+            "linear-gradient(90deg,transparent,rgba(63,185,80,0.65),transparent)",
+          animation: "scanline 2.8s ease-in-out infinite",
+        }}
+      />
+    </div>
+  );
+}
+
+// Feature card – uses the same color mapping as Home
+const colorMap = {
+  green: {
+    border: "rgba(63,185,80,0.30)",
+    glow: "rgba(63,185,80,0.10)",
+    icon: "#3fb950",
+    bg: "rgba(63,185,80,0.10)",
+  },
+  emerald: {
+    border: "rgba(16,185,129,0.30)",
+    glow: "rgba(16,185,129,0.10)",
+    icon: "#10b981",
+    bg: "rgba(16,185,129,0.10)",
+  },
+  teal: {
+    border: "rgba(45,212,191,0.30)",
+    glow: "rgba(45,212,191,0.08)",
+    icon: "#2dd4bf",
+    bg: "rgba(45,212,191,0.08)",
+  },
+};
+
+function Feature({ icon, title, desc, color }) {
+  const [hovered, setHovered] = useState(false);
+  const c = colorMap[color];
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="group relative cursor-default overflow-hidden rounded-xl p-5 text-left transition-all duration-300 ease-out"
+      style={{
+        background: "rgba(22,27,34,0.72)",
+        border: `1px solid ${hovered ? c.border : "rgba(48,54,61,0.9)"}`,
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: hovered ? `0 20px 40px ${c.glow}` : "none",
+      }}
+    >
+      {/* Glow */}
+      <div
+        className="absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-500"
+        style={{ background: c.bg, opacity: hovered ? 0.65 : 0 }}
+      />
+
+      {/* Icon */}
+      <div
+        className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg transition-transform duration-300"
+        style={{
+          background: c.bg,
+          transform: hovered ? "scale(1.08)" : "scale(1)",
+        }}
+      >
+        <span className="text-lg" style={{ color: c.icon }}>
+          {icon}
+        </span>
+      </div>
+
+      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[#f0f6fc]">
+        {title}
+      </h3>
+      <p className="text-[11px] leading-relaxed text-[#8b949e]">{desc}</p>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------
+// Main CodeInput component
+// -----------------------------------------------------------------
+
 export default function CodeInput({ setResult, model }) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
 
   const runAnalysis = async () => {
     if (!code.trim()) return;
-
     setLoading(true);
-
     try {
       const res = await analyzeCode(code, model);
       setResult(res.data.analysis);
@@ -94,7 +214,6 @@ export default function CodeInput({ setResult, model }) {
               <span className="block h-2.5 w-2.5 rounded-full bg-indigo-400" />
               <span className="absolute inset-0 animate-ping rounded-full bg-indigo-400 opacity-30" />
             </div>
-
             <div>
               <p className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
                 AI Model
@@ -264,7 +383,9 @@ function example() {
           </div>
         </div>
 
-        {/* ================= FEATURE CARDS ================= */}
+        {/* --------------------------------------------------------------
+            FEATURE CARDS – same style as Home
+        -------------------------------------------------------------- */}
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
 
           <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
@@ -348,8 +469,27 @@ function example() {
           <span>·</span>
           <span>repo analysis, verified</span>
         </div>
-
       </div>
+
+      {/* Animation keyframes (same as Home) */}
+      <style>{`
+        @keyframes scanline {
+          0% {
+            top: -2px;
+            opacity: 0;
+          }
+          8% {
+            opacity: 1;
+          }
+          92% {
+            opacity: 1;
+          }
+          100% {
+            top: 100%;
+            opacity: 0;
+          }
+        }
+      `}</style>
     </div>
   );
 }
