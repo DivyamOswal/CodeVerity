@@ -142,15 +142,15 @@ function DropdownItem({
       onClick={onClick}
       className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition ${
         danger
-          ? "text-[#f85149] hover:bg-[#f85149]/10"
-          : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+          ? "text-red-400 hover:bg-red-500/10"
+          : "text-neutral-400 hover:bg-white/5 hover:text-white"
       }`}
     >
       <span
         className={`flex h-7 w-7 items-center justify-center rounded-lg ${
           danger
-            ? "bg-[#f85149]/5 text-[#f85149]"
-            : "bg-[#21262d] text-[#8b949e] group-hover:text-[#58a6ff]"
+            ? "bg-red-500/5 text-red-400"
+            : "bg-white/5 text-neutral-400 group-hover:text-indigo-400"
         }`}
       >
         {icon}
@@ -227,8 +227,8 @@ export default function Navbar() {
         className={({ isActive }) =>
           `relative flex h-9 items-center gap-2 rounded-lg px-3 text-[12px] font-medium transition-all duration-200 ${
             isActive
-              ? "bg-[#1f6feb]/10 text-[#58a6ff]"
-              : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+              ? "bg-indigo-500/10 text-indigo-400"
+              : "text-neutral-400 hover:bg-white/5 hover:text-white"
           }`
         }
       >
@@ -237,8 +237,8 @@ export default function Navbar() {
             <span
               className={
                 isActive
-                  ? "text-[#58a6ff]"
-                  : "text-[#484f58]"
+                  ? "text-indigo-400"
+                  : "text-neutral-600"
               }
             >
               <Icon
@@ -250,7 +250,7 @@ export default function Navbar() {
             <span>{label}</span>
 
             {isActive && (
-              <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-[#58a6ff]" />
+              <span className="absolute bottom-0 left-3 right-3 h-[2px] rounded-full bg-indigo-400" />
             )}
           </>
         )}
@@ -259,7 +259,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className="sticky top-0 z-50 h-16 border-b border-[#30363d] bg-[#161b22]">
+    <nav className="sticky top-0 z-50 h-16 border-b border-white/10 bg-[#111113]">
 
       {/* =====================================================
           SAME CONTAINER WIDTH AS HISTORY PAGE
@@ -278,20 +278,16 @@ export default function Navbar() {
             className="group flex items-center gap-2.5"
           >
 
-            {/* Custom CodeVerity Logo */}
+            {/* CodeVerify Logo */}
 
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] text-[#58a6ff] shadow-[0_0_18px_rgba(88,166,255,0.08)] transition-all duration-200 group-hover:border-[#58a6ff]/40 group-hover:shadow-[0_0_20px_rgba(88,166,255,0.15)]">
-
-              <div className="absolute inset-[3px] rounded-lg border border-[#7c3aed]/20" />
-
-              <div className="absolute inset-0 rounded-xl bg-gradient-to-br from-[#3b82f6]/10 via-transparent to-[#8b5cf6]/10" />
+            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-indigo-500/30 bg-indigo-500/15 text-indigo-400 transition-all duration-200 group-hover:border-indigo-500/50 group-hover:bg-indigo-500/20">
 
               <Icon
                 name="logo"
                 size={19}
               />
 
-              <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-[#161b22] bg-[#00d084]" />
+              <span className="absolute -bottom-1 -right-1 h-2.5 w-2.5 rounded-full border-2 border-[#111113] bg-emerald-400" />
 
             </div>
 
@@ -301,17 +297,17 @@ export default function Navbar() {
 
               <div className="flex items-center text-[15px] font-bold leading-none tracking-tight">
 
-                <span className="text-[#f0f6fc]">
+                <span className="text-white">
                   Code
                 </span>
 
-                <span className="bg-gradient-to-r from-[#58a6ff] to-[#a371f7] bg-clip-text text-transparent">
-                  Verity
+                <span className="text-indigo-400">
+                  Verify
                 </span>
 
               </div>
 
-              <p className="mt-1 text-[8px] font-medium uppercase leading-none tracking-[0.2em] text-[#484f58]">
+              <p className="mt-1 font-mono text-[8px] font-medium uppercase leading-none tracking-[0.2em] text-neutral-600">
                 AI Code Intelligence
               </p>
 
@@ -366,18 +362,18 @@ export default function Navbar() {
                 }
                 className={`flex h-10 items-center gap-2 rounded-lg px-1.5 transition-all ${
                   dropOpen
-                    ? "bg-[#21262d]"
-                    : "hover:bg-[#21262d]"
+                    ? "bg-white/5"
+                    : "hover:bg-white/5"
                 }`}
               >
 
                 {/* Avatar */}
 
-                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-[#3b82f6] to-[#7c3aed] text-[10px] font-bold text-white">
+                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-indigo-500 text-[10px] font-bold text-white">
 
                   {initials}
 
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#161b22] bg-[#00d084]" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#111113] bg-emerald-400" />
 
                 </div>
 
@@ -385,18 +381,18 @@ export default function Navbar() {
 
                 <div className="hidden text-left lg:block">
 
-                  <p className="max-w-[100px] truncate text-[11px] font-semibold leading-3 text-[#f0f6fc]">
+                  <p className="max-w-[100px] truncate text-[11px] font-semibold leading-3 text-white">
                     {userInfo.name || initials}
                   </p>
 
-                  <p className="mt-1 text-[8px] leading-3 text-[#484f58]">
+                  <p className="mt-1 text-[8px] leading-3 text-neutral-600">
                     Developer
                   </p>
 
                 </div>
 
                 <span
-                  className={`ml-1 hidden text-[#484f58] transition-transform sm:block ${
+                  className={`ml-1 hidden text-neutral-600 transition-transform sm:block ${
                     dropOpen
                       ? "rotate-180"
                       : ""
@@ -413,23 +409,23 @@ export default function Navbar() {
               {/* User Dropdown */}
 
               {dropOpen && (
-                <div className="absolute right-0 top-[50px] z-50 w-64 overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/50">
+                <div className="absolute right-0 top-[50px] z-50 w-64 overflow-hidden rounded-xl border border-white/10 bg-[#111113] shadow-2xl shadow-black/50">
 
-                  <div className="border-b border-[#30363d] p-4">
+                  <div className="border-b border-white/10 p-4">
 
                     <div className="flex items-center gap-3">
 
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[#3b82f6] to-[#7c3aed] text-xs font-bold text-white">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-500 text-xs font-bold text-white">
                         {initials}
                       </div>
 
                       <div className="min-w-0">
 
-                        <p className="truncate text-sm font-semibold text-[#f0f6fc]">
+                        <p className="truncate text-sm font-semibold text-white">
                           {userInfo.name || initials}
                         </p>
 
-                        <p className="truncate text-[11px] text-[#484f58]">
+                        <p className="truncate text-[11px] text-neutral-600">
                           {userInfo.email || "Signed in"}
                         </p>
 
@@ -495,7 +491,7 @@ export default function Navbar() {
 
                   </div>
 
-                  <div className="border-t border-[#30363d] py-2">
+                  <div className="border-t border-white/10 py-2">
 
                     <DropdownItem
                       danger
@@ -521,14 +517,14 @@ export default function Navbar() {
 
               <NavLink
                 to="/login"
-                className="rounded-lg border border-[#30363d] bg-[#0d1117] px-3.5 py-2 text-[12px] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc]"
+                className="rounded-lg border border-white/10 bg-black/40 px-3.5 py-2 text-[12px] font-medium text-neutral-400 transition hover:bg-white/5 hover:text-white"
               >
                 Sign in
               </NavLink>
 
               <NavLink
                 to="/register"
-                className="rounded-lg bg-gradient-to-r from-[#2563eb] to-[#7c3aed] px-3.5 py-2 text-[12px] font-semibold text-white transition hover:opacity-90"
+                className="rounded-lg bg-indigo-500 px-3.5 py-2 text-[12px] font-semibold text-white transition hover:bg-indigo-400"
               >
                 Get started
               </NavLink>
@@ -546,7 +542,7 @@ export default function Navbar() {
                 (previous) => !previous
               )
             }
-            className="ml-2 flex h-9 w-9 items-center justify-center rounded-lg border border-[#30363d] bg-[#0d1117] text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] md:hidden"
+            className="ml-2 flex h-9 w-9 items-center justify-center rounded-lg border border-white/10 bg-black/40 text-neutral-400 transition hover:bg-white/5 hover:text-white md:hidden"
           >
             {menuOpen ? "×" : "☰"}
           </button>
@@ -560,7 +556,7 @@ export default function Navbar() {
       ===================================================== */}
 
       {isAuth && menuOpen && (
-        <div className="border-t border-[#30363d] bg-[#161b22] md:hidden">
+        <div className="border-t border-white/10 bg-[#111113] md:hidden">
 
           <div className="mx-auto max-w-7xl space-y-1 px-4 py-3">
 
@@ -569,8 +565,8 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
                   isActive
-                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    ? "bg-indigo-500/10 text-indigo-400"
+                    : "text-neutral-400 hover:bg-white/5"
                 }`
               }
             >
@@ -587,8 +583,8 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
                   isActive
-                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    ? "bg-indigo-500/10 text-indigo-400"
+                    : "text-neutral-400 hover:bg-white/5"
                 }`
               }
             >
@@ -605,8 +601,8 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
                   isActive
-                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    ? "bg-indigo-500/10 text-indigo-400"
+                    : "text-neutral-400 hover:bg-white/5"
                 }`
               }
             >
@@ -623,8 +619,8 @@ export default function Navbar() {
               className={({ isActive }) =>
                 `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
                   isActive
-                    ? "bg-[#1f6feb]/10 text-[#58a6ff]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    ? "bg-indigo-500/10 text-indigo-400"
+                    : "text-neutral-400 hover:bg-white/5"
                 }`
               }
             >
@@ -639,7 +635,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-[#f85149] hover:bg-[#f85149]/10"
+              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10"
             >
               <Icon
                 name="logout"
