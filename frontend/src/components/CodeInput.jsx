@@ -21,65 +21,85 @@ export default function CodeInput({ setResult, model }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-white px-4 py-8 sm:px-6 lg:px-10">
-      <div className="mx-auto max-w-6xl">
+    <div className="min-h-screen bg-[#0a0a0b] text-white px-4 py-8 sm:px-6 lg:px-10 relative overflow-hidden">
+      {/* Signature: same scanline field used across the auth pages, kept consistent app-wide */}
+      <style>{`
+        @keyframes cv-blink {
+          0%, 45% { opacity: 1; }
+          50%, 95% { opacity: 0; }
+          100% { opacity: 1; }
+        }
+        .cv-caret { animation: cv-blink 1.1s steps(1) infinite; }
+        @media (prefers-reduced-motion: reduce) {
+          .cv-caret { animation: none; }
+        }
+      `}</style>
+
+      {/* ambient background: sparse dot grid, single accent color, very low opacity */}
+      <div
+        className="pointer-events-none fixed inset-0 opacity-[0.05]"
+        style={{
+          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
+          backgroundSize: "28px 28px",
+        }}
+      />
+
+      <div className="mx-auto max-w-6xl relative">
 
         {/* ================= HEADER ================= */}
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="mb-3 flex items-center gap-3">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-violet-600 shadow-lg shadow-blue-500/20">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30">
                 <svg
-                  width="21"
-                  height="21"
+                  width="19"
+                  height="19"
                   viewBox="0 0 24 24"
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="2"
-                  className="text-white"
+                  className="text-indigo-400"
                 >
                   <path d="M12 3v18" />
                   <path d="M3 12h18" />
                   <path d="M7 7l5-4 5 4" />
                   <path d="M7 17l5 4 5-4" />
                 </svg>
-              </div>
+              </span>
 
               <div>
-                <p className="text-sm font-medium tracking-wide text-blue-400">
-                  CODEVERITY
+                <p className="font-mono text-sm tracking-[0.2em] text-neutral-400 uppercase">
+                  CodeVerify
                 </p>
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-neutral-600">
                   Intelligent code review
                 </p>
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-              Review your code
-              <span className="ml-2 bg-gradient-to-r from-blue-400 via-violet-400 to-purple-400 bg-clip-text text-transparent">
-                smarter.
-              </span>
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">
+              Review your code, verified.
             </h1>
 
-            <p className="mt-2 max-w-2xl text-sm leading-6 text-gray-400 sm:text-base">
-              Analyze your code with AI and identify bugs, security issues,
-              performance problems, and improvement opportunities.
+            <p className="mt-2 max-w-2xl font-mono text-xs text-neutral-600 sm:text-sm">
+              <span className="text-indigo-400">$</span> analyzing for bugs, security issues,
+              performance and quality
+              <span className="cv-caret text-indigo-400">_</span>
             </p>
           </div>
 
           {/* Model Badge */}
-          <div className="flex w-fit items-center gap-3 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-3">
+          <div className="flex w-fit items-center gap-3 rounded-xl border border-white/10 bg-[#111113] px-4 py-3">
             <div className="relative">
-              <span className="block h-2.5 w-2.5 rounded-full bg-emerald-400" />
-              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-30" />
+              <span className="block h-2.5 w-2.5 rounded-full bg-indigo-400" />
+              <span className="absolute inset-0 animate-ping rounded-full bg-indigo-400 opacity-30" />
             </div>
 
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-gray-500">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
                 AI Model
               </p>
-              <p className="text-sm font-medium text-gray-200">
+              <p className="text-sm font-medium text-neutral-200">
                 {model || "Default Model"}
               </p>
             </div>
@@ -87,160 +107,168 @@ export default function CodeInput({ setResult, model }) {
         </div>
 
         {/* ================= EDITOR CARD ================= */}
-        <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
+        <div className="relative">
+          {/* corner brackets — same scan-frame signature as the auth cards */}
+          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-indigo-500/50 rounded-tl-2xl z-10" />
+          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-indigo-500/50 rounded-tr-2xl z-10" />
+          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-indigo-500/50 rounded-bl-2xl z-10" />
+          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-indigo-500/50 rounded-br-2xl z-10" />
 
-          {/* Editor Header */}
-          <div className="flex items-center justify-between border-b border-[#30363d] bg-[#0d1117] px-4 py-3 sm:px-5">
+          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#111113] shadow-2xl shadow-black/30">
 
-            <div className="flex items-center gap-3">
-              <div className="flex gap-1.5">
-                <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
-                <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
-                <span className="h-3 w-3 rounded-full bg-[#28c840]" />
-              </div>
+            {/* Editor Header */}
+            <div className="flex items-center justify-between border-b border-white/10 bg-[#0a0a0b] px-4 py-3 sm:px-5">
 
-              <div className="hidden h-5 w-px bg-[#30363d] sm:block" />
-
-              <div className="flex items-center gap-2 text-sm text-gray-400">
-                <svg
-                  width="15"
-                  height="15"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                >
-                  <path d="M14.5 17.5 21 12l-6.5-5.5" />
-                  <path d="M9.5 6.5 3 12l6.5 5.5" />
-                </svg>
-
-                <span>code-review</span>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-2 text-xs text-gray-500">
-              <span className="hidden sm:inline">Paste your source</span>
-              <span className="rounded-md border border-[#30363d] bg-[#161b22] px-2 py-1">
-                Editor
-              </span>
-            </div>
-          </div>
-
-          {/* Code Area */}
-          <div className="relative">
-
-            {/* Line Numbers */}
-            <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[#21262d] bg-[#0d1117] pt-5 text-right font-mono text-xs leading-6 text-gray-600 sm:block">
-              {Array.from({ length: 12 }, (_, index) => (
-                <div key={index} className="pr-4">
-                  {index + 1}
+              <div className="flex items-center gap-3">
+                <div className="flex gap-1.5">
+                  <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
+                  <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
+                  <span className="h-3 w-3 rounded-full bg-[#28c840]" />
                 </div>
-              ))}
-            </div>
 
-            <textarea
-              value={code}
-              onChange={(e) => setCode(e.target.value)}
-              placeholder={`// Paste your code here...
+                <div className="hidden h-5 w-px bg-white/10 sm:block" />
 
-function example() {
-  // CodeVerity will analyze your code
-  // for bugs, security, performance & quality.
-}`}
-              spellCheck={false}
-              className="min-h-[420px] w-full resize-none bg-[#0d1117] p-5 font-mono text-sm leading-6 text-gray-200 outline-none placeholder:text-gray-700 sm:pl-[76px]"
-            />
-          </div>
-
-          {/* ================= EDITOR FOOTER ================= */}
-          <div className="flex flex-col gap-4 border-t border-[#30363d] bg-[#0d1117] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-
-            {/* Editor Stats */}
-            <div className="flex items-center gap-5 text-xs text-gray-500">
-              <div className="flex items-center gap-2">
-                <span className="h-2 w-2 rounded-full bg-blue-400" />
-                {code.length} characters
-              </div>
-
-              <div className="hidden sm:block">
-                {code ? code.split("\n").length : 0} lines
-              </div>
-
-              <div className="hidden md:block">
-                AI-powered analysis
-              </div>
-            </div>
-
-            {/* Analyze Button */}
-            <button
-              onClick={runAnalysis}
-              disabled={loading || !code.trim()}
-              className={`
-                group relative flex items-center justify-center gap-2
-                rounded-xl px-6 py-3
-                text-sm font-semibold text-white
-                transition-all duration-200
-                ${
-                  loading || !code.trim()
-                    ? "cursor-not-allowed bg-[#30363d] text-gray-500"
-                    : "bg-gradient-to-r from-blue-600 to-violet-600 shadow-lg shadow-blue-600/20 hover:-translate-y-0.5 hover:from-blue-500 hover:to-violet-500 hover:shadow-blue-500/30"
-                }
-              `}
-            >
-              {loading ? (
-                <>
+                <div className="flex items-center gap-2 font-mono text-sm text-neutral-500">
                   <svg
-                    className="h-4 w-4 animate-spin"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                  >
-                    <circle
-                      cx="12"
-                      cy="12"
-                      r="9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                      className="opacity-30"
-                    />
-
-                    <path
-                      d="M21 12a9 9 0 0 0-9-9"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    />
-                  </svg>
-
-                  Reviewing...
-                </>
-              ) : (
-                <>
-                  <svg
-                    width="17"
-                    height="17"
+                    width="15"
+                    height="15"
                     viewBox="0 0 24 24"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="2"
                   >
-                    <path d="m9 18 6-6-6-6" />
+                    <path d="M14.5 17.5 21 12l-6.5-5.5" />
+                    <path d="M9.5 6.5 3 12l6.5 5.5" />
                   </svg>
 
-                  Analyze Code
+                  <span>code-review</span>
+                </div>
+              </div>
 
-                  <span className="ml-1 text-white/50 transition-transform group-hover:translate-x-0.5">
-                    →
-                  </span>
-                </>
-              )}
-            </button>
+              <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-neutral-600">
+                <span className="hidden sm:inline">Paste your source</span>
+                <span className="rounded-md border border-white/10 bg-[#111113] px-2 py-1 text-neutral-500">
+                  Editor
+                </span>
+              </div>
+            </div>
+
+            {/* Code Area */}
+            <div className="relative">
+
+              {/* Line Numbers */}
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-white/10 bg-[#0a0a0b] pt-5 text-right font-mono text-xs leading-6 text-neutral-700 sm:block">
+                {Array.from({ length: 12 }, (_, index) => (
+                  <div key={index} className="pr-4">
+                    {index + 1}
+                  </div>
+                ))}
+              </div>
+
+              <textarea
+                value={code}
+                onChange={(e) => setCode(e.target.value)}
+                placeholder={`// Paste your code here...
+
+function example() {
+  // CodeVerify will analyze your code
+  // for bugs, security, performance & quality.
+}`}
+                spellCheck={false}
+                className="min-h-[420px] w-full resize-none bg-[#0a0a0b] p-5 font-mono text-sm leading-6 text-neutral-200 outline-none placeholder:text-neutral-700 sm:pl-[76px] focus:bg-black/60 transition-colors"
+              />
+            </div>
+
+            {/* ================= EDITOR FOOTER ================= */}
+            <div className="flex flex-col gap-4 border-t border-white/10 bg-[#0a0a0b] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+
+              {/* Editor Stats */}
+              <div className="flex items-center gap-5 font-mono text-xs text-neutral-600">
+                <div className="flex items-center gap-2">
+                  <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                  {code.length} characters
+                </div>
+
+                <div className="hidden sm:block">
+                  {code ? code.split("\n").length : 0} lines
+                </div>
+
+                <div className="hidden md:block">
+                  AI-powered analysis
+                </div>
+              </div>
+
+              {/* Analyze Button */}
+              <button
+                onClick={runAnalysis}
+                disabled={loading || !code.trim()}
+                className={`
+                  group relative flex items-center justify-center gap-2
+                  rounded-xl px-6 py-3
+                  text-sm font-semibold text-white
+                  transition-colors duration-200
+                  ${
+                    loading || !code.trim()
+                      ? "cursor-not-allowed bg-white/[0.04] text-neutral-600 border border-white/10"
+                      : "bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600"
+                  }
+                `}
+              >
+                {loading ? (
+                  <>
+                    <svg
+                      className="h-4 w-4 animate-spin"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                    >
+                      <circle
+                        cx="12"
+                        cy="12"
+                        r="9"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                        className="opacity-30"
+                      />
+
+                      <path
+                        d="M21 12a9 9 0 0 0-9-9"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      />
+                    </svg>
+
+                    <span className="font-mono text-xs">verifying…</span>
+                  </>
+                ) : (
+                  <>
+                    <svg
+                      width="17"
+                      height="17"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                    >
+                      <path d="m9 18 6-6-6-6" />
+                    </svg>
+
+                    Analyze Code
+
+                    <span className="ml-1 text-white/50 transition-transform group-hover:translate-x-0.5">
+                      →
+                    </span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
         </div>
 
         {/* ================= FEATURE CARDS ================= */}
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
 
-          <div className="rounded-xl border border-[#30363d] bg-[#161b22] p-4 transition-colors hover:border-blue-500/40">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400">
+          <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
+            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
               <svg
                 width="17"
                 height="17"
@@ -254,17 +282,17 @@ function example() {
               </svg>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-200">
+            <h3 className="text-sm font-semibold text-neutral-200">
               Security Analysis
             </h3>
 
-            <p className="mt-1 text-xs leading-5 text-gray-500">
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
               Detect potential vulnerabilities and unsafe patterns.
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#30363d] bg-[#161b22] p-4 transition-colors hover:border-violet-500/40">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-violet-500/10 text-violet-400">
+          <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
+            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
               <svg
                 width="17"
                 height="17"
@@ -277,17 +305,17 @@ function example() {
               </svg>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-200">
+            <h3 className="text-sm font-semibold text-neutral-200">
               Performance
             </h3>
 
-            <p className="mt-1 text-xs leading-5 text-gray-500">
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
               Find inefficient logic and performance bottlenecks.
             </p>
           </div>
 
-          <div className="rounded-xl border border-[#30363d] bg-[#161b22] p-4 transition-colors hover:border-emerald-500/40">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-400">
+          <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
+            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
               <svg
                 width="17"
                 height="17"
@@ -303,11 +331,11 @@ function example() {
               </svg>
             </div>
 
-            <h3 className="text-sm font-semibold text-gray-200">
+            <h3 className="text-sm font-semibold text-neutral-200">
               Code Quality
             </h3>
 
-            <p className="mt-1 text-xs leading-5 text-gray-500">
+            <p className="mt-1 text-xs leading-5 text-neutral-500">
               Get actionable suggestions to make your code cleaner.
             </p>
           </div>
@@ -315,15 +343,13 @@ function example() {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-gray-600">
-          <span>Powered by</span>
-          <span className="font-semibold text-gray-500">CodeVerity AI</span>
-          <span>•</span>
-          <span>Built for developers</span>
+        <div className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] text-neutral-700 tracking-wide">
+          <span>codeverify</span>
+          <span>·</span>
+          <span>repo analysis, verified</span>
         </div>
 
       </div>
     </div>
   );
 }
-
