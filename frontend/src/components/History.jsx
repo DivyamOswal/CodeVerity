@@ -147,7 +147,7 @@ export default function History() {
 
   // ---- Main History View ----
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] pt-16 overflow-x-hidden">
+    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc]  overflow-x-hidden">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
         {/* HEADER */}
         <div className="mb-5">

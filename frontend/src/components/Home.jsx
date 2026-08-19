@@ -2,7 +2,7 @@ import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 
 /* =========================================================
-   PARTICLE FIELD
+   PARTICLE FIELD – green theme
 ========================================================= */
 
 function ParticleField() {
@@ -25,8 +25,8 @@ function ParticleField() {
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       r: Math.random() * 1.2 + 0.3,
-      vx: (Math.random() - 0.5) * 0.25,
-      vy: (Math.random() - 0.5) * 0.25,
+      vx: (Math.random() - 0.5) * 0.35, // slightly faster for more movement
+      vy: (Math.random() - 0.5) * 0.35,
       o: Math.random() * 0.35 + 0.08,
     }));
 
@@ -44,9 +44,7 @@ function ParticleField() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-
-        // Single accent color (indigo) — matches the app's flat-color system
-        ctx.fillStyle = `rgba(99,102,241,${p.o})`;
+        ctx.fillStyle = `rgba(63,185,80,${p.o})`; // green
         ctx.fill();
       });
 
@@ -58,21 +56,9 @@ function ParticleField() {
 
           if (dist < 110) {
             ctx.beginPath();
-
-            ctx.moveTo(
-              particles[i].x,
-              particles[i].y
-            );
-
-            ctx.lineTo(
-              particles[j].x,
-              particles[j].y
-            );
-
-            ctx.strokeStyle = `rgba(99,102,241,${
-              0.08 * (1 - dist / 110)
-            })`;
-
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(63,185,80,${0.08 * (1 - dist / 110)})`;
             ctx.lineWidth = 0.4;
             ctx.stroke();
           }
@@ -90,16 +76,11 @@ function ParticleField() {
     };
   }, []);
 
-  return (
-    <canvas
-      ref={canvasRef}
-      className="fixed inset-0 pointer-events-none z-0"
-    />
-  );
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none z-0" />;
 }
 
 /* =========================================================
-   TYPED WORD
+   TYPED WORD – green gradient
 ========================================================= */
 
 function TypedWord({ words }) {
@@ -123,70 +104,63 @@ function TypedWord({ words }) {
     }
 
     const t = setTimeout(() => {
-      setText(
-        del
-          ? text.slice(0, -1)
-          : word.slice(0, text.length + 1)
-      );
+      setText(del ? text.slice(0, -1) : word.slice(0, text.length + 1));
     }, speed);
 
     return () => clearTimeout(t);
   }, [text, del, index, words]);
 
   return (
-    <span className="text-indigo-400">
+    <span className="bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
       {text}
-      <span className="text-indigo-400 animate-pulse">
-        |
-      </span>
+      <span className="text-green-400 animate-pulse">|</span>
     </span>
   );
 }
 
 /* =========================================================
-   CODEVERIFY LOGO
+   CODEVERITY LOGO – shield design (matches other components)
 ========================================================= */
 
-function CodeVerifyLogo() {
+function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
+      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 animate-float">
+        <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
 
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30">
+        {/* Shield + checkmark */}
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          className="relative text-green-400"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          <path d="m9 12 2 2 4-4" />
+        </svg>
 
-        <div className="relative flex items-center gap-[2px] text-[10px] font-black tracking-tight text-white">
-
-          <span className="text-indigo-400">
-            &lt;
-          </span>
-
-          <span>
-            CV
-          </span>
-
-          <span className="text-indigo-400">
-            /&gt;
-          </span>
-
+        {/* Small code brackets */}
+        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
+          <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
         </div>
 
+        {/* Pulsing status dot */}
+        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-ping" />
       </div>
-
     </div>
   );
 }
 
 /* =========================================================
-   FEATURE CARD
-   Single accent color (indigo) across all cards — no per-card
-   hue variation, in line with the app's single-color theming.
+   FEATURE CARD – green theme, with entrance animation
 ========================================================= */
 
-function Feature({
-  icon,
-  title,
-  desc,
-  delay,
-}) {
+function Feature({ icon, title, desc, delay }) {
   const [hovered, setHovered] = useState(false);
 
   return (
@@ -195,49 +169,42 @@ function Feature({
       onMouseLeave={() => setHovered(false)}
       className="group relative cursor-default overflow-hidden rounded-xl p-5 text-left transition-all duration-300 ease-out"
       style={{
-        background: "#111113",
-        border: `1px solid ${
-          hovered
-            ? "rgba(99,102,241,0.4)"
-            : "rgba(255,255,255,0.1)"
-        }`,
-        transform: hovered
-          ? "translateY(-4px)"
-          : "translateY(0)",
-        boxShadow: hovered
-          ? "0 20px 40px rgba(0,0,0,0.35)"
-          : "none",
+        background: "rgba(22,27,34,0.72)",
+        border: `1px solid ${hovered ? "rgba(63,185,80,0.40)" : "rgba(48,54,61,0.9)"}`,
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: hovered ? "0 20px 40px rgba(63,185,80,0.10)" : "none",
         animation: `fadeUp 0.6s ${delay} ease both`,
       }}
     >
+      {/* Glow */}
+      <div
+        className="absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-500"
+        style={{
+          background: "rgba(63,185,80,0.10)",
+          opacity: hovered ? 0.65 : 0,
+        }}
+      />
 
       {/* Icon */}
-
       <div
-        className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400 transition-transform duration-300"
+        className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-400 transition-transform duration-300"
         style={{
-          transform: hovered
-            ? "scale(1.08)"
-            : "scale(1)",
+          transform: hovered ? "scale(1.08)" : "scale(1)",
         }}
       >
         {icon}
       </div>
 
-      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-white">
+      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[#f0f6fc]">
         {title}
       </h3>
-
-      <p className="text-[11px] leading-relaxed text-neutral-500">
-        {desc}
-      </p>
-
+      <p className="text-[11px] leading-relaxed text-[#8b949e]">{desc}</p>
     </div>
   );
 }
 
 /* =========================================================
-   FEATURE ICONS (line icons, single indigo accent — no emoji)
+   FEATURE ICONS (green themed)
 ========================================================= */
 
 function BugIcon() {
@@ -268,43 +235,43 @@ function FlaskIcon() {
 }
 
 /* =========================================================
-   STAT PILL
+   STAT PILL – green themed with hover scale
 ========================================================= */
 
 function StatPill({ value, label }) {
+  const [hovered, setHovered] = useState(false);
+
   return (
-    <div className="flex min-w-[110px] flex-col items-center rounded-xl border border-white/10 bg-[#111113] px-5 py-3">
-
-      <span className="text-xl font-bold tabular-nums text-white">
-        {value}
-      </span>
-
-      <span className="mt-0.5 font-mono text-[9px] text-neutral-600">
-        {label}
-      </span>
-
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      className="flex min-w-[110px] flex-col items-center rounded-xl border border-[#30363d] bg-[#161b22] px-5 py-3 transition-all duration-300"
+      style={{
+        transform: hovered ? "scale(1.05)" : "scale(1)",
+        borderColor: hovered ? "rgba(63,185,80,0.4)" : "#30363d",
+      }}
+    >
+      <span className="text-xl font-bold tabular-nums text-[#f0f6fc]">{value}</span>
+      <span className="mt-0.5 text-[9px] uppercase tracking-wider text-[#8b949e]">{label}</span>
     </div>
   );
 }
 
 /* =========================================================
-   SCAN LINE
-   Same solid-color sweep + glow used across the auth pages,
-   instead of a linear-gradient streak.
+   SCAN LINE – green sweep
 ========================================================= */
 
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
-
       <div
-        className="absolute left-0 right-0 h-px bg-indigo-300/80"
+        className="absolute left-0 right-0 h-px"
         style={{
-          boxShadow: "0 0 12px 2px rgba(199,210,254,0.7)",
+          background: "linear-gradient(90deg,transparent,rgba(63,185,80,0.65),transparent)",
+          boxShadow: "0 0 12px 2px rgba(63,185,80,0.3)",
           animation: "scanline 3s ease-in-out infinite",
         }}
       />
-
     </div>
   );
 }
@@ -315,47 +282,45 @@ function ScanLine() {
 
 export default function Home() {
   const token = localStorage.getItem("token");
-
   const [show, setShow] = useState(false);
 
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 80);
-
     return () => clearTimeout(t);
   }, []);
 
   return (
-    <div
-      className="relative min-h-screen overflow-hidden bg-[#0a0a0b] px-4 text-white sm:px-6"
-    >
-
+    <div className="relative min-h-screen overflow-hidden bg-[#0d1117] px-4 text-[#f0f6fc] sm:px-6">
       {/* =====================================================
-          BACKGROUND
-          Soft ambient glow via blurred flat circles (no CSS
-          gradients) — single indigo accent, low opacity.
+          BACKGROUND GLOWS (green accents)
       ===================================================== */}
-
       <div
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          background: "rgba(99,102,241,0.10)",
+          background: "rgba(35,134,54,0.10)",
           filter: "blur(110px)",
         }}
       />
-
       <div
         className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full"
         style={{
-          background: "rgba(99,102,241,0.06)",
+          background: "rgba(16,185,129,0.06)",
+          filter: "blur(110px)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute left-0 top-0 h-[400px] w-[400px] rounded-full"
+        style={{
+          background: "rgba(63,185,80,0.04)",
           filter: "blur(110px)",
         }}
       />
 
-      {/* subtle dot grid, matching the rest of the app */}
+      {/* subtle dot grid */}
       <div
-        className="pointer-events-none absolute inset-0 opacity-[0.05]"
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(rgba(63,185,80,0.9) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -365,97 +330,69 @@ export default function Home() {
       {/* =====================================================
           MAIN CONTENT
       ===================================================== */}
-
       <div
         className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center py-16 transition-all duration-700 ease-out ${
-          show
-            ? "translate-y-0 opacity-100"
-            : "translate-y-6 opacity-0"
+          show ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
         }`}
       >
-
         <div className="w-full max-w-5xl text-center">
-
           {/* =================================================
               BRAND
           ================================================= */}
-
           <div
             className="mb-7 flex items-center justify-center gap-3"
-            style={{
-              animation:
-                "fadeDown 0.6s ease both",
-            }}
+            style={{ animation: "fadeDown 0.6s ease both" }}
           >
-
-            <CodeVerifyLogo />
-
+            <CodeVerityLogo />
             <div className="text-left">
-
-              <p className="font-mono text-[12px] font-bold tracking-[0.22em] text-white uppercase">
-                CodeVerify
+              <p className="text-[12px] font-bold tracking-[0.22em] text-[#f0f6fc] uppercase">
+                CodeVerity
               </p>
-
-              <p className="mt-0.5 text-[9px] text-neutral-600">
+              <p className="mt-0.5 text-[9px] text-[#8b949e]">
                 AI-powered repository intelligence
               </p>
-
             </div>
-
           </div>
 
           {/* =================================================
               BADGE
           ================================================= */}
-
           <div
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-white/10 bg-[#111113]/80 px-3.5 py-1.5 text-[10px] font-medium text-neutral-400 backdrop-blur-xl"
-            style={{
-              animation:
-                "fadeDown 0.6s 0.05s ease both",
-            }}
+            className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#30363d] bg-[#161b22]/80 px-3.5 py-1.5 text-[10px] font-medium text-[#8b949e] backdrop-blur-xl animate-pulse-glow"
+            style={{ animation: "fadeDown 0.6s 0.05s ease both" }}
           >
-
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3fb950]" />
             AI-powered GitHub code analysis
-
           </div>
 
           {/* =================================================
-              HEADING
+              HEADING – with animated gradient
           ================================================= */}
-
           <h1
-            className="mb-3 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-[4.4rem]"
+            className="mb-3 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-[4.4rem] animate-gradient-text"
             style={{
-              animation:
-                "fadeUp 0.6s 0.1s ease both",
-              animationFillMode: "both",
+              animation: "fadeUp 0.6s 0.1s ease both, gradientMove 8s ease-in-out infinite alternate",
             }}
           >
-
-            <span className="text-white">
-              Code
+            <span className="text-[#f0f6fc]">Code</span>
+            <span
+              style={{
+                background: "linear-gradient(135deg,#3fb950 0%,#10b981 48%,#2dd4bf 100%)",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundSize: "200% 200%",
+              }}
+            >
+              Verity
             </span>
-
-            <span className="text-indigo-400">
-              Verify
-            </span>
-
           </h1>
 
           {/* =================================================
               TYPED SUBTITLE
           ================================================= */}
-
           <p
             className="mb-5 h-8 text-xl font-medium sm:text-2xl"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.2s ease both",
-              animationFillMode: "both",
-            }}
+            style={{ animation: "fadeUp 0.6s 0.2s ease both" }}
           >
             <TypedWord
               words={[
@@ -470,270 +407,173 @@ export default function Home() {
           {/* =================================================
               DESCRIPTION
           ================================================= */}
-
           <p
-            className="mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-neutral-500 sm:text-[15px]"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.3s ease both",
-              animationFillMode: "both",
-            }}
+            className="mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-[#8b949e] sm:text-[15px]"
+            style={{ animation: "fadeUp 0.6s 0.3s ease both" }}
           >
-            Drop any public GitHub URL and get a complete
-            AI-powered repository audit with architecture
-            analysis, security findings, bug detection,
-            performance insights, and generated tests.
+            Drop any public GitHub URL and get a complete AI-powered repository audit with architecture
+            analysis, security findings, bug detection, performance insights, and generated tests.
           </p>
 
           {/* =================================================
-              CTA
+              CTA BUTTONS
           ================================================= */}
-
           <div
             className="mb-9 flex flex-wrap justify-center gap-3"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.4s ease both",
-              animationFillMode: "both",
-            }}
+            style={{ animation: "fadeUp 0.6s 0.4s ease both" }}
           >
-
             {token ? (
               <Link
                 to="/dashboard"
-                className="relative group overflow-hidden rounded-lg bg-indigo-500 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-400 hover:scale-[1.03] active:scale-95"
+                className="group relative overflow-hidden rounded-lg px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-95"
                 style={{
-                  boxShadow: "0 0 24px rgba(99,102,241,0.25)",
+                  background: "linear-gradient(135deg,#238636,#2ea043)",
+                  boxShadow: "0 0 30px rgba(35,134,54,0.25)",
                 }}
               >
-
                 <ScanLine />
-
-                <span className="relative z-10">
-                  Open Dashboard →
-                </span>
-
+                <span className="relative z-10">Open Dashboard →</span>
               </Link>
             ) : (
               <>
                 <Link
                   to="/login"
-                  className="relative group overflow-hidden rounded-lg bg-indigo-500 px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-400 hover:scale-[1.03] active:scale-95"
+                  className="group relative overflow-hidden rounded-lg px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-95"
                   style={{
-                    boxShadow: "0 0 24px rgba(99,102,241,0.25)",
+                    background: "linear-gradient(135deg,#238636,#2ea043)",
+                    boxShadow: "0 0 30px rgba(35,134,54,0.25)",
                   }}
                 >
-
                   <ScanLine />
-
-                  <span className="relative z-10">
-                    Sign In
-                  </span>
-
+                  <span className="relative z-10">Sign In</span>
                 </Link>
 
                 <Link
                   to="/register"
-                  className="rounded-lg border border-white/10 bg-[#111113]/75 px-7 py-3 text-sm font-semibold text-white/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95"
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = "#18181b";
-                    e.currentTarget.style.borderColor = "rgba(99,102,241,0.4)";
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = "rgba(17,17,19,0.75)";
-                    e.currentTarget.style.borderColor = "rgba(255,255,255,0.1)";
-                  }}
+                  className="rounded-lg border border-[#30363d] bg-[#161b22]/75 px-7 py-3 text-sm font-semibold text-[#f0f6fc]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-green-500/40 hover:bg-[#21262d]"
                 >
                   Get Started Free →
                 </Link>
               </>
             )}
-
           </div>
 
           {/* =================================================
               TRUST LINE
           ================================================= */}
-
           <div
-            className="mb-8 flex items-center justify-center gap-2 font-mono text-[9px] text-neutral-600"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.45s ease both",
-              animationFillMode: "both",
-            }}
+            className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[#484f58]"
+            style={{ animation: "fadeUp 0.6s 0.45s ease both" }}
           >
-
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-
+            <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950]" />
             No credit card required
-
             <span>•</span>
-
             Works with public GitHub repositories
-
           </div>
 
           {/* =================================================
               STATS
           ================================================= */}
-
           <div
             className="mb-12 flex flex-wrap justify-center gap-2.5"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.5s ease both",
-              animationFillMode: "both",
-            }}
+            style={{ animation: "fadeUp 0.6s 0.5s ease both" }}
           >
-
-            <StatPill
-              value="100+"
-              label="REPOS SCANNED"
-            />
-
-            <StatPill
-              value="98%"
-              label="ISSUE ACCURACY"
-            />
-
-            <StatPill
-              value="<60s"
-              label="AVG AUDIT TIME"
-            />
-
+            <StatPill value="100+" label="Repos Scanned" />
+            <StatPill value="98%" label="Issue Accuracy" />
+            <StatPill value="<60s" label="Avg Audit Time" />
           </div>
 
           {/* =================================================
               FEATURE SECTION LABEL
           ================================================= */}
-
           <div
             className="mb-4 flex items-center gap-3"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.52s ease both",
-              animationFillMode: "both",
-            }}
+            style={{ animation: "fadeUp 0.6s 0.52s ease both" }}
           >
-
-            <div className="h-px flex-1 bg-white/10" />
-
-            <span className="font-mono text-[9px] font-medium uppercase tracking-[0.18em] text-neutral-600">
-              What CodeVerify checks
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#30363d]" />
+            <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#484f58]">
+              What CodeVerity checks
             </span>
-
-            <div className="h-px flex-1 bg-white/10" />
-
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#30363d]" />
           </div>
 
           {/* =================================================
               FEATURE CARDS
           ================================================= */}
-
           <div className="grid gap-3 md:grid-cols-3">
-
             <Feature
               icon={<BugIcon />}
               title="AI Bug Detection"
               desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
               delay="0.55s"
             />
-
             <Feature
               icon={<ShieldIcon />}
               title="Security Analysis"
               desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
               delay="0.65s"
             />
-
             <Feature
               icon={<FlaskIcon />}
               title="Smart Test Generation"
               desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
               delay="0.75s"
             />
-
           </div>
 
           {/* =================================================
               FOOTER
           ================================================= */}
-
           <p
-            className="mt-8 font-mono text-[9px] text-neutral-700 tracking-wide"
-            style={{
-              animation:
-                "fadeUp 0.6s 0.85s ease both",
-              animationFillMode: "both",
-            }}
+            className="mt-8 text-[9px] text-[#30363d]"
+            style={{ animation: "fadeUp 0.6s 0.85s ease both" }}
           >
-            codeverify · ai repository intelligence
+            CodeVerity · AI Repository Intelligence
           </p>
-
         </div>
-
       </div>
 
       {/* =====================================================
           ANIMATIONS
       ===================================================== */}
-
       <style>{`
-
         @keyframes fadeUp {
-          from {
-            transform: translateY(18px);
-            opacity: 0;
-          }
-
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
+          from { transform: translateY(18px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
-
         @keyframes fadeDown {
-          from {
-            transform: translateY(-12px);
-            opacity: 0;
-          }
-
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
+          from { transform: translateY(-12px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
-
         @keyframes scanline {
-          0% {
-            top: -2px;
-            opacity: 0;
-          }
-
-          8% {
-            opacity: 1;
-          }
-
-          92% {
-            opacity: 1;
-          }
-
-          100% {
-            top: 100%;
-            opacity: 0;
-          }
+          0% { top: -2px; opacity: 0; }
+          8% { opacity: 1; }
+          92% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
         }
-
-        @media (prefers-reduced-motion: reduce) {
-          .group [style*="scanline"] {
-            animation: none !important;
-            opacity: 0 !important;
-          }
+        @keyframes float {
+          0% { transform: translateY(0px); }
+          50% { transform: translateY(-6px); }
+          100% { transform: translateY(0px); }
         }
-
+        @keyframes pulseGlow {
+          0%, 100% { box-shadow: 0 0 8px rgba(63,185,80,0.1); }
+          50% { box-shadow: 0 0 20px rgba(63,185,80,0.3); }
+        }
+        @keyframes gradientMove {
+          0% { background-position: 0% 50%; }
+          100% { background-position: 100% 50%; }
+        }
+        .animate-float {
+          animation: float 4s ease-in-out infinite;
+        }
+        .animate-pulse-glow {
+          animation: pulseGlow 3s ease-in-out infinite;
+        }
+        .animate-gradient-text {
+          animation: fadeUp 0.6s 0.1s ease both, gradientMove 8s ease-in-out infinite alternate;
+        }
       `}</style>
-
     </div>
   );
 }

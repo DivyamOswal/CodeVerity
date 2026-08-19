@@ -2,7 +2,7 @@ import { useState } from "react";
 import { analyzeCode } from "../api/analyze";
 
 // -----------------------------------------------------------------
-// Reusable mini components (same style as Home)
+// Reusable mini components (same style as Home & other pages)
 // -----------------------------------------------------------------
 
 function CodeVerityLogo() {
@@ -141,84 +141,75 @@ export default function CodeInput({ setResult, model }) {
   };
 
   return (
-    <div className="min-h-screen bg-[#0a0a0b] text-white px-4 py-8 sm:px-6 lg:px-10 relative overflow-hidden">
-      {/* Signature: same scanline field used across the auth pages, kept consistent app-wide */}
-      <style>{`
-        @keyframes cv-blink {
-          0%, 45% { opacity: 1; }
-          50%, 95% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        .cv-caret { animation: cv-blink 1.1s steps(1) infinite; }
-        @media (prefers-reduced-motion: reduce) {
-          .cv-caret { animation: none; }
-        }
-      `}</style>
-
-      {/* ambient background: sparse dot grid, single accent color, very low opacity */}
+    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] px-4 py-8 sm:px-6 lg:px-10 relative overflow-hidden">
+      {/* Ambient background: green dot grid and radial glows */}
       <div
-        className="pointer-events-none fixed inset-0 opacity-[0.05]"
+        className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
+          background:
+            "radial-gradient(ellipse at center, rgba(35,134,54,0.10) 0%, transparent 65%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(16,185,129,0.07) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] rounded-full"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, rgba(63,185,80,0.04) 0%, transparent 70%)",
+        }}
+      />
+      <div
+        className="pointer-events-none absolute inset-0 opacity-[0.04]"
+        style={{
+          backgroundImage: "radial-gradient(rgba(63,185,80,0.9) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
 
-      <div className="mx-auto max-w-6xl relative">
-
+      <div className="mx-auto max-w-6xl relative z-10">
         {/* ================= HEADER ================= */}
         <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <div className="mb-3 flex items-center gap-3">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-indigo-500/15 border border-indigo-500/30">
-                <svg
-                  width="19"
-                  height="19"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  className="text-indigo-400"
-                >
-                  <path d="M12 3v18" />
-                  <path d="M3 12h18" />
-                  <path d="M7 7l5-4 5 4" />
-                  <path d="M7 17l5 4 5-4" />
-                </svg>
-              </span>
-
+              <CodeVerityLogo />
               <div>
-                <p className="font-mono text-sm tracking-[0.2em] text-neutral-400 uppercase">
-                  CodeVerify
+                <p className="text-sm font-bold tracking-wide text-[#f0f6fc]">
+                  CODEVERITY
                 </p>
-                <p className="text-xs text-neutral-600">
-                  Intelligent code review
-                </p>
+                <p className="text-xs text-[#8b949e]">Intelligent code review</p>
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl text-white">
-              Review your code, verified.
+            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+              Review your code
+              <span className="ml-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
+                smarter.
+              </span>
             </h1>
 
-            <p className="mt-2 max-w-2xl font-mono text-xs text-neutral-600 sm:text-sm">
-              <span className="text-indigo-400">$</span> analyzing for bugs, security issues,
-              performance and quality
-              <span className="cv-caret text-indigo-400">_</span>
+            <p className="mt-2 max-w-2xl text-sm leading-6 text-[#8b949e] sm:text-base">
+              Analyze your code with AI and identify bugs, security issues,
+              performance problems, and improvement opportunities.
             </p>
           </div>
 
           {/* Model Badge */}
-          <div className="flex w-fit items-center gap-3 rounded-xl border border-white/10 bg-[#111113] px-4 py-3">
+          <div className="flex w-fit items-center gap-3 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-3">
             <div className="relative">
-              <span className="block h-2.5 w-2.5 rounded-full bg-indigo-400" />
-              <span className="absolute inset-0 animate-ping rounded-full bg-indigo-400 opacity-30" />
+              <span className="block h-2.5 w-2.5 rounded-full bg-emerald-400" />
+              <span className="absolute inset-0 animate-ping rounded-full bg-emerald-400 opacity-30" />
             </div>
             <div>
-              <p className="font-mono text-[10px] uppercase tracking-wider text-neutral-500">
+              <p className="text-[10px] uppercase tracking-wider text-[#8b949e]">
                 AI Model
               </p>
-              <p className="text-sm font-medium text-neutral-200">
+              <p className="text-sm font-medium text-[#f0f6fc]">
                 {model || "Default Model"}
               </p>
             </div>
@@ -227,17 +218,15 @@ export default function CodeInput({ setResult, model }) {
 
         {/* ================= EDITOR CARD ================= */}
         <div className="relative">
-          {/* corner brackets — same scan-frame signature as the auth cards */}
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-indigo-500/50 rounded-tl-2xl z-10" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-indigo-500/50 rounded-tr-2xl z-10" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-indigo-500/50 rounded-bl-2xl z-10" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-indigo-500/50 rounded-br-2xl z-10" />
+          {/* corner brackets */}
+          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-green-500/50 rounded-tl-2xl z-10" />
+          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-green-500/50 rounded-tr-2xl z-10" />
+          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-green-500/50 rounded-bl-2xl z-10" />
+          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-green-500/50 rounded-br-2xl z-10" />
 
-          <div className="overflow-hidden rounded-2xl border border-white/10 bg-[#111113] shadow-2xl shadow-black/30">
-
+          <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
             {/* Editor Header */}
-            <div className="flex items-center justify-between border-b border-white/10 bg-[#0a0a0b] px-4 py-3 sm:px-5">
-
+            <div className="flex items-center justify-between border-b border-[#30363d] bg-[#0d1117] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
@@ -245,9 +234,9 @@ export default function CodeInput({ setResult, model }) {
                   <span className="h-3 w-3 rounded-full bg-[#28c840]" />
                 </div>
 
-                <div className="hidden h-5 w-px bg-white/10 sm:block" />
+                <div className="hidden h-5 w-px bg-[#30363d] sm:block" />
 
-                <div className="flex items-center gap-2 font-mono text-sm text-neutral-500">
+                <div className="flex items-center gap-2 text-sm text-[#8b949e]">
                   <svg
                     width="15"
                     height="15"
@@ -259,14 +248,13 @@ export default function CodeInput({ setResult, model }) {
                     <path d="M14.5 17.5 21 12l-6.5-5.5" />
                     <path d="M9.5 6.5 3 12l6.5 5.5" />
                   </svg>
-
                   <span>code-review</span>
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 font-mono text-[11px] uppercase tracking-wide text-neutral-600">
+              <div className="flex items-center gap-2 text-xs text-[#8b949e]">
                 <span className="hidden sm:inline">Paste your source</span>
-                <span className="rounded-md border border-white/10 bg-[#111113] px-2 py-1 text-neutral-500">
+                <span className="rounded-md border border-[#30363d] bg-[#161b22] px-2 py-1">
                   Editor
                 </span>
               </div>
@@ -274,9 +262,8 @@ export default function CodeInput({ setResult, model }) {
 
             {/* Code Area */}
             <div className="relative">
-
               {/* Line Numbers */}
-              <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-white/10 bg-[#0a0a0b] pt-5 text-right font-mono text-xs leading-6 text-neutral-700 sm:block">
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[#21262d] bg-[#0d1117] pt-5 text-right font-mono text-xs leading-6 text-[#484f58] sm:block">
                 {Array.from({ length: 12 }, (_, index) => (
                   <div key={index} className="pr-4">
                     {index + 1}
@@ -287,24 +274,18 @@ export default function CodeInput({ setResult, model }) {
               <textarea
                 value={code}
                 onChange={(e) => setCode(e.target.value)}
-                placeholder={`// Paste your code here...
-
-function example() {
-  // CodeVerify will analyze your code
-  // for bugs, security, performance & quality.
-}`}
+                placeholder={`// Paste your code here...\n\nfunction example() {\n  // CodeVerity will analyze your code\n  // for bugs, security, performance & quality.\n}`}
                 spellCheck={false}
-                className="min-h-[420px] w-full resize-none bg-[#0a0a0b] p-5 font-mono text-sm leading-6 text-neutral-200 outline-none placeholder:text-neutral-700 sm:pl-[76px] focus:bg-black/60 transition-colors"
+                className="min-h-[420px] w-full resize-none bg-[#0d1117] p-5 font-mono text-sm leading-6 text-[#f0f6fc] outline-none placeholder:text-[#30363d] sm:pl-[76px] focus:ring-1 focus:ring-green-500/30 transition-all"
               />
             </div>
 
             {/* ================= EDITOR FOOTER ================= */}
-            <div className="flex flex-col gap-4 border-t border-white/10 bg-[#0a0a0b] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
-
+            <div className="flex flex-col gap-4 border-t border-[#30363d] bg-[#0d1117] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
               {/* Editor Stats */}
-              <div className="flex items-center gap-5 font-mono text-xs text-neutral-600">
+              <div className="flex items-center gap-5 text-xs text-[#8b949e]">
                 <div className="flex items-center gap-2">
-                  <span className="h-2 w-2 rounded-full bg-indigo-400" />
+                  <span className="h-2 w-2 rounded-full bg-green-400" />
                   {code.length} characters
                 </div>
 
@@ -312,69 +293,66 @@ function example() {
                   {code ? code.split("\n").length : 0} lines
                 </div>
 
-                <div className="hidden md:block">
-                  AI-powered analysis
-                </div>
+                <div className="hidden md:block">AI-powered analysis</div>
               </div>
 
-              {/* Analyze Button */}
+              {/* Analyze Button – green gradient with scanline */}
               <button
                 onClick={runAnalysis}
                 disabled={loading || !code.trim()}
-                className={`
-                  group relative flex items-center justify-center gap-2
-                  rounded-xl px-6 py-3
-                  text-sm font-semibold text-white
-                  transition-colors duration-200
-                  ${
-                    loading || !code.trim()
-                      ? "cursor-not-allowed bg-white/[0.04] text-neutral-600 border border-white/10"
-                      : "bg-indigo-500 hover:bg-indigo-400 active:bg-indigo-600"
-                  }
-                `}
+                className="group relative overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[#30363d] disabled:text-[#484f58] disabled:shadow-none hover:scale-[1.02] active:scale-95"
+                style={
+                  loading || !code.trim()
+                    ? {}
+                    : {
+                        background: "linear-gradient(135deg,#238636,#2ea043)",
+                        boxShadow: "0 0 30px rgba(35,134,54,0.25)",
+                      }
+                }
               >
-                {loading ? (
+                {loading || !code.trim() ? (
                   <>
-                    <svg
-                      className="h-4 w-4 animate-spin"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                    >
-                      <circle
-                        cx="12"
-                        cy="12"
-                        r="9"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                        className="opacity-30"
-                      />
-
-                      <path
-                        d="M21 12a9 9 0 0 0-9-9"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                    </svg>
-
-                    <span className="font-mono text-xs">verifying…</span>
+                    {loading && (
+                      <svg
+                        className="mr-2 h-4 w-4 animate-spin"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                      >
+                        <circle
+                          cx="12"
+                          cy="12"
+                          r="9"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          className="opacity-30"
+                        />
+                        <path
+                          d="M21 12a9 9 0 0 0-9-9"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                        />
+                      </svg>
+                    )}
+                    {loading ? "Reviewing..." : "Analyze Code"}
                   </>
                 ) : (
                   <>
-                    <svg
-                      width="17"
-                      height="17"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2"
-                    >
-                      <path d="m9 18 6-6-6-6" />
-                    </svg>
-
-                    Analyze Code
-
-                    <span className="ml-1 text-white/50 transition-transform group-hover:translate-x-0.5">
-                      →
+                    <ScanLine />
+                    <span className="relative z-10 flex items-center gap-2">
+                      <svg
+                        width="17"
+                        height="17"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="2"
+                      >
+                        <path d="m9 18 6-6-6-6" />
+                      </svg>
+                      Analyze Code
+                      <span className="ml-1 text-white/50 transition-transform group-hover:translate-x-0.5">
+                        →
+                      </span>
                     </span>
                   </>
                 )}
@@ -383,95 +361,38 @@ function example() {
           </div>
         </div>
 
-        {/* --------------------------------------------------------------
-            FEATURE CARDS – same style as Home
-        -------------------------------------------------------------- */}
+        {/* ================= FEATURE CARDS – same as Home ================= */}
         <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
-
-          <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 3 4 7v5c0 5 3.5 8 8 9 4.5-1 8-4 8-9V7l-8-4Z" />
-                <path d="m9 12 2 2 4-4" />
-              </svg>
-            </div>
-
-            <h3 className="text-sm font-semibold text-neutral-200">
-              Security Analysis
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-neutral-500">
-              Detect potential vulnerabilities and unsafe patterns.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M13 2 3 14h9l-1 8 10-12h-9l1-8Z" />
-              </svg>
-            </div>
-
-            <h3 className="text-sm font-semibold text-neutral-200">
-              Performance
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-neutral-500">
-              Find inefficient logic and performance bottlenecks.
-            </p>
-          </div>
-
-          <div className="rounded-xl border border-white/10 bg-[#111113] p-4 transition-colors hover:border-indigo-500/40">
-            <div className="mb-3 flex h-8 w-8 items-center justify-center rounded-lg bg-indigo-500/10 text-indigo-400">
-              <svg
-                width="17"
-                height="17"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-              >
-                <path d="M12 3v18" />
-                <path d="M3 12h18" />
-                <path d="m7 7 5-4 5 4" />
-                <path d="m7 17 5 4 5-4" />
-              </svg>
-            </div>
-
-            <h3 className="text-sm font-semibold text-neutral-200">
-              Code Quality
-            </h3>
-
-            <p className="mt-1 text-xs leading-5 text-neutral-500">
-              Get actionable suggestions to make your code cleaner.
-            </p>
-          </div>
-
+          <Feature
+            icon="🔐"
+            title="Security Analysis"
+            desc="Detect potential vulnerabilities and unsafe patterns."
+            color="green"
+          />
+          <Feature
+            icon="⚡"
+            title="Performance"
+            desc="Find inefficient logic and performance bottlenecks."
+            color="emerald"
+          />
+          <Feature
+            icon="🧹"
+            title="Code Quality"
+            desc="Get actionable suggestions to make your code cleaner."
+            color="teal"
+          />
         </div>
 
         {/* Footer */}
-        <div className="mt-8 flex items-center justify-center gap-2 font-mono text-[11px] text-neutral-700 tracking-wide">
-          <span>codeverify</span>
-          <span>·</span>
-          <span>repo analysis, verified</span>
+        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-[#30363d]">
+          <span>Powered by</span>
+          <span className="font-semibold text-[#484f58]">CodeVerity AI</span>
+          <span>•</span>
+          <span>Built for developers</span>
         </div>
       </div>
 
-      {/* Animation keyframes (same as Home) */}
+      {/* Scanline animation keyframes */}
       <style>{`
         @keyframes scanline {
           0% {
