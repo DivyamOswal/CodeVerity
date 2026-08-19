@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
 import { generateTests } from "../api/github";
 import Result from "./Result";
+import { usePreferences } from "../context/PreferencesContext";
 
 const API = "http://localhost:5000";
 
@@ -33,6 +34,9 @@ export default function History() {
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [filterGrade, setFilterGrade] = useState("all");
+
+  // Get preferences
+  const { compact, showScores } = usePreferences();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -106,7 +110,7 @@ export default function History() {
   // ---- Full Report View ----
   if (selected) {
     return (
-      <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc]  overflow-x-hidden">
+      <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] overflow-x-hidden">
         <div className="sticky top-16 z-50 border-b border-[#30363d] bg-[#0d1117]/80 backdrop-blur">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
             <button
@@ -145,18 +149,24 @@ export default function History() {
     );
   }
 
-  // ---- Main History View ----
+  // ---- Main History View with compact overrides ----
+  const containerPadding = compact ? "py-3" : "py-5";
+  const headerMargin = compact ? "mb-3" : "mb-5";
+  const toolbarPadding = compact ? "p-1.5" : "p-2";
+  const gradeGap = compact ? "gap-1.5" : "gap-2";
+  const reportGridGap = compact ? "gap-2" : "gap-3";
+
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc]  overflow-x-hidden">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] overflow-x-hidden">
+      <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${containerPadding}`}>
         {/* HEADER */}
-        <div className="mb-5">
+        <div className={headerMargin}>
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              <h1 className="text-3xl font-bold tracking-tight text-[#f0f6fc] sm:text-4xl">
+              <h1 className={`text-3xl font-bold tracking-tight text-[#f0f6fc] ${compact ? "sm:text-3xl" : "sm:text-4xl"}`}>
                 Review History
               </h1>
-              <p className="mt-1 max-w-xl text-sm leading-5 text-[#8b949e]">
+              <p className={`mt-1 max-w-xl text-sm leading-5 text-[#8b949e] ${compact ? "text-xs" : ""}`}>
                 Browse, compare and revisit your previous GitHub repository audits.
               </p>
             </div>
@@ -188,7 +198,7 @@ export default function History() {
 
         {/* GRADE SUMMARY */}
         {reports.length > 0 && (
-          <div className="mb-4 grid grid-cols-2 gap-2 sm:grid-cols-5">
+          <div className={`mb-4 grid grid-cols-2 ${gradeGap} sm:grid-cols-5`}>
             {["A", "B", "C", "D", "F"].map((g) => {
               const count = reports.filter((r) => (r.grade ?? "N/A")[0] === g).length;
               const style = gradeStyle(g);
@@ -201,7 +211,7 @@ export default function History() {
                     filterGrade === g
                       ? `${style.border} ${style.background}`
                       : "border-[#30363d] bg-[#161b22] hover:border-[#484f58]"
-                  }`}
+                  } ${compact ? "p-2" : "p-3"}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${style.badge}`}>
@@ -211,7 +221,7 @@ export default function History() {
                       {filterGrade === g ? "Selected" : "Filter"}
                     </span>
                   </div>
-                  <p className="mt-2 text-lg font-semibold text-[#f0f6fc]">{count}</p>
+                  <p className={`mt-2 text-lg font-semibold text-[#f0f6fc] ${compact ? "text-base" : ""}`}>{count}</p>
                   <p className="text-[10px] text-[#484f58]">{label}</p>
                 </button>
               );
@@ -221,7 +231,7 @@ export default function History() {
 
         {/* TOOLBAR */}
         {reports.length > 0 && (
-          <div className="mb-4 rounded-xl border border-[#30363d] bg-[#161b22] p-2">
+          <div className={`mb-4 rounded-xl border border-[#30363d] bg-[#161b22] ${toolbarPadding}`}>
             <div className="flex flex-col gap-2 lg:flex-row">
               <div className="relative flex-1">
                 <svg
@@ -352,7 +362,7 @@ export default function History() {
 
         {/* REPORT GRID */}
         {!loading && filtered.length > 0 && (
-          <div className="grid grid-cols-1 gap-3 md:grid-cols-2 xl:grid-cols-3">
+          <div className={`grid grid-cols-1 ${reportGridGap} md:grid-cols-2 xl:grid-cols-3`}>
             {filtered.map((r) => (
               <ReportCard
                 key={r._id}
@@ -364,6 +374,8 @@ export default function History() {
                   })
                 }
                 onDownload={(e) => downloadPDF(r._id, e)}
+                compact={compact}
+                showScores={showScores}
               />
             ))}
           </div>
@@ -371,7 +383,7 @@ export default function History() {
 
         {/* FOOTER */}
         {!loading && reports.length > 0 && (
-          <div className="mt-6 flex items-center justify-center gap-2 text-[10px] text-[#30363d]">
+          <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] text-[#30363d] ${compact ? "mt-4" : ""}`}>
             <span>CodeVerity</span>
             <span>•</span>
             <span>AI Repository Intelligence</span>
@@ -393,9 +405,9 @@ export default function History() {
 }
 
 // -----------------------------------------------------------------
-// Report Card
+// Report Card – now respects compact and showScores
 // -----------------------------------------------------------------
-function ReportCard({ report: r, onView, onDownload }) {
+function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   const grade = r.grade ?? "N/A";
   const styles = gradeStyle(grade[0]);
 
@@ -418,12 +430,18 @@ function ReportCard({ report: r, onView, onDownload }) {
       })
     : "";
 
+  const cardPadding = compact ? "p-3" : "p-4";
+  const headerPadding = compact ? "p-3" : "p-4";
+  const titleSize = compact ? "text-[11px]" : "text-[13px]";
+  const scoreSize = compact ? "text-xl" : "text-2xl";
+  const gap = compact ? "gap-2" : "gap-2.5";
+
   return (
     <div
       onClick={onView}
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] transition-all duration-200 hover:-translate-y-0.5 hover:border-green-500/40 hover:shadow-2xl hover:shadow-green-500/10"
+      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] transition-all duration-200 hover:-translate-y-0.5 hover:border-green-500/40 hover:shadow-2xl hover:shadow-green-500/10`}
     >
-      <div className="border-b border-[#21262d] p-4">
+      <div className={`border-b border-[#21262d] ${headerPadding}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0d1117] text-[#484f58] transition group-hover:text-green-400">
@@ -433,7 +451,7 @@ function ReportCard({ report: r, onView, onDownload }) {
             </div>
             <div className="min-w-0">
               <p className="mb-0.5 text-[9px] uppercase tracking-wider text-[#484f58]">Repository</p>
-              <h2 className="truncate text-[13px] font-semibold text-[#f0f6fc]">{repoName}</h2>
+              <h2 className={`truncate font-semibold text-[#f0f6fc] ${titleSize}`}>{repoName}</h2>
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -443,15 +461,17 @@ function ReportCard({ report: r, onView, onDownload }) {
             <span className="text-[9px] text-[#484f58]">{date}</span>
           </div>
         </div>
-        <p className="mt-3 line-clamp-2 text-[11px] leading-4.5 text-[#8b949e]">{r.summary || "No summary available"}</p>
+        <p className={`mt-3 line-clamp-2 text-[11px] leading-4.5 text-[#8b949e] ${compact ? "mt-2 text-[10px]" : ""}`}>
+          {r.summary || "No summary available"}
+        </p>
       </div>
 
-      <div className="p-4">
+      <div className={cardPadding}>
         <div className="flex items-center justify-between">
           <div>
             <p className="text-[9px] uppercase tracking-wider text-[#484f58]">Overall Score</p>
             <div className="mt-0.5 flex items-baseline gap-1">
-              <span className={`text-2xl font-bold ${styles.text}`}>{avg}</span>
+              <span className={`font-bold ${scoreSize} ${styles.text}`}>{avg}</span>
               <span className="text-[10px] text-[#484f58]">/ 100</span>
             </div>
           </div>
@@ -476,19 +496,22 @@ function ReportCard({ report: r, onView, onDownload }) {
           </div>
         </div>
 
-        <div className="mt-3.5 space-y-2.5">
-          {[
-            ["Code Quality", r.scores?.codeQuality],
-            ["Security", r.scores?.security],
-            ["Performance", r.scores?.performance],
-            ["Maintainability", r.scores?.maintainability],
-          ].map(([label, val]) => (
-            <ScoreBar key={label} label={label} value={val} />
-          ))}
-        </div>
+        {/* Score Bars – conditionally rendered based on showScores */}
+        {showScores && (
+          <div className={`mt-3.5 space-y-2.5 ${compact ? "mt-2.5 space-y-2" : ""}`}>
+            {[
+              ["Code Quality", r.scores?.codeQuality],
+              ["Security", r.scores?.security],
+              ["Performance", r.scores?.performance],
+              ["Maintainability", r.scores?.maintainability],
+            ].map(([label, val]) => (
+              <ScoreBar key={label} label={label} value={val} compact={compact} />
+            ))}
+          </div>
+        )}
 
         {r.toolsAndPackages?.length > 0 && (
-          <div className="mt-4 border-t border-[#21262d] pt-3">
+          <div className={`mt-4 border-t border-[#21262d] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
             <div className="mb-2 flex items-center justify-between">
               <span className="text-[9px] uppercase tracking-wider text-[#484f58]">Technologies</span>
               <span className="text-[9px] text-[#484f58]">{r.toolsAndPackages.length} detected</span>
@@ -511,7 +534,7 @@ function ReportCard({ report: r, onView, onDownload }) {
           </div>
         )}
 
-        <div className="mt-4 flex items-center justify-between border-t border-[#21262d] pt-3">
+        <div className={`mt-4 flex items-center justify-between border-t border-[#21262d] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
           <span className="flex items-center gap-1.5 text-[9px] text-[#484f58]">
             <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
             Analysis complete
@@ -519,13 +542,13 @@ function ReportCard({ report: r, onView, onDownload }) {
           <div className="flex gap-1.5">
             <button
               onClick={onDownload}
-              className="rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-[9px] font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-[#f0f6fc]"
+              className={`rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-[9px] font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-[#f0f6fc] ${compact ? "px-2 py-1 text-[8px]" : ""}`}
             >
               ↓ PDF
             </button>
             <button
               onClick={onView}
-              className="group relative overflow-hidden rounded-md bg-gradient-to-r from-green-600 to-emerald-600 px-2.5 py-1.5 text-[9px] font-semibold text-white transition hover:scale-105 active:scale-95"
+              className={`group relative overflow-hidden rounded-md bg-gradient-to-r from-green-600 to-emerald-600 px-2.5 py-1.5 text-[9px] font-semibold text-white transition hover:scale-105 active:scale-95 ${compact ? "px-2 py-1 text-[8px]" : ""}`}
             >
               <ScanLine />
               <span className="relative z-10 flex items-center gap-1">
@@ -541,9 +564,9 @@ function ReportCard({ report: r, onView, onDownload }) {
 }
 
 // -----------------------------------------------------------------
-// ScoreBar
+// ScoreBar – now accepts compact prop
 // -----------------------------------------------------------------
-function ScoreBar({ label, value }) {
+function ScoreBar({ label, value, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
   const color =
     val >= 75
@@ -552,15 +575,19 @@ function ScoreBar({ label, value }) {
       ? "from-yellow-400 to-orange-400"
       : "from-red-400 to-rose-500";
 
+  const labelSize = compact ? "text-[8px]" : "text-[9px]";
+  const valueSize = compact ? "text-[8px]" : "text-[9px]";
+  const barHeight = compact ? "h-0.5" : "h-1";
+
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className="text-[9px] text-[#484f58]">{label}</span>
-        <span className="text-[9px] font-medium text-[#8b949e]">
+        <span className={`${labelSize} text-[#484f58]`}>{label}</span>
+        <span className={`${valueSize} font-medium text-[#8b949e]`}>
           {typeof value === "number" ? `${val}%` : "N/A"}
         </span>
       </div>
-      <div className="h-1 overflow-hidden rounded-full bg-[#21262d]">
+      <div className={`overflow-hidden rounded-full bg-[#21262d] ${barHeight}`}>
         <div
           className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-700`}
           style={{ width: `${val}%` }}
@@ -571,7 +598,7 @@ function ScoreBar({ label, value }) {
 }
 
 // -----------------------------------------------------------------
-// Grade Styles
+// Grade Styles (unchanged)
 // -----------------------------------------------------------------
 function gradeStyle(letter) {
   const map = {

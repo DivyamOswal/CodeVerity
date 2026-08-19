@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useMemo } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../App";
+import { usePreferences } from "../context/PreferencesContext";
 
 // -----------------------------------------------------------------
 // Helper functions
@@ -131,13 +132,14 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
 }
 
 // -----------------------------------------------------------------
-// Main Navbar
+// Main Navbar – now supports compact mode
 // -----------------------------------------------------------------
 
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
   const { isAuth, token, logout } = useAuth();
+  const { compact } = usePreferences();
 
   const [dropOpen, setDropOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -167,16 +169,29 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // -----------------------------------------------------------------
-  // Navigation item – green active states
-  // -----------------------------------------------------------------
+  // Compact overrides for navbar
+  const navbarHeight = compact ? "h-14" : "h-16";
+  const logoSize = compact ? "h-8 w-8" : "h-9 w-9";
+  const iconSize = compact ? 16 : 18;
+  const brandTextSize = compact ? "text-[13px]" : "text-[15px]";
+  const brandSubSize = compact ? "text-[7px]" : "text-[8px]";
+  const navItemHeight = compact ? "h-8" : "h-9";
+  const navItemFont = compact ? "text-[11px]" : "text-[12px]";
+  const avatarSize = compact ? "h-7 w-7" : "h-8 w-8";
+  const avatarFont = compact ? "text-[9px]" : "text-[10px]";
+  const userInfoNameSize = compact ? "text-[10px]" : "text-[11px]";
+  const userInfoRoleSize = compact ? "text-[7px]" : "text-[8px]";
+  const buttonPadding = compact ? "px-3 py-1.5 text-[11px]" : "px-3.5 py-2 text-[12px]";
+  const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
+  const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
 
+  // Navigation item with compact overrides
   const NavigationItem = ({ to, label, icon }) => {
     return (
       <NavLink
         to={to}
         className={({ isActive }) =>
-          `relative flex h-9 items-center gap-2 rounded-lg px-3 text-[12px] font-medium transition-all duration-200 ${
+          `relative flex items-center gap-2 rounded-lg px-3 transition-all duration-200 ${navItemHeight} ${navItemFont} font-medium ${
             isActive
               ? "bg-[#238636]/10 text-[#3fb950]"
               : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
@@ -186,7 +201,7 @@ export default function Navbar() {
         {({ isActive }) => (
           <>
             <span className={isActive ? "text-[#3fb950]" : "text-[#484f58]"}>
-              <Icon name={icon} size={14} />
+              <Icon name={icon} size={compact ? 12 : 14} />
             </span>
             <span>{label}</span>
             {isActive && (
@@ -198,33 +213,27 @@ export default function Navbar() {
     );
   };
 
-  // -----------------------------------------------------------------
-  // Render
-  // -----------------------------------------------------------------
-
   return (
-    <nav className="sticky top-0 z-50 h-16 border-b border-[#30363d] bg-[#0d1117]">
-      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+    <nav className={`sticky top-0 z-50 border-b border-[#30363d] bg-[#0d1117] ${navbarHeight}`}>
+      <div className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${compact ? "px-3 sm:px-4" : ""}`}>
         {/* LEFT – Logo */}
         <div className="flex min-w-0 items-center">
           <NavLink to="/" className="group flex items-center gap-2.5">
-            {/* Shield logo – same as CodeVerityLogo component */}
-            <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
+            <div className={`relative flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 ${logoSize}`}>
               <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
-              <Icon name="shield" size={18} className="relative text-green-400" />
+              <Icon name="shield" size={iconSize} className="relative text-green-400" />
               <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-md bg-[#161b22] border border-[#30363d] flex items-center justify-center">
                 <span className="text-[5px] font-bold text-green-400">&lt;/&gt;</span>
               </span>
               <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
             </div>
 
-            {/* Brand text */}
             <div className="hidden sm:block">
-              <div className="flex items-center text-[15px] font-bold leading-none tracking-tight">
+              <div className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}>
                 <span className="text-[#f0f6fc]">Code</span>
                 <span className="text-[#3fb950]">Verity</span>
               </div>
-              <p className="mt-1 text-[8px] font-medium uppercase leading-none tracking-[0.2em] text-[#484f58]">
+              <p className={`mt-1 font-medium uppercase leading-none tracking-[0.2em] text-[#484f58] ${brandSubSize}`}>
                 AI Code Intelligence
               </p>
             </div>
@@ -248,22 +257,20 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setDropOpen((prev) => !prev)}
-                className={`flex h-10 items-center gap-2 rounded-lg px-1.5 transition-all ${
+                className={`flex items-center gap-2 rounded-lg px-1.5 transition-all ${compact ? "h-9" : "h-10"} ${
                   dropOpen ? "bg-[#21262d]" : "hover:bg-[#21262d]"
                 }`}
               >
-                {/* Avatar */}
-                <div className="relative flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 text-[10px] font-bold text-white">
+                <div className={`relative flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 font-bold text-white ${avatarSize} ${avatarFont}`}>
                   {initials}
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0d1117] bg-emerald-400" />
                 </div>
 
-                {/* User info */}
                 <div className="hidden text-left lg:block">
-                  <p className="max-w-[100px] truncate text-[11px] font-semibold leading-3 text-[#f0f6fc]">
+                  <p className={`max-w-[100px] truncate font-semibold leading-3 text-[#f0f6fc] ${userInfoNameSize}`}>
                     {userInfo.name || initials}
                   </p>
-                  <p className="mt-1 text-[8px] leading-3 text-[#484f58]">Developer</p>
+                  <p className={`mt-1 leading-3 text-[#484f58] ${userInfoRoleSize}`}>Developer</p>
                 </div>
 
                 <span
@@ -271,11 +278,10 @@ export default function Navbar() {
                     dropOpen ? "rotate-180" : ""
                   }`}
                 >
-                  <Icon name="chevron" size={12} />
+                  <Icon name="chevron" size={compact ? 10 : 12} />
                 </span>
               </button>
 
-              {/* Dropdown */}
               {dropOpen && (
                 <div className="absolute right-0 top-[50px] z-50 w-64 overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/50">
                   <div className="border-b border-[#30363d] p-4">
@@ -332,24 +338,23 @@ export default function Navbar() {
             <div className="hidden items-center gap-2 sm:flex">
               <NavLink
                 to="/login"
-                className="rounded-lg border border-[#30363d] bg-[#0d1117] px-3.5 py-2 text-[12px] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc]"
+                className={`rounded-lg border border-[#30363d] bg-[#0d1117] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] ${buttonPadding}`}
               >
                 Sign in
               </NavLink>
               <NavLink
                 to="/register"
-                className="rounded-lg bg-gradient-to-r from-[#238636] to-[#2ea043] px-3.5 py-2 text-[12px] font-semibold text-white transition hover:scale-[1.02] active:scale-95 shadow-lg shadow-green-500/20"
+                className={`rounded-lg bg-gradient-to-r from-[#238636] to-[#2ea043] font-semibold text-white transition hover:scale-[1.02] active:scale-95 shadow-lg shadow-green-500/20 ${buttonPadding}`}
               >
                 Get started
               </NavLink>
             </div>
           )}
 
-          {/* Mobile menu toggle */}
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            className="ml-2 flex h-9 w-9 items-center justify-center rounded-lg border border-[#30363d] bg-[#0d1117] text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] md:hidden"
+            className={`ml-2 flex items-center justify-center rounded-lg border border-[#30363d] bg-[#0d1117] text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] md:hidden ${compact ? "h-8 w-8 text-sm" : "h-9 w-9 text-base"}`}
           >
             {menuOpen ? "×" : "☰"}
           </button>
@@ -359,65 +364,65 @@ export default function Navbar() {
       {/* Mobile Navigation */}
       {isAuth && menuOpen && (
         <div className="border-t border-[#30363d] bg-[#161b22] md:hidden">
-          <div className="mx-auto max-w-7xl space-y-1 px-4 py-3">
+          <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
                     : "text-[#8b949e] hover:bg-[#21262d]"
                 }`
               }
             >
-              <Icon name="dashboard" size={16} />
+              <Icon name="dashboard" size={compact ? 14 : 16} />
               Dashboard
             </NavLink>
             <NavLink
               to="/history"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
                     : "text-[#8b949e] hover:bg-[#21262d]"
                 }`
               }
             >
-              <Icon name="history" size={16} />
+              <Icon name="history" size={compact ? 14 : 16} />
               History
             </NavLink>
             <NavLink
               to="/profile"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
                     : "text-[#8b949e] hover:bg-[#21262d]"
                 }`
               }
             >
-              <Icon name="profile" size={16} />
+              <Icon name="profile" size={compact ? 14 : 16} />
               Profile
             </NavLink>
             <NavLink
               to="/settings"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg px-4 py-3 text-sm ${
+                `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
                     : "text-[#8b949e] hover:bg-[#21262d]"
                 }`
               }
             >
-              <Icon name="settings" size={16} />
+              <Icon name="settings" size={compact ? 14 : 16} />
               Settings
             </NavLink>
             <button
               type="button"
               onClick={handleLogout}
-              className="flex w-full items-center gap-3 rounded-lg px-4 py-3 text-left text-sm text-red-400 hover:bg-red-500/10"
+              className={`flex w-full items-center gap-3 rounded-lg text-left text-red-400 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
             >
-              <Icon name="logout" size={16} />
+              <Icon name="logout" size={compact ? 14 : 16} />
               Sign out
             </button>
           </div>

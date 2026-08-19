@@ -3,6 +3,7 @@ import { fetchDashboard } from "../api/dashboard";
 import { analyzeGithub, generateTests } from "../api/github";
 import { useNavigate } from "react-router-dom";
 import Result from "../components/Result";
+import { usePreferences } from "../context/PreferencesContext";
 
 /* =========================================================
    CODEVERITY DASHBOARD
@@ -21,6 +22,9 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
 
   const navigate = useNavigate();
+
+  // Get compact preference
+  const { compact } = usePreferences();
 
   /* =========================================================
      LOAD DASHBOARD
@@ -175,12 +179,69 @@ export default function Dashboard() {
     },
   ];
 
+  // Compact overrides for spacing and sizing
+  const compactClasses = compact
+    ? {
+        container: "pt-14", // slightly smaller than default, but we keep pt-16 for navbar
+        mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
+        headerSpacing: "gap-0.5",
+        heading: "text-lg sm:text-xl",
+        subHeading: "text-[10px]",
+        statsGap: "gap-2",
+        statCardPadding: "p-3",
+        statValue: "text-xl",
+        analyzerPadding: "p-4 sm:p-4",
+        analyzerHeaderGap: "mb-3 gap-2",
+        analyzerIconSize: "h-8 w-8",
+        analyzerTitle: "text-xs sm:text-sm",
+        analyzerDesc: "text-[9px] sm:text-[10px]",
+        inputHeight: "h-10",
+        inputPadding: "pl-7 pr-3",
+        buttonPadding: "px-4 py-2 text-[10px]",
+        featuresGap: "gap-1.5",
+        featuresTag: "px-2 py-1 text-[8px]",
+        recentHeaderPadding: "px-4 py-3",
+        recentTitle: "text-xs",
+        recentSub: "text-[8px]",
+        reportRowPadding: "px-2 py-2",
+        emptyStatePadding: "py-8 px-4",
+        footerMargin: "mt-4",
+        footerText: "text-[7px]",
+      }
+    : {
+        container: "pt-16",
+        mainPadding: "px-4 py-6 sm:px-6 lg:px-8",
+        headerSpacing: "gap-1",
+        heading: "text-xl sm:text-2xl",
+        subHeading: "text-xs",
+        statsGap: "gap-3",
+        statCardPadding: "p-4",
+        statValue: "text-2xl",
+        analyzerPadding: "p-5 sm:p-6",
+        analyzerHeaderGap: "mb-5 gap-3",
+        analyzerIconSize: "h-10 w-10",
+        analyzerTitle: "text-sm sm:text-base",
+        analyzerDesc: "text-[10px] sm:text-xs",
+        inputHeight: "h-12",
+        inputPadding: "pl-8 pr-4",
+        buttonPadding: "px-6 py-3 text-xs",
+        featuresGap: "gap-2",
+        featuresTag: "px-2.5 py-1.5 text-[9px]",
+        recentHeaderPadding: "px-5 py-4",
+        recentTitle: "text-sm",
+        recentSub: "text-[9px]",
+        reportRowPadding: "px-3 py-3",
+        emptyStatePadding: "py-12 px-6",
+        footerMargin: "mt-6",
+        footerText: "text-[8px]",
+      };
+
   /* =========================================================
-     MAIN UI – without duplicate header, pt-16 for navbar
+     MAIN UI – pt-16 for navbar, compact-aware
   ========================================================= */
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] ">
+    <div className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] ${compactClasses.container}`}>
       {/* =====================================================
           RESULT VIEW
       ===================================================== */}
@@ -199,7 +260,7 @@ export default function Dashboard() {
       ===================================================== */}
       {activeView === "home" && (
         <main
-          className={`mx-auto w-full max-w-7xl px-4 py-6 sm:px-6 lg:px-8 ${
+          className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${
             mounted
               ? "translate-y-0 opacity-100"
               : "translate-y-3 opacity-0"
@@ -209,17 +270,17 @@ export default function Dashboard() {
             {/* =================================================
                 WELCOME HEADER
             ================================================= */}
-            <div className="flex flex-col gap-1">
+            <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#6e7681]">
                   System online
                 </span>
               </div>
-              <h2 className="mt-1 text-xl font-bold tracking-tight text-[#f0f6fc] sm:text-2xl">
+              <h2 className={`mt-1 font-bold tracking-tight text-[#f0f6fc] ${compactClasses.heading}`}>
                 Repository Dashboard
               </h2>
-              <p className="text-xs text-[#6e7681]">
+              <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>
                 Analyze your GitHub repositories and get
                 AI-powered engineering insights.
               </p>
@@ -228,9 +289,15 @@ export default function Dashboard() {
             {/* =================================================
                 STATS
             ================================================= */}
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+            <div className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}>
               {stats.map((s) => (
-                <StatCard key={`${s.label}-${statsKey}`} {...s} />
+                <StatCard
+                  key={`${s.label}-${statsKey}`}
+                  {...s}
+                  compact={compact}
+                  statValueClass={compactClasses.statValue}
+                  statPaddingClass={compactClasses.statCardPadding}
+                />
               ))}
             </div>
 
@@ -238,35 +305,32 @@ export default function Dashboard() {
                 ANALYZER
             ================================================= */}
             <div className="relative overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22]">
-              {/* Glows - updated to green */}
               <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-green-500/10 blur-3xl" />
               <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
 
-              <div className="relative p-5 sm:p-6">
-                {/* Header */}
-                <div className="mb-5 flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-green-500/20 bg-green-500/10 text-green-400">
+              <div className={`relative ${compactClasses.analyzerPadding}`}>
+                <div className={`flex items-start ${compactClasses.analyzerHeaderGap}`}>
+                  <div className={`flex shrink-0 items-center justify-center rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 ${compactClasses.analyzerIconSize}`}>
                     ⌁
                   </div>
                   <div>
-                    <h2 className="text-sm font-semibold text-[#f0f6fc] sm:text-base">
+                    <h2 className={`font-semibold text-[#f0f6fc] ${compactClasses.analyzerTitle}`}>
                       Analyze a GitHub repository
                     </h2>
-                    <p className="mt-1 text-[10px] leading-relaxed text-[#6e7681] sm:text-xs">
+                    <p className={`mt-1 leading-relaxed text-[#6e7681] ${compactClasses.analyzerDesc}`}>
                       Paste a public repository URL for a
                       complete AI-powered engineering audit.
                     </p>
                   </div>
                 </div>
 
-                {/* Input */}
                 <div className="flex flex-col gap-2.5 sm:flex-row">
                   <div className="relative min-w-0 flex-1">
                     <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-[#484f58]">
                       $
                     </span>
                     <input
-                      className="h-12 w-full rounded-xl border border-[#30363d] bg-[#0d1117] pl-8 pr-4 text-xs text-[#f0f6fc] outline-none placeholder:text-[#484f58] transition focus:border-green-500/60 focus:ring-1 focus:ring-green-500/20"
+                      className={`w-full rounded-xl border border-[#30363d] bg-[#0d1117] text-[#f0f6fc] outline-none placeholder:text-[#484f58] transition focus:border-green-500/60 focus:ring-1 focus:ring-green-500/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
                       placeholder="https://github.com/username/repository"
                       value={repoUrl}
                       onChange={(e) => {
@@ -281,11 +345,11 @@ export default function Dashboard() {
                   <button
                     onClick={generateReport}
                     disabled={loading}
-                    className={`h-12 shrink-0 rounded-xl px-6 text-xs font-semibold text-white transition-all duration-200 ${
+                    className={`shrink-0 rounded-xl font-semibold text-white transition-all duration-200 ${
                       loading
                         ? "cursor-not-allowed bg-[#21262d] text-[#6e7681]"
                         : "bg-gradient-to-r from-[#238636] to-[#2ea043] shadow-lg shadow-green-500/20 hover:scale-[1.01] hover:shadow-green-500/30 active:scale-95"
-                    }`}
+                    } ${compactClasses.buttonPadding}`}
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
@@ -301,7 +365,6 @@ export default function Dashboard() {
                   </button>
                 </div>
 
-                {/* Error */}
                 {error && (
                   <div className="mt-3 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[10px] text-red-400 animate-[fadeUp_0.2s_ease_both]">
                     <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500/10">
@@ -311,8 +374,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                {/* Features - updated accent to green */}
-                <div className="mt-4 flex flex-wrap gap-2">
+                <div className={`mt-4 flex flex-wrap ${compactClasses.featuresGap}`}>
                   {[
                     { label: "Architecture", icon: "◈" },
                     { label: "Bug detection", icon: "⚡" },
@@ -322,7 +384,7 @@ export default function Dashboard() {
                   ].map((f) => (
                     <span
                       key={f.label}
-                      className="flex items-center gap-1.5 rounded-lg border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-[9px] text-[#6e7681]"
+                      className={`flex items-center gap-1.5 rounded-lg border border-[#30363d] bg-[#0d1117] text-[#6e7681] ${compactClasses.featuresTag}`}
                     >
                       <span className="text-[#3fb950]">{f.icon}</span>
                       {f.label}
@@ -337,26 +399,26 @@ export default function Dashboard() {
             ================================================= */}
             {data.recentReports?.length > 0 && (
               <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22]">
-                <div className="flex items-center justify-between border-b border-[#21262d] px-5 py-4">
+                <div className={`flex items-center justify-between border-b border-[#21262d] ${compactClasses.recentHeaderPadding}`}>
                   <div>
-                    <h2 className="text-sm font-semibold text-[#f0f6fc]">
+                    <h2 className={`font-semibold text-[#f0f6fc] ${compactClasses.recentTitle}`}>
                       Recent reports
                     </h2>
-                    <p className="mt-1 text-[9px] text-[#484f58]">
+                    <p className={`mt-1 text-[#484f58] ${compactClasses.recentSub}`}>
                       Your latest repository analysis results
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span
                       key={statsKey}
-                      className="hidden items-center gap-1.5 text-[9px] text-[#3fb950] sm:flex"
+                      className={`hidden items-center gap-1.5 text-[9px] text-[#3fb950] sm:flex ${compact ? "text-[8px]" : ""}`}
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
                       Live
                     </span>
                     <button
                       onClick={() => navigate("/history")}
-                      className="rounded-lg px-2.5 py-1.5 text-[9px] font-medium text-[#3fb950] transition hover:bg-green-500/10"
+                      className={`rounded-lg px-2.5 py-1.5 text-[9px] font-medium text-[#3fb950] transition hover:bg-green-500/10 ${compact ? "text-[8px] px-2 py-1" : ""}`}
                     >
                       View all →
                     </button>
@@ -373,7 +435,7 @@ export default function Dashboard() {
                         animationFillMode: "both",
                       }}
                     >
-                      <ReportRow report={report} onView={() => openResult(report)} />
+                      <ReportRow report={report} onView={() => openResult(report)} compact={compact} />
                     </div>
                   ))}
                 </div>
@@ -384,14 +446,14 @@ export default function Dashboard() {
                 EMPTY REPORT STATE
             ================================================= */}
             {!data.recentReports?.length && (
-              <div className="rounded-2xl border border-[#30363d] bg-[#161b22] px-6 py-12 text-center">
+              <div className={`rounded-2xl border border-[#30363d] bg-[#161b22] text-center ${compactClasses.emptyStatePadding}`}>
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] text-lg text-[#484f58]">
                   ◈
                 </div>
-                <h3 className="text-sm font-semibold text-[#c9d1d9]">
+                <h3 className={`font-semibold text-[#c9d1d9] ${compact ? "text-xs" : "text-sm"}`}>
                   No reports yet
                 </h3>
-                <p className="mx-auto mt-1.5 max-w-sm text-[10px] leading-relaxed text-[#6e7681]">
+                <p className={`mx-auto mt-1.5 max-w-sm leading-relaxed text-[#6e7681] ${compact ? "text-[9px]" : "text-[10px]"}`}>
                   Enter a public GitHub repository above
                   to generate your first CodeVerity audit.
                 </p>
@@ -401,7 +463,7 @@ export default function Dashboard() {
             {/* =================================================
                 FOOTER
             ================================================= */}
-            <div className="flex items-center justify-center gap-2 py-3 text-[8px] text-[#30363d]">
+            <div className={`flex items-center justify-center gap-2 py-3 text-[#30363d] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
               <span>CodeVerity</span>
               <span>•</span>
               <span>AI Repository Intelligence</span>
@@ -466,10 +528,10 @@ function CodeVerityLogo() {
 }
 
 /* =========================================================
-   STAT CARD – green themed
+   STAT CARD – now accepts compact props
 ========================================================= */
 
-function StatCard({ label, value, sub, icon, color, delay }) {
+function StatCard({ label, value, sub, icon, color, delay, compact, statValueClass, statPaddingClass }) {
   const animated = useCountUp(value, 800);
 
   const colors = {
@@ -494,7 +556,7 @@ function StatCard({ label, value, sub, icon, color, delay }) {
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border ${c.border} bg-[#161b22] p-4 transition-all duration-200 hover:-translate-y-0.5`}
+      className={`relative overflow-hidden rounded-xl border ${c.border} bg-[#161b22] transition-all duration-200 hover:-translate-y-0.5 ${statPaddingClass}`}
       style={{
         animation: "fadeUp 0.45s ease both",
         animationDelay: delay,
@@ -505,15 +567,15 @@ function StatCard({ label, value, sub, icon, color, delay }) {
       />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="text-[9px] font-medium uppercase tracking-[0.12em] text-[#6e7681]">
+          <p className={`font-medium uppercase tracking-[0.12em] text-[#6e7681] ${compact ? "text-[8px]" : "text-[9px]"}`}>
             {label}
           </p>
-          <p className="mt-2 text-2xl font-bold tabular-nums text-[#f0f6fc]">
+          <p className={`mt-2 font-bold tabular-nums text-[#f0f6fc] ${statValueClass}`}>
             {animated}
           </p>
-          <p className="mt-1 text-[9px] text-[#484f58]">{sub}</p>
+          <p className={`mt-1 text-[#484f58] ${compact ? "text-[8px]" : "text-[9px]"}`}>{sub}</p>
         </div>
-        <div className={`flex h-8 w-8 items-center justify-center rounded-lg text-sm ${c.icon}`}>
+        <div className={`flex items-center justify-center rounded-lg text-sm ${c.icon} ${compact ? "h-6 w-6 text-xs" : "h-8 w-8"}`}>
           {icon}
         </div>
       </div>
@@ -522,10 +584,10 @@ function StatCard({ label, value, sub, icon, color, delay }) {
 }
 
 /* =========================================================
-   REPORT ROW – green themed grade colors
+   REPORT ROW – now accepts compact
 ========================================================= */
 
-function ReportRow({ report, onView }) {
+function ReportRow({ report, onView, compact }) {
   const grade = report.grade ?? "N/A";
   const gradeColor =
     {
@@ -578,18 +640,25 @@ function ReportRow({ report, onView }) {
       })
     : "";
 
+  const rowPadding = compact ? "px-2 py-2" : "px-3 py-3";
+  const gradeSize = compact ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]";
+  const repoFontSize = compact ? "text-[10px]" : "text-[11px]";
+  const dateFontSize = compact ? "text-[8px]" : "text-[9px]";
+  const scoreBadgePadding = compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[9px]";
+  const viewButtonPadding = compact ? "px-2 py-1 text-[8px]" : "px-3 py-1.5 text-[9px]";
+
   return (
-    <div className="group flex items-center gap-3 rounded-xl border border-transparent px-3 py-3 transition-all duration-150 hover:border-[#30363d] hover:bg-[#0d1117]">
+    <div className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[#30363d] hover:bg-[#0d1117] ${rowPadding}`}>
       <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border text-[11px] font-bold ${gradeColor.text} ${gradeColor.bg} ${gradeColor.border}`}
+        className={`flex shrink-0 items-center justify-center rounded-lg border font-bold ${gradeColor.text} ${gradeColor.bg} ${gradeColor.border} ${gradeSize}`}
       >
         {grade}
       </span>
       <div className="min-w-0 flex-1">
-        <p className="truncate text-[11px] font-medium text-[#c9d1d9] group-hover:text-[#f0f6fc]">
+        <p className={`truncate font-medium text-[#c9d1d9] group-hover:text-[#f0f6fc] ${repoFontSize}`}>
           {repoName}
         </p>
-        <p className="mt-0.5 text-[9px] text-[#484f58]">
+        <p className={`mt-0.5 text-[#484f58] ${dateFontSize}`}>
           {date} · average score {avg}%
         </p>
       </div>
@@ -611,13 +680,13 @@ function ReportRow({ report, onView }) {
         </div>
       )}
 
-      <div className="hidden rounded-md border border-[#30363d] bg-[#161b22] px-2 py-1 text-[9px] text-[#8b949e] sm:block">
+      <div className={`hidden rounded-md border border-[#30363d] bg-[#161b22] text-[#8b949e] sm:block ${scoreBadgePadding}`}>
         {avg}%
       </div>
 
       <button
         onClick={onView}
-        className="rounded-lg border border-[#30363d] bg-[#161b22] px-3 py-1.5 text-[9px] font-medium text-[#8b949e] transition hover:border-green-500/30 hover:bg-green-500/10 hover:text-[#3fb950]"
+        className={`rounded-lg border border-[#30363d] bg-[#161b22] font-medium text-[#8b949e] transition hover:border-green-500/30 hover:bg-green-500/10 hover:text-[#3fb950] ${viewButtonPadding}`}
       >
         View →
       </button>

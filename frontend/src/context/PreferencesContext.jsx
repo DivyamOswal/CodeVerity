@@ -25,27 +25,31 @@ export function PreferencesProvider({ children }) {
   const [showScores, setShowScores] = useState(() => loadPref(PREF_SCORES, true));
 
   // Apply theme to document root
-  useEffect(() => {
-    const root = document.documentElement;
-    if (theme === "dark") {
+  // src/context/PreferencesContext.jsx — updated
+useEffect(() => {
+  const root = document.documentElement;
+  if (theme === "dark") {
+    root.setAttribute("data-theme", "dark");
+    root.classList.add("dark");
+    root.classList.remove("light");
+  } else if (theme === "light") {
+    root.setAttribute("data-theme", "light");
+    root.classList.add("light");
+    root.classList.remove("dark");
+  } else {
+    // system
+    const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    root.setAttribute("data-theme", systemDark ? "dark" : "light");
+    if (systemDark) {
       root.classList.add("dark");
       root.classList.remove("light");
-    } else if (theme === "light") {
+    } else {
       root.classList.add("light");
       root.classList.remove("dark");
-    } else {
-      // system
-      const systemDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      if (systemDark) {
-        root.classList.add("dark");
-        root.classList.remove("light");
-      } else {
-        root.classList.add("light");
-        root.classList.remove("dark");
-      }
     }
-    localStorage.setItem(PREF_THEME, theme);
-  }, [theme]);
+  }
+  localStorage.setItem(PREF_THEME, theme);
+}, [theme]);
 
   // Save other preferences
   useEffect(() => {

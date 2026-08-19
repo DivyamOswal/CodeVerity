@@ -108,7 +108,6 @@ export default function Settings() {
   };
 
   const saveAppearance = () => {
-    // Preferences are auto-saved via the context, but we show a toast
     showToast("Preferences saved.");
   };
 
@@ -159,24 +158,79 @@ export default function Settings() {
     name.trim() !== (user?.name ?? "") ||
     email.trim() !== (user?.email ?? "");
 
+  // Compact overrides
+  const compactClasses = compact
+    ? {
+        container: "pt-14 px-3 py-4 sm:px-4",
+        headerMargin: "mb-4",
+        heading: "text-xl",
+        subHeading: "text-[10px]",
+        sidebarWidth: "md:w-36",
+        sidebarButton: "px-3 py-2 text-xs",
+        sectionPadding: "p-4",
+        sectionGap: "space-y-3",
+        avatarSize: "w-12 h-12 text-lg",
+        avatarText: "text-sm",
+        userEmail: "text-[10px]",
+        fieldLabel: "text-xs",
+        inputPadding: "px-3 py-2 text-xs",
+        toggleText: "text-xs",
+        toggleDesc: "text-[10px]",
+        saveButton: "px-4 py-1.5 text-xs",
+        dangerRowPadding: "p-3",
+        dangerTitle: "text-xs",
+        dangerDesc: "text-[10px]",
+        dangerButton: "px-3 py-1 text-[10px]",
+        footerMargin: "mt-4",
+        footerText: "text-[7px]",
+        themeButton: "py-2 text-xs",
+        toastSize: "text-xs px-4 py-2",
+      }
+    : {
+        container: "pt-16 px-4 py-6 sm:px-6 lg:px-8",
+        headerMargin: "mb-6",
+        heading: "text-2xl",
+        subHeading: "text-xs",
+        sidebarWidth: "md:w-44",
+        sidebarButton: "px-4 py-2.5 text-sm",
+        sectionPadding: "p-6",
+        sectionGap: "space-y-4",
+        avatarSize: "w-16 h-16 text-2xl",
+        avatarText: "text-sm",
+        userEmail: "text-xs",
+        fieldLabel: "text-sm",
+        inputPadding: "px-4 py-2.5 text-sm",
+        toggleText: "text-sm",
+        toggleDesc: "text-xs",
+        saveButton: "px-5 py-2 text-sm",
+        dangerRowPadding: "p-4",
+        dangerTitle: "text-sm",
+        dangerDesc: "text-xs",
+        dangerButton: "px-4 py-1.5 text-xs",
+        footerMargin: "mt-6",
+        footerText: "text-[9px]",
+        themeButton: "py-2.5 text-sm",
+        toastSize: "text-sm px-5 py-3",
+      };
+
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] px-4 py-6 sm:px-6 lg:px-8 pt-16">
-      <div className="max-w-7xl mx-auto space-y-6">
+    <div className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] ${compactClasses.container}`}>
+      <div className={`max-w-7xl mx-auto ${compact ? "space-y-4" : "space-y-6"}`}>
         {/* HEADER */}
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#f0f6fc]">Settings</h1>
-          <p className="text-xs text-[#6e7681]">Manage your account and preferences</p>
+        <div className={compactClasses.headerMargin}>
+          <h1 className={`font-bold tracking-tight text-[#f0f6fc] ${compactClasses.heading}`}>Settings</h1>
+          <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>Manage your account and preferences</p>
         </div>
 
         {/* LAYOUT */}
-        <div className="flex flex-col md:flex-row gap-6">
+        <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
           {/* SIDEBAR */}
-          <nav className="flex md:flex-col gap-1 md:w-44 shrink-0" aria-label="Settings tabs">
+          <nav className={`flex md:flex-col gap-1 ${compactClasses.sidebarWidth} shrink-0`} aria-label="Settings tabs">
             {TABS.map((t) => (
               <button
                 key={t}
                 onClick={() => setTab(t)}
-                className={`px-4 py-2.5 rounded-xl text-sm font-medium text-left transition-all
+                className={`${compactClasses.sidebarButton} font-medium text-left transition-all rounded-xl
                   ${
                     tab === t
                       ? "bg-[#238636]/20 text-[#3fb950] border border-[#238636]/40"
@@ -192,33 +246,53 @@ export default function Settings() {
           </nav>
 
           {/* PANEL */}
-          <div className="flex-1 space-y-5">
+          <div className={`flex-1 ${compact ? "space-y-4" : "space-y-5"}`}>
             {/* ACCOUNT */}
             {tab === "Account" && (
-              <Section title="Public Profile">
-                <div className="flex items-center gap-4 mb-5">
-                  <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600
-                    flex items-center justify-center text-2xl font-bold text-white">
+              <Section title="Public Profile" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                <div className={`flex items-center ${compact ? "gap-3 mb-3" : "gap-4 mb-5"}`}>
+                  <div className={`rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600
+                    flex items-center justify-center font-bold text-white shadow-lg shadow-green-500/20
+                    ${compactClasses.avatarSize}`}>
                     {initials}
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-[#f0f6fc]">{name || "Your Name"}</p>
-                    <p className="text-xs text-[#6e7681]">{email}</p>
+                    <p className={`font-medium text-[#f0f6fc] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
+                    <p className={`text-[#6e7681] ${compactClasses.userEmail}`}>{email}</p>
                   </div>
                 </div>
 
-                <Field label="Full Name">
-                  <Input value={name} onChange={setName} placeholder="Your full name" />
+                <Field label="Full Name" compact={compact} labelClass={compactClasses.fieldLabel}>
+                  <Input
+                    value={name}
+                    onChange={setName}
+                    placeholder="Your full name"
+                    compact={compact}
+                    padding={compactClasses.inputPadding}
+                  />
                 </Field>
 
-                <Field label="Email Address">
-                  <Input value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
+                <Field label="Email Address" compact={compact} labelClass={compactClasses.fieldLabel}>
+                  <Input
+                    value={email}
+                    onChange={setEmail}
+                    placeholder="you@example.com"
+                    type="email"
+                    compact={compact}
+                    padding={compactClasses.inputPadding}
+                  />
                 </Field>
 
                 <div className="flex items-center justify-between">
                   {profileDirty && <p className="text-xs text-amber-400">Unsaved changes</p>}
                   <div className="ml-auto">
-                    <SaveButton onClick={saveProfile} loading={saving} disabled={!profileDirty} />
+                    <SaveButton
+                      onClick={saveProfile}
+                      loading={saving}
+                      disabled={!profileDirty}
+                      compact={compact}
+                      buttonClass={compactClasses.saveButton}
+                    />
                   </div>
                 </div>
               </Section>
@@ -226,32 +300,38 @@ export default function Settings() {
 
             {/* SECURITY */}
             {tab === "Security" && (
-              <Section title="Change Password">
-                <Field label="Current Password">
+              <Section title="Change Password" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                <Field label="Current Password" compact={compact} labelClass={compactClasses.fieldLabel}>
                   <Input
                     value={oldPass}
                     onChange={setOldPass}
                     type="password"
                     placeholder="••••••••"
                     autoComplete="current-password"
+                    compact={compact}
+                    padding={compactClasses.inputPadding}
                   />
                 </Field>
-                <Field label="New Password">
+                <Field label="New Password" compact={compact} labelClass={compactClasses.fieldLabel}>
                   <Input
                     value={newPass}
                     onChange={setNewPass}
                     type="password"
                     placeholder="••••••••"
                     autoComplete="new-password"
+                    compact={compact}
+                    padding={compactClasses.inputPadding}
                   />
                 </Field>
-                <Field label="Confirm New Password">
+                <Field label="Confirm New Password" compact={compact} labelClass={compactClasses.fieldLabel}>
                   <Input
                     value={confPass}
                     onChange={setConfPass}
                     type="password"
                     placeholder="••••••••"
                     autoComplete="new-password"
+                    compact={compact}
+                    padding={compactClasses.inputPadding}
                   />
                   {newPass && confPass && newPass !== confPass && (
                     <p className="text-red-400 text-xs mt-1" role="alert">
@@ -260,7 +340,7 @@ export default function Settings() {
                   )}
                 </Field>
 
-                <PasswordStrength password={newPass} />
+                <PasswordStrength password={newPass} compact={compact} />
 
                 <div className="flex justify-end">
                   <SaveButton
@@ -268,21 +348,23 @@ export default function Settings() {
                     loading={saving}
                     label="Update Password"
                     disabled={!oldPass || !newPass || !confPass}
+                    compact={compact}
+                    buttonClass={compactClasses.saveButton}
                   />
                 </div>
               </Section>
             )}
 
-            {/* APPEARANCE – USING THE CONTEXT */}
+            {/* APPEARANCE */}
             {tab === "Appearance" && (
-              <Section title="Display Preferences">
-                <Field label="Theme">
+              <Section title="Display Preferences" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                <Field label="Theme" compact={compact} labelClass={compactClasses.fieldLabel}>
                   <div className="flex gap-3">
                     {["dark", "light", "system"].map((t) => (
                       <button
                         key={t}
                         onClick={() => setTheme(t)}
-                        className={`flex-1 py-2.5 rounded-xl text-sm capitalize border transition
+                        className={`flex-1 ${compactClasses.themeButton} capitalize border rounded-xl transition
                           ${
                             theme === t
                               ? "bg-[#238636]/20 border-[#238636]/40 text-[#3fb950]"
@@ -300,29 +382,46 @@ export default function Settings() {
                   description="Show report cards in a condensed layout"
                   value={compact}
                   onChange={setCompact}
+                  compact={compact}
+                  textClass={compactClasses.toggleText}
+                  descClass={compactClasses.toggleDesc}
                 />
                 <Toggle
                   label="Show Score Bars"
                   description="Display score progress bars on report cards"
                   value={showScores}
                   onChange={setShowScores}
+                  compact={compact}
+                  textClass={compactClasses.toggleText}
+                  descClass={compactClasses.toggleDesc}
                 />
 
                 <div className="flex justify-end">
-                  <SaveButton onClick={saveAppearance} loading={false} label="Save Preferences" />
+                  <SaveButton
+                    onClick={saveAppearance}
+                    loading={false}
+                    label="Save Preferences"
+                    compact={compact}
+                    buttonClass={compactClasses.saveButton}
+                  />
                 </div>
               </Section>
             )}
 
             {/* DANGER ZONE */}
             {tab === "Danger Zone" && (
-              <Section title="Danger Zone" danger>
-                <div className="space-y-4">
+              <Section title="Danger Zone" danger compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                <div className={`space-y-4 ${compact ? "space-y-3" : ""}`}>
                   <DangerRow
                     title="Clear Report History"
                     description="Permanently delete all your past analysis reports."
                     label="Clear History"
                     onClick={clearHistory}
+                    compact={compact}
+                    padding={compactClasses.dangerRowPadding}
+                    titleClass={compactClasses.dangerTitle}
+                    descClass={compactClasses.dangerDesc}
+                    buttonClass={compactClasses.dangerButton}
                   />
                   <DangerRow
                     title="Delete Account"
@@ -330,6 +429,11 @@ export default function Settings() {
                     label="Delete Account"
                     onClick={deleteAccount}
                     bold
+                    compact={compact}
+                    padding={compactClasses.dangerRowPadding}
+                    titleClass={compactClasses.dangerTitle}
+                    descClass={compactClasses.dangerDesc}
+                    buttonClass={compactClasses.dangerButton}
                   />
                 </div>
               </Section>
@@ -338,7 +442,7 @@ export default function Settings() {
         </div>
 
         {/* FOOTER */}
-        <div className="flex items-center justify-center gap-2 py-3 text-[9px] text-[#30363d]">
+        <div className={`flex items-center justify-center gap-2 py-3 text-[#30363d] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
           <span>CodeVerity</span>
           <span>•</span>
           <span>AI Repository Intelligence</span>
@@ -350,8 +454,9 @@ export default function Settings() {
         <div
           role="alert"
           aria-live="polite"
-          className={`fixed bottom-6 right-6 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium
+          className={`fixed bottom-6 right-6 rounded-xl shadow-2xl font-medium
             transition-all duration-300 z-50
+            ${compactClasses.toastSize}
             ${
               toast.type === "error"
                 ? "bg-red-500/90 text-white border border-red-400/30"
@@ -365,15 +470,15 @@ export default function Settings() {
   );
 }
 
-/*  UI helpers  */
+/*  UI helpers – now accept compact  */
 
-function Section({ title, children, danger }) {
+function Section({ title, children, danger, compact, padding, gap }) {
   return (
     <div
-      className={`bg-[#161b22] border rounded-2xl p-6 space-y-4
+      className={`bg-[#161b22] border rounded-2xl ${padding} ${gap}
       ${danger ? "border-red-500/20" : "border-[#30363d]"}`}
     >
-      <h2 className={`text-base font-semibold ${danger ? "text-red-400" : "text-[#f0f6fc]"}`}>
+      <h2 className={`font-semibold ${danger ? "text-red-400" : "text-[#f0f6fc]"} ${compact ? "text-sm" : "text-base"}`}>
         {title}
       </h2>
       {children}
@@ -381,16 +486,16 @@ function Section({ title, children, danger }) {
   );
 }
 
-function Field({ label, children }) {
+function Field({ label, children, compact, labelClass }) {
   return (
-    <div className="space-y-1.5">
-      <label className="text-sm text-[#8b949e]">{label}</label>
+    <div className={`space-y-1.5 ${compact ? "space-y-1" : ""}`}>
+      <label className={`text-[#8b949e] ${labelClass}`}>{label}</label>
       {children}
     </div>
   );
 }
 
-function Input({ value, onChange, type = "text", placeholder, autoComplete }) {
+function Input({ value, onChange, type = "text", placeholder, autoComplete, compact, padding }) {
   return (
     <input
       type={type}
@@ -398,18 +503,18 @@ function Input({ value, onChange, type = "text", placeholder, autoComplete }) {
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       autoComplete={autoComplete}
-      className="w-full px-4 py-2.5 rounded-xl bg-[#0d1117] border border-[#30363d] text-sm text-[#f0f6fc]
-        placeholder-[#484f58] focus:outline-none focus:ring-2 focus:ring-[#238636]/50 transition"
+      className={`w-full rounded-xl bg-[#0d1117] border border-[#30363d] text-[#f0f6fc]
+        placeholder-[#484f58] focus:outline-none focus:ring-2 focus:ring-[#238636]/50 transition ${padding}`}
     />
   );
 }
 
-function Toggle({ label, description, value, onChange }) {
+function Toggle({ label, description, value, onChange, compact, textClass, descClass }) {
   return (
-    <div className="flex items-center justify-between gap-4">
+    <div className={`flex items-center justify-between gap-4 ${compact ? "gap-3" : ""}`}>
       <div>
-        <p className="text-sm font-medium text-[#f0f6fc]">{label}</p>
-        <p className="text-xs text-[#6e7681] mt-0.5">{description}</p>
+        <p className={`font-medium text-[#f0f6fc] ${textClass}`}>{label}</p>
+        <p className={`text-[#6e7681] mt-0.5 ${descClass}`}>{description}</p>
       </div>
       <button
         role="switch"
@@ -427,16 +532,16 @@ function Toggle({ label, description, value, onChange }) {
   );
 }
 
-function SaveButton({ onClick, loading, label = "Save Changes", disabled = false }) {
+function SaveButton({ onClick, loading, label = "Save Changes", disabled = false, compact, buttonClass }) {
   return (
     <button
       onClick={onClick}
       disabled={loading || disabled}
-      className="px-5 py-2 rounded-xl text-sm font-semibold
+      className={`rounded-xl font-semibold
         bg-gradient-to-r from-[#238636] to-[#2ea043]
         hover:from-[#2ea043] hover:to-[#3fb950]
         disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105
-        text-white shadow-lg shadow-green-500/20"
+        text-white shadow-lg shadow-green-500/20 ${buttonClass}`}
     >
       {loading ? (
         <span className="flex items-center gap-2">
@@ -450,19 +555,19 @@ function SaveButton({ onClick, loading, label = "Save Changes", disabled = false
   );
 }
 
-function DangerRow({ title, description, label, onClick, bold }) {
+function DangerRow({ title, description, label, onClick, bold, compact, padding, titleClass, descClass, buttonClass }) {
   return (
-    <div className="flex items-center justify-between gap-4 p-4 rounded-xl bg-red-500/5 border border-red-500/10">
+    <div className={`flex items-center justify-between gap-4 rounded-xl bg-red-500/5 border border-red-500/10 ${padding}`}>
       <div>
-        <p className={`text-sm ${bold ? "font-semibold text-red-300" : "text-[#c9d1d9]"}`}>
+        <p className={`${bold ? "font-semibold text-red-300" : "text-[#c9d1d9]"} ${titleClass}`}>
           {title}
         </p>
-        <p className="text-xs text-[#6e7681] mt-0.5">{description}</p>
+        <p className={`text-[#6e7681] mt-0.5 ${descClass}`}>{description}</p>
       </div>
       <button
         onClick={onClick}
-        className="shrink-0 px-4 py-1.5 rounded-lg text-xs font-medium
-          bg-red-500/20 text-red-400 hover:bg-red-500/40 transition"
+        className={`shrink-0 rounded-lg font-medium
+          bg-red-500/20 text-red-400 hover:bg-red-500/40 transition ${buttonClass}`}
       >
         {label}
       </button>
@@ -470,7 +575,7 @@ function DangerRow({ title, description, label, onClick, bold }) {
   );
 }
 
-function PasswordStrength({ password }) {
+function PasswordStrength({ password, compact }) {
   if (!password) return null;
 
   const checks = {
@@ -485,19 +590,23 @@ function PasswordStrength({ password }) {
   const colors = ["", "bg-red-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
   const textColors = ["", "text-red-400", "text-yellow-400", "text-blue-400", "text-green-400"];
 
+  const barHeight = compact ? "h-1" : "h-1.5";
+  const labelSize = compact ? "text-[10px]" : "text-xs";
+  const chipSize = compact ? "text-[9px] px-1.5 py-0.5" : "text-xs px-2 py-0.5";
+
   return (
     <div className="space-y-2">
       <div className="flex gap-1">
         {[1, 2, 3, 4].map((i) => (
           <div
             key={i}
-            className={`flex-1 h-1.5 rounded-full transition-all duration-300 ${
+            className={`flex-1 ${barHeight} rounded-full transition-all duration-300 ${
               i <= score ? colors[score] : "bg-[#30363d]"
             }`}
           />
         ))}
       </div>
-      <p className={`text-xs ${textColors[score]}`}>{labels[score]} password</p>
+      <p className={`${textColors[score]} ${labelSize}`}>{labels[score]} password</p>
       <div className="flex flex-wrap gap-2 mt-1">
         {[
           { key: "length", label: "8+ chars" },
@@ -507,7 +616,7 @@ function PasswordStrength({ password }) {
         ].map(({ key, label }) => (
           <span
             key={key}
-            className={`text-xs px-2 py-0.5 rounded-full ${
+            className={`${chipSize} rounded-full ${
               checks[key]
                 ? "bg-green-500/20 text-green-400"
                 : "bg-[#30363d] text-[#484f58]"

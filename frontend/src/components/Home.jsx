@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
+import { usePreferences } from "../context/PreferencesContext";
 
 /* =========================================================
    PARTICLE FIELD – green theme
@@ -25,7 +26,7 @@ function ParticleField() {
       x: Math.random() * window.innerWidth,
       y: Math.random() * window.innerHeight,
       r: Math.random() * 1.2 + 0.3,
-      vx: (Math.random() - 0.5) * 0.35, // slightly faster for more movement
+      vx: (Math.random() - 0.5) * 0.35,
       vy: (Math.random() - 0.5) * 0.35,
       o: Math.random() * 0.35 + 0.08,
     }));
@@ -44,7 +45,7 @@ function ParticleField() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(63,185,80,${p.o})`; // green
+        ctx.fillStyle = `rgba(63,185,80,${p.o})`;
         ctx.fill();
       });
 
@@ -119,7 +120,7 @@ function TypedWord({ words }) {
 }
 
 /* =========================================================
-   CODEVERITY LOGO – shield design (matches other components)
+   CODEVERITY LOGO – shield design
 ========================================================= */
 
 function CodeVerityLogo() {
@@ -127,8 +128,6 @@ function CodeVerityLogo() {
     <div className="flex items-center justify-center">
       <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 animate-float">
         <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
-
-        {/* Shield + checkmark */}
         <svg
           width="20"
           height="20"
@@ -143,13 +142,9 @@ function CodeVerityLogo() {
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
-
-        {/* Small code brackets */}
         <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
           <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
         </div>
-
-        {/* Pulsing status dot */}
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-ping" />
       </div>
     </div>
@@ -176,7 +171,6 @@ function Feature({ icon, title, desc, delay }) {
         animation: `fadeUp 0.6s ${delay} ease both`,
       }}
     >
-      {/* Glow */}
       <div
         className="absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-500"
         style={{
@@ -184,8 +178,6 @@ function Feature({ icon, title, desc, delay }) {
           opacity: hovered ? 0.65 : 0,
         }}
       />
-
-      {/* Icon */}
       <div
         className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-400 transition-transform duration-300"
         style={{
@@ -194,7 +186,6 @@ function Feature({ icon, title, desc, delay }) {
       >
         {icon}
       </div>
-
       <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[#f0f6fc]">
         {title}
       </h3>
@@ -204,7 +195,7 @@ function Feature({ icon, title, desc, delay }) {
 }
 
 /* =========================================================
-   FEATURE ICONS (green themed)
+   FEATURE ICONS
 ========================================================= */
 
 function BugIcon() {
@@ -277,23 +268,55 @@ function ScanLine() {
 }
 
 /* =========================================================
-   HOME
+   HOME – now supports compact preference
 ========================================================= */
 
 export default function Home() {
   const token = localStorage.getItem("token");
   const [show, setShow] = useState(false);
+  const { compact } = usePreferences();
 
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 80);
     return () => clearTimeout(t);
   }, []);
 
+  // Compact overrides for the landing page (keep it visually balanced)
+  const compactClasses = compact
+    ? {
+        container: "py-8",
+        heading: "text-4xl sm:text-5xl md:text-[3.8rem]",
+        subheading: "text-lg sm:text-xl",
+        description: "text-xs sm:text-sm",
+        brandMargin: "mb-5",
+        badgeMargin: "mb-4",
+        ctaMargin: "mb-6",
+        statsMargin: "mb-8",
+        featureGap: "gap-2",
+        footerMargin: "mt-6",
+        statPill: "px-4 py-2 min-w-[90px]",
+        statValue: "text-lg",
+        statLabel: "text-[8px]",
+      }
+    : {
+        container: "py-16",
+        heading: "text-5xl sm:text-6xl md:text-[4.4rem]",
+        subheading: "text-xl sm:text-2xl",
+        description: "text-sm sm:text-[15px]",
+        brandMargin: "mb-7",
+        badgeMargin: "mb-6",
+        ctaMargin: "mb-9",
+        statsMargin: "mb-12",
+        featureGap: "gap-3",
+        footerMargin: "mt-8",
+        statPill: "px-5 py-3 min-w-[110px]",
+        statValue: "text-xl",
+        statLabel: "text-[9px]",
+      };
+
   return (
     <div className="relative min-h-screen overflow-hidden bg-[#0d1117] px-4 text-[#f0f6fc] sm:px-6">
-      {/* =====================================================
-          BACKGROUND GLOWS (green accents)
-      ===================================================== */}
+      {/* Background glows and dot grid – unchanged */}
       <div
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
@@ -315,8 +338,6 @@ export default function Home() {
           filter: "blur(110px)",
         }}
       />
-
-      {/* subtle dot grid */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
@@ -327,20 +348,16 @@ export default function Home() {
 
       <ParticleField />
 
-      {/* =====================================================
-          MAIN CONTENT
-      ===================================================== */}
+      {/* MAIN CONTENT */}
       <div
-        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center py-16 transition-all duration-700 ease-out ${
+        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container} transition-all duration-700 ease-out ${
           show ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
         }`}
       >
         <div className="w-full max-w-5xl text-center">
-          {/* =================================================
-              BRAND
-          ================================================= */}
+          {/* BRAND */}
           <div
-            className="mb-7 flex items-center justify-center gap-3"
+            className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}
             style={{ animation: "fadeDown 0.6s ease both" }}
           >
             <CodeVerityLogo />
@@ -354,22 +371,18 @@ export default function Home() {
             </div>
           </div>
 
-          {/* =================================================
-              BADGE
-          ================================================= */}
+          {/* BADGE */}
           <div
-            className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#30363d] bg-[#161b22]/80 px-3.5 py-1.5 text-[10px] font-medium text-[#8b949e] backdrop-blur-xl animate-pulse-glow"
+            className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[#30363d] bg-[#161b22]/80 px-3.5 py-1.5 text-[10px] font-medium text-[#8b949e] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
             style={{ animation: "fadeDown 0.6s 0.05s ease both" }}
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3fb950]" />
             AI-powered GitHub code analysis
           </div>
 
-          {/* =================================================
-              HEADING – with animated gradient
-          ================================================= */}
+          {/* HEADING */}
           <h1
-            className="mb-3 text-5xl font-extrabold leading-[1.05] tracking-tight sm:text-6xl md:text-[4.4rem] animate-gradient-text"
+            className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading} animate-gradient-text`}
             style={{
               animation: "fadeUp 0.6s 0.1s ease both, gradientMove 8s ease-in-out infinite alternate",
             }}
@@ -387,11 +400,9 @@ export default function Home() {
             </span>
           </h1>
 
-          {/* =================================================
-              TYPED SUBTITLE
-          ================================================= */}
+          {/* TYPED SUBTITLE */}
           <p
-            className="mb-5 h-8 text-xl font-medium sm:text-2xl"
+            className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
             style={{ animation: "fadeUp 0.6s 0.2s ease both" }}
           >
             <TypedWord
@@ -404,22 +415,18 @@ export default function Home() {
             />
           </p>
 
-          {/* =================================================
-              DESCRIPTION
-          ================================================= */}
+          {/* DESCRIPTION */}
           <p
-            className="mx-auto mb-8 max-w-2xl text-sm leading-relaxed text-[#8b949e] sm:text-[15px]"
+            className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[#8b949e] ${compactClasses.description}`}
             style={{ animation: "fadeUp 0.6s 0.3s ease both" }}
           >
             Drop any public GitHub URL and get a complete AI-powered repository audit with architecture
             analysis, security findings, bug detection, performance insights, and generated tests.
           </p>
 
-          {/* =================================================
-              CTA BUTTONS
-          ================================================= */}
+          {/* CTA BUTTONS */}
           <div
-            className="mb-9 flex flex-wrap justify-center gap-3"
+            className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
             style={{ animation: "fadeUp 0.6s 0.4s ease both" }}
           >
             {token ? (
@@ -447,7 +454,6 @@ export default function Home() {
                   <ScanLine />
                   <span className="relative z-10">Sign In</span>
                 </Link>
-
                 <Link
                   to="/register"
                   className="rounded-lg border border-[#30363d] bg-[#161b22]/75 px-7 py-3 text-sm font-semibold text-[#f0f6fc]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-green-500/40 hover:bg-[#21262d]"
@@ -458,9 +464,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* =================================================
-              TRUST LINE
-          ================================================= */}
+          {/* TRUST LINE */}
           <div
             className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[#484f58]"
             style={{ animation: "fadeUp 0.6s 0.45s ease both" }}
@@ -471,11 +475,9 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
-          {/* =================================================
-              STATS
-          ================================================= */}
+          {/* STATS */}
           <div
-            className="mb-12 flex flex-wrap justify-center gap-2.5"
+            className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
             style={{ animation: "fadeUp 0.6s 0.5s ease both" }}
           >
             <StatPill value="100+" label="Repos Scanned" />
@@ -483,9 +485,7 @@ export default function Home() {
             <StatPill value="<60s" label="Avg Audit Time" />
           </div>
 
-          {/* =================================================
-              FEATURE SECTION LABEL
-          ================================================= */}
+          {/* FEATURE SECTION LABEL */}
           <div
             className="mb-4 flex items-center gap-3"
             style={{ animation: "fadeUp 0.6s 0.52s ease both" }}
@@ -497,10 +497,8 @@ export default function Home() {
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#30363d]" />
           </div>
 
-          {/* =================================================
-              FEATURE CARDS
-          ================================================= */}
-          <div className="grid gap-3 md:grid-cols-3">
+          {/* FEATURE CARDS */}
+          <div className={`grid ${compactClasses.featureGap} md:grid-cols-3`}>
             <Feature
               icon={<BugIcon />}
               title="AI Bug Detection"
@@ -521,11 +519,9 @@ export default function Home() {
             />
           </div>
 
-          {/* =================================================
-              FOOTER
-          ================================================= */}
+          {/* FOOTER */}
           <p
-            className="mt-8 text-[9px] text-[#30363d]"
+            className={`text-[9px] text-[#30363d] ${compactClasses.footerMargin}`}
             style={{ animation: "fadeUp 0.6s 0.85s ease both" }}
           >
             CodeVerity · AI Repository Intelligence
@@ -533,9 +529,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* =====================================================
-          ANIMATIONS
-      ===================================================== */}
+      {/* ANIMATIONS */}
       <style>{`
         @keyframes fadeUp {
           from { transform: translateY(18px); opacity: 0; }
