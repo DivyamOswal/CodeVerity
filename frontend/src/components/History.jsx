@@ -35,7 +35,6 @@ export default function History() {
   const [sortBy, setSortBy] = useState("date");
   const [filterGrade, setFilterGrade] = useState("all");
 
-  // Get preferences
   const { compact, showScores } = usePreferences();
 
   useEffect(() => {
@@ -75,7 +74,6 @@ export default function History() {
     }
   };
 
-  // Filter + Sort
   const filtered = useMemo(() => {
     let list = [...reports];
     if (search.trim()) {
@@ -110,17 +108,17 @@ export default function History() {
   // ---- Full Report View ----
   if (selected) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] overflow-x-hidden">
-        <div className="sticky top-16 z-50 border-b border-[#30363d] bg-[var(--bg-primary)]/80 backdrop-blur">
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden">
+        <div className="sticky top-16 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/80 backdrop-blur">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
             <button
               onClick={() => setSelected(null)}
-              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8b949e] transition hover:bg-[#30363d] hover:text-text-[var(--text-primary)]"
+              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
             >
               <span className="transition-transform group-hover:-translate-x-1">←</span>
               Back to History
             </button>
-            <div className="h-5 w-px bg-[#30363d]" />
+            <div className="h-5 w-px bg-[var(--border-light)]" />
             <div className="flex min-w-0 items-center gap-2">
               <svg
                 width="15"
@@ -129,12 +127,12 @@ export default function History() {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
-                className="shrink-0 text-[#484f58]"
+                className="shrink-0 text-[var(--text-muted)]"
               >
                 <path d="M14.5 17.5 21 12l-6.5-5.5" />
                 <path d="M9.5 6.5 3 12l6.5 5.5" />
               </svg>
-              <span className="truncate text-xs text-[#484f58]">{selected.repoUrl}</span>
+              <span className="truncate text-xs text-[var(--text-muted)]">{selected.repoUrl}</span>
             </div>
           </div>
         </div>
@@ -157,22 +155,22 @@ export default function History() {
   const reportGridGap = compact ? "gap-2" : "gap-3";
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden">
       <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${containerPadding}`}>
         {/* HEADER */}
         <div className={headerMargin}>
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              <h1 className={`text-3xl font-bold tracking-tight text-text-[var(--text-primary)] ${compact ? "sm:text-3xl" : "sm:text-4xl"}`}>
+              <h1 className={`text-3xl font-bold tracking-tight text-[var(--text-primary)] ${compact ? "sm:text-3xl" : "sm:text-4xl"}`}>
                 Review History
               </h1>
-              <p className={`mt-1 max-w-xl text-sm leading-5 text-[#8b949e] ${compact ? "text-xs" : ""}`}>
+              <p className={`mt-1 max-w-xl text-sm leading-5 text-[var(--text-secondary)] ${compact ? "text-xs" : ""}`}>
                 Browse, compare and revisit your previous GitHub repository audits.
               </p>
             </div>
 
             {/* Total Reviews Badge */}
-            <div className="flex w-fit items-center gap-3 rounded-xl border border-[#30363d] bg-[#161b22] px-3.5 py-2.5">
+            <div className="flex w-fit items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2.5">
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-green-500/10 text-green-400">
                 <svg
                   width="16"
@@ -189,8 +187,8 @@ export default function History() {
                 </svg>
               </div>
               <div>
-                <p className="text-[9px] uppercase tracking-wide text-[#484f58]">Total Reviews</p>
-                <p className="text-base font-semibold text-text-[var(--text-primary)]">{reports.length}</p>
+                <p className="text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Total Reviews</p>
+                <p className="text-base font-semibold text-[var(--text-primary)]">{reports.length}</p>
               </div>
             </div>
           </div>
@@ -210,19 +208,19 @@ export default function History() {
                   className={`group rounded-xl border p-3 text-left transition-all duration-200 ${
                     filterGrade === g
                       ? `${style.border} ${style.background}`
-                      : "border-[#30363d] bg-[#161b22] hover:border-[#484f58]"
+                      : "border-[var(--border-light)] bg-[var(--bg-card)] hover:border-[var(--border-medium)]"
                   } ${compact ? "p-2" : "p-3"}`}
                 >
                   <div className="flex items-center justify-between">
                     <span className={`flex h-7 w-7 items-center justify-center rounded-lg text-xs font-bold ${style.badge}`}>
                       {g}
                     </span>
-                    <span className="text-[10px] text-[#484f58]">
+                    <span className="text-[10px] text-[var(--text-muted)]">
                       {filterGrade === g ? "Selected" : "Filter"}
                     </span>
                   </div>
-                  <p className={`mt-2 text-lg font-semibold text-text-[var(--text-primary)] ${compact ? "text-base" : ""}`}>{count}</p>
-                  <p className="text-[10px] text-[#484f58]">{label}</p>
+                  <p className={`mt-2 text-lg font-semibold text-[var(--text-primary)] ${compact ? "text-base" : ""}`}>{count}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">{label}</p>
                 </button>
               );
             })}
@@ -231,11 +229,11 @@ export default function History() {
 
         {/* TOOLBAR */}
         {reports.length > 0 && (
-          <div className={`mb-4 rounded-xl border border-[#30363d] bg-[#161b22] ${toolbarPadding}`}>
+          <div className={`mb-4 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${toolbarPadding}`}>
             <div className="flex flex-col gap-2 lg:flex-row">
               <div className="relative flex-1">
                 <svg
-                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[#484f58]"
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
                   width="16"
                   height="16"
                   viewBox="0 0 24 24"
@@ -250,14 +248,14 @@ export default function History() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search repositories or summaries..."
-                  className="h-10 w-full rounded-lg border border-[#30363d] bg-[var(--bg-primary)] pl-10 pr-4 text-xs text-text-[var(--text-primary)] outline-none transition placeholder:text-[#484f58] focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                  className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-xs text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
-                  className="h-10 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] px-3 text-xs text-[#8b949e] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-xs text-[var(--text-secondary)] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="all">All grades</option>
                   {["A", "B", "C", "D", "F"].map((g) => (
@@ -269,7 +267,7 @@ export default function History() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-10 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] px-3 text-xs text-[#8b949e] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-xs text-[var(--text-secondary)] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="date">Newest</option>
                   <option value="score">Highest Score</option>
@@ -278,10 +276,10 @@ export default function History() {
               </div>
             </div>
             {(search || filterGrade !== "all") && (
-              <div className="mt-2 flex items-center justify-between border-t border-[#21262d] pt-2">
-                <p className="text-[10px] text-[#484f58]">
-                  Showing <span className="font-medium text-[#8b949e]">{filtered.length}</span> of{" "}
-                  <span className="font-medium text-[#8b949e]">{reports.length}</span> reports
+              <div className="mt-2 flex items-center justify-between border-t border-[var(--border-dark)] pt-2">
+                <p className="text-[10px] text-[var(--text-muted)]">
+                  Showing <span className="font-medium text-[var(--text-secondary)]">{filtered.length}</span> of{" "}
+                  <span className="font-medium text-[var(--text-secondary)]">{reports.length}</span> reports
                 </p>
                 <button
                   onClick={() => {
@@ -301,11 +299,11 @@ export default function History() {
         {loading && (
           <div className="flex min-h-[360px] flex-col items-center justify-center">
             <div className="relative">
-              <div className="h-10 w-10 rounded-full border-2 border-[#30363d]" />
+              <div className="h-10 w-10 rounded-full border-2 border-[var(--border-light)]" />
               <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-green-400" />
             </div>
-            <p className="mt-4 text-sm font-medium text-[#8b949e]">Loading your reviews</p>
-            <p className="mt-1 text-[10px] text-[#484f58]">Fetching your CodeVerity audit history...</p>
+            <p className="mt-4 text-sm font-medium text-[var(--text-secondary)]">Loading your reviews</p>
+            <p className="mt-1 text-[10px] text-[var(--text-muted)]">Fetching your CodeVerity audit history...</p>
           </div>
         )}
 
@@ -313,7 +311,7 @@ export default function History() {
         {!loading && reports.length === 0 && (
           <div className="flex min-h-[420px] items-center justify-center">
             <div className="max-w-md text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[#30363d] bg-[#161b22]">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
                 <svg
                   width="28"
                   height="28"
@@ -321,7 +319,7 @@ export default function History() {
                   fill="none"
                   stroke="currentColor"
                   strokeWidth="1.5"
-                  className="text-[#484f58]"
+                  className="text-[var(--text-muted)]"
                 >
                   <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
                   <path d="M14 2v6h6" />
@@ -329,8 +327,8 @@ export default function History() {
                   <path d="M8 17h5" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-text-[var(--text-primary)]">No reviews yet</h2>
-              <p className="mt-2 text-sm leading-5 text-[#484f58]">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">No reviews yet</h2>
+              <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
                 Analyze a GitHub repository and your AI-powered code audit will appear here.
               </p>
             </div>
@@ -339,15 +337,15 @@ export default function History() {
 
         {/* NO FILTER RESULTS */}
         {!loading && reports.length > 0 && filtered.length === 0 && (
-          <div className="rounded-xl border border-[#30363d] bg-[#161b22] py-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[#484f58]">
+          <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] py-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[var(--text-muted)]">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="7" />
                 <path d="m20 20-4-4" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-text-[var(--text-primary)]">No matching reports</p>
-            <p className="mt-1 text-xs text-[#484f58]">Try changing your search or filters.</p>
+            <p className="text-sm font-medium text-[var(--text-primary)]">No matching reports</p>
+            <p className="mt-1 text-xs text-[var(--text-muted)]">Try changing your search or filters.</p>
             <button
               onClick={() => {
                 setSearch("");
@@ -383,7 +381,7 @@ export default function History() {
 
         {/* FOOTER */}
         {!loading && reports.length > 0 && (
-          <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] text-[#30363d] ${compact ? "mt-4" : ""}`}>
+          <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] text-[var(--border-light)] ${compact ? "mt-4" : ""}`}>
             <span>CodeVerity</span>
             <span>•</span>
             <span>AI Repository Intelligence</span>
@@ -391,7 +389,6 @@ export default function History() {
         )}
       </div>
 
-      {/* Scanline animation keyframes */}
       <style>{`
         @keyframes scanline {
           0% { top: -2px; opacity: 0; }
@@ -439,29 +436,29 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   return (
     <div
       onClick={onView}
-      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] transition-all duration-200 hover:-translate-y-0.5 hover:border-green-500/40 hover:shadow-2xl hover:shadow-green-500/10`}
+      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-green-500/40 hover:shadow-2xl hover:shadow-green-500/10`}
     >
-      <div className={`border-b border-[#21262d] ${headerPadding}`}>
+      <div className={`border-b border-[var(--border-dark)] ${headerPadding}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-primary)] text-[#484f58] transition group-hover:text-green-400">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-primary)] text-[var(--text-muted)] transition group-hover:text-green-400">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 .5C5.73.5.75 5.48.75 11.75c0 4.97 3.22 9.19 7.68 10.68.56.1.77-.24.77-.54v-1.89c-3.12.68-3.78-1.33-3.78-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.62 1.22 3.26.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.56 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.64 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.32-2.63 5.27-5.13 5.55.4.35.76 1.05.76 2.12v3.15c0 .3.2.65.78.54a11.27 11.27 0 0 0 7.67-10.68C23.25 5.48 18.27.5 12 .5Z" />
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="mb-0.5 text-[9px] uppercase tracking-wider text-[#484f58]">Repository</p>
-              <h2 className={`truncate font-semibold text-text-[var(--text-primary)] ${titleSize}`}>{repoName}</h2>
+              <p className="mb-0.5 text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Repository</p>
+              <h2 className={`truncate font-semibold text-[var(--text-primary)] ${titleSize}`}>{repoName}</h2>
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
             <span className={`rounded-md border px-2 py-0.5 text-xs font-bold ${styles.badge} ${styles.border}`}>
               {grade}
             </span>
-            <span className="text-[9px] text-[#484f58]">{date}</span>
+            <span className="text-[9px] text-[var(--text-muted)]">{date}</span>
           </div>
         </div>
-        <p className={`mt-3 line-clamp-2 text-[11px] leading-4.5 text-[#8b949e] ${compact ? "mt-2 text-[10px]" : ""}`}>
+        <p className={`mt-3 line-clamp-2 text-[11px] leading-4.5 text-[var(--text-secondary)] ${compact ? "mt-2 text-[10px]" : ""}`}>
           {r.summary || "No summary available"}
         </p>
       </div>
@@ -469,10 +466,10 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
       <div className={cardPadding}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="text-[9px] uppercase tracking-wider text-[#484f58]">Overall Score</p>
+            <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Overall Score</p>
             <div className="mt-0.5 flex items-baseline gap-1">
               <span className={`font-bold ${scoreSize} ${styles.text}`}>{avg}</span>
-              <span className="text-[10px] text-[#484f58]">/ 100</span>
+              <span className="text-[10px] text-[var(--text-muted)]">/ 100</span>
             </div>
           </div>
           <div className="relative h-10 w-10">
@@ -482,7 +479,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="3"
-                className="text-[#30363d]"
+                className="text-[var(--border-light)]"
               />
               <path
                 d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
@@ -496,7 +493,6 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
           </div>
         </div>
 
-        {/* Score Bars – conditionally rendered based on showScores */}
         {showScores && (
           <div className={`mt-3.5 space-y-2.5 ${compact ? "mt-2.5 space-y-2" : ""}`}>
             {[
@@ -511,22 +507,22 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
         )}
 
         {r.toolsAndPackages?.length > 0 && (
-          <div className={`mt-4 border-t border-[#21262d] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
+          <div className={`mt-4 border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
             <div className="mb-2 flex items-center justify-between">
-              <span className="text-[9px] uppercase tracking-wider text-[#484f58]">Technologies</span>
-              <span className="text-[9px] text-[#484f58]">{r.toolsAndPackages.length} detected</span>
+              <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Technologies</span>
+              <span className="text-[9px] text-[var(--text-muted)]">{r.toolsAndPackages.length} detected</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {r.toolsAndPackages.slice(0, 4).map((t, i) => (
                 <span
                   key={i}
-                  className="rounded-md border border-[#30363d] bg-[var(--bg-primary)] px-1.5 py-0.5 text-[9px] text-[#8b949e] transition hover:border-green-500/40 hover:text-green-400"
+                  className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 text-[9px] text-[var(--text-secondary)] transition hover:border-green-500/40 hover:text-green-400"
                 >
                   {t}
                 </span>
               ))}
               {r.toolsAndPackages.length > 4 && (
-                <span className="rounded-md border border-[#30363d] bg-[var(--bg-primary)] px-1.5 py-0.5 text-[9px] text-[#484f58]">
+                <span className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 text-[9px] text-[var(--text-muted)]">
                   +{r.toolsAndPackages.length - 4}
                 </span>
               )}
@@ -534,15 +530,15 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
           </div>
         )}
 
-        <div className={`mt-4 flex items-center justify-between border-t border-[#21262d] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
-          <span className="flex items-center gap-1.5 text-[9px] text-[#484f58]">
+        <div className={`mt-4 flex items-center justify-between border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
+          <span className="flex items-center gap-1.5 text-[9px] text-[var(--text-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-green-400" />
             Analysis complete
           </span>
           <div className="flex gap-1.5">
             <button
               onClick={onDownload}
-              className={`rounded-md border border-[#30363d] bg-[var(--bg-primary)] px-2.5 py-1.5 text-[9px] font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-text-[var(--text-primary)] ${compact ? "px-2 py-1 text-[8px]" : ""}`}
+              className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-[9px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] ${compact ? "px-2 py-1 text-[8px]" : ""}`}
             >
               ↓ PDF
             </button>
@@ -582,12 +578,12 @@ function ScoreBar({ label, value, compact }) {
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className={`${labelSize} text-[#484f58]`}>{label}</span>
-        <span className={`${valueSize} font-medium text-[#8b949e]`}>
+        <span className={`${labelSize} text-[var(--text-muted)]`}>{label}</span>
+        <span className={`${valueSize} font-medium text-[var(--text-secondary)]`}>
           {typeof value === "number" ? `${val}%` : "N/A"}
         </span>
       </div>
-      <div className={`overflow-hidden rounded-full bg-[#21262d] ${barHeight}`}>
+      <div className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${barHeight}`}>
         <div
           className={`h-full rounded-full bg-gradient-to-r ${color} transition-all duration-700`}
           style={{ width: `${val}%` }}

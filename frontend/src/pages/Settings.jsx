@@ -214,12 +214,12 @@ export default function Settings() {
       };
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] ${compactClasses.container}`}>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.container}`}>
       <div className={`max-w-7xl mx-auto ${compact ? "space-y-4" : "space-y-6"}`}>
         {/* HEADER */}
         <div className={compactClasses.headerMargin}>
-          <h1 className={`font-bold tracking-tight text-text-[var(--text-primary)] ${compactClasses.heading}`}>Settings</h1>
-          <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>Manage your account and preferences</p>
+          <h1 className={`font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>Settings</h1>
+          <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>Manage your account and preferences</p>
         </div>
 
         {/* LAYOUT */}
@@ -236,7 +236,7 @@ export default function Settings() {
                       ? "bg-[#238636]/20 text-[#3fb950] border border-[#238636]/40"
                       : t === "Danger Zone"
                       ? "text-red-400 hover:bg-white/5 hover:text-red-300"
-                      : "text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                   }`}
                 aria-current={tab === t ? "page" : undefined}
               >
@@ -257,8 +257,8 @@ export default function Settings() {
                     {initials}
                   </div>
                   <div>
-                    <p className={`font-medium text-text-[var(--text-primary)] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
-                    <p className={`text-[#6e7681] ${compactClasses.userEmail}`}>{email}</p>
+                    <p className={`font-medium text-[var(--text-primary)] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
+                    <p className={`text-[var(--text-muted)] ${compactClasses.userEmail}`}>{email}</p>
                   </div>
                 </div>
 
@@ -368,7 +368,7 @@ export default function Settings() {
                           ${
                             theme === t
                               ? "bg-[#238636]/20 border-[#238636]/40 text-[#3fb950]"
-                              : "bg-white/5 border-[#30363d] text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
+                              : "bg-white/5 border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                           }`}
                       >
                         {t === "dark" ? "🌙" : t === "light" ? "☀️" : "💻"} {t}
@@ -442,7 +442,7 @@ export default function Settings() {
         </div>
 
         {/* FOOTER */}
-        <div className={`flex items-center justify-center gap-2 py-3 text-[#30363d] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
+        <div className={`flex items-center justify-center gap-2 py-3 text-[var(--border-light)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
           <span>CodeVerity</span>
           <span>•</span>
           <span>AI Repository Intelligence</span>
@@ -470,15 +470,15 @@ export default function Settings() {
   );
 }
 
-/*  UI helpers – now accept compact  */
+/*  UI helpers – now accept compact and use CSS variables  */
 
 function Section({ title, children, danger, compact, padding, gap }) {
   return (
     <div
-      className={`bg-[#161b22] border rounded-2xl ${padding} ${gap}
-      ${danger ? "border-red-500/20" : "border-[#30363d]"}`}
+      className={`bg-[var(--bg-card)] border rounded-2xl ${padding} ${gap}
+      ${danger ? "border-red-500/20" : "border-[var(--border-light)]"}`}
     >
-      <h2 className={`font-semibold ${danger ? "text-red-400" : "text-text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}>
+      <h2 className={`font-semibold ${danger ? "text-red-400" : "text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}>
         {title}
       </h2>
       {children}
@@ -489,7 +489,7 @@ function Section({ title, children, danger, compact, padding, gap }) {
 function Field({ label, children, compact, labelClass }) {
   return (
     <div className={`space-y-1.5 ${compact ? "space-y-1" : ""}`}>
-      <label className={`text-[#8b949e] ${labelClass}`}>{label}</label>
+      <label className={`text-[var(--text-secondary)] ${labelClass}`}>{label}</label>
       {children}
     </div>
   );
@@ -503,8 +503,8 @@ function Input({ value, onChange, type = "text", placeholder, autoComplete, comp
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       autoComplete={autoComplete}
-      className={`w-full rounded-xl bg-[var(--bg-primary)] border border-[#30363d] text-text-[var(--text-primary)]
-        placeholder-[#484f58] focus:outline-none focus:ring-2 focus:ring-[#238636]/50 transition ${padding}`}
+      className={`w-full rounded-xl bg-[var(--bg-input)] border border-[var(--border-light)] text-[var(--text-primary)]
+        placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#238636]/50 transition ${padding}`}
     />
   );
 }
@@ -513,15 +513,15 @@ function Toggle({ label, description, value, onChange, compact, textClass, descC
   return (
     <div className={`flex items-center justify-between gap-4 ${compact ? "gap-3" : ""}`}>
       <div>
-        <p className={`font-medium text-text-[var(--text-primary)] ${textClass}`}>{label}</p>
-        <p className={`text-[#6e7681] mt-0.5 ${descClass}`}>{description}</p>
+        <p className={`font-medium text-[var(--text-primary)] ${textClass}`}>{label}</p>
+        <p className={`text-[var(--text-muted)] mt-0.5 ${descClass}`}>{description}</p>
       </div>
       <button
         role="switch"
         aria-checked={value}
         onClick={() => onChange(!value)}
         className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0
-          ${value ? "bg-[#238636]" : "bg-[#30363d]"}`}
+          ${value ? "bg-[#238636]" : "bg-[var(--border-light)]"}`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow
@@ -559,10 +559,10 @@ function DangerRow({ title, description, label, onClick, bold, compact, padding,
   return (
     <div className={`flex items-center justify-between gap-4 rounded-xl bg-red-500/5 border border-red-500/10 ${padding}`}>
       <div>
-        <p className={`${bold ? "font-semibold text-red-300" : "text-[#c9d1d9]"} ${titleClass}`}>
+        <p className={`${bold ? "font-semibold text-red-300" : "text-[var(--text-secondary)]"} ${titleClass}`}>
           {title}
         </p>
-        <p className={`text-[#6e7681] mt-0.5 ${descClass}`}>{description}</p>
+        <p className={`text-[var(--text-muted)] mt-0.5 ${descClass}`}>{description}</p>
       </div>
       <button
         onClick={onClick}
@@ -601,7 +601,7 @@ function PasswordStrength({ password, compact }) {
           <div
             key={i}
             className={`flex-1 ${barHeight} rounded-full transition-all duration-300 ${
-              i <= score ? colors[score] : "bg-[#30363d]"
+              i <= score ? colors[score] : "bg-[var(--border-light)]"
             }`}
           />
         ))}
@@ -619,7 +619,7 @@ function PasswordStrength({ password, compact }) {
             className={`${chipSize} rounded-full ${
               checks[key]
                 ? "bg-green-500/20 text-green-400"
-                : "bg-[#30363d] text-[#484f58]"
+                : "bg-[var(--border-light)] text-[var(--text-muted)]"
             }`}
           >
             {checks[key] ? "✓" : "·"} {label}

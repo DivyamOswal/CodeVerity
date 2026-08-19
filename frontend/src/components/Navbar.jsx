@@ -103,7 +103,7 @@ function Icon({ name, size = 16, className = "" }) {
 }
 
 // -----------------------------------------------------------------
-// DropdownItem – green themed
+// DropdownItem – green themed, now uses CSS variables
 // -----------------------------------------------------------------
 
 function DropdownItem({ icon, label, onClick, danger = false }) {
@@ -114,14 +114,14 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
       className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition ${
         danger
           ? "text-red-400 hover:bg-red-500/10"
-          : "text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
+          : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
       }`}
     >
       <span
         className={`flex h-7 w-7 items-center justify-center rounded-lg ${
           danger
             ? "bg-red-500/5 text-red-400"
-            : "bg-[#21262d] text-[#484f58] group-hover:text-[#3fb950]"
+            : "bg-[var(--bg-hover)] text-[var(--text-muted)] group-hover:text-[#3fb950]"
         }`}
       >
         {icon}
@@ -132,7 +132,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
 }
 
 // -----------------------------------------------------------------
-// Main Navbar – now supports compact mode
+// Main Navbar – now supports compact mode and theme variables
 // -----------------------------------------------------------------
 
 export default function Navbar() {
@@ -194,13 +194,13 @@ export default function Navbar() {
           `relative flex items-center gap-2 rounded-lg px-3 transition-all duration-200 ${navItemHeight} ${navItemFont} font-medium ${
             isActive
               ? "bg-[#238636]/10 text-[#3fb950]"
-              : "text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
+              : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
           }`
         }
       >
         {({ isActive }) => (
           <>
-            <span className={isActive ? "text-[#3fb950]" : "text-[#484f58]"}>
+            <span className={isActive ? "text-[#3fb950]" : "text-[var(--text-muted)]"}>
               <Icon name={icon} size={compact ? 12 : 14} />
             </span>
             <span>{label}</span>
@@ -214,7 +214,7 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`sticky top-0 z-50 border-b border-[#30363d] bg-[var(--bg-primary)] ${navbarHeight}`}>
+    <nav className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)] ${navbarHeight}`}>
       <div className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${compact ? "px-3 sm:px-4" : ""}`}>
         {/* LEFT – Logo */}
         <div className="flex min-w-0 items-center">
@@ -222,7 +222,7 @@ export default function Navbar() {
             <div className={`relative flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 ${logoSize}`}>
               <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
               <Icon name="shield" size={iconSize} className="relative text-green-400" />
-              <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-md bg-[#161b22] border border-[#30363d] flex items-center justify-center">
+              <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)] flex items-center justify-center">
                 <span className="text-[5px] font-bold text-green-400">&lt;/&gt;</span>
               </span>
               <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
@@ -230,10 +230,10 @@ export default function Navbar() {
 
             <div className="hidden sm:block">
               <div className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}>
-                <span className="text-text-[var(--text-primary)]">Code</span>
+                <span className="text-[var(--text-primary)]">Code</span>
                 <span className="text-[#3fb950]">Verity</span>
               </div>
-              <p className={`mt-1 font-medium uppercase leading-none tracking-[0.2em] text-[#484f58] ${brandSubSize}`}>
+              <p className={`mt-1 font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] ${brandSubSize}`}>
                 AI Code Intelligence
               </p>
             </div>
@@ -258,23 +258,23 @@ export default function Navbar() {
                 type="button"
                 onClick={() => setDropOpen((prev) => !prev)}
                 className={`flex items-center gap-2 rounded-lg px-1.5 transition-all ${compact ? "h-9" : "h-10"} ${
-                  dropOpen ? "bg-[#21262d]" : "hover:bg-[#21262d]"
+                  dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 <div className={`relative flex shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 font-bold text-white ${avatarSize} ${avatarFont}`}>
                   {initials}
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[#0d1117] bg-emerald-400" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-emerald-400" />
                 </div>
 
                 <div className="hidden text-left lg:block">
-                  <p className={`max-w-[100px] truncate font-semibold leading-3 text-text-[var(--text-primary)] ${userInfoNameSize}`}>
+                  <p className={`max-w-[100px] truncate font-semibold leading-3 text-[var(--text-primary)] ${userInfoNameSize}`}>
                     {userInfo.name || initials}
                   </p>
-                  <p className={`mt-1 leading-3 text-[#484f58] ${userInfoRoleSize}`}>Developer</p>
+                  <p className={`mt-1 leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>Developer</p>
                 </div>
 
                 <span
-                  className={`ml-1 hidden text-[#484f58] transition-transform sm:block ${
+                  className={`ml-1 hidden text-[var(--text-muted)] transition-transform sm:block ${
                     dropOpen ? "rotate-180" : ""
                   }`}
                 >
@@ -283,17 +283,17 @@ export default function Navbar() {
               </button>
 
               {dropOpen && (
-                <div className="absolute right-0 top-[50px] z-50 w-64 overflow-hidden rounded-xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/50">
-                  <div className="border-b border-[#30363d] p-4">
+                <div className="absolute right-0 top-[50px] z-50 w-64 overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/50">
+                  <div className="border-b border-[var(--border-light)] p-4">
                     <div className="flex items-center gap-3">
                       <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 text-xs font-bold text-white">
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-text-[var(--text-primary)]">
+                        <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
                           {userInfo.name || initials}
                         </p>
-                        <p className="truncate text-[11px] text-[#8b949e]">
+                        <p className="truncate text-[11px] text-[var(--text-secondary)]">
                           {userInfo.email || "Signed in"}
                         </p>
                       </div>
@@ -323,7 +323,7 @@ export default function Navbar() {
                     />
                   </div>
 
-                  <div className="border-t border-[#30363d] py-2">
+                  <div className="border-t border-[var(--border-light)] py-2">
                     <DropdownItem
                       danger
                       icon={<Icon name="logout" size={15} />}
@@ -338,7 +338,7 @@ export default function Navbar() {
             <div className="hidden items-center gap-2 sm:flex">
               <NavLink
                 to="/login"
-                className={`rounded-lg border border-[#30363d] bg-[var(--bg-primary)] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-text-[var(--text-primary)] ${buttonPadding}`}
+                className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${buttonPadding}`}
               >
                 Sign in
               </NavLink>
@@ -354,7 +354,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            className={`ml-2 flex items-center justify-center rounded-lg border border-[#30363d] bg-[var(--bg-primary)] text-[#8b949e] transition hover:bg-[#21262d] hover:text-text-[var(--text-primary)] md:hidden ${compact ? "h-8 w-8 text-sm" : "h-9 w-9 text-base"}`}
+            className={`ml-2 flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${compact ? "h-8 w-8 text-sm" : "h-9 w-9 text-base"}`}
           >
             {menuOpen ? "×" : "☰"}
           </button>
@@ -363,7 +363,7 @@ export default function Navbar() {
 
       {/* Mobile Navigation */}
       {isAuth && menuOpen && (
-        <div className="border-t border-[#30363d] bg-[#161b22] md:hidden">
+        <div className="border-t border-[var(--border-light)] bg-[var(--bg-card)] md:hidden">
           <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
             <NavLink
               to="/dashboard"
@@ -371,7 +371,7 @@ export default function Navbar() {
                 `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
@@ -384,7 +384,7 @@ export default function Navbar() {
                 `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
@@ -397,7 +397,7 @@ export default function Navbar() {
                 `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
@@ -410,7 +410,7 @@ export default function Navbar() {
                 `flex items-center gap-3 rounded-lg transition ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[#238636]/10 text-[#3fb950]"
-                    : "text-[#8b949e] hover:bg-[#21262d]"
+                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >

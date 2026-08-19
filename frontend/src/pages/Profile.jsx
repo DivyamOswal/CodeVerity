@@ -28,7 +28,7 @@ function CodeVerityLogo() {
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <path d="m9 12 2 2 4-4" />
       </svg>
-      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
+      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
         <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
       </div>
       <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
@@ -102,14 +102,14 @@ export default function Profile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-text-[var(--text-primary)] pt-16">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-[var(--text-primary)] pt-16">
         <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10">
           <span className="text-xl">!</span>
         </div>
         <p className="text-sm text-red-400">{error}</p>
         <button
           onClick={load}
-          className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-2 text-xs font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-text-[var(--text-primary)]"
+          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
         >
           Retry
         </button>
@@ -240,18 +240,18 @@ export default function Profile() {
       };
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] ${compactClasses.container}`}>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.container}`}>
       <div className={`mx-auto w-full max-w-7xl space-y-5 ${compact ? "space-y-4" : "space-y-5"}`}>
         {/* PAGE HEADER */}
         <div className={compactClasses.headerMargin}>
-          <h1 className={`font-bold tracking-tight text-text-[var(--text-primary)] ${compactClasses.heading}`}>
+          <h1 className={`font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
             Profile
           </h1>
-          <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>Manage your CodeVerity account and audit history.</p>
+          <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>Manage your CodeVerity account and audit history.</p>
         </div>
 
         {/* HERO */}
-        <div className="relative overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22]">
+        <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-green-500/10 blur-3xl" />
           <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-emerald-500/10 blur-3xl" />
 
@@ -261,7 +261,7 @@ export default function Profile() {
               <div className={`flex items-center justify-center rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600 font-bold shadow-lg shadow-green-500/20 text-white ${compactClasses.avatarSize}`}>
                 {initials}
               </div>
-              <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[#161b22] bg-[#3fb950] ${compactClasses.avatarOnline}`}>
+              <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-[#3fb950] ${compactClasses.avatarOnline}`}>
                 <span className="h-1.5 w-1.5 rounded-full bg-white" />
               </div>
             </div>
@@ -269,14 +269,14 @@ export default function Profile() {
             {/* User Info */}
             <div className="min-w-0 flex-1">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <h1 className={`truncate font-bold text-text-[var(--text-primary)] ${compactClasses.nameSize}`}>{name}</h1>
+                <h1 className={`truncate font-bold text-[var(--text-primary)] ${compactClasses.nameSize}`}>{name}</h1>
                 {user?.role && (
-                  <span className={`w-fit rounded-md border border-[#30363d] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[#8b949e] ${compact ? "px-1.5 py-0.5 text-[7px]" : "px-2 py-1 text-[8px]"}`}>
+                  <span className={`w-fit rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[var(--text-secondary)] ${compact ? "px-1.5 py-0.5 text-[7px]" : "px-2 py-1 text-[8px]"}`}>
                     {user.role}
                   </span>
                 )}
               </div>
-              <p className={`mt-1 truncate text-[#6e7681] ${compactClasses.userEmailSize}`}>{user?.email ?? ""}</p>
+              <p className={`mt-1 truncate text-[var(--text-muted)] ${compactClasses.userEmailSize}`}>{user?.email ?? ""}</p>
               <div className={`mt-3 flex flex-wrap ${compactClasses.pillsGap}`}>
                 {joinDate && <Pill icon="◷" text={`Joined ${joinDate}`} compact={compact} />}
                 <Pill icon="⌁" text={`${totalScans} scan${totalScans !== 1 ? "s" : ""}`} compact={compact} />
@@ -286,7 +286,7 @@ export default function Profile() {
             {/* Settings button */}
             <button
               onClick={() => navigate("/settings")}
-              className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] font-medium text-[#8b949e] transition hover:border-green-500/40 hover:bg-[#161b22] hover:text-text-[var(--text-primary)] ${compactClasses.settingsButton}`}
+              className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition hover:border-green-500/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${compactClasses.settingsButton}`}
             >
               <span className="text-sm">⚙</span>
               Settings
@@ -340,15 +340,15 @@ export default function Profile() {
 
         {/* GRADE BREAKDOWN */}
         {totalScans > 0 && (
-          <div className={`rounded-2xl border border-[#30363d] bg-[#161b22] ${compactClasses.gradeBreakdownPadding}`}>
+          <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.gradeBreakdownPadding}`}>
             <div className={`flex items-center justify-between ${compactClasses.gradeBreakdownMargin}`}>
               <div>
-                <h2 className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>Grade Breakdown</h2>
-                <p className={`mt-1 text-[#484f58] ${compact ? "text-[8px]" : "text-[10px]"}`}>
+                <h2 className={`font-semibold text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>Grade Breakdown</h2>
+                <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[10px]"}`}>
                   Distribution of your repository audit grades
                 </p>
               </div>
-              <div className={`rounded-lg border border-[#30363d] bg-[var(--bg-primary)] text-[#6e7681] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+              <div className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
                 {totalScans} total
               </div>
             </div>
@@ -368,17 +368,17 @@ export default function Profile() {
                     </span>
                     <div className="flex-1">
                       <div className={`flex justify-between ${compact ? "mb-1" : "mb-1.5"}`}>
-                        <span className={`text-[#6e7681] ${compactClasses.gradeLabelSize}`}>Grade {g}</span>
-                        <span className={`text-[#484f58] ${compact ? "text-[8px]" : "text-[9px]"}`}>{pct}%</span>
+                        <span className={`text-[var(--text-muted)] ${compactClasses.gradeLabelSize}`}>Grade {g}</span>
+                        <span className={`text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>{pct}%</span>
                       </div>
-                      <div className={`overflow-hidden rounded-full bg-[#21262d] ${compactClasses.gradeBarHeight}`}>
+                      <div className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${compactClasses.gradeBarHeight}`}>
                         <div
                           className={`h-full rounded-full ${style.bar} transition-all duration-700`}
                           style={{ width: `${pct}%` }}
                         />
                       </div>
                     </div>
-                    <span className={`w-14 text-right text-[#484f58] ${compact ? "text-[8px]" : "text-[9px]"}`}>
+                    <span className={`w-14 text-right text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>
                       {count} repo{count !== 1 ? "s" : ""}
                     </span>
                   </div>
@@ -390,11 +390,11 @@ export default function Profile() {
 
         {/* RECENT ACTIVITY */}
         {reports.length > 0 && (
-          <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22]">
-            <div className={`flex items-center justify-between border-b border-[#21262d] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
+          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+            <div className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
               <div>
-                <h2 className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>Recent Activity</h2>
-                <p className={`mt-1 text-[#484f58] ${compact ? "text-[8px]" : "text-[10px]"}`}>Your latest repository audits</p>
+                <h2 className={`font-semibold text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>Recent Activity</h2>
+                <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[10px]"}`}>Your latest repository audits</p>
               </div>
               <button
                 onClick={() => navigate("/history")}
@@ -433,13 +433,13 @@ export default function Profile() {
                       {r.grade ?? "N/A"}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate font-medium text-[#c9d1d9] group-hover:text-text-[var(--text-primary)] ${compactClasses.recentRepoSize}`}>
+                      <p className={`truncate font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${compactClasses.recentRepoSize}`}>
                         {repoName}
                       </p>
-                      <p className={`mt-0.5 text-[#484f58] ${compact ? "text-[7px]" : "text-[8px]"}`}>Repository audit</p>
+                      <p className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[7px]" : "text-[8px]"}`}>Repository audit</p>
                     </div>
-                    <span className={`hidden text-[#484f58] sm:block ${compactClasses.recentDateSize}`}>{date}</span>
-                    <span className={`rounded-md border border-[#30363d] bg-[var(--bg-primary)] font-medium text-[#8b949e] ${compactClasses.recentScoreSize}`}>
+                    <span className={`hidden text-[var(--text-muted)] sm:block ${compactClasses.recentDateSize}`}>{date}</span>
+                    <span className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] ${compactClasses.recentScoreSize}`}>
                       {avg}%
                     </span>
                   </div>
@@ -451,14 +451,14 @@ export default function Profile() {
 
         {/* EMPTY STATE */}
         {totalScans === 0 && !loading && (
-          <div className={`relative overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] text-center ${compactClasses.emptyStatePadding}`}>
+          <div className={`relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center ${compactClasses.emptyStatePadding}`}>
             <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-green-500/10 blur-3xl" />
             <div className="relative">
-              <div className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[#30363d] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}>
+              <div className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}>
                 <span className={`${compact ? "text-lg" : "text-xl"}`}>◈</span>
               </div>
-              <p className={`font-semibold text-[#c9d1d9] ${compactClasses.emptyStateTitle}`}>No scans yet</p>
-              <p className={`mx-auto mt-1.5 max-w-sm leading-5 text-[#6e7681] ${compactClasses.emptyStateDesc}`}>
+              <p className={`font-semibold text-[var(--text-secondary)] ${compactClasses.emptyStateTitle}`}>No scans yet</p>
+              <p className={`mx-auto mt-1.5 max-w-sm leading-5 text-[var(--text-muted)] ${compactClasses.emptyStateDesc}`}>
                 Analyze a GitHub repository to start building your CodeVerity profile and see your audit
                 statistics here.
               </p>
@@ -473,7 +473,7 @@ export default function Profile() {
         )}
 
         {/* FOOTER */}
-        <div className={`flex items-center justify-center gap-2 py-3 text-[#30363d] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
+        <div className={`flex items-center justify-center gap-2 py-3 text-[var(--border-light)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
           <span>CodeVerity</span>
           <span>•</span>
           <span>AI Repository Intelligence</span>
@@ -489,7 +489,7 @@ export default function Profile() {
 
 function Pill({ icon, text, compact }) {
   return (
-    <span className={`flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[var(--bg-primary)] text-[#6e7681] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+    <span className={`flex items-center gap-1.5 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
       <span className="text-[#3fb950]">{icon}</span>
       {text}
     </span>
@@ -522,14 +522,14 @@ function StatCard({ icon, label, value, color, compact, padding, valueSize, icon
   const style = colors[color] ?? colors.green;
 
   return (
-    <div className={`relative overflow-hidden rounded-xl border ${style.border} bg-[#161b22] ${padding}`}>
+    <div className={`relative overflow-hidden rounded-xl border ${style.border} bg-[var(--bg-card)] ${padding}`}>
       <div className={`pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${style.glow}`} />
       <div className="relative">
         <div className={`mb-3 flex items-center justify-center rounded-lg text-sm ${style.icon} ${iconSize}`}>
           {icon}
         </div>
-        <p className={`font-bold text-text-[var(--text-primary)] ${valueSize}`}>{value}</p>
-        <p className={`mt-0.5 text-[#484f58] ${compact ? "text-[8px]" : "text-[9px]"}`}>{label}</p>
+        <p className={`font-bold text-[var(--text-primary)] ${valueSize}`}>{value}</p>
+        <p className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>{label}</p>
       </div>
     </div>
   );
@@ -585,8 +585,8 @@ function LoadingScreen() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] pt-16">
       <div className="flex flex-col items-center gap-4">
         <CodeVerityLogo />
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#30363d] border-t-[#3fb950]" />
-        <p className="text-[10px] text-[#484f58]">Loading CodeVerity profile…</p>
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[#3fb950]" />
+        <p className="text-[10px] text-[var(--text-muted)]">Loading CodeVerity profile…</p>
       </div>
     </div>
   );

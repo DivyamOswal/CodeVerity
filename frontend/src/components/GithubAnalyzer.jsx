@@ -26,7 +26,7 @@ function CodeVerityLogo() {
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
-        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
+        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
           <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
         </div>
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
@@ -60,7 +60,6 @@ export default function GithubAnalyzer({ setData }) {
   const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState(null);
   
-  // Get compact preference
   const { compact } = usePreferences();
 
   const analyze = async () => {
@@ -92,7 +91,6 @@ export default function GithubAnalyzer({ setData }) {
     if (setData) setData(null);
   };
 
-  // Compact overrides for the input view
   const compactClasses = compact
     ? {
         container: "py-4 px-2 sm:px-4",
@@ -119,11 +117,10 @@ export default function GithubAnalyzer({ setData }) {
   if (analysis) {
     return (
       <div>
-        {/* Sticky bar – green themed */}
-        <div className="sticky top-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur border-b border-[#30363d] px-6 py-3 flex items-center gap-4">
+        <div className="sticky top-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur border-b border-[var(--border-light)] px-6 py-3 flex items-center gap-4">
           <button
             onClick={handleReset}
-            className="text-sm text-[#8b949e] hover:text-text-[var(--text-primary)] transition flex items-center gap-2"
+            className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-2"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5" />
@@ -131,7 +128,7 @@ export default function GithubAnalyzer({ setData }) {
             </svg>
             New Analysis
           </button>
-          <span className="text-xs text-[#484f58] truncate max-w-xs">{repo}</span>
+          <span className="text-xs text-[var(--text-muted)] truncate max-w-xs">{repo}</span>
           <span className="ml-auto flex items-center gap-2 text-xs text-[#3fb950]">
             <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
             Analyzed
@@ -160,9 +157,9 @@ export default function GithubAnalyzer({ setData }) {
   // ---- Input View ----
   return (
     <div
-      className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
     >
-      {/* Background glows and dot grid – matches Home and CodeInput */}
+      {/* Background glows and dot grid */}
       <div
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
@@ -193,60 +190,55 @@ export default function GithubAnalyzer({ setData }) {
       />
 
       <div className="mx-auto max-w-3xl relative z-10">
-        {/* Card – with corner brackets like CodeInput */}
         <div className="relative">
           <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-green-500/50 rounded-tl-2xl z-10" />
           <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-green-500/50 rounded-tr-2xl z-10" />
           <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-green-500/50 rounded-bl-2xl z-10" />
           <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-green-500/50 rounded-br-2xl z-10" />
 
-          <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
-            {/* Header with logo */}
-            <div className={`border-b border-[#30363d] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}>
+          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/30">
+            <div className={`border-b border-[var(--border-light)] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}>
               <CodeVerityLogo />
               <div>
-                <p className="text-sm font-bold tracking-wide text-text-[var(--text-primary)]">CODEVERITY</p>
-                <p className="text-xs text-[#8b949e]">GitHub Repository Intelligence</p>
+                <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">CODEVERITY</p>
+                <p className="text-xs text-[var(--text-secondary)]">GitHub Repository Intelligence</p>
               </div>
             </div>
 
             <div className={compactClasses.cardBody}>
-              <h2 className={`font-bold tracking-tight ${compactClasses.heading}`}>
+              <h2 className={`font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
                 GitHub Repository Analyzer
               </h2>
-              <p className={`text-[#8b949e] mt-1 ${compactClasses.subHeading}`}>
+              <p className={`text-[var(--text-secondary)] mt-1 ${compactClasses.subHeading}`}>
                 Analyze any public repo with AI insights ⚡
               </p>
 
-              {/* Input field – green focus ring */}
               <div className="relative mt-5">
                 <input
-                  className={`w-full rounded-xl bg-[var(--bg-primary)] text-text-[var(--text-primary)] border border-[#30363d] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[#484f58] transition-all ${compactClasses.input}`}
+                  className={`w-full rounded-xl bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[var(--text-muted)] transition-all ${compactClasses.input}`}
                   placeholder="https://github.com/username/repository"
                   value={repo}
                   onChange={(e) => setRepo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && analyze()}
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[#484f58]">🔗</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">🔗</span>
               </div>
 
-              {/* Error */}
               {error && (
                 <div className="mt-3 text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
                   {error}
                 </div>
               )}
 
-              {/* Actions */}
               <div className="flex justify-between items-center mt-5">
-                <span className="text-xs text-[#484f58]">
+                <span className="text-xs text-[var(--text-muted)]">
                   Supports public repositories only
                 </span>
 
                 <button
                   onClick={analyze}
                   disabled={loading}
-                  className={`group relative overflow-hidden rounded-lg font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[#30363d] disabled:text-[#484f58] disabled:shadow-none hover:scale-[1.02] active:scale-95 ${compactClasses.button}`}
+                  className={`group relative overflow-hidden rounded-lg font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[var(--border-light)] disabled:text-[var(--text-muted)] disabled:shadow-none hover:scale-[1.02] active:scale-95 ${compactClasses.button}`}
                   style={
                     loading
                       ? {}
@@ -273,8 +265,7 @@ export default function GithubAnalyzer({ setData }) {
                 </button>
               </div>
 
-              {/* Tip */}
-              <div className={`text-xs text-[#30363d] border-t border-[#30363d] pt-4 ${compactClasses.footer}`}>
+              <div className={`text-xs text-[var(--border-medium)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
                 💡 Tip: Try popular repos like{" "}
                 <span className="text-green-400">https://github.com/facebook/react</span>
               </div>
@@ -282,10 +273,9 @@ export default function GithubAnalyzer({ setData }) {
           </div>
         </div>
 
-        {/* Footer */}
-        <div className={`flex items-center justify-center gap-2 text-xs text-[#30363d] ${compactClasses.footer}`}>
+        <div className={`flex items-center justify-center gap-2 text-xs text-[var(--border-medium)] ${compactClasses.footer}`}>
           <span>Powered by</span>
-          <span className="font-semibold text-[#484f58]">CodeVerity AI</span>
+          <span className="font-semibold text-[var(--text-muted)]">CodeVerity AI</span>
           <span>•</span>
           <span>Built for developers</span>
         </div>
