@@ -1,5 +1,11 @@
 // frontend/src/App.jsx
-import { BrowserRouter, Routes, Route, useLocation, Navigate } from "react-router-dom";
+import {
+  BrowserRouter,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 import { useState, useCallback, createContext, useContext } from "react";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
@@ -11,15 +17,12 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Result from "./components/Result";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import OAuthSuccess from "./pages/OAuthSuccess";
 
 // ✅ Import the PreferencesProvider
 import { PreferencesProvider } from "./context/PreferencesContext";
 
-import {
-  analyzeCode,
-  generateTests,
-  fetchRepoContents,
-} from "./api/analyze";
+import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
 
 //  Auth Context — single source of truth
 export const AuthContext = createContext(null);
@@ -77,6 +80,8 @@ function Layout() {
           path="/register"
           element={isAuth ? <Navigate to="/dashboard" replace /> : <Register />}
         />
+        <Route path="/oauth-success" element={<OAuthSuccess />} />
+        <Route path="/oauth-error" element={<Navigate to="/login" replace />} />
         <Route
           path="/history"
           element={
@@ -120,7 +125,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <PreferencesProvider>   {/* ✅ Wrap Layout with PreferencesProvider */}
+        <PreferencesProvider>
+          {" "}
+          {/* ✅ Wrap Layout with PreferencesProvider */}
           <Layout />
         </PreferencesProvider>
       </AuthProvider>

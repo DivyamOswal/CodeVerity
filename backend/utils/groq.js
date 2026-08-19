@@ -1,26 +1,48 @@
 import Groq from "groq-sdk";
 
-//  JSON extraction
+// ── JSON extraction with repair ──────────────────────────────
+
+function repairJSON(jsonStr) {
+  // 1. Remove trailing commas before } or ]
+  let repaired = jsonStr.replace(/,(\s*[}\]])/g, "$1");
+  // 2. Quote unquoted keys (simple case)
+  repaired = repaired.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
+  return repaired;
+}
 
 function extractJSON(raw) {
+  // Remove markdown fences
   let cleaned = raw
     .replace(/```json\s*/gi, "")
     .replace(/```\s*/g, "")
     .trim();
+
   const start = cleaned.indexOf("{");
   const end = cleaned.lastIndexOf("}");
   if (start === -1 || end === -1 || end <= start) {
     throw new Error("No JSON object found in AI response");
   }
-  return JSON.parse(cleaned.slice(start, end + 1));
+  let jsonStr = cleaned.slice(start, end + 1);
+
+  // Attempt to parse as-is
+  try {
+    return JSON.parse(jsonStr);
+  } catch (parseErr) {
+    // Attempt repair
+    const repaired = repairJSON(jsonStr);
+    try {
+      return JSON.parse(repaired);
+    } catch (reparseErr) {
+      console.error("❌ Raw JSON (first 500 chars):", jsonStr.slice(0, 500));
+      console.error("❌ Repaired JSON (first 500):", repaired.slice(0, 500));
+      throw new Error(
+        `Malformed JSON: ${reparseErr.message}. Please retry or check GROQ output.`
+      );
+    }
+  }
 }
 
-//  SYSTEM PROMPT — Code Audit
-//
-//  GRADING RUBRIC:
-//  weightedAvg = codeQuality×0.30 + security×0.30 + performance×0.20 + maintainability×0.20
-//  90-100 A+ | 85-89 A | 80-84 A- | 75-79 B+ | 70-74 B | 65-69 B- | 60-64 C+
-//  55-59 C | 50-54 C- | 45-49 D+ | 40-44 D | 35-39 D- | 0-34 F
+// ── System Prompts (unchanged) ──────────────────────────────
 
 const SYSTEM_PROMPT = `You are a PRINCIPAL SOFTWARE ARCHITECT performing a FORMAL CODE AUDIT.
 
@@ -63,7 +85,6 @@ RULES:
 - Apply the grade formula exactly — do not override it with subjective judgment
 - If a section has nothing to report, return an empty array []`;
 
-//  SYSTEM PROMPT — Test Case Generator
 const TEST_GENERATOR_SYSTEM_PROMPT = `You are an EXPERT SOFTWARE TEST ENGINEER specialising in JavaScript/Node.js.
 
 Analyse source code and generate a test suite using Jest (or Vitest if detected).
@@ -90,7 +111,8 @@ RULES:
 - Prefer jest.fn() for mocks unless vitest is detected (then use vi.fn())
 - If a section has nothing to report, return an empty array []`;
 
-//  Fallbacks
+// ── Fallbacks ──────────────────────────────────────────────────
+
 const FALLBACK_RESULT = {
   summary:
     "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
@@ -123,13 +145,11 @@ const FALLBACK_TEST_RESULT = {
   },
 };
 
-//  Groq call with model fallback chain
+// ── Groq call with model fallback ────────────────────────────
+
 const MODELS_TO_TRY = [process.env.GROQ_MODEL || "openai/gpt-oss-20b", "openai/gpt-oss-120b"];
 
-// TPM budget note: Groq's on-demand free tier caps requests at 8000 tokens/minute
-// (prompt + completion combined). System prompt ≈ 500-600 tokens, so keep
-// userContent + max_tokens comfortably under ~7000 to avoid 413 errors.
-async function callGroqWithRetry(groq, systemPrompt, userContent) {
+async function callGroqWithRetry(groq, systemPrompt, userContent, maxTokens = 4000) {
   let lastError;
   for (const model of MODELS_TO_TRY) {
     try {
@@ -137,7 +157,7 @@ async function callGroqWithRetry(groq, systemPrompt, userContent) {
       const completion = await groq.chat.completions.create({
         model,
         temperature: 0.1,
-        max_tokens: 3000,
+        max_tokens: maxTokens,
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userContent },
@@ -156,17 +176,24 @@ async function callGroqWithRetry(groq, systemPrompt, userContent) {
   return null;
 }
 
-//  Public API
+// ── Public API ────────────────────────────────────────────────
+
 export async function analyzeWithGroq(input) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const result = await callGroqWithRetry(groq, SYSTEM_PROMPT, input.slice(0, 9_000));
+  const result = await callGroqWithRetry(groq, SYSTEM_PROMPT, input.slice(0, 9000), 4000);
   return result ?? FALLBACK_RESULT;
 }
 
 export async function generateTests(input) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   console.log(`🧪 Generating tests for ${input.length} chars…`);
-  const result = await callGroqWithRetry(groq, TEST_GENERATOR_SYSTEM_PROMPT, input.slice(0, 8_000));
+  // Reduce input to 6000 chars, allow 5000 tokens for output
+  const result = await callGroqWithRetry(
+    groq,
+    TEST_GENERATOR_SYSTEM_PROMPT,
+    input.slice(0, 6000),
+    5000
+  );
   return result ?? FALLBACK_TEST_RESULT;
 }
 
