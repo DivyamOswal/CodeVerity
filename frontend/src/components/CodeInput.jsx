@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { analyzeCode } from "../api/analyze";
+import { usePreferences } from "../context/PreferencesContext";
 
 // -----------------------------------------------------------------
 // Reusable mini components (same style as Home & other pages)
@@ -10,8 +11,6 @@ function CodeVerityLogo() {
     <div className="flex items-center justify-center">
       <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
         <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
-
-        {/* Shield + checkmark icon */}
         <svg
           width="18"
           height="18"
@@ -26,13 +25,9 @@ function CodeVerityLogo() {
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
-
-        {/* Small code brackets */}
         <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
           <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
         </div>
-
-        {/* Status dot */}
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
       </div>
     </div>
@@ -92,13 +87,10 @@ function Feature({ icon, title, desc, color }) {
         boxShadow: hovered ? `0 20px 40px ${c.glow}` : "none",
       }}
     >
-      {/* Glow */}
       <div
         className="absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-500"
         style={{ background: c.bg, opacity: hovered ? 0.65 : 0 }}
       />
-
-      {/* Icon */}
       <div
         className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg transition-transform duration-300"
         style={{
@@ -110,7 +102,6 @@ function Feature({ icon, title, desc, color }) {
           {icon}
         </span>
       </div>
-
       <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[#f0f6fc]">
         {title}
       </h3>
@@ -120,12 +111,15 @@ function Feature({ icon, title, desc, color }) {
 }
 
 // -----------------------------------------------------------------
-// Main CodeInput component
+// Main CodeInput component – now supports compact mode from Settings
 // -----------------------------------------------------------------
 
 export default function CodeInput({ setResult, model }) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+
+  // Get preferences for compact mode
+  const { compact } = usePreferences();
 
   const runAnalysis = async () => {
     if (!code.trim()) return;
@@ -140,9 +134,34 @@ export default function CodeInput({ setResult, model }) {
     }
   };
 
+  // Compact overrides
+  const compactClasses = compact
+    ? {
+        container: "py-4 px-2 sm:px-4",
+        header: "mb-4",
+        heading: "text-2xl sm:text-3xl",
+        editorCard: "p-4",
+        footer: "py-3 px-4",
+        featuresGrid: "gap-2",
+        featureCard: "p-3",
+        footerText: "mt-4",
+      }
+    : {
+        container: "py-8 px-4 sm:px-6 lg:px-10",
+        header: "mb-8",
+        heading: "text-3xl sm:text-4xl",
+        editorCard: "p-0",
+        footer: "px-4 py-4 sm:px-5",
+        featuresGrid: "gap-3",
+        featureCard: "p-4",
+        footerText: "mt-8",
+      };
+
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] px-4 py-8 sm:px-6 lg:px-10 relative overflow-hidden">
-      {/* Ambient background: green dot grid and radial glows */}
+    <div
+      className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] relative overflow-hidden ${compactClasses.container}`}
+    >
+      {/* Background glows and dot grid – unchanged */}
       <div
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
@@ -174,7 +193,7 @@ export default function CodeInput({ setResult, model }) {
 
       <div className="mx-auto max-w-6xl relative z-10">
         {/* ================= HEADER ================= */}
-        <div className="mb-8 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+        <div className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${compactClasses.header}`}>
           <div>
             <div className="mb-3 flex items-center gap-3">
               <CodeVerityLogo />
@@ -186,7 +205,7 @@ export default function CodeInput({ setResult, model }) {
               </div>
             </div>
 
-            <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
+            <h1 className={`font-bold tracking-tight ${compactClasses.heading}`}>
               Review your code
               <span className="ml-2 bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
                 smarter.
@@ -199,7 +218,7 @@ export default function CodeInput({ setResult, model }) {
             </p>
           </div>
 
-          {/* Model Badge */}
+          {/* Model Badge – unchanged */}
           <div className="flex w-fit items-center gap-3 rounded-xl border border-[#30363d] bg-[#161b22] px-4 py-3">
             <div className="relative">
               <span className="block h-2.5 w-2.5 rounded-full bg-emerald-400" />
@@ -225,7 +244,7 @@ export default function CodeInput({ setResult, model }) {
           <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-green-500/50 rounded-br-2xl z-10" />
 
           <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
-            {/* Editor Header */}
+            {/* Editor Header – unchanged */}
             <div className="flex items-center justify-between border-b border-[#30363d] bg-[#0d1117] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
@@ -260,9 +279,8 @@ export default function CodeInput({ setResult, model }) {
               </div>
             </div>
 
-            {/* Code Area */}
+            {/* Code Area – unchanged */}
             <div className="relative">
-              {/* Line Numbers */}
               <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[#21262d] bg-[#0d1117] pt-5 text-right font-mono text-xs leading-6 text-[#484f58] sm:block">
                 {Array.from({ length: 12 }, (_, index) => (
                   <div key={index} className="pr-4">
@@ -281,22 +299,22 @@ export default function CodeInput({ setResult, model }) {
             </div>
 
             {/* ================= EDITOR FOOTER ================= */}
-            <div className="flex flex-col gap-4 border-t border-[#30363d] bg-[#0d1117] px-4 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-5">
+            <div
+              className={`flex flex-col gap-4 border-t border-[#30363d] bg-[#0d1117] sm:flex-row sm:items-center sm:justify-between ${compactClasses.footer}`}
+            >
               {/* Editor Stats */}
               <div className="flex items-center gap-5 text-xs text-[#8b949e]">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-green-400" />
                   {code.length} characters
                 </div>
-
                 <div className="hidden sm:block">
                   {code ? code.split("\n").length : 0} lines
                 </div>
-
                 <div className="hidden md:block">AI-powered analysis</div>
               </div>
 
-              {/* Analyze Button – green gradient with scanline */}
+              {/* Analyze Button – unchanged */}
               <button
                 onClick={runAnalysis}
                 disabled={loading || !code.trim()}
@@ -361,8 +379,8 @@ export default function CodeInput({ setResult, model }) {
           </div>
         </div>
 
-        {/* ================= FEATURE CARDS – same as Home ================= */}
-        <div className="mt-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+        {/* ================= FEATURE CARDS ================= */}
+        <div className={`mt-5 grid grid-cols-1 sm:grid-cols-3 ${compactClasses.featuresGrid}`}>
           <Feature
             icon="🔐"
             title="Security Analysis"
@@ -384,7 +402,7 @@ export default function CodeInput({ setResult, model }) {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-[#30363d]">
+        <div className={`flex items-center justify-center gap-2 text-xs text-[#30363d] ${compactClasses.footerText}`}>
           <span>Powered by</span>
           <span className="font-semibold text-[#484f58]">CodeVerity AI</span>
           <span>•</span>
@@ -395,20 +413,10 @@ export default function CodeInput({ setResult, model }) {
       {/* Scanline animation keyframes */}
       <style>{`
         @keyframes scanline {
-          0% {
-            top: -2px;
-            opacity: 0;
-          }
-          8% {
-            opacity: 1;
-          }
-          92% {
-            opacity: 1;
-          }
-          100% {
-            top: 100%;
-            opacity: 0;
-          }
+          0% { top: -2px; opacity: 0; }
+          8% { opacity: 1; }
+          92% { opacity: 1; }
+          100% { top: 100%; opacity: 0; }
         }
       `}</style>
     </div>

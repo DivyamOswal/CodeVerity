@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { analyzeGithub, generateTests } from "../api/github";
 import Result from "./Result";
+import { usePreferences } from "../context/PreferencesContext";
 
 // -----------------------------------------------------------------
 // Mini components – same as Home / CodeInput
@@ -58,6 +59,9 @@ export default function GithubAnalyzer({ setData }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState(null);
+  
+  // Get compact preference
+  const { compact } = usePreferences();
 
   const analyze = async () => {
     if (!repo.startsWith("https://github.com/")) {
@@ -87,6 +91,29 @@ export default function GithubAnalyzer({ setData }) {
     setRepo("");
     if (setData) setData(null);
   };
+
+  // Compact overrides for the input view
+  const compactClasses = compact
+    ? {
+        container: "py-4 px-2 sm:px-4",
+        cardHeader: "px-3 py-3 sm:px-4",
+        cardBody: "p-4",
+        heading: "text-xl",
+        subHeading: "text-xs",
+        input: "p-3 pr-10 text-sm",
+        button: "px-4 py-2.5 text-xs",
+        footer: "mt-4",
+      }
+    : {
+        container: "py-8 px-4 sm:px-6 lg:px-10",
+        cardHeader: "px-4 py-4 sm:px-6",
+        cardBody: "p-6",
+        heading: "text-2xl",
+        subHeading: "text-sm",
+        input: "p-4 pr-12",
+        button: "px-6 py-3 text-sm",
+        footer: "mt-8",
+      };
 
   // ---- Results View ----
   if (analysis) {
@@ -132,7 +159,9 @@ export default function GithubAnalyzer({ setData }) {
 
   // ---- Input View ----
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] px-4 py-8 sm:px-6 lg:px-10 relative overflow-hidden">
+    <div
+      className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] relative overflow-hidden ${compactClasses.container}`}
+    >
       {/* Background glows and dot grid – matches Home and CodeInput */}
       <div
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -173,7 +202,7 @@ export default function GithubAnalyzer({ setData }) {
 
           <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
             {/* Header with logo */}
-            <div className="border-b border-[#30363d] bg-[#0d1117] px-4 py-4 sm:px-6 flex items-center gap-3">
+            <div className={`border-b border-[#30363d] bg-[#0d1117] flex items-center gap-3 ${compactClasses.cardHeader}`}>
               <CodeVerityLogo />
               <div>
                 <p className="text-sm font-bold tracking-wide text-[#f0f6fc]">CODEVERITY</p>
@@ -181,18 +210,18 @@ export default function GithubAnalyzer({ setData }) {
               </div>
             </div>
 
-            <div className="p-6">
-              <h2 className="text-2xl font-bold tracking-tight">
+            <div className={compactClasses.cardBody}>
+              <h2 className={`font-bold tracking-tight ${compactClasses.heading}`}>
                 GitHub Repository Analyzer
               </h2>
-              <p className="text-sm text-[#8b949e] mt-1">
+              <p className={`text-[#8b949e] mt-1 ${compactClasses.subHeading}`}>
                 Analyze any public repo with AI insights ⚡
               </p>
 
               {/* Input field – green focus ring */}
               <div className="relative mt-5">
                 <input
-                  className="w-full p-4 pr-12 rounded-xl bg-[#0d1117] text-[#f0f6fc] border border-[#30363d] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[#484f58] transition-all"
+                  className={`w-full rounded-xl bg-[#0d1117] text-[#f0f6fc] border border-[#30363d] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[#484f58] transition-all ${compactClasses.input}`}
                   placeholder="https://github.com/username/repository"
                   value={repo}
                   onChange={(e) => setRepo(e.target.value)}
@@ -217,7 +246,7 @@ export default function GithubAnalyzer({ setData }) {
                 <button
                   onClick={analyze}
                   disabled={loading}
-                  className="group relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[#30363d] disabled:text-[#484f58] disabled:shadow-none hover:scale-[1.02] active:scale-95"
+                  className={`group relative overflow-hidden rounded-lg font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[#30363d] disabled:text-[#484f58] disabled:shadow-none hover:scale-[1.02] active:scale-95 ${compactClasses.button}`}
                   style={
                     loading
                       ? {}
@@ -245,7 +274,7 @@ export default function GithubAnalyzer({ setData }) {
               </div>
 
               {/* Tip */}
-              <div className="mt-6 text-xs text-[#30363d] border-t border-[#30363d] pt-4">
+              <div className={`text-xs text-[#30363d] border-t border-[#30363d] pt-4 ${compactClasses.footer}`}>
                 💡 Tip: Try popular repos like{" "}
                 <span className="text-green-400">https://github.com/facebook/react</span>
               </div>
@@ -254,7 +283,7 @@ export default function GithubAnalyzer({ setData }) {
         </div>
 
         {/* Footer */}
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-[#30363d]">
+        <div className={`flex items-center justify-center gap-2 text-xs text-[#30363d] ${compactClasses.footer}`}>
           <span>Powered by</span>
           <span className="font-semibold text-[#484f58]">CodeVerity AI</span>
           <span>•</span>

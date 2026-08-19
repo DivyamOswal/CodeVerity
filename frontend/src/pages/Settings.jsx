@@ -3,28 +3,14 @@ import { useEffect, useState, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 import { useAuth } from "../App";
+import { usePreferences } from "../context/PreferencesContext";
 
 const TABS = ["Account", "Security", "Appearance", "Danger Zone"];
-
-const THEME_KEY = "devguard_theme";
-const COMPACT_KEY = "devguard_compact";
-const SCORES_KEY = "devguard_showScores";
-
-function loadPref(key, fallback) {
-  try {
-    const v = localStorage.getItem(key);
-    if (v === null) return fallback;
-    if (v === "true") return true;
-    if (v === "false") return false;
-    return v;
-  } catch {
-    return fallback;
-  }
-}
 
 export default function Settings() {
   const navigate = useNavigate();
   const { isAuth, logout } = useAuth();
+  const { theme, setTheme, compact, setCompact, showScores, setShowScores } = usePreferences();
   const [tab, setTab] = useState("Account");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,11 +24,6 @@ export default function Settings() {
   const [oldPass, setOldPass] = useState("");
   const [newPass, setNewPass] = useState("");
   const [confPass, setConfPass] = useState("");
-
-  /* persisted appearance prefs */
-  const [theme, setTheme] = useState(() => loadPref(THEME_KEY, "dark"));
-  const [compact, setCompact] = useState(() => loadPref(COMPACT_KEY, false));
-  const [showScores, setShowScores] = useState(() => loadPref(SCORES_KEY, true));
 
   const fetchUser = useCallback(async () => {
     setLoading(true);
@@ -80,7 +61,6 @@ export default function Settings() {
     toastTimer.current = setTimeout(() => setToast(null), 3500);
   };
 
-  /*  SAVE PROFILE  */
   const saveProfile = async () => {
     if (!name.trim()) return showToast("Name cannot be empty.", "error");
     if (!email.trim()) return showToast("Email cannot be empty.", "error");
@@ -100,7 +80,6 @@ export default function Settings() {
     }
   };
 
-  /*  CHANGE PASSWORD  */
   const changePassword = async () => {
     if (!oldPass || !newPass || !confPass)
       return showToast("Fill in all password fields.", "error");
@@ -128,19 +107,11 @@ export default function Settings() {
     }
   };
 
-  /*  SAVE APPEARANCE  */
   const saveAppearance = () => {
-    try {
-      localStorage.setItem(THEME_KEY, theme);
-      localStorage.setItem(COMPACT_KEY, String(compact));
-      localStorage.setItem(SCORES_KEY, String(showScores));
-      showToast("Preferences saved.");
-    } catch {
-      showToast("Could not save preferences.", "error");
-    }
+    // Preferences are auto-saved via the context, but we show a toast
+    showToast("Preferences saved.");
   };
 
-  /*  CLEAR HISTORY  */
   const clearHistory = async () => {
     if (!window.confirm("Delete all reports? This cannot be undone.")) return;
     try {
@@ -151,7 +122,6 @@ export default function Settings() {
     }
   };
 
-  /*  DELETE ACCOUNT  */
   const deleteAccount = async () => {
     if (
       !window.confirm(
@@ -192,7 +162,7 @@ export default function Settings() {
   return (
     <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] px-4 py-6 sm:px-6 lg:px-8 pt-16">
       <div className="max-w-7xl mx-auto space-y-6">
-        {/* HEADER – only title, no back button */}
+        {/* HEADER */}
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#f0f6fc]">Settings</h1>
           <p className="text-xs text-[#6e7681]">Manage your account and preferences</p>
@@ -200,7 +170,7 @@ export default function Settings() {
 
         {/* LAYOUT */}
         <div className="flex flex-col md:flex-row gap-6">
-          {/* SIDEBAR – green themed */}
+          {/* SIDEBAR */}
           <nav className="flex md:flex-col gap-1 md:w-44 shrink-0" aria-label="Settings tabs">
             {TABS.map((t) => (
               <button
@@ -223,7 +193,7 @@ export default function Settings() {
 
           {/* PANEL */}
           <div className="flex-1 space-y-5">
-            {/*  ACCOUNT  */}
+            {/* ACCOUNT */}
             {tab === "Account" && (
               <Section title="Public Profile">
                 <div className="flex items-center gap-4 mb-5">
@@ -238,38 +208,23 @@ export default function Settings() {
                 </div>
 
                 <Field label="Full Name">
-                  <Input
-                    value={name}
-                    onChange={setName}
-                    placeholder="Your full name"
-                  />
+                  <Input value={name} onChange={setName} placeholder="Your full name" />
                 </Field>
 
                 <Field label="Email Address">
-                  <Input
-                    value={email}
-                    onChange={setEmail}
-                    placeholder="you@example.com"
-                    type="email"
-                  />
+                  <Input value={email} onChange={setEmail} placeholder="you@example.com" type="email" />
                 </Field>
 
                 <div className="flex items-center justify-between">
-                  {profileDirty && (
-                    <p className="text-xs text-amber-400">Unsaved changes</p>
-                  )}
+                  {profileDirty && <p className="text-xs text-amber-400">Unsaved changes</p>}
                   <div className="ml-auto">
-                    <SaveButton
-                      onClick={saveProfile}
-                      loading={saving}
-                      disabled={!profileDirty}
-                    />
+                    <SaveButton onClick={saveProfile} loading={saving} disabled={!profileDirty} />
                   </div>
                 </div>
               </Section>
             )}
 
-            {/*  SECURITY  */}
+            {/* SECURITY */}
             {tab === "Security" && (
               <Section title="Change Password">
                 <Field label="Current Password">
@@ -318,7 +273,7 @@ export default function Settings() {
               </Section>
             )}
 
-            {/*  APPEARANCE  */}
+            {/* APPEARANCE – USING THE CONTEXT */}
             {tab === "Appearance" && (
               <Section title="Display Preferences">
                 <Field label="Theme">
@@ -354,16 +309,12 @@ export default function Settings() {
                 />
 
                 <div className="flex justify-end">
-                  <SaveButton
-                    onClick={saveAppearance}
-                    loading={false}
-                    label="Save Preferences"
-                  />
+                  <SaveButton onClick={saveAppearance} loading={false} label="Save Preferences" />
                 </div>
               </Section>
             )}
 
-            {/*  DANGER ZONE  */}
+            {/* DANGER ZONE */}
             {tab === "Danger Zone" && (
               <Section title="Danger Zone" danger>
                 <div className="space-y-4">
@@ -394,7 +345,7 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* TOAST – updated colors */}
+      {/* TOAST */}
       {toast && (
         <div
           role="alert"
@@ -414,7 +365,7 @@ export default function Settings() {
   );
 }
 
-/*  UI helpers – restyled with green theme  */
+/*  UI helpers  */
 
 function Section({ title, children, danger }) {
   return (
