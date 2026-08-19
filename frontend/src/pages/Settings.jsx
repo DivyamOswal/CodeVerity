@@ -139,7 +139,7 @@ export default function Settings() {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#0d1117] pt-16">
+      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] pt-16">
         <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
@@ -214,11 +214,11 @@ export default function Settings() {
       };
 
   return (
-    <div className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] ${compactClasses.container}`}>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] ${compactClasses.container}`}>
       <div className={`max-w-7xl mx-auto ${compact ? "space-y-4" : "space-y-6"}`}>
         {/* HEADER */}
         <div className={compactClasses.headerMargin}>
-          <h1 className={`font-bold tracking-tight text-[#f0f6fc] ${compactClasses.heading}`}>Settings</h1>
+          <h1 className={`font-bold tracking-tight text-text-[var(--text-primary)] ${compactClasses.heading}`}>Settings</h1>
           <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>Manage your account and preferences</p>
         </div>
 
@@ -236,7 +236,7 @@ export default function Settings() {
                       ? "bg-[#238636]/20 text-[#3fb950] border border-[#238636]/40"
                       : t === "Danger Zone"
                       ? "text-red-400 hover:bg-white/5 hover:text-red-300"
-                      : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+                      : "text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
                   }`}
                 aria-current={tab === t ? "page" : undefined}
               >
@@ -257,7 +257,7 @@ export default function Settings() {
                     {initials}
                   </div>
                   <div>
-                    <p className={`font-medium text-[#f0f6fc] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
+                    <p className={`font-medium text-text-[var(--text-primary)] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
                     <p className={`text-[#6e7681] ${compactClasses.userEmail}`}>{email}</p>
                   </div>
                 </div>
@@ -368,7 +368,7 @@ export default function Settings() {
                           ${
                             theme === t
                               ? "bg-[#238636]/20 border-[#238636]/40 text-[#3fb950]"
-                              : "bg-white/5 border-[#30363d] text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+                              : "bg-white/5 border-[#30363d] text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
                           }`}
                       >
                         {t === "dark" ? "🌙" : t === "light" ? "☀️" : "💻"} {t}
@@ -478,7 +478,7 @@ function Section({ title, children, danger, compact, padding, gap }) {
       className={`bg-[#161b22] border rounded-2xl ${padding} ${gap}
       ${danger ? "border-red-500/20" : "border-[#30363d]"}`}
     >
-      <h2 className={`font-semibold ${danger ? "text-red-400" : "text-[#f0f6fc]"} ${compact ? "text-sm" : "text-base"}`}>
+      <h2 className={`font-semibold ${danger ? "text-red-400" : "text-text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}>
         {title}
       </h2>
       {children}
@@ -503,7 +503,7 @@ function Input({ value, onChange, type = "text", placeholder, autoComplete, comp
       onChange={(e) => onChange(e.target.value)}
       placeholder={placeholder}
       autoComplete={autoComplete}
-      className={`w-full rounded-xl bg-[#0d1117] border border-[#30363d] text-[#f0f6fc]
+      className={`w-full rounded-xl bg-[var(--bg-primary)] border border-[#30363d] text-text-[var(--text-primary)]
         placeholder-[#484f58] focus:outline-none focus:ring-2 focus:ring-[#238636]/50 transition ${padding}`}
     />
   );
@@ -513,7 +513,7 @@ function Toggle({ label, description, value, onChange, compact, textClass, descC
   return (
     <div className={`flex items-center justify-between gap-4 ${compact ? "gap-3" : ""}`}>
       <div>
-        <p className={`font-medium text-[#f0f6fc] ${textClass}`}>{label}</p>
+        <p className={`font-medium text-text-[var(--text-primary)] ${textClass}`}>{label}</p>
         <p className={`text-[#6e7681] mt-0.5 ${descClass}`}>{description}</p>
       </div>
       <button

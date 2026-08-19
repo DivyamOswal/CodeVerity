@@ -241,7 +241,7 @@ export default function Dashboard() {
   ========================================================= */
 
   return (
-    <div className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] ${compactClasses.container}`}>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] ${compactClasses.container}`}>
       {/* =====================================================
           RESULT VIEW
       ===================================================== */}
@@ -277,7 +277,7 @@ export default function Dashboard() {
                   System online
                 </span>
               </div>
-              <h2 className={`mt-1 font-bold tracking-tight text-[#f0f6fc] ${compactClasses.heading}`}>
+              <h2 className={`mt-1 font-bold tracking-tight text-text-[var(--text-primary)] ${compactClasses.heading}`}>
                 Repository Dashboard
               </h2>
               <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>
@@ -314,7 +314,7 @@ export default function Dashboard() {
                     ⌁
                   </div>
                   <div>
-                    <h2 className={`font-semibold text-[#f0f6fc] ${compactClasses.analyzerTitle}`}>
+                    <h2 className={`font-semibold text-text-[var(--text-primary)] ${compactClasses.analyzerTitle}`}>
                       Analyze a GitHub repository
                     </h2>
                     <p className={`mt-1 leading-relaxed text-[#6e7681] ${compactClasses.analyzerDesc}`}>
@@ -330,7 +330,7 @@ export default function Dashboard() {
                       $
                     </span>
                     <input
-                      className={`w-full rounded-xl border border-[#30363d] bg-[#0d1117] text-[#f0f6fc] outline-none placeholder:text-[#484f58] transition focus:border-green-500/60 focus:ring-1 focus:ring-green-500/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
+                      className={`w-full rounded-xl border border-[#30363d] bg-[var(--bg-primary)] text-text-[var(--text-primary)] outline-none placeholder:text-[#484f58] transition focus:border-green-500/60 focus:ring-1 focus:ring-green-500/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
                       placeholder="https://github.com/username/repository"
                       value={repoUrl}
                       onChange={(e) => {
@@ -384,7 +384,7 @@ export default function Dashboard() {
                   ].map((f) => (
                     <span
                       key={f.label}
-                      className={`flex items-center gap-1.5 rounded-lg border border-[#30363d] bg-[#0d1117] text-[#6e7681] ${compactClasses.featuresTag}`}
+                      className={`flex items-center gap-1.5 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] text-[#6e7681] ${compactClasses.featuresTag}`}
                     >
                       <span className="text-[#3fb950]">{f.icon}</span>
                       {f.label}
@@ -401,7 +401,7 @@ export default function Dashboard() {
               <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22]">
                 <div className={`flex items-center justify-between border-b border-[#21262d] ${compactClasses.recentHeaderPadding}`}>
                   <div>
-                    <h2 className={`font-semibold text-[#f0f6fc] ${compactClasses.recentTitle}`}>
+                    <h2 className={`font-semibold text-text-[var(--text-primary)] ${compactClasses.recentTitle}`}>
                       Recent reports
                     </h2>
                     <p className={`mt-1 text-[#484f58] ${compactClasses.recentSub}`}>
@@ -447,7 +447,7 @@ export default function Dashboard() {
             ================================================= */}
             {!data.recentReports?.length && (
               <div className={`rounded-2xl border border-[#30363d] bg-[#161b22] text-center ${compactClasses.emptyStatePadding}`}>
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] text-lg text-[#484f58]">
+                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#30363d] bg-[var(--bg-primary)] text-lg text-[#484f58]">
                   ◈
                 </div>
                 <h3 className={`font-semibold text-[#c9d1d9] ${compact ? "text-xs" : "text-sm"}`}>
@@ -504,7 +504,7 @@ export default function Dashboard() {
 function CodeVerityLogo() {
   return (
     <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
-      <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+      <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
       <svg
         width="18"
         height="18"
@@ -570,7 +570,7 @@ function StatCard({ label, value, sub, icon, color, delay, compact, statValueCla
           <p className={`font-medium uppercase tracking-[0.12em] text-[#6e7681] ${compact ? "text-[8px]" : "text-[9px]"}`}>
             {label}
           </p>
-          <p className={`mt-2 font-bold tabular-nums text-[#f0f6fc] ${statValueClass}`}>
+          <p className={`mt-2 font-bold tabular-nums text-text-[var(--text-primary)] ${statValueClass}`}>
             {animated}
           </p>
           <p className={`mt-1 text-[#484f58] ${compact ? "text-[8px]" : "text-[9px]"}`}>{sub}</p>
@@ -618,7 +618,7 @@ function ReportRow({ report, onView, compact }) {
       },
     }[grade[0]] ?? {
       text: "text-[#8b949e]",
-      bg: "bg-[#0d1117]",
+      bg: "bg-[var(--bg-primary)]",
       border: "border-[#30363d]",
     };
 
@@ -648,14 +648,14 @@ function ReportRow({ report, onView, compact }) {
   const viewButtonPadding = compact ? "px-2 py-1 text-[8px]" : "px-3 py-1.5 text-[9px]";
 
   return (
-    <div className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[#30363d] hover:bg-[#0d1117] ${rowPadding}`}>
+    <div className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[#30363d] hover:bg-[var(--bg-primary)] ${rowPadding}`}>
       <span
         className={`flex shrink-0 items-center justify-center rounded-lg border font-bold ${gradeColor.text} ${gradeColor.bg} ${gradeColor.border} ${gradeSize}`}
       >
         {grade}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`truncate font-medium text-[#c9d1d9] group-hover:text-[#f0f6fc] ${repoFontSize}`}>
+        <p className={`truncate font-medium text-[#c9d1d9] group-hover:text-text-[var(--text-primary)] ${repoFontSize}`}>
           {repoName}
         </p>
         <p className={`mt-0.5 text-[#484f58] ${dateFontSize}`}>
@@ -734,7 +734,7 @@ function useCountUp(target, duration = 800) {
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0d1117]">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
       <div className="flex flex-col items-center gap-4">
         <CodeVerityLogo />
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#30363d] border-t-[#3fb950]" />

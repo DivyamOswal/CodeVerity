@@ -37,7 +37,6 @@ function ParticleField() {
       particles.forEach((p) => {
         p.x += p.vx;
         p.y += p.vy;
-
         if (p.x < 0) p.x = canvas.width;
         if (p.x > canvas.width) p.x = 0;
         if (p.y < 0) p.y = canvas.height;
@@ -54,7 +53,6 @@ function ParticleField() {
           const dx = particles[i].x - particles[j].x;
           const dy = particles[i].y - particles[j].y;
           const dist = Math.sqrt(dx * dx + dy * dy);
-
           if (dist < 110) {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
@@ -97,17 +95,14 @@ function TypedWord({ words }) {
       const t = setTimeout(() => setDel(true), 1600);
       return () => clearTimeout(t);
     }
-
     if (del && text === "") {
       setDel(false);
       setIndex((i) => i + 1);
       return;
     }
-
     const t = setTimeout(() => {
       setText(del ? text.slice(0, -1) : word.slice(0, text.length + 1));
     }, speed);
-
     return () => clearTimeout(t);
   }, [text, del, index, words]);
 
@@ -127,7 +122,7 @@ function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
       <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 animate-float">
-        <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+        <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
         <svg
           width="20"
           height="20"
@@ -142,7 +137,7 @@ function CodeVerityLogo() {
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
-        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[#161b22] border border-[#30363d]">
+        <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
           <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
         </div>
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-ping" />
@@ -164,8 +159,8 @@ function Feature({ icon, title, desc, delay }) {
       onMouseLeave={() => setHovered(false)}
       className="group relative cursor-default overflow-hidden rounded-xl p-5 text-left transition-all duration-300 ease-out"
       style={{
-        background: "rgba(22,27,34,0.72)",
-        border: `1px solid ${hovered ? "rgba(63,185,80,0.40)" : "rgba(48,54,61,0.9)"}`,
+        background: "var(--bg-card)",
+        border: `1px solid ${hovered ? "rgba(63,185,80,0.40)" : "var(--border-light)"}`,
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
         boxShadow: hovered ? "0 20px 40px rgba(63,185,80,0.10)" : "none",
         animation: `fadeUp 0.6s ${delay} ease both`,
@@ -186,10 +181,10 @@ function Feature({ icon, title, desc, delay }) {
       >
         {icon}
       </div>
-      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[#f0f6fc]">
+      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="text-[11px] leading-relaxed text-[#8b949e]">{desc}</p>
+      <p className="text-[11px] leading-relaxed text-[var(--text-secondary)]">{desc}</p>
     </div>
   );
 }
@@ -236,14 +231,14 @@ function StatPill({ value, label }) {
     <div
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
-      className="flex min-w-[110px] flex-col items-center rounded-xl border border-[#30363d] bg-[#161b22] px-5 py-3 transition-all duration-300"
+      className="flex min-w-[110px] flex-col items-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3 transition-all duration-300"
       style={{
         transform: hovered ? "scale(1.05)" : "scale(1)",
-        borderColor: hovered ? "rgba(63,185,80,0.4)" : "#30363d",
+        borderColor: hovered ? "rgba(63,185,80,0.4)" : "var(--border-light)",
       }}
     >
-      <span className="text-xl font-bold tabular-nums text-[#f0f6fc]">{value}</span>
-      <span className="mt-0.5 text-[9px] uppercase tracking-wider text-[#8b949e]">{label}</span>
+      <span className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{value}</span>
+      <span className="mt-0.5 text-[9px] uppercase tracking-wider text-[var(--text-secondary)]">{label}</span>
     </div>
   );
 }
@@ -268,7 +263,7 @@ function ScanLine() {
 }
 
 /* =========================================================
-   HOME – now supports compact preference
+   HOME – now fully theme‑aware
 ========================================================= */
 
 export default function Home() {
@@ -315,8 +310,8 @@ export default function Home() {
       };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#0d1117] px-4 text-[#f0f6fc] sm:px-6">
-      {/* Background glows and dot grid – unchanged */}
+    <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
+      {/* Background glows and dot grid – unchanged */} 
       <div
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
@@ -362,10 +357,10 @@ export default function Home() {
           >
             <CodeVerityLogo />
             <div className="text-left">
-              <p className="text-[12px] font-bold tracking-[0.22em] text-[#f0f6fc] uppercase">
+              <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)] uppercase">
                 CodeVerity
               </p>
-              <p className="mt-0.5 text-[9px] text-[#8b949e]">
+              <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">
                 AI-powered repository intelligence
               </p>
             </div>
@@ -373,7 +368,7 @@ export default function Home() {
 
           {/* BADGE */}
           <div
-            className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[#30363d] bg-[#161b22]/80 px-3.5 py-1.5 text-[10px] font-medium text-[#8b949e] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
+            className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
             style={{ animation: "fadeDown 0.6s 0.05s ease both" }}
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3fb950]" />
@@ -387,7 +382,7 @@ export default function Home() {
               animation: "fadeUp 0.6s 0.1s ease both, gradientMove 8s ease-in-out infinite alternate",
             }}
           >
-            <span className="text-[#f0f6fc]">Code</span>
+            <span className="text-[var(--text-primary)]">Code</span>
             <span
               style={{
                 background: "linear-gradient(135deg,#3fb950 0%,#10b981 48%,#2dd4bf 100%)",
@@ -417,7 +412,7 @@ export default function Home() {
 
           {/* DESCRIPTION */}
           <p
-            className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[#8b949e] ${compactClasses.description}`}
+            className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
             style={{ animation: "fadeUp 0.6s 0.3s ease both" }}
           >
             Drop any public GitHub URL and get a complete AI-powered repository audit with architecture
@@ -456,7 +451,7 @@ export default function Home() {
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-lg border border-[#30363d] bg-[#161b22]/75 px-7 py-3 text-sm font-semibold text-[#f0f6fc]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-green-500/40 hover:bg-[#21262d]"
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-green-500/40 hover:bg-[var(--bg-hover)]"
                 >
                   Get Started Free →
                 </Link>
@@ -466,7 +461,7 @@ export default function Home() {
 
           {/* TRUST LINE */}
           <div
-            className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[#484f58]"
+            className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
             style={{ animation: "fadeUp 0.6s 0.45s ease both" }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950]" />
@@ -490,11 +485,11 @@ export default function Home() {
             className="mb-4 flex items-center gap-3"
             style={{ animation: "fadeUp 0.6s 0.52s ease both" }}
           >
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[#30363d]" />
-            <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[#484f58]">
+            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--border-light)]" />
+            <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
               What CodeVerity checks
             </span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[#30363d]" />
+            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--border-light)]" />
           </div>
 
           {/* FEATURE CARDS */}
@@ -521,7 +516,7 @@ export default function Home() {
 
           {/* FOOTER */}
           <p
-            className={`text-[9px] text-[#30363d] ${compactClasses.footerMargin}`}
+            className={`text-[9px] text-[var(--border-light)] ${compactClasses.footerMargin}`}
             style={{ animation: "fadeUp 0.6s 0.85s ease both" }}
           >
             CodeVerity · AI Repository Intelligence
@@ -529,7 +524,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ANIMATIONS */}
+      {/* ANIMATIONS – moved to global CSS, so we can keep these inline for fallback */}
       <style>{`
         @keyframes fadeUp {
           from { transform: translateY(18px); opacity: 0; }

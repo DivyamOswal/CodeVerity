@@ -104,7 +104,7 @@ export default function Result({
   const codeBlockFont = compact ? "text-[10px]" : "text-[11px]";
 
   return (
-    <div className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] relative overflow-hidden ${containerPadding}`}>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] relative overflow-hidden ${containerPadding}`}>
       {/* Green dot grid background – same as Home/CodeInput */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -151,7 +151,7 @@ export default function Result({
                 CodeVerity
               </span>
             </div>
-            <h1 className={`font-bold tracking-tight text-[#f0f6fc] ${headingSize}`}>
+            <h1 className={`font-bold tracking-tight text-text-[var(--text-primary)] ${headingSize}`}>
               AI Code Analysis Report
             </h1>
             <p className={`mt-1 text-xs text-[#6e7681] ${compact ? "text-[10px]" : ""}`}>
@@ -204,7 +204,7 @@ export default function Result({
                 onClick={() => handleTabClick(tab.id)}
                 className={`relative flex items-center gap-2 font-medium transition-all ${tabPadding} ${
                   activeTab === tab.id
-                    ? "text-[#f0f6fc]"
+                    ? "text-text-[var(--text-primary)]"
                     : "text-[#6e7681] hover:text-[#c9d1d9]"
                 }`}
               >
@@ -279,7 +279,7 @@ export default function Result({
                         <p className={`uppercase tracking-wider text-[#6e7681] ${compact ? "text-[9px]" : "text-[10px]"}`}>
                           Overall Assessment
                         </p>
-                        <p className={`font-semibold text-[#f0f6fc] ${compact ? "text-xs" : "text-sm"}`}>
+                        <p className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>
                           Repository Analysis Complete
                         </p>
                       </div>
@@ -296,7 +296,7 @@ export default function Result({
                   {architecture.map((a, i) => (
                     <div
                       key={i}
-                      className={`rounded-lg border border-[#21262d] bg-[#0d1117] transition hover:border-[#30363d] ${compact ? "p-2" : "p-3"}`}
+                      className={`rounded-lg border border-[#21262d] bg-[var(--bg-primary)] transition hover:border-[#30363d] ${compact ? "p-2" : "p-3"}`}
                     >
                       <div className="mb-1 flex items-center gap-2">
                         <span className={`flex items-center justify-center rounded bg-[#238636]/10 text-[10px] text-[#3fb950] ${compact ? "h-4 w-4 text-[8px]" : "h-5 w-5"}`}>
@@ -325,7 +325,7 @@ export default function Result({
                           !
                         </div>
                         <div className="min-w-0">
-                          <p className={`font-semibold text-[#f0f6fc] ${compact ? "text-[10px]" : "text-xs"}`}>
+                          <p className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}>
                             {b.title}{" "}
                             <span className="text-[#f85149]">({b.impact})</span>
                           </p>
@@ -356,7 +356,7 @@ export default function Result({
                           !
                         </div>
                         <div className="min-w-0">
-                          <p className={`font-semibold text-[#f0f6fc] ${compact ? "text-[10px]" : "text-xs"}`}>{s.issue}</p>
+                          <p className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}>{s.issue}</p>
                           {s.risk && (
                             <p className={`mt-1 text-[#f85149] ${compact ? "text-[10px]" : "text-xs"}`}>Risk: {s.risk}</p>
                           )}
@@ -379,7 +379,7 @@ export default function Result({
                   {futureRoadmap.map((f, i) => (
                     <div
                       key={i}
-                      className={`flex gap-3 rounded-lg border border-[#21262d] bg-[#0d1117] ${compact ? "p-2" : "p-3"}`}
+                      className={`flex gap-3 rounded-lg border border-[#21262d] bg-[var(--bg-primary)] ${compact ? "p-2" : "p-3"}`}
                     >
                       <div className={`flex shrink-0 items-center justify-center rounded-full bg-[#238636]/10 text-[#3fb950] ${compact ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[10px]"}`}>
                         {i + 1}
@@ -441,7 +441,7 @@ export default function Result({
                     !
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[#f0f6fc]">Test Generation Failed</p>
+                    <p className="text-sm font-semibold text-text-[var(--text-primary)]">Test Generation Failed</p>
                     <p className="mt-1 whitespace-pre-line text-xs leading-5 text-[#8b949e]">
                       {testError}
                     </p>
@@ -508,7 +508,7 @@ export default function Result({
                       {testData.testFiles.map((file, i) => (
                         <div
                           key={i}
-                          className="overflow-hidden rounded-xl border border-[#30363d] bg-[#0d1117]"
+                          className="overflow-hidden rounded-xl border border-[#30363d] bg-[var(--bg-primary)]"
                         >
                           <div className={`flex items-center justify-between border-b border-[#21262d] bg-[#161b22] ${testFilePadding}`}>
                             <span className={`max-w-[60%] truncate font-mono text-[#3fb950] ${testFileFont}`}>
@@ -520,13 +520,13 @@ export default function Result({
                               </span>
                               <button
                                 onClick={() => copy(file.testCode, `file-${i}`)}
-                                className={`rounded-md border border-[#30363d] bg-[#21262d] text-[#8b949e] transition hover:text-[#f0f6fc] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
+                                className={`rounded-md border border-[#30363d] bg-[#21262d] text-[#8b949e] transition hover:text-text-[var(--text-primary)] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
                               >
                                 {copiedId === `file-${i}` ? "Copied" : "Copy"}
                               </button>
                             </div>
                           </div>
-                          <pre className={`overflow-x-auto bg-[#0d1117] text-[#8b949e] ${codeBlockPadding} ${codeBlockFont}`}>
+                          <pre className={`overflow-x-auto bg-[var(--bg-primary)] text-[#8b949e] ${codeBlockPadding} ${codeBlockFont}`}>
                             <code>{file.testCode}</code>
                           </pre>
                         </div>
@@ -593,9 +593,9 @@ export default function Result({
                       {testData.integrationTests.map((t, i) => (
                         <div
                           key={i}
-                          className={`rounded-xl border border-[#21262d] bg-[#0d1117] ${compact ? "p-3" : "p-4"}`}
+                          className={`rounded-xl border border-[#21262d] bg-[var(--bg-primary)] ${compact ? "p-3" : "p-4"}`}
                         >
-                          <p className={`font-semibold text-[#f0f6fc] ${compact ? "text-[10px]" : "text-xs"}`}>{t.label}</p>
+                          <p className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}>{t.label}</p>
                           <p className={`mb-3 mt-1 text-[#6e7681] ${compact ? "text-[10px]" : "text-[11px]"}`}>{t.description}</p>
                           <div className="relative">
                             <pre className={`overflow-x-auto rounded-lg border border-[#21262d] bg-[#010409] pr-16 text-[#7ee787] ${codeBlockPadding} ${codeBlockFont}`}>
@@ -603,7 +603,7 @@ export default function Result({
                             </pre>
                             <button
                               onClick={() => copy(t.codeSnippet, `int-${i}`)}
-                              className={`absolute right-2 top-2 rounded-md border border-[#30363d] bg-[#161b22] text-[#8b949e] transition hover:text-[#f0f6fc] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
+                              className={`absolute right-2 top-2 rounded-md border border-[#30363d] bg-[#161b22] text-[#8b949e] transition hover:text-text-[var(--text-primary)] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
                             >
                               {copiedId === `int-${i}` ? "✓" : "Copy"}
                             </button>
@@ -631,7 +631,7 @@ export default function Result({
                             </div>
                             <button
                               onClick={() => copy(m.snippet, `mock-${i}`)}
-                              className={`shrink-0 rounded-md border border-[#30363d] bg-[#21262d] text-[#8b949e] transition hover:text-[#f0f6fc] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
+                              className={`shrink-0 rounded-md border border-[#30363d] bg-[#21262d] text-[#8b949e] transition hover:text-text-[var(--text-primary)] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
                             >
                               {copiedId === `mock-${i}` ? "✓" : "Copy"}
                             </button>
@@ -780,7 +780,7 @@ function TestCaseRow({ testCase: c, id, copiedId, onCopy, accent = "indigo", com
     yellow: "text-[#d29922]",
   };
   return (
-    <div className={`rounded-lg border border-[#21262d] bg-[#0d1117] ${compact ? "p-2" : "p-3"}`}>
+    <div className={`rounded-lg border border-[#21262d] bg-[var(--bg-primary)] ${compact ? "p-2" : "p-3"}`}>
       <div className={`flex items-center gap-2 ${compact ? "mb-1.5" : "mb-2"}`}>
         <TypeBadge type={c.type} compact={compact} />
         <span className={`text-[#8b949e] ${compact ? "text-[10px]" : "text-[11px]"}`}>{c.label}</span>
@@ -804,7 +804,7 @@ function TestCaseRow({ testCase: c, id, copiedId, onCopy, accent = "indigo", com
           </pre>
           <button
             onClick={() => onCopy(c.codeSnippet, id)}
-            className={`absolute right-2 top-2 rounded-md border border-[#30363d] bg-[#161b22] text-[#8b949e] transition hover:text-[#f0f6fc] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
+            className={`absolute right-2 top-2 rounded-md border border-[#30363d] bg-[#161b22] text-[#8b949e] transition hover:text-text-[var(--text-primary)] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
           >
             {copiedId === id ? "✓" : "Copy"}
           </button>
@@ -850,7 +850,7 @@ function TypeBadge({ type, compact }) {
 ========================================================= */
 function EmptyState({ text, compact }) {
   return (
-    <div className={`flex items-center gap-2 rounded-lg border border-dashed border-[#30363d] bg-[#0d1117] ${compact ? "px-2 py-2" : "px-3 py-4"}`}>
+    <div className={`flex items-center gap-2 rounded-lg border border-dashed border-[#30363d] bg-[var(--bg-primary)] ${compact ? "px-2 py-2" : "px-3 py-4"}`}>
       <span className={`text-[#484f58] ${compact ? "text-[9px]" : "text-xs"}`}>○</span>
       <p className={`text-[#6e7681] ${compact ? "text-[9px]" : "text-xs"}`}>{text}</p>
     </div>

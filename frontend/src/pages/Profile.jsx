@@ -13,7 +13,7 @@ import { usePreferences } from "../context/PreferencesContext";
 function CodeVerityLogo() {
   return (
     <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
-      <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+      <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
       <svg
         width="18"
         height="18"
@@ -102,14 +102,14 @@ export default function Profile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[#0d1117] flex flex-col items-center justify-center gap-4 text-[#f0f6fc] pt-16">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-text-[var(--text-primary)] pt-16">
         <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10">
           <span className="text-xl">!</span>
         </div>
         <p className="text-sm text-red-400">{error}</p>
         <button
           onClick={load}
-          className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-2 text-xs font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-[#f0f6fc]"
+          className="rounded-lg border border-[#30363d] bg-[#161b22] px-4 py-2 text-xs font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-text-[var(--text-primary)]"
         >
           Retry
         </button>
@@ -240,11 +240,11 @@ export default function Profile() {
       };
 
   return (
-    <div className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] ${compactClasses.container}`}>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] ${compactClasses.container}`}>
       <div className={`mx-auto w-full max-w-7xl space-y-5 ${compact ? "space-y-4" : "space-y-5"}`}>
         {/* PAGE HEADER */}
         <div className={compactClasses.headerMargin}>
-          <h1 className={`font-bold tracking-tight text-[#f0f6fc] ${compactClasses.heading}`}>
+          <h1 className={`font-bold tracking-tight text-text-[var(--text-primary)] ${compactClasses.heading}`}>
             Profile
           </h1>
           <p className={`text-[#6e7681] ${compactClasses.subHeading}`}>Manage your CodeVerity account and audit history.</p>
@@ -269,9 +269,9 @@ export default function Profile() {
             {/* User Info */}
             <div className="min-w-0 flex-1">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                <h1 className={`truncate font-bold text-[#f0f6fc] ${compactClasses.nameSize}`}>{name}</h1>
+                <h1 className={`truncate font-bold text-text-[var(--text-primary)] ${compactClasses.nameSize}`}>{name}</h1>
                 {user?.role && (
-                  <span className={`w-fit rounded-md border border-[#30363d] bg-[#0d1117] font-semibold uppercase tracking-wider text-[#8b949e] ${compact ? "px-1.5 py-0.5 text-[7px]" : "px-2 py-1 text-[8px]"}`}>
+                  <span className={`w-fit rounded-md border border-[#30363d] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[#8b949e] ${compact ? "px-1.5 py-0.5 text-[7px]" : "px-2 py-1 text-[8px]"}`}>
                     {user.role}
                   </span>
                 )}
@@ -286,7 +286,7 @@ export default function Profile() {
             {/* Settings button */}
             <button
               onClick={() => navigate("/settings")}
-              className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#30363d] bg-[#0d1117] font-medium text-[#8b949e] transition hover:border-green-500/40 hover:bg-[#161b22] hover:text-[#f0f6fc] ${compactClasses.settingsButton}`}
+              className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] font-medium text-[#8b949e] transition hover:border-green-500/40 hover:bg-[#161b22] hover:text-text-[var(--text-primary)] ${compactClasses.settingsButton}`}
             >
               <span className="text-sm">⚙</span>
               Settings
@@ -343,12 +343,12 @@ export default function Profile() {
           <div className={`rounded-2xl border border-[#30363d] bg-[#161b22] ${compactClasses.gradeBreakdownPadding}`}>
             <div className={`flex items-center justify-between ${compactClasses.gradeBreakdownMargin}`}>
               <div>
-                <h2 className={`font-semibold text-[#f0f6fc] ${compact ? "text-xs" : "text-sm"}`}>Grade Breakdown</h2>
+                <h2 className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>Grade Breakdown</h2>
                 <p className={`mt-1 text-[#484f58] ${compact ? "text-[8px]" : "text-[10px]"}`}>
                   Distribution of your repository audit grades
                 </p>
               </div>
-              <div className={`rounded-lg border border-[#30363d] bg-[#0d1117] text-[#6e7681] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+              <div className={`rounded-lg border border-[#30363d] bg-[var(--bg-primary)] text-[#6e7681] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
                 {totalScans} total
               </div>
             </div>
@@ -393,7 +393,7 @@ export default function Profile() {
           <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22]">
             <div className={`flex items-center justify-between border-b border-[#21262d] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
               <div>
-                <h2 className={`font-semibold text-[#f0f6fc] ${compact ? "text-xs" : "text-sm"}`}>Recent Activity</h2>
+                <h2 className={`font-semibold text-text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>Recent Activity</h2>
                 <p className={`mt-1 text-[#484f58] ${compact ? "text-[8px]" : "text-[10px]"}`}>Your latest repository audits</p>
               </div>
               <button
@@ -425,7 +425,7 @@ export default function Profile() {
                 return (
                   <div
                     key={r._id ?? i}
-                    className={`group flex items-center gap-3 rounded-xl transition hover:bg-[#0d1117] ${compactClasses.recentRowPadding}`}
+                    className={`group flex items-center gap-3 rounded-xl transition hover:bg-[var(--bg-primary)] ${compactClasses.recentRowPadding}`}
                   >
                     <span
                       className={`flex shrink-0 items-center justify-center rounded-lg font-bold ${style.badge} ${compact ? "h-6 w-6 text-[9px]" : "h-7 w-7 text-[10px]"}`}
@@ -433,13 +433,13 @@ export default function Profile() {
                       {r.grade ?? "N/A"}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className={`truncate font-medium text-[#c9d1d9] group-hover:text-[#f0f6fc] ${compactClasses.recentRepoSize}`}>
+                      <p className={`truncate font-medium text-[#c9d1d9] group-hover:text-text-[var(--text-primary)] ${compactClasses.recentRepoSize}`}>
                         {repoName}
                       </p>
                       <p className={`mt-0.5 text-[#484f58] ${compact ? "text-[7px]" : "text-[8px]"}`}>Repository audit</p>
                     </div>
                     <span className={`hidden text-[#484f58] sm:block ${compactClasses.recentDateSize}`}>{date}</span>
-                    <span className={`rounded-md border border-[#30363d] bg-[#0d1117] font-medium text-[#8b949e] ${compactClasses.recentScoreSize}`}>
+                    <span className={`rounded-md border border-[#30363d] bg-[var(--bg-primary)] font-medium text-[#8b949e] ${compactClasses.recentScoreSize}`}>
                       {avg}%
                     </span>
                   </div>
@@ -454,7 +454,7 @@ export default function Profile() {
           <div className={`relative overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] text-center ${compactClasses.emptyStatePadding}`}>
             <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-green-500/10 blur-3xl" />
             <div className="relative">
-              <div className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[#30363d] bg-[#0d1117] ${compact ? "h-12 w-12" : "h-14 w-14"}`}>
+              <div className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[#30363d] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}>
                 <span className={`${compact ? "text-lg" : "text-xl"}`}>◈</span>
               </div>
               <p className={`font-semibold text-[#c9d1d9] ${compactClasses.emptyStateTitle}`}>No scans yet</p>
@@ -489,7 +489,7 @@ export default function Profile() {
 
 function Pill({ icon, text, compact }) {
   return (
-    <span className={`flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[#0d1117] text-[#6e7681] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+    <span className={`flex items-center gap-1.5 rounded-md border border-[#30363d] bg-[var(--bg-primary)] text-[#6e7681] ${compact ? "px-2 py-1 text-[8px]" : "px-2.5 py-1.5 text-[9px]"}`}>
       <span className="text-[#3fb950]">{icon}</span>
       {text}
     </span>
@@ -528,7 +528,7 @@ function StatCard({ icon, label, value, color, compact, padding, valueSize, icon
         <div className={`mb-3 flex items-center justify-center rounded-lg text-sm ${style.icon} ${iconSize}`}>
           {icon}
         </div>
-        <p className={`font-bold text-[#f0f6fc] ${valueSize}`}>{value}</p>
+        <p className={`font-bold text-text-[var(--text-primary)] ${valueSize}`}>{value}</p>
         <p className={`mt-0.5 text-[#484f58] ${compact ? "text-[8px]" : "text-[9px]"}`}>{label}</p>
       </div>
     </div>
@@ -582,7 +582,7 @@ function gradeStyle(letter) {
 
 function LoadingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#0d1117] pt-16">
+    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] pt-16">
       <div className="flex flex-col items-center gap-4">
         <CodeVerityLogo />
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-[#30363d] border-t-[#3fb950]" />

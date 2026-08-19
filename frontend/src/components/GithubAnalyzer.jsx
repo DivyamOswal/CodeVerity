@@ -11,7 +11,7 @@ function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
       <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
-        <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+        <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
         <svg
           width="20"
           height="20"
@@ -120,10 +120,10 @@ export default function GithubAnalyzer({ setData }) {
     return (
       <div>
         {/* Sticky bar – green themed */}
-        <div className="sticky top-0 z-50 bg-[#0d1117]/80 backdrop-blur border-b border-[#30363d] px-6 py-3 flex items-center gap-4">
+        <div className="sticky top-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur border-b border-[#30363d] px-6 py-3 flex items-center gap-4">
           <button
             onClick={handleReset}
-            className="text-sm text-[#8b949e] hover:text-[#f0f6fc] transition flex items-center gap-2"
+            className="text-sm text-[#8b949e] hover:text-text-[var(--text-primary)] transition flex items-center gap-2"
           >
             <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M19 12H5" />
@@ -160,7 +160,7 @@ export default function GithubAnalyzer({ setData }) {
   // ---- Input View ----
   return (
     <div
-      className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] relative overflow-hidden ${compactClasses.container}`}
+      className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
     >
       {/* Background glows and dot grid – matches Home and CodeInput */}
       <div
@@ -202,10 +202,10 @@ export default function GithubAnalyzer({ setData }) {
 
           <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
             {/* Header with logo */}
-            <div className={`border-b border-[#30363d] bg-[#0d1117] flex items-center gap-3 ${compactClasses.cardHeader}`}>
+            <div className={`border-b border-[#30363d] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}>
               <CodeVerityLogo />
               <div>
-                <p className="text-sm font-bold tracking-wide text-[#f0f6fc]">CODEVERITY</p>
+                <p className="text-sm font-bold tracking-wide text-text-[var(--text-primary)]">CODEVERITY</p>
                 <p className="text-xs text-[#8b949e]">GitHub Repository Intelligence</p>
               </div>
             </div>
@@ -221,7 +221,7 @@ export default function GithubAnalyzer({ setData }) {
               {/* Input field – green focus ring */}
               <div className="relative mt-5">
                 <input
-                  className={`w-full rounded-xl bg-[#0d1117] text-[#f0f6fc] border border-[#30363d] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[#484f58] transition-all ${compactClasses.input}`}
+                  className={`w-full rounded-xl bg-[var(--bg-primary)] text-text-[var(--text-primary)] border border-[#30363d] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[#484f58] transition-all ${compactClasses.input}`}
                   placeholder="https://github.com/username/repository"
                   value={repo}
                   onChange={(e) => setRepo(e.target.value)}

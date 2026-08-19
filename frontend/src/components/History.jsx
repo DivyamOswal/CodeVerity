@@ -110,12 +110,12 @@ export default function History() {
   // ---- Full Report View ----
   if (selected) {
     return (
-      <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] overflow-x-hidden">
-        <div className="sticky top-16 z-50 border-b border-[#30363d] bg-[#0d1117]/80 backdrop-blur">
+      <div className="min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] overflow-x-hidden">
+        <div className="sticky top-16 z-50 border-b border-[#30363d] bg-[var(--bg-primary)]/80 backdrop-blur">
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
             <button
               onClick={() => setSelected(null)}
-              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8b949e] transition hover:bg-[#30363d] hover:text-[#f0f6fc]"
+              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[#8b949e] transition hover:bg-[#30363d] hover:text-text-[var(--text-primary)]"
             >
               <span className="transition-transform group-hover:-translate-x-1">←</span>
               Back to History
@@ -157,13 +157,13 @@ export default function History() {
   const reportGridGap = compact ? "gap-2" : "gap-3";
 
   return (
-    <div className="min-h-screen bg-[#0d1117] text-[#f0f6fc] overflow-x-hidden">
+    <div className="min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] overflow-x-hidden">
       <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${containerPadding}`}>
         {/* HEADER */}
         <div className={headerMargin}>
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              <h1 className={`text-3xl font-bold tracking-tight text-[#f0f6fc] ${compact ? "sm:text-3xl" : "sm:text-4xl"}`}>
+              <h1 className={`text-3xl font-bold tracking-tight text-text-[var(--text-primary)] ${compact ? "sm:text-3xl" : "sm:text-4xl"}`}>
                 Review History
               </h1>
               <p className={`mt-1 max-w-xl text-sm leading-5 text-[#8b949e] ${compact ? "text-xs" : ""}`}>
@@ -190,7 +190,7 @@ export default function History() {
               </div>
               <div>
                 <p className="text-[9px] uppercase tracking-wide text-[#484f58]">Total Reviews</p>
-                <p className="text-base font-semibold text-[#f0f6fc]">{reports.length}</p>
+                <p className="text-base font-semibold text-text-[var(--text-primary)]">{reports.length}</p>
               </div>
             </div>
           </div>
@@ -221,7 +221,7 @@ export default function History() {
                       {filterGrade === g ? "Selected" : "Filter"}
                     </span>
                   </div>
-                  <p className={`mt-2 text-lg font-semibold text-[#f0f6fc] ${compact ? "text-base" : ""}`}>{count}</p>
+                  <p className={`mt-2 text-lg font-semibold text-text-[var(--text-primary)] ${compact ? "text-base" : ""}`}>{count}</p>
                   <p className="text-[10px] text-[#484f58]">{label}</p>
                 </button>
               );
@@ -250,14 +250,14 @@ export default function History() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search repositories or summaries..."
-                  className="h-10 w-full rounded-lg border border-[#30363d] bg-[#0d1117] pl-10 pr-4 text-xs text-[#f0f6fc] outline-none transition placeholder:text-[#484f58] focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                  className="h-10 w-full rounded-lg border border-[#30363d] bg-[var(--bg-primary)] pl-10 pr-4 text-xs text-text-[var(--text-primary)] outline-none transition placeholder:text-[#484f58] focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
-                  className="h-10 rounded-lg border border-[#30363d] bg-[#0d1117] px-3 text-xs text-[#8b949e] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                  className="h-10 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] px-3 text-xs text-[#8b949e] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="all">All grades</option>
                   {["A", "B", "C", "D", "F"].map((g) => (
@@ -269,7 +269,7 @@ export default function History() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-10 rounded-lg border border-[#30363d] bg-[#0d1117] px-3 text-xs text-[#8b949e] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
+                  className="h-10 rounded-lg border border-[#30363d] bg-[var(--bg-primary)] px-3 text-xs text-[#8b949e] outline-none transition focus:border-green-500 focus:ring-2 focus:ring-green-500/20"
                 >
                   <option value="date">Newest</option>
                   <option value="score">Highest Score</option>
@@ -329,7 +329,7 @@ export default function History() {
                   <path d="M8 17h5" />
                 </svg>
               </div>
-              <h2 className="text-lg font-semibold text-[#f0f6fc]">No reviews yet</h2>
+              <h2 className="text-lg font-semibold text-text-[var(--text-primary)]">No reviews yet</h2>
               <p className="mt-2 text-sm leading-5 text-[#484f58]">
                 Analyze a GitHub repository and your AI-powered code audit will appear here.
               </p>
@@ -340,13 +340,13 @@ export default function History() {
         {/* NO FILTER RESULTS */}
         {!loading && reports.length > 0 && filtered.length === 0 && (
           <div className="rounded-xl border border-[#30363d] bg-[#161b22] py-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[#0d1117] text-[#484f58]">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[#484f58]">
               <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <circle cx="11" cy="11" r="7" />
                 <path d="m20 20-4-4" />
               </svg>
             </div>
-            <p className="text-sm font-medium text-[#f0f6fc]">No matching reports</p>
+            <p className="text-sm font-medium text-text-[var(--text-primary)]">No matching reports</p>
             <p className="mt-1 text-xs text-[#484f58]">Try changing your search or filters.</p>
             <button
               onClick={() => {
@@ -444,14 +444,14 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
       <div className={`border-b border-[#21262d] ${headerPadding}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#0d1117] text-[#484f58] transition group-hover:text-green-400">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-primary)] text-[#484f58] transition group-hover:text-green-400">
               <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
                 <path d="M12 .5C5.73.5.75 5.48.75 11.75c0 4.97 3.22 9.19 7.68 10.68.56.1.77-.24.77-.54v-1.89c-3.12.68-3.78-1.33-3.78-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.62 1.22 3.26.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.56 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.64 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.32-2.63 5.27-5.13 5.55.4.35.76 1.05.76 2.12v3.15c0 .3.2.65.78.54a11.27 11.27 0 0 0 7.67-10.68C23.25 5.48 18.27.5 12 .5Z" />
               </svg>
             </div>
             <div className="min-w-0">
               <p className="mb-0.5 text-[9px] uppercase tracking-wider text-[#484f58]">Repository</p>
-              <h2 className={`truncate font-semibold text-[#f0f6fc] ${titleSize}`}>{repoName}</h2>
+              <h2 className={`truncate font-semibold text-text-[var(--text-primary)] ${titleSize}`}>{repoName}</h2>
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
@@ -520,13 +520,13 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
               {r.toolsAndPackages.slice(0, 4).map((t, i) => (
                 <span
                   key={i}
-                  className="rounded-md border border-[#30363d] bg-[#0d1117] px-1.5 py-0.5 text-[9px] text-[#8b949e] transition hover:border-green-500/40 hover:text-green-400"
+                  className="rounded-md border border-[#30363d] bg-[var(--bg-primary)] px-1.5 py-0.5 text-[9px] text-[#8b949e] transition hover:border-green-500/40 hover:text-green-400"
                 >
                   {t}
                 </span>
               ))}
               {r.toolsAndPackages.length > 4 && (
-                <span className="rounded-md border border-[#30363d] bg-[#0d1117] px-1.5 py-0.5 text-[9px] text-[#484f58]">
+                <span className="rounded-md border border-[#30363d] bg-[var(--bg-primary)] px-1.5 py-0.5 text-[9px] text-[#484f58]">
                   +{r.toolsAndPackages.length - 4}
                 </span>
               )}
@@ -542,7 +542,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
           <div className="flex gap-1.5">
             <button
               onClick={onDownload}
-              className={`rounded-md border border-[#30363d] bg-[#0d1117] px-2.5 py-1.5 text-[9px] font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-[#f0f6fc] ${compact ? "px-2 py-1 text-[8px]" : ""}`}
+              className={`rounded-md border border-[#30363d] bg-[var(--bg-primary)] px-2.5 py-1.5 text-[9px] font-medium text-[#8b949e] transition hover:border-[#484f58] hover:text-text-[var(--text-primary)] ${compact ? "px-2 py-1 text-[8px]" : ""}`}
             >
               ↓ PDF
             </button>

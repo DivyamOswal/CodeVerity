@@ -114,7 +114,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
       className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition ${
         danger
           ? "text-red-400 hover:bg-red-500/10"
-          : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+          : "text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
       }`}
     >
       <span
@@ -194,7 +194,7 @@ export default function Navbar() {
           `relative flex items-center gap-2 rounded-lg px-3 transition-all duration-200 ${navItemHeight} ${navItemFont} font-medium ${
             isActive
               ? "bg-[#238636]/10 text-[#3fb950]"
-              : "text-[#8b949e] hover:bg-[#21262d] hover:text-[#f0f6fc]"
+              : "text-[#8b949e] hover:bg-[#21262d] hover:text-text-[var(--text-primary)]"
           }`
         }
       >
@@ -214,13 +214,13 @@ export default function Navbar() {
   };
 
   return (
-    <nav className={`sticky top-0 z-50 border-b border-[#30363d] bg-[#0d1117] ${navbarHeight}`}>
+    <nav className={`sticky top-0 z-50 border-b border-[#30363d] bg-[var(--bg-primary)] ${navbarHeight}`}>
       <div className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${compact ? "px-3 sm:px-4" : ""}`}>
         {/* LEFT – Logo */}
         <div className="flex min-w-0 items-center">
           <NavLink to="/" className="group flex items-center gap-2.5">
             <div className={`relative flex shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 ${logoSize}`}>
-              <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+              <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
               <Icon name="shield" size={iconSize} className="relative text-green-400" />
               <span className="absolute -bottom-1 -right-1 h-3 w-3 rounded-md bg-[#161b22] border border-[#30363d] flex items-center justify-center">
                 <span className="text-[5px] font-bold text-green-400">&lt;/&gt;</span>
@@ -230,7 +230,7 @@ export default function Navbar() {
 
             <div className="hidden sm:block">
               <div className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}>
-                <span className="text-[#f0f6fc]">Code</span>
+                <span className="text-text-[var(--text-primary)]">Code</span>
                 <span className="text-[#3fb950]">Verity</span>
               </div>
               <p className={`mt-1 font-medium uppercase leading-none tracking-[0.2em] text-[#484f58] ${brandSubSize}`}>
@@ -267,7 +267,7 @@ export default function Navbar() {
                 </div>
 
                 <div className="hidden text-left lg:block">
-                  <p className={`max-w-[100px] truncate font-semibold leading-3 text-[#f0f6fc] ${userInfoNameSize}`}>
+                  <p className={`max-w-[100px] truncate font-semibold leading-3 text-text-[var(--text-primary)] ${userInfoNameSize}`}>
                     {userInfo.name || initials}
                   </p>
                   <p className={`mt-1 leading-3 text-[#484f58] ${userInfoRoleSize}`}>Developer</p>
@@ -290,7 +290,7 @@ export default function Navbar() {
                         {initials}
                       </div>
                       <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[#f0f6fc]">
+                        <p className="truncate text-sm font-semibold text-text-[var(--text-primary)]">
                           {userInfo.name || initials}
                         </p>
                         <p className="truncate text-[11px] text-[#8b949e]">
@@ -338,7 +338,7 @@ export default function Navbar() {
             <div className="hidden items-center gap-2 sm:flex">
               <NavLink
                 to="/login"
-                className={`rounded-lg border border-[#30363d] bg-[#0d1117] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] ${buttonPadding}`}
+                className={`rounded-lg border border-[#30363d] bg-[var(--bg-primary)] font-medium text-[#8b949e] transition hover:bg-[#21262d] hover:text-text-[var(--text-primary)] ${buttonPadding}`}
               >
                 Sign in
               </NavLink>
@@ -354,7 +354,7 @@ export default function Navbar() {
           <button
             type="button"
             onClick={() => setMenuOpen((prev) => !prev)}
-            className={`ml-2 flex items-center justify-center rounded-lg border border-[#30363d] bg-[#0d1117] text-[#8b949e] transition hover:bg-[#21262d] hover:text-[#f0f6fc] md:hidden ${compact ? "h-8 w-8 text-sm" : "h-9 w-9 text-base"}`}
+            className={`ml-2 flex items-center justify-center rounded-lg border border-[#30363d] bg-[var(--bg-primary)] text-[#8b949e] transition hover:bg-[#21262d] hover:text-text-[var(--text-primary)] md:hidden ${compact ? "h-8 w-8 text-sm" : "h-9 w-9 text-base"}`}
           >
             {menuOpen ? "×" : "☰"}
           </button>

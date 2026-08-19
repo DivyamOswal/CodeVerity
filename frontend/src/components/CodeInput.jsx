@@ -10,7 +10,7 @@ function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
       <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
-        <div className="absolute inset-[1px] rounded-[11px] bg-[#0d1117]" />
+        <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
         <svg
           width="18"
           height="18"
@@ -102,7 +102,7 @@ function Feature({ icon, title, desc, color }) {
           {icon}
         </span>
       </div>
-      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[#f0f6fc]">
+      <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-text-[var(--text-primary)]">
         {title}
       </h3>
       <p className="text-[11px] leading-relaxed text-[#8b949e]">{desc}</p>
@@ -159,7 +159,7 @@ export default function CodeInput({ setResult, model }) {
 
   return (
     <div
-      className={`min-h-screen bg-[#0d1117] text-[#f0f6fc] relative overflow-hidden ${compactClasses.container}`}
+      className={`min-h-screen bg-[var(--bg-primary)] text-text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
     >
       {/* Background glows and dot grid – unchanged */}
       <div
@@ -198,7 +198,7 @@ export default function CodeInput({ setResult, model }) {
             <div className="mb-3 flex items-center gap-3">
               <CodeVerityLogo />
               <div>
-                <p className="text-sm font-bold tracking-wide text-[#f0f6fc]">
+                <p className="text-sm font-bold tracking-wide text-text-[var(--text-primary)]">
                   CODEVERITY
                 </p>
                 <p className="text-xs text-[#8b949e]">Intelligent code review</p>
@@ -228,7 +228,7 @@ export default function CodeInput({ setResult, model }) {
               <p className="text-[10px] uppercase tracking-wider text-[#8b949e]">
                 AI Model
               </p>
-              <p className="text-sm font-medium text-[#f0f6fc]">
+              <p className="text-sm font-medium text-text-[var(--text-primary)]">
                 {model || "Default Model"}
               </p>
             </div>
@@ -245,7 +245,7 @@ export default function CodeInput({ setResult, model }) {
 
           <div className="overflow-hidden rounded-2xl border border-[#30363d] bg-[#161b22] shadow-2xl shadow-black/30">
             {/* Editor Header – unchanged */}
-            <div className="flex items-center justify-between border-b border-[#30363d] bg-[#0d1117] px-4 py-3 sm:px-5">
+            <div className="flex items-center justify-between border-b border-[#30363d] bg-[var(--bg-primary)] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
                 <div className="flex gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
@@ -281,7 +281,7 @@ export default function CodeInput({ setResult, model }) {
 
             {/* Code Area – unchanged */}
             <div className="relative">
-              <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[#21262d] bg-[#0d1117] pt-5 text-right font-mono text-xs leading-6 text-[#484f58] sm:block">
+              <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[#21262d] bg-[var(--bg-primary)] pt-5 text-right font-mono text-xs leading-6 text-[#484f58] sm:block">
                 {Array.from({ length: 12 }, (_, index) => (
                   <div key={index} className="pr-4">
                     {index + 1}
@@ -294,13 +294,13 @@ export default function CodeInput({ setResult, model }) {
                 onChange={(e) => setCode(e.target.value)}
                 placeholder={`// Paste your code here...\n\nfunction example() {\n  // CodeVerity will analyze your code\n  // for bugs, security, performance & quality.\n}`}
                 spellCheck={false}
-                className="min-h-[420px] w-full resize-none bg-[#0d1117] p-5 font-mono text-sm leading-6 text-[#f0f6fc] outline-none placeholder:text-[#30363d] sm:pl-[76px] focus:ring-1 focus:ring-green-500/30 transition-all"
+                className="min-h-[420px] w-full resize-none bg-[var(--bg-primary)] p-5 font-mono text-sm leading-6 text-text-[var(--text-primary)] outline-none placeholder:text-[#30363d] sm:pl-[76px] focus:ring-1 focus:ring-green-500/30 transition-all"
               />
             </div>
 
             {/* ================= EDITOR FOOTER ================= */}
             <div
-              className={`flex flex-col gap-4 border-t border-[#30363d] bg-[#0d1117] sm:flex-row sm:items-center sm:justify-between ${compactClasses.footer}`}
+              className={`flex flex-col gap-4 border-t border-[#30363d] bg-[var(--bg-primary)] sm:flex-row sm:items-center sm:justify-between ${compactClasses.footer}`}
             >
               {/* Editor Stats */}
               <div className="flex items-center gap-5 text-xs text-[#8b949e]">
