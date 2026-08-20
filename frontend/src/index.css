@@ -20,9 +20,18 @@
   --border-medium: #d1d5db;
   --border-dark: #9ca3af;
 
-  --accent-green: #10b981;
-  --accent-emerald: #059669;
-  --accent-teal: #0d9488;
+  /* Coral accent — primary brand color (matches Navbar) */
+  --accent: #F2624C;
+  --accent-hover: #FF7A61;
+  --accent-soft: rgba(242, 98, 76, 0.12);
+  --accent-soft-strong: rgba(242, 98, 76, 0.22);
+  --accent-contrast: #0A0A0B;
+
+  /* Legacy accent names kept for compatibility with existing components,
+     repointed to the coral system so nothing else needs to change. */
+  --accent-green: var(--accent);
+  --accent-emerald: var(--accent-hover);
+  --accent-teal: var(--accent);
 
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
@@ -44,9 +53,16 @@
   --border-medium: #484f58;
   --border-dark: #21262d;
 
-  --accent-green: #3fb950;
-  --accent-emerald: #10b981;
-  --accent-teal: #2dd4bf;
+  /* Coral accent — dark surface variant */
+  --accent: #F2624C;
+  --accent-hover: #FF7A61;
+  --accent-soft: rgba(242, 98, 76, 0.16);
+  --accent-soft-strong: rgba(242, 98, 76, 0.28);
+  --accent-contrast: #0A0A0B;
+
+  --accent-green: var(--accent);
+  --accent-emerald: var(--accent-hover);
+  --accent-teal: var(--accent);
 
   --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
   --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
@@ -66,19 +82,19 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--accent-green);
+  background: var(--accent);
   border-radius: 4px;
   transition: background 0.2s;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--accent-emerald);
+  background: var(--accent-hover);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: var(--accent-green) var(--bg-secondary);
+  scrollbar-color: var(--accent) var(--bg-secondary);
 }
 
 /* =====================================================
@@ -138,10 +154,10 @@
 @keyframes pulseGlow {
   0%,
   100% {
-    box-shadow: 0 0 8px rgba(63, 185, 80, 0.1);
+    box-shadow: 0 0 8px rgba(242, 98, 76, 0.1);
   }
   50% {
-    box-shadow: 0 0 20px rgba(63, 185, 80, 0.3);
+    box-shadow: 0 0 20px rgba(242, 98, 76, 0.3);
   }
 }
 
@@ -201,13 +217,13 @@ body {
 
 /* Selection */
 ::selection {
-  background: var(--accent-green);
-  color: var(--text-inverse);
+  background: var(--accent);
+  color: var(--accent-contrast);
 }
 
 /* Links */
 a {
-  color: var(--accent-green);
+  color: var(--accent);
   text-decoration: none;
 }
 a:hover {
@@ -216,7 +232,7 @@ a:hover {
 
 /* Focus rings */
 *:focus-visible {
-  outline: 2px solid var(--accent-green);
+  outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
 
