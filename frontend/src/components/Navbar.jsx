@@ -208,19 +208,32 @@ export default function Navbar() {
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
   const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
 
+  // NavigationItem — desktop pill nav link.
+  // Hover state: a soft rounded pill fades + scales in behind the item.
+  // Active state: the same pill, but locked in with the accent color —
+  // no underline, so there's nothing to "jump" or misalign on hover.
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `group relative flex items-center gap-2 rounded-lg px-3 transition-colors duration-200 ${navItemHeight} ${navItemFont} font-medium ${
+        `group relative flex items-center gap-2 rounded-full px-3.5 transition-colors duration-200 ${navItemHeight} ${navItemFont} font-medium ${
           isActive
             ? "text-[var(--accent)]"
-            : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         }`
       }
     >
       {({ isActive }) => (
         <>
+          {/* Background layer — pill fade/scale, decoupled from text color transition */}
+          <span
+            aria-hidden="true"
+            className={`absolute inset-0 -z-10 rounded-full transition-all duration-200 ease-out ${
+              isActive
+                ? "scale-100 bg-[var(--accent-soft)] opacity-100"
+                : "scale-90 bg-[var(--bg-hover)] opacity-0 group-hover:scale-100 group-hover:opacity-100"
+            }`}
+          />
           <span
             className={
               isActive
@@ -230,12 +243,7 @@ export default function Navbar() {
           >
             <Icon name={icon} size={compact ? 12 : 14} />
           </span>
-          <span>{label}</span>
-          <span
-            className={`pointer-events-none absolute bottom-0 left-3 right-3 h-[2px] origin-center rounded-full bg-[var(--accent)] transition-transform duration-200 ${
-              isActive ? "scale-x-100" : "scale-x-0"
-            }`}
-          />
+          <span className="relative">{label}</span>
         </>
       )}
     </NavLink>
@@ -243,7 +251,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/95 backdrop-blur-sm ${navbarHeight}`}
+      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
     >
       <div
         className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
@@ -254,7 +262,7 @@ export default function Navbar() {
         <div className="flex min-w-0 items-center">
           <NavLink to="/" className="group flex items-center gap-2.5">
             <div
-              className={`relative flex shrink-0 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
+              className={`relative flex shrink-0 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
               <Icon name="shield" size={iconSize} className="text-[var(--accent)]" />
               <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
@@ -280,7 +288,7 @@ export default function Navbar() {
         </div>
 
         {/* CENTER – Navigation */}
-        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 md:flex">
+        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-transparent md:flex">
           {isAuth && (
             <>
               <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
@@ -290,18 +298,18 @@ export default function Navbar() {
         </div>
 
         {/* RIGHT – User */}
-        <div className="flex items-center">
+        <div className="flex items-center gap-1">
           {isAuth ? (
             <div ref={dropRef} className="relative">
               <button
                 type="button"
                 onClick={() => setDropOpen((prev) => !prev)}
-                className={`flex items-center gap-2 rounded-lg px-1.5 transition-colors duration-150 ${
+                className={`flex items-center gap-2 rounded-full px-1.5 transition-colors duration-200 ${
                   compact ? "h-9" : "h-10"
                 } ${dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"}`}
               >
                 <div
-                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-bold text-[var(--accent-contrast)] ${avatarSize} ${avatarFont}`}
+                  className={`relative flex shrink-0 items-center justify-center rounded-full bg-[var(--accent)] font-bold text-[var(--accent-contrast)] ring-2 ring-transparent transition-all duration-200 group-hover:ring-[var(--accent-soft)] ${avatarSize} ${avatarFont}`}
                 >
                   {initials}
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-emerald-400" />
@@ -317,7 +325,7 @@ export default function Navbar() {
                 </div>
 
                 <span
-                  className={`ml-1 hidden text-[var(--text-muted)] transition-transform duration-200 sm:block ${
+                  className={`ml-1 hidden text-[var(--text-muted)] transition-transform duration-200 ease-out sm:block ${
                     dropOpen ? "rotate-180" : ""
                   }`}
                 >
@@ -327,7 +335,7 @@ export default function Navbar() {
 
               {/* Dropdown — kept mounted so open/close both animate */}
               <div
-                className={`absolute right-0 top-[50px] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/50 transition-all duration-150 ease-out ${
+                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
                   dropOpen
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none -translate-y-1 scale-95 opacity-0"
@@ -386,13 +394,13 @@ export default function Navbar() {
             <div className="hidden items-center gap-2 sm:flex">
               <NavLink
                 to="/login"
-                className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${buttonPadding}`}
+                className={`rounded-full border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${buttonPadding}`}
               >
                 Sign in
               </NavLink>
               <NavLink
                 to="/register"
-                className={`rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-95 ${buttonPadding}`}
+                className={`rounded-full bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-95 ${buttonPadding}`}
               >
                 Get started
               </NavLink>
@@ -403,8 +411,8 @@ export default function Navbar() {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className={`relative ml-2 flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
-              compact ? "h-8 w-8" : "h-9 w-9"
+            className={`relative ml-1 flex items-center justify-center rounded-full border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
+              compact ? "h-9 w-9" : "h-10 w-10"
             }`}
           >
             <span className="relative flex h-3.5 w-4 flex-col justify-between">
@@ -439,7 +447,7 @@ export default function Navbar() {
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg transition-colors duration-150 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
@@ -452,7 +460,7 @@ export default function Navbar() {
             <NavLink
               to="/history"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg transition-colors duration-150 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
@@ -465,7 +473,7 @@ export default function Navbar() {
             <NavLink
               to="/profile"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg transition-colors duration-150 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
@@ -478,7 +486,7 @@ export default function Navbar() {
             <NavLink
               to="/settings"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg transition-colors duration-150 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
                     ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                     : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
@@ -491,7 +499,7 @@ export default function Navbar() {
             <button
               type="button"
               onClick={handleLogout}
-              className={`flex w-full items-center gap-3 rounded-lg text-left text-red-400 transition-colors duration-150 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
+              className={`flex w-full items-center gap-3 rounded-xl text-left text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
             >
               <Icon name="logout" size={compact ? 14 : 16} />
               Sign out

@@ -10,7 +10,7 @@ import { usePreferences } from "../context/PreferencesContext";
 function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
+      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
         <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
         <svg
           width="20"
@@ -21,28 +21,29 @@ function CodeVerityLogo() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="relative text-green-400"
+          className="relative text-[var(--accent)]"
         >
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
         <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-          <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
+          <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
         </div>
-        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
       </div>
     </div>
   );
 }
 
+// Flat-color sweep (opacity fade, not a color gradient) so it stays
+// in line with the no-gradient theme.
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
       <div
-        className="absolute left-0 right-0 h-px"
+        className="absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
         style={{
-          background:
-            "linear-gradient(90deg,transparent,rgba(63,185,80,0.65),transparent)",
+          opacity: 0.35,
           animation: "scanline 2.8s ease-in-out infinite",
         }}
       />
@@ -59,7 +60,7 @@ export default function GithubAnalyzer({ setData }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState(null);
-  
+
   const { compact } = usePreferences();
 
   const analyze = async () => {
@@ -129,8 +130,8 @@ export default function GithubAnalyzer({ setData }) {
             New Analysis
           </button>
           <span className="text-xs text-[var(--text-muted)] truncate max-w-xs">{repo}</span>
-          <span className="ml-auto flex items-center gap-2 text-xs text-[#3fb950]">
-            <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
+          <span className="ml-auto flex items-center gap-2 text-xs text-[var(--accent)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
             Analyzed
           </span>
         </div>
@@ -159,42 +160,27 @@ export default function GithubAnalyzer({ setData }) {
     <div
       className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
     >
-      {/* Background glows and dot grid */}
-      <div
-        className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(35,134,54,0.10) 0%, transparent 65%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.07) 0%, transparent 70%)",
-        }}
-      />
-      <div
-        className="pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] rounded-full"
-        style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(63,185,80,0.04) 0%, transparent 70%)",
-        }}
-      />
+      {/* ================= AMBIENT BACKGROUND ================= */}
+      {/* Soft blurred accent circles — flat color + blur, no gradients */}
+      <div className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-60 blur-3xl" />
+      <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
+      <div className="pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] rounded-full bg-[var(--accent-soft)] opacity-30 blur-3xl" />
+      {/* Dot grid texture — a repeating dot pattern, not a color blend */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(rgba(63,185,80,0.9) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
 
       <div className="mx-auto max-w-3xl relative z-10">
         <div className="relative">
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-green-500/50 rounded-tl-2xl z-10" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-green-500/50 rounded-tr-2xl z-10" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-green-500/50 rounded-bl-2xl z-10" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-green-500/50 rounded-br-2xl z-10" />
+          {/* Corner brackets — decorative frame accents */}
+          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
+          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
+          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" />
+          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
 
           <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/30">
             <div className={`border-b border-[var(--border-light)] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}>
@@ -215,7 +201,7 @@ export default function GithubAnalyzer({ setData }) {
 
               <div className="relative mt-5">
                 <input
-                  className={`w-full rounded-xl bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] focus:border-green-500 focus:ring-2 focus:ring-green-500/20 outline-none placeholder:text-[var(--text-muted)] transition-all ${compactClasses.input}`}
+                  className={`w-full rounded-xl bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 outline-none placeholder:text-[var(--text-muted)] transition-all ${compactClasses.input}`}
                   placeholder="https://github.com/username/repository"
                   value={repo}
                   onChange={(e) => setRepo(e.target.value)}
@@ -235,22 +221,19 @@ export default function GithubAnalyzer({ setData }) {
                   Supports public repositories only
                 </span>
 
+                {/* Generate Report button — flat accent fill, no gradient */}
                 <button
                   onClick={analyze}
                   disabled={loading}
-                  className={`group relative overflow-hidden rounded-lg font-semibold text-white transition-all duration-200 disabled:cursor-not-allowed disabled:bg-[var(--border-light)] disabled:text-[var(--text-muted)] disabled:shadow-none hover:scale-[1.02] active:scale-95 ${compactClasses.button}`}
-                  style={
+                  className={`group relative overflow-hidden rounded-lg font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${compactClasses.button} ${
                     loading
-                      ? {}
-                      : {
-                          background: "linear-gradient(135deg,#238636,#2ea043)",
-                          boxShadow: "0 0 30px rgba(35,134,54,0.25)",
-                        }
-                  }
+                      ? "cursor-not-allowed bg-[var(--border-light)] text-[var(--text-muted)] shadow-none"
+                      : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] shadow-[0_0_30px_var(--accent-soft-strong)]"
+                  }`}
                 >
                   {loading ? (
                     <div className="flex items-center gap-2">
-                      <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 border-[var(--accent-contrast)] border-t-transparent rounded-full animate-spin" />
                       Analyzing...
                     </div>
                   ) : (
@@ -258,7 +241,7 @@ export default function GithubAnalyzer({ setData }) {
                       <ScanLine />
                       <span className="relative z-10 flex items-center gap-2">
                         Generate Report
-                        <span className="text-white/50 transition-transform group-hover:translate-x-0.5">→</span>
+                        <span className="text-[var(--accent-contrast)]/50 transition-transform group-hover:translate-x-0.5">→</span>
                       </span>
                     </>
                   )}
@@ -267,7 +250,7 @@ export default function GithubAnalyzer({ setData }) {
 
               <div className={`text-xs text-[var(--border-medium)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
                 💡 Tip: Try popular repos like{" "}
-                <span className="text-green-400">https://github.com/facebook/react</span>
+                <span className="text-[var(--accent)]">https://github.com/facebook/react</span>
               </div>
             </div>
           </div>
