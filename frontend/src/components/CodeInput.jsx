@@ -9,8 +9,8 @@ import { usePreferences } from "../context/PreferencesContext";
 function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
-        <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
+      <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
+        <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
         <svg
           width="18"
           height="18"
@@ -26,7 +26,7 @@ function CodeVerityLogo() {
           <path d="m9 12 2 2 4-4" />
         </svg>
         <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-card)] border border-[var(--border-light)]">
-          <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+          <span className="font-mono text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
         </div>
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
       </div>
@@ -39,7 +39,7 @@ function CodeVerityLogo() {
 // line with the no-gradient theme.
 function ScanLine() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
       <div
         className="absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
         style={{
@@ -184,7 +184,7 @@ export default function CodeInput({ setResult, model }) {
                 <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">
                   CODEVERITY
                 </p>
-                <p className="text-xs text-[var(--text-muted)]">Intelligent code review</p>
+                <p className="font-mono text-xs text-[var(--text-muted)]">Intelligent code review</p>
               </div>
             </div>
 
@@ -199,17 +199,17 @@ export default function CodeInput({ setResult, model }) {
             </p>
           </div>
 
-          {/* Model badge */}
-          <div className="flex w-fit items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-3">
+          {/* Model badge — value styled like a model id, mono */}
+          <div className="flex w-fit items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-3">
             <div className="relative">
               <span className="block h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
               <span className="absolute inset-0 animate-ping rounded-full bg-[var(--accent)] opacity-30" />
             </div>
             <div>
-              <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
+              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 AI Model
               </p>
-              <p className="text-sm font-medium text-[var(--text-primary)]">
+              <p className="font-mono text-sm font-medium text-[var(--text-primary)]">
                 {model || "Default Model"}
               </p>
             </div>
@@ -225,7 +225,7 @@ export default function CodeInput({ setResult, model }) {
           <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
 
           <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/30">
-            {/* Editor top bar */}
+            {/* Editor top bar — labels set in mono, like a real editor tab */}
             <div className="flex items-center justify-between border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
                 {/* Traffic-light dots — universal editor chrome, left as-is */}
@@ -237,7 +237,7 @@ export default function CodeInput({ setResult, model }) {
 
                 <div className="hidden h-5 w-px bg-[var(--border-light)] sm:block" />
 
-                <div className="flex items-center gap-2 text-sm text-[var(--text-muted)]">
+                <div className="flex items-center gap-2 font-mono text-sm text-[var(--text-muted)]">
                   <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                     <path d="M14.5 17.5 21 12l-6.5-5.5" />
                     <path d="M9.5 6.5 3 12l6.5 5.5" />
@@ -246,7 +246,7 @@ export default function CodeInput({ setResult, model }) {
                 </div>
               </div>
 
-              <div className="flex items-center gap-2 text-xs text-[var(--text-muted)]">
+              <div className="flex items-center gap-2 font-mono text-xs text-[var(--text-muted)]">
                 <span className="hidden sm:inline">Paste your source</span>
                 <span className="rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] px-2 py-1">
                   Editor
@@ -278,8 +278,8 @@ export default function CodeInput({ setResult, model }) {
             <div
               className={`flex flex-col gap-4 border-t border-[var(--border-light)] bg-[var(--bg-primary)] sm:flex-row sm:items-center sm:justify-between ${compactClasses.footer}`}
             >
-              {/* Editor stats */}
-              <div className="flex items-center gap-5 text-xs text-[var(--text-muted)]">
+              {/* Editor stats — terminal-style readout, mono */}
+              <div className="flex items-center gap-5 font-mono text-xs text-[var(--text-muted)]">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
                   {code.length} characters
@@ -290,11 +290,11 @@ export default function CodeInput({ setResult, model }) {
                 <div className="hidden md:block">AI-powered analysis</div>
               </div>
 
-              {/* Analyze button — flat accent fill, no gradient */}
+              {/* Analyze button — flat accent fill, squircle radius to match Navbar buttons */}
               <button
                 onClick={runAnalysis}
                 disabled={loading || !hasCode}
-                className={`group relative overflow-hidden rounded-xl px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${
+                className={`group relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${
                   loading || !hasCode
                     ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)] shadow-none"
                     : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] shadow-[0_0_30px_var(--accent-soft-strong)]"

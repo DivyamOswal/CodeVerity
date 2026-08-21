@@ -10,8 +10,8 @@ import { usePreferences } from "../context/PreferencesContext";
 function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
-        <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
+      <div className="relative flex h-11 w-11 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
+        <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
         <svg
           width="20"
           height="20"
@@ -27,7 +27,7 @@ function CodeVerityLogo() {
           <path d="m9 12 2 2 4-4" />
         </svg>
         <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-          <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+          <span className="font-mono text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
         </div>
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
       </div>
@@ -39,7 +39,7 @@ function CodeVerityLogo() {
 // in line with the no-gradient theme.
 function ScanLine() {
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-xl">
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
       <div
         className="absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
         style={{
@@ -129,8 +129,8 @@ export default function GithubAnalyzer({ setData }) {
             </svg>
             New Analysis
           </button>
-          <span className="text-xs text-[var(--text-muted)] truncate max-w-xs">{repo}</span>
-          <span className="ml-auto flex items-center gap-2 text-xs text-[var(--accent)]">
+          <span className="font-mono text-xs text-[var(--text-muted)] truncate max-w-xs">{repo}</span>
+          <span className="ml-auto flex items-center gap-2 font-mono text-xs text-[var(--accent)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
             Analyzed
           </span>
@@ -187,7 +187,7 @@ export default function GithubAnalyzer({ setData }) {
               <CodeVerityLogo />
               <div>
                 <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">CODEVERITY</p>
-                <p className="text-xs text-[var(--text-secondary)]">GitHub Repository Intelligence</p>
+                <p className="font-mono text-xs text-[var(--text-secondary)]">GitHub Repository Intelligence</p>
               </div>
             </div>
 
@@ -201,7 +201,7 @@ export default function GithubAnalyzer({ setData }) {
 
               <div className="relative mt-5">
                 <input
-                  className={`w-full rounded-xl bg-[var(--bg-input)] text-[var(--text-primary)] border border-[var(--border-light)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 outline-none placeholder:text-[var(--text-muted)] transition-all ${compactClasses.input}`}
+                  className={`w-full rounded-lg bg-[var(--bg-input)] text-[var(--text-primary)] font-mono border border-[var(--border-light)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 outline-none placeholder:text-[var(--text-muted)] transition-all ${compactClasses.input}`}
                   placeholder="https://github.com/username/repository"
                   value={repo}
                   onChange={(e) => setRepo(e.target.value)}
@@ -221,7 +221,7 @@ export default function GithubAnalyzer({ setData }) {
                   Supports public repositories only
                 </span>
 
-                {/* Generate Report button — flat accent fill, no gradient */}
+                {/* Generate Report button — flat accent fill, squircle radius to match Navbar/CodeInput buttons */}
                 <button
                   onClick={analyze}
                   disabled={loading}
@@ -248,7 +248,7 @@ export default function GithubAnalyzer({ setData }) {
                 </button>
               </div>
 
-              <div className={`text-xs text-[var(--border-medium)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
+              <div className={`font-mono text-xs text-[var(--border-medium)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
                 💡 Tip: Try popular repos like{" "}
                 <span className="text-[var(--accent)]">https://github.com/facebook/react</span>
               </div>
