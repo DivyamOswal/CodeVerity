@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
 /* =====================================================
+   FONT — extends Tailwind's `font-mono` utility.
+   The Navbar (and other editor-chrome UI) uses font-mono for tab
+   labels, avatar initials, and file-path style text. Without this,
+   font-mono falls back to the browser's generic system monospace,
+   which doesn't read as an intentional "code editor" typeface.
+======================================================== */
+@theme {
+  --font-mono: "JetBrains Mono", "Fira Code", ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* =====================================================
    THEME VARIABLES
 ======================================================== */
 :root {

@@ -17,6 +17,15 @@ import { usePreferences } from "../context/PreferencesContext";
 // }
 //
 // No gradients anywhere — every accent surface below is a flat color.
+//
+// DESIGN NOTE — this nav borrows its visual language from the rest of
+// the app (editor chrome, corner brackets, monospace paths) instead of
+// a generic pill nav, so it reads as part of the same product:
+//   - center nav = a small "tab strip", active tab marked with a top
+//     bar (like an open editor tab), not a floating pill
+//   - avatar / logo = squircles (rounded-lg), matching the app's
+//     editor-card radii — not circular social-app avatars
+//   - nav labels set in monospace, echoing the code-editor identity
 
 // -----------------------------------------------------------------
 // Helper functions
@@ -198,8 +207,8 @@ export default function Navbar() {
   const iconSize = compact ? 15 : 17;
   const brandTextSize = compact ? "text-[13px]" : "text-[15px]";
   const brandSubSize = compact ? "text-[7px]" : "text-[8px]";
-  const navItemHeight = compact ? "h-8" : "h-9";
-  const navItemFont = compact ? "text-[11px]" : "text-[12px]";
+  const navItemHeight = compact ? "h-7" : "h-8";
+  const navItemFont = compact ? "text-[10.5px]" : "text-[11.5px]";
   const avatarSize = compact ? "h-7 w-7" : "h-8 w-8";
   const avatarFont = compact ? "text-[9px]" : "text-[10px]";
   const userInfoNameSize = compact ? "text-[10px]" : "text-[11px]";
@@ -208,42 +217,33 @@ export default function Navbar() {
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
   const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
 
-  // NavigationItem — desktop pill nav link.
-  // Hover state: a soft rounded pill fades + scales in behind the item.
-  // Active state: the same pill, but locked in with the accent color —
-  // no underline, so there's nothing to "jump" or misalign on hover.
+  // NavigationItem — an "editor tab", not a floating pill.
+  // Active state is marked by a top bar (like an open tab in a code
+  // editor) plus a raised card surface, instead of a bottom underline —
+  // nothing to misalign on hover, and it echoes the tab strips used
+  // elsewhere in the product.
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `group relative flex items-center gap-2 rounded-full px-3.5 transition-colors duration-200 ${navItemHeight} ${navItemFont} font-medium ${
+        `group relative flex items-center gap-1.5 rounded-lg px-3 font-mono transition-colors duration-200 ${navItemHeight} ${navItemFont} ${
           isActive
-            ? "text-[var(--accent)]"
-            : "text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+            ? "bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm"
+            : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
         }`
       }
     >
       {({ isActive }) => (
         <>
-          {/* Background layer — pill fade/scale, decoupled from text color transition */}
+          {/* top bar — the "open tab" marker */}
           <span
             aria-hidden="true"
-            className={`absolute inset-0 -z-10 rounded-full transition-all duration-200 ease-out ${
-              isActive
-                ? "scale-100 bg-[var(--accent-soft)] opacity-100"
-                : "scale-90 bg-[var(--bg-hover)] opacity-0 group-hover:scale-100 group-hover:opacity-100"
+            className={`absolute left-1.5 right-1.5 top-0 h-[2px] rounded-full bg-[var(--accent)] transition-opacity duration-200 ${
+              isActive ? "opacity-100" : "opacity-0"
             }`}
           />
-          <span
-            className={
-              isActive
-                ? "text-[var(--accent)]"
-                : "text-[var(--text-muted)] group-hover:text-[var(--text-primary)] transition-colors duration-200"
-            }
-          >
-            <Icon name={icon} size={compact ? 12 : 14} />
-          </span>
-          <span className="relative">{label}</span>
+          <Icon name={icon} size={compact ? 12 : 13} className={isActive ? "text-[var(--accent)]" : ""} />
+          <span>{label}</span>
         </>
       )}
     </NavLink>
@@ -251,7 +251,7 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/80 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
+      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
     >
       <div
         className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
@@ -262,11 +262,11 @@ export default function Navbar() {
         <div className="flex min-w-0 items-center">
           <NavLink to="/" className="group flex items-center gap-2.5">
             <div
-              className={`relative flex shrink-0 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
+              className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
               <Icon name="shield" size={iconSize} className="text-[var(--accent)]" />
               <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
-                <span className="text-[5px] font-bold text-[var(--accent)]">{"</>"}</span>
+                <span className="font-mono text-[5px] font-bold text-[var(--accent)]">{"</>"}</span>
               </span>
               <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)]">
                 <span className="absolute inset-0 animate-ping rounded-full bg-[var(--accent)] opacity-75" />
@@ -279,7 +279,7 @@ export default function Navbar() {
                 <span className="text-[var(--accent)]">Verity</span>
               </div>
               <p
-                className={`mt-1 font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] ${brandSubSize}`}
+                className={`mt-1 font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] ${brandSubSize}`}
               >
                 AI Code Intelligence
               </p>
@@ -287,15 +287,13 @@ export default function Navbar() {
           </NavLink>
         </div>
 
-        {/* CENTER – Navigation */}
-        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-full border border-transparent md:flex">
-          {isAuth && (
-            <>
-              <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
-              <NavigationItem to="/history" label="History" icon="history" />
-            </>
-          )}
-        </div>
+        {/* CENTER – Navigation, styled as a small tab strip */}
+        {isAuth && (
+          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
+            <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
+            <NavigationItem to="/history" label="History" icon="history" />
+          </div>
+        )}
 
         {/* RIGHT – User */}
         <div className="flex items-center gap-1">
@@ -304,12 +302,12 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setDropOpen((prev) => !prev)}
-                className={`flex items-center gap-2 rounded-full px-1.5 transition-colors duration-200 ${
+                className={`flex items-center gap-2 rounded-lg px-1.5 transition-colors duration-150 ${
                   compact ? "h-9" : "h-10"
                 } ${dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"}`}
               >
                 <div
-                  className={`relative flex shrink-0 items-center justify-center rounded-full bg-[var(--accent)] font-bold text-[var(--accent-contrast)] ring-2 ring-transparent transition-all duration-200 group-hover:ring-[var(--accent-soft)] ${avatarSize} ${avatarFont}`}
+                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast)] ${avatarSize} ${avatarFont}`}
                 >
                   {initials}
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-emerald-400" />
@@ -321,7 +319,7 @@ export default function Navbar() {
                   >
                     {userInfo.name || initials}
                   </p>
-                  <p className={`mt-1 leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>Developer</p>
+                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>developer</p>
                 </div>
 
                 <span
@@ -335,7 +333,7 @@ export default function Navbar() {
 
               {/* Dropdown — kept mounted so open/close both animate */}
               <div
-                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
+                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
                   dropOpen
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none -translate-y-1 scale-95 opacity-0"
@@ -343,15 +341,15 @@ export default function Navbar() {
               >
                 <div className="border-b border-[var(--border-light)] p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-xs font-bold text-[var(--accent-contrast)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono text-xs font-bold text-[var(--accent-contrast)]">
                       {initials}
                     </div>
                     <div className="min-w-0">
                       <p className="truncate text-sm font-semibold text-[var(--text-primary)]">
                         {userInfo.name || initials}
                       </p>
-                      <p className="truncate text-[11px] text-[var(--text-secondary)]">
-                        {userInfo.email || "Signed in"}
+                      <p className="truncate font-mono text-[11px] text-[var(--text-secondary)]">
+                        {userInfo.email || "signed-in"}
                       </p>
                     </div>
                   </div>
@@ -394,13 +392,13 @@ export default function Navbar() {
             <div className="hidden items-center gap-2 sm:flex">
               <NavLink
                 to="/login"
-                className={`rounded-full border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${buttonPadding}`}
+                className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${buttonPadding}`}
               >
                 Sign in
               </NavLink>
               <NavLink
                 to="/register"
-                className={`rounded-full bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-95 ${buttonPadding}`}
+                className={`rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-95 ${buttonPadding}`}
               >
                 Get started
               </NavLink>
@@ -411,7 +409,7 @@ export default function Navbar() {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className={`relative ml-1 flex items-center justify-center rounded-full border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
+            className={`relative ml-1 flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
               compact ? "h-9 w-9" : "h-10 w-10"
             }`}
           >
@@ -436,7 +434,9 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation — animated height/opacity, no unmount-jank */}
+      {/* Mobile Navigation — animated height/opacity, no unmount-jank.
+          Active item gets a left rail (file-explorer selection style)
+          instead of a full tint block. */}
       {isAuth && (
         <div
           className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
@@ -447,62 +447,62 @@ export default function Navbar() {
             <NavLink
               to="/dashboard"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
               <Icon name="dashboard" size={compact ? 14 : 16} />
-              Dashboard
+              dashboard
             </NavLink>
             <NavLink
               to="/history"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
               <Icon name="history" size={compact ? 14 : 16} />
-              History
+              history
             </NavLink>
             <NavLink
               to="/profile"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
               <Icon name="profile" size={compact ? 14 : 16} />
-              Profile
+              profile
             </NavLink>
             <NavLink
               to="/settings"
               className={({ isActive }) =>
-                `flex items-center gap-3 rounded-xl transition-colors duration-200 ${mobileMenuItemPadding} ${
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                   isActive
-                    ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
                 }`
               }
             >
               <Icon name="settings" size={compact ? 14 : 16} />
-              Settings
+              settings
             </NavLink>
             <button
               type="button"
               onClick={handleLogout}
-              className={`flex w-full items-center gap-3 rounded-xl text-left text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
+              className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
             >
               <Icon name="logout" size={compact ? 14 : 16} />
-              Sign out
+              sign out
             </button>
           </div>
         </div>
