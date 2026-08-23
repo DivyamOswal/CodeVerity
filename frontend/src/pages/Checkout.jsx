@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { PRICING_PLANS, formatPrice, formatTokens } from "./pricingPlans";
+import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans"
 
 // -----------------------------------------------------------------
 // UI-only checkout flow — no payment gateway wired in. The submit

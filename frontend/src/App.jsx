@@ -18,6 +18,8 @@ import Result from "./components/Result";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
 import OAuthSuccess from "./pages/OAuthSuccess";
+import Pricing from "./pages/Pricing";
+import Checkout from "./pages/Checkout";
 
 // ✅ Import the PreferencesProvider
 import { PreferencesProvider } from "./context/PreferencesContext";
@@ -112,6 +114,15 @@ function Layout() {
           element={
             <ProtectedRoute>
               <Dashboard />
+            </ProtectedRoute>
+          }
+        />
+        <Route path="/pricing" element={<Pricing />} />
+        <Route
+          path="/checkout"
+          element={
+            <ProtectedRoute>
+              <Checkout />
             </ProtectedRoute>
           }
         />

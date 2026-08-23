@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PRICING_PLANS, formatPrice, formatTokens } from "./pricingPlans";
+import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
 
 // -----------------------------------------------------------------
 // Built on the existing Indigo Slate theme (same CSS vars as Navbar):
