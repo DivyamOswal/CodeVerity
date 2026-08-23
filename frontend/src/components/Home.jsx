@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from "react";
 import { usePreferences } from "../context/PreferencesContext";
 
 /* =========================================================
-   PARTICLE FIELD – green theme
+   PARTICLE FIELD – indigo theme
 ========================================================= */
 
 function ParticleField() {
@@ -44,7 +44,7 @@ function ParticleField() {
 
         ctx.beginPath();
         ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(63,185,80,${p.o})`;
+        ctx.fillStyle = `rgba(99,102,241,${p.o})`;
         ctx.fill();
       });
 
@@ -57,7 +57,7 @@ function ParticleField() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(63,185,80,${0.08 * (1 - dist / 110)})`;
+            ctx.strokeStyle = `rgba(99,102,241,${0.08 * (1 - dist / 110)})`;
             ctx.lineWidth = 0.4;
             ctx.stroke();
           }
@@ -79,7 +79,7 @@ function ParticleField() {
 }
 
 /* =========================================================
-   TYPED WORD – green gradient
+   TYPED WORD – flat accent color (no gradient text fill)
 ========================================================= */
 
 function TypedWord({ words }) {
@@ -107,21 +107,24 @@ function TypedWord({ words }) {
   }, [text, del, index, words]);
 
   return (
-    <span className="bg-gradient-to-r from-green-400 via-emerald-400 to-teal-400 bg-clip-text text-transparent">
+    <span className="text-[var(--accent)]">
       {text}
-      <span className="text-green-400 animate-pulse">|</span>
+      <span className="text-[var(--accent)] animate-pulse">|</span>
     </span>
   );
 }
 
 /* =========================================================
-   CODEVERITY LOGO – shield design
+   CODEVERITY LOGO – flat accent tile, no gradient
 ========================================================= */
 
 function CodeVerityLogo() {
   return (
     <div className="flex items-center justify-center">
-      <div className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20 animate-float">
+      <div
+        className="relative flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent)] animate-float"
+        style={{ boxShadow: "0 8px 24px rgba(99,102,241,0.25)" }}
+      >
         <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
         <svg
           width="20"
@@ -132,22 +135,22 @@ function CodeVerityLogo() {
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="relative text-green-400"
+          className="relative text-[var(--accent)]"
         >
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
         <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-          <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
+          <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
         </div>
-        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-ping" />
+        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-ping" />
       </div>
     </div>
   );
 }
 
 /* =========================================================
-   FEATURE CARD – green theme, with entrance animation
+   FEATURE CARD – indigo theme, with entrance animation
 ========================================================= */
 
 function Feature({ icon, title, desc, delay }) {
@@ -160,21 +163,21 @@ function Feature({ icon, title, desc, delay }) {
       className="group relative cursor-default overflow-hidden rounded-xl p-5 text-left transition-all duration-300 ease-out"
       style={{
         background: "var(--bg-card)",
-        border: `1px solid ${hovered ? "rgba(63,185,80,0.40)" : "var(--border-light)"}`,
+        border: `1px solid ${hovered ? "rgba(99,102,241,0.40)" : "var(--border-light)"}`,
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        boxShadow: hovered ? "0 20px 40px rgba(63,185,80,0.10)" : "none",
+        boxShadow: hovered ? "0 20px 40px rgba(99,102,241,0.10)" : "none",
         animation: `fadeUp 0.6s ${delay} ease both`,
       }}
     >
       <div
         className="absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-500"
         style={{
-          background: "rgba(63,185,80,0.10)",
+          background: "rgba(99,102,241,0.10)",
           opacity: hovered ? 0.65 : 0,
         }}
       />
       <div
-        className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-green-500/10 text-green-400 transition-transform duration-300"
+        className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-300"
         style={{
           transform: hovered ? "scale(1.08)" : "scale(1)",
         }}
@@ -221,11 +224,59 @@ function FlaskIcon() {
 }
 
 /* =========================================================
-   STAT PILL – green themed with hover scale
+   STAT PILL – indigo theme, hover scale + count-up on mount
 ========================================================= */
 
-function StatPill({ value, label }) {
+function StatPill({ value, label, delayMs = 0 }) {
   const [hovered, setHovered] = useState(false);
+  const [display, setDisplay] = useState(value);
+
+  // Count up from 0 to the target number on mount (e.g. "100+" counts
+  // 0→100 then appends the "+"). Purely cosmetic — falls back to the
+  // static value immediately if the browser prefers reduced motion.
+  useEffect(() => {
+    const match = value.match(/\d+/);
+    if (!match) {
+      setDisplay(value);
+      return;
+    }
+
+    const prefersReduced =
+      typeof window !== "undefined" &&
+      window.matchMedia &&
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (prefersReduced) {
+      setDisplay(value);
+      return;
+    }
+
+    const target = parseInt(match[0], 10);
+    const prefix = value.slice(0, match.index);
+    const suffix = value.slice(match.index + match[0].length);
+    const duration = 900;
+    let start;
+    let raf;
+
+    setDisplay(`${prefix}0${suffix}`);
+
+    const startTimer = setTimeout(() => {
+      const step = (ts) => {
+        if (start === undefined) start = ts;
+        const progress = Math.min((ts - start) / duration, 1);
+        const eased = 1 - Math.pow(1 - progress, 3);
+        const current = Math.round(eased * target);
+        setDisplay(`${prefix}${current}${suffix}`);
+        if (progress < 1) raf = requestAnimationFrame(step);
+      };
+      raf = requestAnimationFrame(step);
+    }, delayMs);
+
+    return () => {
+      clearTimeout(startTimer);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, [value, delayMs]);
 
   return (
     <div
@@ -234,17 +285,17 @@ function StatPill({ value, label }) {
       className="flex min-w-[110px] flex-col items-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3 transition-all duration-300"
       style={{
         transform: hovered ? "scale(1.05)" : "scale(1)",
-        borderColor: hovered ? "rgba(63,185,80,0.4)" : "var(--border-light)",
+        borderColor: hovered ? "rgba(99,102,241,0.4)" : "var(--border-light)",
       }}
     >
-      <span className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{value}</span>
+      <span className="text-xl font-bold tabular-nums text-[var(--text-primary)]">{display}</span>
       <span className="mt-0.5 text-[9px] uppercase tracking-wider text-[var(--text-secondary)]">{label}</span>
     </div>
   );
 }
 
 /* =========================================================
-   SCAN LINE – green sweep
+   SCAN LINE – indigo sweep
 ========================================================= */
 
 function ScanLine() {
@@ -253,8 +304,8 @@ function ScanLine() {
       <div
         className="absolute left-0 right-0 h-px"
         style={{
-          background: "linear-gradient(90deg,transparent,rgba(63,185,80,0.65),transparent)",
-          boxShadow: "0 0 12px 2px rgba(63,185,80,0.3)",
+          background: "linear-gradient(90deg,transparent,rgba(99,102,241,0.65),transparent)",
+          boxShadow: "0 0 12px 2px rgba(99,102,241,0.3)",
           animation: "scanline 3s ease-in-out infinite",
         }}
       />
@@ -263,7 +314,7 @@ function ScanLine() {
 }
 
 /* =========================================================
-   HOME – now fully theme‑aware
+   HOME – now fully theme‑aware (Indigo Slate)
 ========================================================= */
 
 export default function Home() {
@@ -311,32 +362,32 @@ export default function Home() {
 
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
-      {/* Background glows and dot grid – unchanged */} 
+      {/* Background glows and dot grid – indigo */}
       <div
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          background: "rgba(35,134,54,0.10)",
+          background: "rgba(99,102,241,0.10)",
           filter: "blur(110px)",
         }}
       />
       <div
         className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full"
         style={{
-          background: "rgba(16,185,129,0.06)",
+          background: "rgba(99,102,241,0.06)",
           filter: "blur(110px)",
         }}
       />
       <div
         className="pointer-events-none absolute left-0 top-0 h-[400px] w-[400px] rounded-full"
         style={{
-          background: "rgba(63,185,80,0.04)",
+          background: "rgba(99,102,241,0.04)",
           filter: "blur(110px)",
         }}
       />
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(rgba(63,185,80,0.9) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -371,28 +422,17 @@ export default function Home() {
             className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
             style={{ animation: "fadeDown 0.6s 0.05s ease both" }}
           >
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[#3fb950]" />
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
             AI-powered GitHub code analysis
           </div>
 
-          {/* HEADING */}
+          {/* HEADING — flat accent color, no gradient text fill */}
           <h1
-            className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading} animate-gradient-text`}
-            style={{
-              animation: "fadeUp 0.6s 0.1s ease both, gradientMove 8s ease-in-out infinite alternate",
-            }}
+            className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
+            style={{ animation: "fadeUp 0.6s 0.1s ease both" }}
           >
             <span className="text-[var(--text-primary)]">Code</span>
-            <span
-              style={{
-                background: "linear-gradient(135deg,#3fb950 0%,#10b981 48%,#2dd4bf 100%)",
-                WebkitBackgroundClip: "text",
-                WebkitTextFillColor: "transparent",
-                backgroundSize: "200% 200%",
-              }}
-            >
-              Verity
-            </span>
+            <span className="text-[var(--accent)]">Verity</span>
           </h1>
 
           {/* TYPED SUBTITLE */}
@@ -419,7 +459,7 @@ export default function Home() {
             analysis, security findings, bug detection, performance insights, and generated tests.
           </p>
 
-          {/* CTA BUTTONS */}
+          {/* CTA BUTTONS — flat accent fill, no gradient */}
           <div
             className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
             style={{ animation: "fadeUp 0.6s 0.4s ease both" }}
@@ -427,11 +467,8 @@ export default function Home() {
             {token ? (
               <Link
                 to="/dashboard"
-                className="group relative overflow-hidden rounded-lg px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-95"
-                style={{
-                  background: "linear-gradient(135deg,#238636,#2ea043)",
-                  boxShadow: "0 0 30px rgba(35,134,54,0.25)",
-                }}
+                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
+                style={{ boxShadow: "0 0 30px rgba(99,102,241,0.25)" }}
               >
                 <ScanLine />
                 <span className="relative z-10">Open Dashboard →</span>
@@ -440,18 +477,15 @@ export default function Home() {
               <>
                 <Link
                   to="/login"
-                  className="group relative overflow-hidden rounded-lg px-7 py-3 text-sm font-semibold text-white transition-all duration-200 hover:scale-[1.03] active:scale-95"
-                  style={{
-                    background: "linear-gradient(135deg,#238636,#2ea043)",
-                    boxShadow: "0 0 30px rgba(35,134,54,0.25)",
-                  }}
+                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
+                  style={{ boxShadow: "0 0 30px rgba(99,102,241,0.25)" }}
                 >
                   <ScanLine />
                   <span className="relative z-10">Sign In</span>
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-green-500/40 hover:bg-[var(--bg-hover)]"
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
                 >
                   Get Started Free →
                 </Link>
@@ -464,20 +498,20 @@ export default function Home() {
             className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
             style={{ animation: "fadeUp 0.6s 0.45s ease both" }}
           >
-            <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950]" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
             No credit card required
             <span>•</span>
             Works with public GitHub repositories
           </div>
 
-          {/* STATS */}
+          {/* STATS — count up on mount */}
           <div
             className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
             style={{ animation: "fadeUp 0.6s 0.5s ease both" }}
           >
-            <StatPill value="100+" label="Repos Scanned" />
-            <StatPill value="98%" label="Issue Accuracy" />
-            <StatPill value="<60s" label="Avg Audit Time" />
+            <StatPill value="100+" label="Repos Scanned" delayMs={500} />
+            <StatPill value="98%" label="Issue Accuracy" delayMs={600} />
+            <StatPill value="<60s" label="Avg Audit Time" delayMs={700} />
           </div>
 
           {/* FEATURE SECTION LABEL */}
@@ -516,7 +550,7 @@ export default function Home() {
 
           {/* FOOTER */}
           <p
-            className={`text-[9px] text-[var(--border-light)] ${compactClasses.footerMargin}`}
+            className={`text-[9px] text-[var(--text-muted)] ${compactClasses.footerMargin}`}
             style={{ animation: "fadeUp 0.6s 0.85s ease both" }}
           >
             CodeVerity · AI Repository Intelligence
@@ -524,7 +558,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ANIMATIONS – moved to global CSS, so we can keep these inline for fallback */}
+      {/* ANIMATIONS – moved to global CSS, kept inline here as fallback */}
       <style>{`
         @keyframes fadeUp {
           from { transform: translateY(18px); opacity: 0; }
@@ -546,21 +580,14 @@ export default function Home() {
           100% { transform: translateY(0px); }
         }
         @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 8px rgba(63,185,80,0.1); }
-          50% { box-shadow: 0 0 20px rgba(63,185,80,0.3); }
-        }
-        @keyframes gradientMove {
-          0% { background-position: 0% 50%; }
-          100% { background-position: 100% 50%; }
+          0%, 100% { box-shadow: 0 0 8px rgba(99,102,241,0.1); }
+          50% { box-shadow: 0 0 20px rgba(99,102,241,0.3); }
         }
         .animate-float {
           animation: float 4s ease-in-out infinite;
         }
         .animate-pulse-glow {
           animation: pulseGlow 3s ease-in-out infinite;
-        }
-        .animate-gradient-text {
-          animation: fadeUp 0.6s 0.1s ease both, gradientMove 8s ease-in-out infinite alternate;
         }
       `}</style>
     </div>
