@@ -15,31 +15,45 @@ export function formatPrice(amount, currency = "INR") {
   }).format(amount);
 }
 
+// Compact display for the token allowance on plan cards, e.g. 150000 -> "150K".
+export function formatTokens(amount) {
+  return new Intl.NumberFormat("en-IN", {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(amount);
+}
+
 // Yearly prices are ~20% off (monthly × 12), pre-computed here so the
 // "Save 20%" badge on the pricing page always matches the real total.
+// tokensPerMonth is the AI-analysis token allowance included with the
+// plan — it resets monthly regardless of billing cycle.
 export const PRICING_PLANS = [
   {
-    id: "solo",
-    name: "Solo",
+    id: "starter",
+    name: "Starter",
     tagline: "For individual developers exploring a few repos",
-    monthly: { INR: 0, USD: 0 },
-    yearly: { INR: 0, USD: 0 },
+    monthly: { INR: 499, USD: 6 },
+    yearly: { INR: 4790, USD: 58 },
+    tokensPerMonth: 50000,
     features: [
-      "5 repository scans / month",
+      "50,000 AI tokens / month",
+      "Unlimited repository scans",
       "AI-generated repo summaries",
       "Basic code quality report",
       "Community support",
     ],
-    cta: "Start for free",
+    cta: "Get Starter",
     highlight: false,
   },
   {
     id: "pro",
     name: "Pro",
-    tagline: "For developers who ship — unlimited scans, deeper insight",
-    monthly: { INR: 799, USD: 10 },
-    yearly: { INR: 7670, USD: 96 },
+    tagline: "For developers who ship — deeper insight, higher token limits",
+    monthly: { INR: 999, USD: 12 },
+    yearly: { INR: 9590, USD: 115 },
+    tokensPerMonth: 150000,
     features: [
+      "150,000 AI tokens / month",
       "Unlimited repository scans",
       "Deep AI code review & summaries",
       "Security & vulnerability flags",
@@ -53,9 +67,11 @@ export const PRICING_PLANS = [
     id: "team",
     name: "Team",
     tagline: "For teams reviewing code together, at scale",
-    monthly: { INR: 2499, USD: 30 },
-    yearly: { INR: 23990, USD: 288 },
+    monthly: { INR: 1499, USD: 18 },
+    yearly: { INR: 14390, USD: 173 },
+    tokensPerMonth: 400000,
     features: [
+      "400,000 AI tokens / month (pooled)",
       "Everything in Pro",
       "Up to 10 team seats",
       "Shared scan history & dashboards",

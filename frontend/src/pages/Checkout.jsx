@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { PRICING_PLANS, formatPrice } from "./pricingPlans";
+import { PRICING_PLANS, formatPrice, formatTokens } from "./pricingPlans";
 
 // -----------------------------------------------------------------
 // UI-only checkout flow — no payment gateway wired in. The submit
@@ -242,6 +242,9 @@ export default function Checkout() {
           <div>
             <p className="text-sm font-semibold text-[var(--text-primary)]">{plan.name} plan</p>
             <p className="text-[12px] text-[var(--text-muted)]">billed {cycle}</p>
+            <p className="mt-1 font-mono text-[11px] text-[var(--accent)]">
+              {formatTokens(plan.tokensPerMonth)} tokens / mo · {plan.scansPerMonth} scans / mo
+            </p>
           </div>
           <p className="font-mono text-sm text-[var(--text-primary)]">{formatPrice(price, currency)}</p>
         </div>

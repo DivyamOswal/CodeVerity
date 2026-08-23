@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PRICING_PLANS, formatPrice } from "./pricingPlans";
+import { PRICING_PLANS, formatPrice, formatTokens } from "./pricingPlans";
 
 // -----------------------------------------------------------------
 // Built on the existing Indigo Slate theme (same CSS vars as Navbar):
@@ -24,6 +24,49 @@ function CheckIcon({ className = "" }) {
       aria-hidden="true"
     >
       <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function TokenIcon({ className = "" }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <circle cx="12" cy="12" r="9" />
+      <path d="M9.5 9.5h1.6a1.4 1.4 0 0 1 0 2.8H9.5V9.5Zm0 2.8h2.2a1.4 1.4 0 0 1 0 2.8H9.5v-2.8Z" />
+    </svg>
+  );
+}
+
+function ScanIcon({ className = "" }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M3 7V4h3" />
+      <path d="M21 7V4h-3" />
+      <path d="M3 17v3h3" />
+      <path d="M21 17v3h-3" />
+      <path d="M3 12h18" />
     </svg>
   );
 }
@@ -84,6 +127,17 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
       {currency === "INR" && !isFree && (
         <p className="mt-1 text-[11px] text-[var(--text-muted)]">+ GST as applicable</p>
       )}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2">
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-mono text-[11px] text-[var(--accent)]">
+          <TokenIcon />
+          {formatTokens(plan.tokensPerMonth)} tokens / mo
+        </div>
+        <div className="inline-flex w-fit items-center gap-1.5 rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-mono text-[11px] text-[var(--accent)]">
+          <ScanIcon />
+          {plan.scansPerMonth} scans / mo
+        </div>
+      </div>
 
       <ul className="mt-6 flex-1 space-y-3">
         {plan.features.map((feature) => (
