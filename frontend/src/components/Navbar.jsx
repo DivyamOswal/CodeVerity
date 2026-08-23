@@ -4,16 +4,27 @@ import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
 
 // -----------------------------------------------------------------
-// THEME — add these to your global CSS (e.g. index.css / theme file)
-// alongside your existing --bg-primary / --border-light / etc.
+// THEME — Indigo Slate — add these to your global CSS (e.g. index.css
+// / theme file) alongside your existing --bg-primary / --border-light
+// / --bg-card / --bg-hover / --text-primary / --text-secondary /
+// --text-muted variables (keep those, just point --accent* at indigo).
 // -----------------------------------------------------------------
 //
 // :root {
-//   --accent: #F2624C;            /* coral — primary brand accent */
-//   --accent-hover: #FF7A61;      /* coral, lighter — hover state */
-//   --accent-soft: rgba(242, 98, 76, 0.12);   /* tinted backgrounds */
-//   --accent-soft-strong: rgba(242, 98, 76, 0.22);
-//   --accent-contrast: #0A0A0B;   /* text/icon color ON TOP of solid accent */
+//   --bg-primary: #0f1117;              /* page background */
+//   --bg-card: #161922;                 /* surface / card background */
+//   --bg-hover: #1e2230;                /* hover / elevated surface */
+//   --border-light: #2a2f3d;            /* thin, subtle dividers */
+//
+//   --text-primary: #e5e7eb;            /* high-contrast primary text */
+//   --text-secondary: #9ca3af;          /* secondary text */
+//   --text-muted: #6b7280;              /* muted / icon-default text */
+//
+//   --accent: #6366f1;                  /* indigo — primary brand accent */
+//   --accent-hover: #7477f5;            /* indigo, lighter — hover state */
+//   --accent-soft: rgba(99, 102, 241, 0.12);        /* tinted backgrounds */
+//   --accent-soft-strong: rgba(99, 102, 241, 0.22);
+//   --accent-contrast: #ffffff;          /* text/icon color ON TOP of solid accent */
 // }
 //
 // No gradients anywhere — every accent surface below is a flat color.
@@ -50,12 +61,17 @@ function getInitials(token) {
 }
 
 function getUserInfo(token) {
-  if (!token) return { name: "", email: "" };
+  if (!token) return { name: "", email: "", role: "" };
   try {
     const payload = JSON.parse(atob(token.split(".")[1]));
-    return { name: payload.name ?? "", email: payload.email ?? "" };
+    const name = payload.name ?? payload.fullName ?? payload.username ?? "";
+    return {
+      name,
+      email: payload.email ?? "",
+      role: payload.role ?? "developer",
+    };
   } catch {
-    return { name: "", email: "" };
+    return { name: "", email: "", role: "" };
   }
 }
 
@@ -100,6 +116,25 @@ function Icon({ name, size = 16, className = "" }) {
       </>
     ),
     chevron: <path d="m6 9 6 6 6-6" />,
+    pricing: (
+      <>
+        <path d="M12 2v20" />
+        <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H7" />
+      </>
+    ),
+    about: (
+      <>
+        <circle cx="12" cy="12" r="9" />
+        <path d="M12 16v-5" />
+        <path d="M12 8h.01" />
+      </>
+    ),
+    contact: (
+      <>
+        <rect x="3" y="5" width="18" height="14" rx="2" />
+        <path d="m3 7 9 6 9-6" />
+      </>
+    ),
     shield: (
       <>
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
@@ -288,12 +323,17 @@ export default function Navbar() {
         </div>
 
         {/* CENTER – Navigation, styled as a small tab strip */}
-        {isAuth && (
-          <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
-            <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
-            <NavigationItem to="/history" label="History" icon="history" />
-          </div>
-        )}
+        <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
+          {isAuth && (
+            <>
+              <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
+              <NavigationItem to="/history" label="History" icon="history" />
+            </>
+          )}
+          <NavigationItem to="/pricing" label="Pricing" icon="pricing" />
+          <NavigationItem to="/about" label="About Us" icon="about" />
+          <NavigationItem to="/contact" label="Contact" icon="contact" />
+        </div>
 
         {/* RIGHT – User */}
         <div className="flex items-center gap-1">
@@ -307,7 +347,7 @@ export default function Navbar() {
                 } ${dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"}`}
               >
                 <div
-                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast)] ${avatarSize} ${avatarFont}`}
+                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast,#ffffff)] ${avatarSize} ${avatarFont}`}
                 >
                   {initials}
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-emerald-400" />
@@ -319,7 +359,7 @@ export default function Navbar() {
                   >
                     {userInfo.name || initials}
                   </p>
-                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>developer</p>
+                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>{userInfo.role || "developer"}</p>
                 </div>
 
                 <span
@@ -341,7 +381,7 @@ export default function Navbar() {
               >
                 <div className="border-b border-[var(--border-light)] p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono text-xs font-bold text-[var(--accent-contrast)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono text-xs font-bold text-[var(--accent-contrast,#ffffff)]">
                       {initials}
                     </div>
                     <div className="min-w-0">
@@ -398,7 +438,7 @@ export default function Navbar() {
               </NavLink>
               <NavLink
                 to="/register"
-                className={`rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-95 ${buttonPadding}`}
+                className={`whitespace-nowrap rounded-lg bg-[var(--accent)] font-semibold tracking-tight text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-95 ${buttonPadding}`}
               >
                 Get started
               </NavLink>
@@ -436,40 +476,86 @@ export default function Navbar() {
 
       {/* Mobile Navigation — animated height/opacity, no unmount-jank.
           Active item gets a left rail (file-explorer selection style)
-          instead of a full tint block. */}
-      {isAuth && (
-        <div
-          className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
-            menuOpen ? "max-h-96 opacity-100" : "max-h-0 border-t-0 opacity-0"
-          }`}
-        >
-          <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
-            <NavLink
-              to="/dashboard"
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-                  isActive
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                }`
-              }
-            >
-              <Icon name="dashboard" size={compact ? 14 : 16} />
-              dashboard
-            </NavLink>
-            <NavLink
-              to="/history"
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-                  isActive
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                }`
-              }
-            >
-              <Icon name="history" size={compact ? 14 : 16} />
-              history
-            </NavLink>
+          instead of a full tint block. Public links (Pricing/About/
+          Contact) always show; auth-only links are conditional. */}
+      <div
+        className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
+          menuOpen ? "max-h-[36rem] opacity-100" : "max-h-0 border-t-0 opacity-0"
+        }`}
+      >
+        <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
+          {isAuth && (
+            <>
+              <NavLink
+                to="/dashboard"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                    isActive
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`
+                }
+              >
+                <Icon name="dashboard" size={compact ? 14 : 16} />
+                dashboard
+              </NavLink>
+              <NavLink
+                to="/history"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                    isActive
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`
+                }
+              >
+                <Icon name="history" size={compact ? 14 : 16} />
+                history
+              </NavLink>
+            </>
+          )}
+          <NavLink
+            to="/pricing"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                isActive
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              }`
+            }
+          >
+            <Icon name="pricing" size={compact ? 14 : 16} />
+            pricing
+          </NavLink>
+          <NavLink
+            to="/about"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                isActive
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              }`
+            }
+          >
+            <Icon name="about" size={compact ? 14 : 16} />
+            about us
+          </NavLink>
+          <NavLink
+            to="/contact"
+            className={({ isActive }) =>
+              `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                isActive
+                  ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                  : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+              }`
+            }
+          >
+            <Icon name="contact" size={compact ? 14 : 16} />
+            contact
+          </NavLink>
+
+          {isAuth ? (
+            <>
             <NavLink
               to="/profile"
               className={({ isActive }) =>
@@ -504,9 +590,25 @@ export default function Navbar() {
               <Icon name="logout" size={compact ? 14 : 16} />
               sign out
             </button>
-          </div>
+            </>
+          ) : (
+            <div className="flex flex-col gap-2 pt-2">
+              <NavLink
+                to="/login"
+                className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-center text-sm font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+              >
+                Sign in
+              </NavLink>
+              <NavLink
+                to="/register"
+                className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-center text-sm font-semibold tracking-tight text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)]"
+              >
+                Get started
+              </NavLink>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </nav>
   );
 }
