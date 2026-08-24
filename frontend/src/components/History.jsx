@@ -7,6 +7,17 @@ import { usePreferences } from "../context/PreferencesContext";
 const API = "http://localhost:5000";
 
 // -----------------------------------------------------------------
+// TYPE SCALE — kept deliberately small and consistent so the page
+// reads as one system instead of many one-off sizes:
+//   text-[10px]  micro-labels / eyebrows (uppercase, decorative meta)
+//   text-[11px]  anything interactive — buttons, clickable text links
+//   text-xs      body/summary copy, form inputs
+//   text-sm      card titles, page subtitle
+//   text-lg+     section headings, page H1 (capped to match the H1
+//                scale used on CodeInput/GithubAnalyzer — no lg:text-5xl)
+// -----------------------------------------------------------------
+
+// -----------------------------------------------------------------
 // Mini component – ScanLine
 // Flat-color sweep (opacity fade, not a color gradient), radius
 // matched to the small "View Report" button it sits inside.
@@ -162,13 +173,12 @@ export default function History() {
         <div className={headerMargin}>
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              {/* Distinctive, responsive heading — scales further on
-                  larger screens instead of capping early, and picks up
-                  the same "one accent word" pattern used on the other
-                  pages' h1s (e.g. "Review your code smarter.") */}
+              {/* H1 capped to match the scale used on CodeInput/GithubAnalyzer
+                  (no lg:text-5xl escalation) so page titles read as one
+                  consistent system across the app. */}
               <h1
                 className={`font-bold leading-[1.05] tracking-tight text-[var(--text-primary)] ${
-                  compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl lg:text-5xl"
+                  compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
                 }`}
               >
                 Review <span className="text-[var(--accent)]">History</span>
@@ -189,7 +199,7 @@ export default function History() {
                 </svg>
               </div>
               <div>
-                <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Total Reviews</p>
+                <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Total Reviews</p>
                 <p className="font-mono text-base font-semibold text-[var(--text-primary)]">{reports.length}</p>
               </div>
             </div>
@@ -252,14 +262,14 @@ export default function History() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search repositories or summaries..."
-                  className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-xs text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
-                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-xs text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="all">All grades</option>
                   {["A", "B", "C", "D", "F"].map((g) => (
@@ -271,7 +281,7 @@ export default function History() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-xs text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="date">Newest</option>
                   <option value="score">Highest Score</option>
@@ -290,7 +300,7 @@ export default function History() {
                     setSearch("");
                     setFilterGrade("all");
                   }}
-                  className="text-[10px] text-[var(--accent)] transition hover:text-[var(--accent-hover)]"
+                  className="text-[11px] text-[var(--accent)] transition hover:text-[var(--accent-hover)]"
                 >
                   Clear filters
                 </button>
@@ -355,7 +365,7 @@ export default function History() {
                 setSearch("");
                 setFilterGrade("all");
               }}
-              className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-[10px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft-strong)]"
+              className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft-strong)]"
             >
               Clear filters
             </button>
@@ -385,7 +395,7 @@ export default function History() {
 
         {/* FOOTER */}
         {!loading && reports.length > 0 && (
-          <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] text-[var(--border-light)] ${compact ? "mt-4" : ""}`}>
+          <div className={`mt-6 flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compact ? "mt-4" : ""}`}>
             <span>CodeVerity</span>
             <span>•</span>
             <span>AI Repository Intelligence</span>
@@ -433,7 +443,10 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 
   const cardPadding = compact ? "p-3" : "p-4";
   const headerPadding = compact ? "p-3" : "p-4";
-  const titleSize = compact ? "text-[11px]" : "text-[13px]";
+  // Card title held at a constant, legible size regardless of compact
+  // mode — compact mode should tighten spacing, not shrink text below
+  // a comfortable reading size.
+  const titleSize = "text-sm";
   const scoreSize = compact ? "text-xl" : "text-2xl";
   const gap = compact ? "gap-2" : "gap-2.5";
 
@@ -451,7 +464,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="mb-0.5 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Repository</p>
+              <p className="mb-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Repository</p>
               <h2 className={`truncate font-mono font-semibold text-[var(--text-primary)] ${titleSize}`}>{repoName}</h2>
             </div>
           </div>
@@ -459,10 +472,10 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
             <span className={`rounded-md border px-2 py-0.5 font-mono text-xs font-bold ${styles.badge} ${styles.border}`}>
               {grade}
             </span>
-            <span className="font-mono text-[9px] text-[var(--text-muted)]">{date}</span>
+            <span className="font-mono text-[10px] text-[var(--text-muted)]">{date}</span>
           </div>
         </div>
-        <p className={`mt-3 line-clamp-2 text-[11px] leading-4.5 text-[var(--text-secondary)] ${compact ? "mt-2 text-[10px]" : ""}`}>
+        <p className="mt-3 line-clamp-2 text-xs leading-5 text-[var(--text-secondary)]">
           {r.summary || "No summary available"}
         </p>
       </div>
@@ -470,7 +483,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
       <div className={cardPadding}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Overall Score</p>
+            <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Overall Score</p>
             <div className="mt-0.5 flex items-baseline gap-1">
               <span className={`font-mono font-bold ${scoreSize} ${styles.text}`}>{avg}</span>
               <span className="font-mono text-[10px] text-[var(--text-muted)]">/ 100</span>
@@ -513,20 +526,20 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
         {r.toolsAndPackages?.length > 0 && (
           <div className={`mt-4 border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
             <div className="mb-2 flex items-center justify-between">
-              <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">Technologies</span>
-              <span className="font-mono text-[9px] text-[var(--text-muted)]">{r.toolsAndPackages.length} detected</span>
+              <span className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Technologies</span>
+              <span className="font-mono text-[10px] text-[var(--text-muted)]">{r.toolsAndPackages.length} detected</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {r.toolsAndPackages.slice(0, 4).map((t, i) => (
                 <span
                   key={i}
-                  className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[9px] text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                  className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                 >
                   {t}
                 </span>
               ))}
               {r.toolsAndPackages.length > 4 && (
-                <span className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[9px] text-[var(--text-muted)]">
+                <span className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)]">
                   +{r.toolsAndPackages.length - 4}
                 </span>
               )}
@@ -538,20 +551,20 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
           {/* "complete" status dot kept green — universal success
               semantics, same reasoning as the online-status dot on the
               Navbar avatar */}
-          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
+          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             Analysis complete
           </span>
           <div className="flex gap-1.5">
             <button
               onClick={onDownload}
-              className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-[9px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] ${compact ? "px-2 py-1 text-[8px]" : ""}`}
+              className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] ${compact ? "px-2 py-1" : ""}`}
             >
               ↓ PDF
             </button>
             <button
               onClick={onView}
-              className={`group relative overflow-hidden rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[9px] font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] hover:scale-105 active:scale-95 ${compact ? "px-2 py-1 text-[8px]" : ""}`}
+              className={`group relative overflow-hidden rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] hover:scale-105 active:scale-95 ${compact ? "px-2 py-1" : ""}`}
             >
               <ScanLine />
               <span className="relative z-10 flex items-center gap-1">
@@ -575,8 +588,10 @@ function ScoreBar({ label, value, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
   const color = val >= 75 ? "bg-emerald-500" : val >= 50 ? "bg-amber-400" : "bg-rose-500";
 
-  const labelSize = compact ? "text-[8px]" : "text-[9px]";
-  const valueSize = compact ? "text-[8px]" : "text-[9px]";
+  // Held at a constant 10px in both modes — compact drops the bar's
+  // height below, not the text below a legible floor.
+  const labelSize = "text-[10px]";
+  const valueSize = "text-[10px]";
   const barHeight = compact ? "h-0.5" : "h-1";
 
   return (
