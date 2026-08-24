@@ -11,6 +11,23 @@ import {
 import { generateTests as defaultGenerateTests } from "../api/github";
 import { usePreferences } from "../context/PreferencesContext";
 
+// -----------------------------------------------------------------
+// Grade colors — deliberately distinct hues per letter (A..F is
+// semantic status, same reasoning as History.jsx's gradeStyle, not
+// brand decoration). Kept as its own small map here since this file
+// doesn't share a module with History.jsx.
+// -----------------------------------------------------------------
+function gradeStyle(letter) {
+  const map = {
+    A: { text: "text-emerald-400", box: "border-emerald-500/30 bg-emerald-500/10" },
+    B: { text: "text-blue-400", box: "border-blue-500/30 bg-blue-500/10" },
+    C: { text: "text-yellow-400", box: "border-yellow-500/30 bg-yellow-500/10" },
+    D: { text: "text-orange-400", box: "border-orange-500/30 bg-orange-500/10" },
+    F: { text: "text-red-400", box: "border-red-500/30 bg-red-500/10" },
+  };
+  return map[letter] ?? { text: "text-[var(--text-muted)]", box: "border-[var(--border-light)] bg-[var(--bg-card)]" };
+}
+
 export default function Result({
   data,
   sourceCode: sourceCodeProp = "",
@@ -49,6 +66,8 @@ export default function Result({
     { metric: "Performance", value: scores.performance || 0 },
     { metric: "Maintainability", value: scores.maintainability || 0 },
   ];
+
+  const gradeColors = gradeStyle((grade ?? "N/A")[0]);
 
   /* =========================================================
      TEST GENERATION
@@ -104,11 +123,11 @@ export default function Result({
 
   return (
     <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${containerPadding}`}>
-      {/* Green dot grid background */}
+      {/* Indigo dot grid background */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(rgba(63,185,80,0.9) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -117,34 +136,34 @@ export default function Result({
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(35,134,54,0.08) 0%, transparent 65%)",
+            "radial-gradient(ellipse at center, rgba(99,102,241,0.08) 0%, transparent 65%)",
         }}
       />
       <div
         className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
         style={{
           background:
-            "radial-gradient(ellipse at center, rgba(16,185,129,0.06) 0%, transparent 70%)",
+            "radial-gradient(ellipse at center, rgba(99,102,241,0.05) 0%, transparent 70%)",
         }}
       />
 
       <div className="mx-auto max-w-7xl space-y-5 relative z-10">
         {/* Corner brackets */}
         <div className="relative">
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-green-500/50 rounded-tl-2xl z-10" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-green-500/50 rounded-tr-2xl z-10" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-green-500/50 rounded-bl-2xl z-10" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-green-500/50 rounded-br-2xl z-10" />
+          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
+          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
+          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" />
+          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
         </div>
 
         {/* HEADER */}
         <div className={`flex flex-col gap-4 border-b border-[var(--border-dark)] ${headerMargin} md:flex-row md:items-center md:justify-between`}>
           <div>
             <div className="mb-2 flex items-center gap-2">
-              <div className={`flex items-center justify-center rounded-lg bg-gradient-to-br from-green-500 to-emerald-600 text-sm shadow-lg shadow-green-500/10 ${compact ? "h-6 w-6" : "h-8 w-8"}`}>
-                <span className="text-white">⌘</span>
+              <div className={`flex items-center justify-center rounded-lg bg-[var(--accent)] text-sm shadow-lg shadow-[var(--accent-soft-strong)] ${compact ? "h-6 w-6" : "h-8 w-8"}`}>
+                <span className="text-[var(--accent-contrast,#ffffff)]">⌘</span>
               </div>
-              <span className={`font-semibold uppercase tracking-[0.2em] text-[#3fb950] ${compact ? "text-[9px]" : "text-[10px]"}`}>
+              <span className={`font-semibold uppercase tracking-[0.2em] text-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}>
                 CodeVerity
               </span>
             </div>
@@ -157,16 +176,19 @@ export default function Result({
           </div>
 
           <div className="flex items-center gap-3">
-            <div className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${gradeBoxPadding}`}>
+            {/* Grade box — colored per letter (A=green .. F=red), same
+                semantic mapping as History.jsx, instead of always
+                green regardless of the actual grade. */}
+            <div className={`rounded-xl border ${gradeColors.box} ${gradeBoxPadding}`}>
               <p className={`font-medium uppercase tracking-wider text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>
                 Final Grade
               </p>
-              <div className={`mt-0.5 font-bold text-[#3fb950] ${gradeTextSize}`}>{grade}</div>
+              <div className={`mt-0.5 font-bold ${gradeColors.text} ${gradeTextSize}`}>{grade}</div>
             </div>
             {onDownload && (
               <button
                 onClick={onDownload}
-                className={`group relative overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-semibold text-[var(--text-secondary)] transition-all hover:border-green-500/40 hover:bg-[var(--bg-hover)] hover:text-[#3fb950] ${compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs"}`}
+                className={`group relative overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-semibold text-[var(--text-secondary)] transition-all hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] ${compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs"}`}
               >
                 <span className="relative z-10 flex items-center gap-2">
                   <span>↓</span>
@@ -177,12 +199,14 @@ export default function Result({
           </div>
         </div>
 
-        {/* SCORE CARDS */}
+        {/* SCORE CARDS — one accent color throughout (not three
+            separate hues) so the four cards read as a set, same
+            principle already applied to CodeInput's feature cards. */}
         <div className={`grid grid-cols-2 ${scoreCardGap} md:grid-cols-4`}>
-          <ScoreCard label="Code Quality" value={scores.codeQuality} icon="◈" color="green" compact={compact} />
-          <ScoreCard label="Security" value={scores.security} icon="◇" color="emerald" compact={compact} />
-          <ScoreCard label="Performance" value={scores.performance} icon="↗" color="teal" compact={compact} />
-          <ScoreCard label="Maintainability" value={scores.maintainability} icon="◎" color="green" compact={compact} />
+          <ScoreCard label="Code Quality" value={scores.codeQuality} icon="◈" compact={compact} />
+          <ScoreCard label="Security" value={scores.security} icon="◇" compact={compact} />
+          <ScoreCard label="Performance" value={scores.performance} icon="↗" compact={compact} />
+          <ScoreCard label="Maintainability" value={scores.maintainability} icon="◎" compact={compact} />
         </div>
 
         {/* TAB BAR */}
@@ -202,13 +226,13 @@ export default function Result({
                 }`}
               >
                 <span
-                  className={activeTab === tab.id ? "text-[#3fb950]" : "text-[var(--text-muted)]"}
+                  className={activeTab === tab.id ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}
                 >
                   {tab.id === "audit" ? "◉" : "◇"}
                 </span>
                 {tab.label}
                 {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-[#3fb950]" />
+                  <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-[var(--accent)]" />
                 )}
               </button>
             ))}
@@ -216,7 +240,7 @@ export default function Result({
           {!testData && !testLoading && activeTab === "audit" && (
             <button
               onClick={() => handleTabClick("tests")}
-              className={`ml-auto mb-1 flex items-center gap-2 rounded-lg border border-[#238636]/40 bg-[#238636]/10 font-semibold text-[#3fb950] transition-all hover:bg-[#238636]/20 ${buttonPadding}`}
+              className={`ml-auto mb-1 flex items-center gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] font-semibold text-[var(--accent)] transition-all hover:bg-[var(--accent-soft-strong)] ${buttonPadding}`}
             >
               <span>+</span>
               {compact ? "Tests" : "Generate Tests"}
@@ -247,10 +271,14 @@ export default function Result({
                         stroke="var(--border-light)"
                         tick={{ fill: "var(--text-muted)", fontSize: compact ? 7 : 9 }}
                       />
+                      {/* recharts renders these as raw SVG attributes, which
+                          don't reliably resolve CSS custom properties across
+                          browsers — using the literal accent hex instead of
+                          var(--accent) here. */}
                       <Radar
                         dataKey="value"
-                        stroke="#3fb950"
-                        fill="#3fb950"
+                        stroke="#6366f1"
+                        fill="#6366f1"
                         fillOpacity={0.18}
                         strokeWidth={2}
                       />
@@ -263,7 +291,7 @@ export default function Result({
                 <div className={`flex h-full items-center ${compact ? "min-h-[200px]" : "min-h-[280px]"}`}>
                   <div className="w-full">
                     <div className={`flex items-center gap-3 ${compact ? "mb-3" : "mb-5"}`}>
-                      <div className={`flex items-center justify-center rounded-xl border border-[#238636]/30 bg-[#238636]/10 text-[#3fb950] ${compact ? "h-8 w-8" : "h-10 w-10"}`}>
+                      <div className={`flex items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-8 w-8" : "h-10 w-10"}`}>
                         ✓
                       </div>
                       <div>
@@ -290,10 +318,10 @@ export default function Result({
                       className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition hover:border-[var(--border-light)] ${compact ? "p-2" : "p-3"}`}
                     >
                       <div className="mb-1 flex items-center gap-2">
-                        <span className={`flex items-center justify-center rounded bg-[#238636]/10 text-[10px] text-[#3fb950] ${compact ? "h-4 w-4 text-[8px]" : "h-5 w-5"}`}>
+                        <span className={`flex items-center justify-center rounded bg-[var(--accent-soft)] text-[10px] text-[var(--accent)] ${compact ? "h-4 w-4 text-[8px]" : "h-5 w-5"}`}>
                           {i + 1}
                         </span>
-                        <p className={`font-semibold text-[#3fb950] ${compact ? "text-[10px]" : "text-xs"}`}>{a.component}</p>
+                        <p className={`font-semibold text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}>{a.component}</p>
                       </div>
                       <p className={`pl-7 leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}>
                         {a.recommendation || a.description}
@@ -312,18 +340,18 @@ export default function Result({
                   {bugs.map((b, i) => (
                     <AlertCard key={i} type="error" compact={compact}>
                       <div className="flex items-start gap-3">
-                        <div className={`flex shrink-0 items-center justify-center rounded-lg bg-[#f85149]/10 text-[#f85149] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}>
+                        <div className={`flex shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400 ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}>
                           !
                         </div>
                         <div className="min-w-0">
                           <p className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}>
                             {b.title}{" "}
-                            <span className="text-[#f85149]">({b.impact})</span>
+                            <span className="text-red-400">({b.impact})</span>
                           </p>
                           <p className={`mt-1 leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}>
                             {b.description}
                           </p>
-                          <p className={`mt-2 text-[#3fb950] ${compact ? "text-[10px]" : "text-xs"}`}>
+                          <p className={`mt-2 text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}>
                             <span className="font-semibold">Fix:</span>{" "}
                             {b.suggestedFix || b.fix}
                           </p>
@@ -343,15 +371,15 @@ export default function Result({
                   {securityIssues.map((s, i) => (
                     <AlertCard key={i} type="warning" compact={compact}>
                       <div className="flex items-start gap-3">
-                        <div className={`flex shrink-0 items-center justify-center rounded-lg bg-[#d29922]/10 text-[#d29922] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}>
+                        <div className={`flex shrink-0 items-center justify-center rounded-lg bg-amber-500/10 text-amber-400 ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}>
                           !
                         </div>
                         <div className="min-w-0">
                           <p className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}>{s.issue}</p>
                           {s.risk && (
-                            <p className={`mt-1 text-[#f85149] ${compact ? "text-[10px]" : "text-xs"}`}>Risk: {s.risk}</p>
+                            <p className={`mt-1 text-red-400 ${compact ? "text-[10px]" : "text-xs"}`}>Risk: {s.risk}</p>
                           )}
-                          <p className={`mt-2 text-[#3fb950] ${compact ? "text-[10px]" : "text-xs"}`}>
+                          <p className={`mt-2 text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}>
                             Recommendation: {s.recommendation}
                           </p>
                         </div>
@@ -372,7 +400,7 @@ export default function Result({
                       key={i}
                       className={`flex gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] ${compact ? "p-2" : "p-3"}`}
                     >
-                      <div className={`flex shrink-0 items-center justify-center rounded-full bg-[#238636]/10 text-[#3fb950] ${compact ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[10px]"}`}>
+                      <div className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[8px]" : "h-6 w-6 text-[10px]"}`}>
                         {i + 1}
                       </div>
                       <p className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}>
@@ -393,7 +421,7 @@ export default function Result({
                   {toolsAndPackages.map((t, i) => (
                     <span
                       key={i}
-                      className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] font-mono text-[var(--text-secondary)] transition hover:border-[#3fb950]/40 hover:text-[#3fb950] ${compact ? "px-2 py-0.5 text-[8px]" : "px-2.5 py-1 text-[10px]"}`}
+                      className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] font-mono text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)] ${compact ? "px-2 py-0.5 text-[8px]" : "px-2.5 py-1 text-[10px]"}`}
                     >
                       {t}
                     </span>
@@ -413,7 +441,7 @@ export default function Result({
               <GlassCard title="Generating Tests..." icon="◌" compact={compact}>
                 <div className={`flex flex-col items-center gap-4 ${compact ? "py-8" : "py-12"}`}>
                   <div className="relative">
-                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[#3fb950]" />
+                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
                   </div>
                   <div className="text-center">
                     <p className={`font-medium text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}>Analysing repository</p>
@@ -424,9 +452,9 @@ export default function Result({
             )}
 
             {testError && !testLoading && (
-              <div className="rounded-xl border border-[#f85149]/30 bg-[#f85149]/5 p-4">
+              <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-4">
                 <div className="flex items-start gap-3">
-                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#f85149]/10 text-[#f85149]">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-400">
                     !
                   </div>
                   <div>
@@ -436,7 +464,7 @@ export default function Result({
                     </p>
                     <button
                       onClick={runGenerateTests}
-                      className="mt-3 rounded-lg border border-[#f85149]/30 bg-[#f85149]/10 px-3 py-1.5 text-xs font-medium text-[#f85149] transition hover:bg-[#f85149]/20"
+                      className="mt-3 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-xs font-medium text-red-400 transition hover:bg-red-500/20"
                     >
                       Retry
                     </button>
@@ -448,8 +476,8 @@ export default function Result({
             {testData && !testLoading && (
               <>
                 <div className={`flex flex-wrap items-center gap-2 ${compact ? "gap-1.5" : ""}`}>
-                  <Badge color="green" compact={compact}>Framework: {testData.framework ?? "jest"}</Badge>
-                  <Badge color="emerald" compact={compact}>
+                  <Badge color="accent" compact={compact}>Framework: {testData.framework ?? "jest"}</Badge>
+                  <Badge color="accent" compact={compact}>
                     Est. Coverage: {testData.coverageSummary?.estimatedCoverage ?? 0}%
                   </Badge>
                   <span className={`ml-auto text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[10px]"}`}>
@@ -462,13 +490,14 @@ export default function Result({
                     <div className="space-y-4">
                       <div className="flex items-center justify-between">
                         <span className={`text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}>Estimated Coverage</span>
-                        <span className={`font-bold text-[#3fb950] ${compact ? "text-xs" : "text-sm"}`}>
+                        <span className={`font-bold text-[var(--accent)] ${compact ? "text-xs" : "text-sm"}`}>
                           {testData.coverageSummary.estimatedCoverage}%
                         </span>
                       </div>
+                      {/* Flat accent fill, no gradient */}
                       <div className="h-2 overflow-hidden rounded-full bg-[var(--border-dark)]">
                         <div
-                          className="h-full rounded-full bg-gradient-to-r from-[#238636] to-[#3fb950] transition-all duration-700"
+                          className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
                           style={{ width: `${testData.coverageSummary.estimatedCoverage}%` }}
                         />
                       </div>
@@ -480,7 +509,7 @@ export default function Result({
                           {testData.coverageSummary.uncoveredAreas.map((a, i) => (
                             <span
                               key={i}
-                              className={`rounded-md border border-[#d29922]/20 bg-[#d29922]/5 text-[#d29922] ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
+                              className={`rounded-md border border-amber-500/20 bg-amber-500/5 text-amber-400 ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[10px]"}`}
                             >
                               {a}
                             </span>
@@ -500,7 +529,7 @@ export default function Result({
                           className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)]"
                         >
                           <div className={`flex items-center justify-between border-b border-[var(--border-dark)] bg-[var(--bg-card)] ${testFilePadding}`}>
-                            <span className={`max-w-[60%] truncate font-mono text-[#3fb950] ${testFileFont}`}>
+                            <span className={`max-w-[60%] truncate font-mono text-[var(--accent)] ${testFileFont}`}>
                               {file.fileName}
                             </span>
                             <div className="flex items-center gap-3">
@@ -530,7 +559,7 @@ export default function Result({
                       {testData.unitTests.map((fn, i) => (
                         <div key={i}>
                           <div className="mb-1 flex flex-wrap items-center gap-2">
-                            <span className={`font-mono font-semibold text-[#3fb950] ${compact ? "text-[10px]" : "text-xs"}`}>
+                            <span className={`font-mono font-semibold text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}>
                               {fn.functionName}()
                             </span>
                             <span className={`text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[10px]"}`}>{fn.filePath}</span>
@@ -559,7 +588,7 @@ export default function Result({
                     <div className={`space-y-3 ${compact ? "space-y-2" : ""}`}>
                       {testData.edgeCases.map((c, i) => (
                         <div key={i}>
-                          <p className={`mb-1 font-mono text-[#d29922] ${compact ? "text-[9px]" : "text-[10px]"}`}>
+                          <p className={`mb-1 font-mono text-amber-400 ${compact ? "text-[9px]" : "text-[10px]"}`}>
                             {c.functionName}()
                           </p>
                           <TestCaseRow
@@ -587,7 +616,7 @@ export default function Result({
                           <p className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}>{t.label}</p>
                           <p className={`mb-3 mt-1 text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-[11px]"}`}>{t.description}</p>
                           <div className="relative">
-                            <pre className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[#010409] pr-16 text-[#7ee787] ${codeBlockPadding} ${codeBlockFont}`}>
+                            <pre className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[#0a0a0f] pr-16 text-[var(--accent)] ${codeBlockPadding} ${codeBlockFont}`}>
                               <code>{t.codeSnippet}</code>
                             </pre>
                             <button
@@ -610,11 +639,11 @@ export default function Result({
                         <AlertCard key={i} type="warning" compact={compact}>
                           <div className="flex items-start justify-between gap-3">
                             <div className="min-w-0 flex-1">
-                              <p className={`font-mono font-semibold text-[#d29922] ${compact ? "text-[10px]" : "text-xs"}`}>
+                              <p className={`font-mono font-semibold text-amber-400 ${compact ? "text-[10px]" : "text-xs"}`}>
                                 {m.target}
                               </p>
                               <p className={`mt-1 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-[11px]"}`}>{m.reason}</p>
-                              <pre className={`mt-2 overflow-x-auto text-[#d29922] ${compact ? "text-[9px]" : "text-[10px]"}`}>
+                              <pre className={`mt-2 overflow-x-auto text-amber-400 ${compact ? "text-[9px]" : "text-[10px]"}`}>
                                 <code>{m.snippet}</code>
                               </pre>
                             </div>
@@ -635,7 +664,7 @@ export default function Result({
                   <button
                     onClick={runGenerateTests}
                     disabled={testLoading}
-                    className={`flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition hover:border-[#3fb950]/40 hover:bg-[var(--bg-hover)] hover:text-[#3fb950] disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "px-2 py-1.5 text-[10px]" : "px-3 py-2 text-[11px]"}`}
+                    className={`flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] disabled:cursor-not-allowed disabled:opacity-50 ${compact ? "px-2 py-1.5 text-[10px]" : "px-3 py-2 text-[11px]"}`}
                   >
                     <span>↻</span>
                     {compact ? "Re-gen" : "Re-generate Tests"}
@@ -651,13 +680,13 @@ export default function Result({
 }
 
 /* =========================================================
-   GLASS CARD – green accent, now accepts compact
+   GLASS CARD – accepts compact
 ========================================================= */
 function GlassCard({ title, children, icon, compact }) {
   return (
     <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_4px_20px_rgba(0,0,0,0.12)]">
       <div className={`flex items-center gap-2 border-b border-[var(--border-dark)] ${compact ? "px-3 py-2" : "px-4 py-3"}`}>
-        <span className={`flex items-center justify-center rounded-md bg-[#238636]/10 text-[#3fb950] ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-[11px]"}`}>
+        <span className={`flex items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-[11px]"}`}>
           {icon}
         </span>
         <h2 className={`font-semibold text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}>{title}</h2>
@@ -672,8 +701,8 @@ function GlassCard({ title, children, icon, compact }) {
 ========================================================= */
 function AlertCard({ children, type, compact }) {
   const styles = {
-    error: "border-[#f85149]/20 bg-[#f85149]/5",
-    warning: "border-[#d29922]/20 bg-[#d29922]/5",
+    error: "border-red-500/20 bg-red-500/5",
+    warning: "border-amber-500/20 bg-amber-500/5",
   };
   return (
     <div
@@ -687,35 +716,17 @@ function AlertCard({ children, type, compact }) {
 }
 
 /* =========================================================
-   SCORE CARD – green/emerald/teal, accepts compact
+   SCORE CARD – single accent color (not three separate hues),
+   accepts compact. Matches the "one color, several intensities"
+   principle already used for CodeInput's feature cards.
 ========================================================= */
-function ScoreCard({ label, value, icon, color = "green", compact }) {
+function ScoreCard({ label, value, icon, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
-
-  const colorMap = {
-    green: {
-      icon: "bg-[#238636]/10 text-[#3fb950]",
-      bar: "bg-[#3fb950]",
-      number: "text-[#3fb950]",
-    },
-    emerald: {
-      icon: "bg-[#10b981]/10 text-[#10b981]",
-      bar: "bg-[#10b981]",
-      number: "text-[#10b981]",
-    },
-    teal: {
-      icon: "bg-[#2dd4bf]/10 text-[#2dd4bf]",
-      bar: "bg-[#2dd4bf]",
-      number: "text-[#2dd4bf]",
-    },
-  };
-
-  const colors = colorMap[color] || colorMap.green;
 
   return (
     <div className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all hover:border-[var(--border-medium)] ${compact ? "p-2.5" : "p-3.5"}`}>
       <div className="flex items-center justify-between">
-        <div className={`flex items-center justify-center rounded-lg text-xs ${colors.icon} ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}>
+        <div className={`flex items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] text-xs ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}>
           {icon}
         </div>
         <span className={`uppercase tracking-wider text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>
@@ -725,13 +736,13 @@ function ScoreCard({ label, value, icon, color = "green", compact }) {
       <div className={`flex items-end justify-between ${compact ? "mt-2" : "mt-3"}`}>
         <div>
           <p className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>{label}</p>
-          <p className={`mt-0.5 font-bold ${colors.number} ${compact ? "text-lg" : "text-xl"}`}>{val || "N/A"}</p>
+          <p className={`mt-0.5 font-bold text-[var(--accent)] ${compact ? "text-lg" : "text-xl"}`}>{val || "N/A"}</p>
         </div>
         <span className={`mb-1 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>/100</span>
       </div>
       <div className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${compact ? "mt-1.5 h-0.5" : "mt-2 h-1"}`}>
         <div
-          className={`h-full rounded-full transition-all duration-700 ${colors.bar}`}
+          className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
           style={{ width: `${val}%` }}
         />
       </div>
@@ -740,19 +751,18 @@ function ScoreCard({ label, value, icon, color = "green", compact }) {
 }
 
 /* =========================================================
-   BADGE – accepts compact
+   BADGE – accepts compact. "accent" is the normal case; "yellow"
+   stays as a distinct semantic warning color.
 ========================================================= */
-function Badge({ children, color = "green", compact }) {
+function Badge({ children, color = "accent", compact }) {
   const colors = {
-    green: "border-[#238636]/20 bg-[#238636]/10 text-[#3fb950]",
-    emerald: "border-[#10b981]/20 bg-[#10b981]/10 text-[#10b981]",
-    teal: "border-[#2dd4bf]/20 bg-[#2dd4bf]/10 text-[#2dd4bf]",
-    yellow: "border-[#d29922]/20 bg-[#d29922]/10 text-[#d29922]",
+    accent: "border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)]",
+    yellow: "border-amber-500/20 bg-amber-500/10 text-amber-400",
   };
   return (
     <span
       className={`rounded-md border font-medium ${compact ? "px-1.5 py-0.5 text-[8px]" : "px-2.5 py-1 text-[10px]"} ${
-        colors[color] || colors.green
+        colors[color] || colors.accent
       }`}
     >
       {children}
@@ -764,9 +774,11 @@ function Badge({ children, color = "green", compact }) {
    TEST CASE ROW – accepts compact
 ========================================================= */
 function TestCaseRow({ testCase: c, id, copiedId, onCopy, accent = "indigo", compact }) {
+  // Fixed: this map's "indigo" key was previously pointing at a
+  // hardcoded green hex despite its name — now it's the actual accent.
   const accentColors = {
-    indigo: "text-[#3fb950]",
-    yellow: "text-[#d29922]",
+    indigo: "text-[var(--accent)]",
+    yellow: "text-amber-400",
   };
   return (
     <div className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] ${compact ? "p-2" : "p-3"}`}>
@@ -785,8 +797,8 @@ function TestCaseRow({ testCase: c, id, copiedId, onCopy, accent = "indigo", com
       {c.codeSnippet && (
         <div className="relative">
           <pre
-            className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[#010409] pr-12 ${
-              accentColors[accent] || "text-[#3fb950]"
+            className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[#0a0a0f] pr-12 ${
+              accentColors[accent] || "text-[var(--accent)]"
             } ${compact ? "p-2 text-[9px]" : "p-3 text-[10px]"}`}
           >
             <code>{c.codeSnippet}</code>
@@ -804,21 +816,23 @@ function TestCaseRow({ testCase: c, id, copiedId, onCopy, accent = "indigo", com
 }
 
 /* =========================================================
-   TYPE BADGE – accepts compact
+   TYPE BADGE – kept as distinct hues per type (unit/edge/
+   integration is a semantic category, same reasoning as the grade
+   colors), accepts compact
 ========================================================= */
 function TypeBadge({ type, compact }) {
   const map = {
     unit: {
       label: "unit",
-      cls: "border-[#8957e5]/20 bg-[#8957e5]/10 text-[#a371f7]",
+      cls: "border-purple-500/20 bg-purple-500/10 text-purple-400",
     },
     edge: {
       label: "edge",
-      cls: "border-[#d29922]/20 bg-[#d29922]/10 text-[#d29922]",
+      cls: "border-amber-500/20 bg-amber-500/10 text-amber-400",
     },
     integration: {
       label: "integration",
-      cls: "border-[#0891b2]/20 bg-[#0891b2]/10 text-[#22d3ee]",
+      cls: "border-cyan-500/20 bg-cyan-500/10 text-cyan-400",
     },
   };
   const { label, cls } = map[type] ?? {
