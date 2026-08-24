@@ -12,6 +12,8 @@ import Home from "./components/Home";
 import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
 import History from "./components/History";
+import About from "./pages/About";
+import Contact from "./pages/Dashboard";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Result from "./components/Result";
