@@ -7,7 +7,7 @@ import { usePreferences } from "../context/PreferencesContext";
 
 /* =========================================================
    CODEVERITY DASHBOARD
-   Theme: Green/emerald/teal (matching the rest of the app)
+   Theme: Indigo Slate (matching the rest of the app)
 ========================================================= */
 
 export default function Dashboard() {
@@ -158,7 +158,6 @@ export default function Dashboard() {
       value: data.stats?.totalScans ?? 0,
       sub: "repositories analyzed",
       icon: "⌁",
-      color: "green",
       delay: "0ms",
     },
     {
@@ -166,7 +165,6 @@ export default function Dashboard() {
       value: `${avgQuality}%`,
       sub: "across all reports",
       icon: "◈",
-      color: "emerald",
       delay: "70ms",
     },
     {
@@ -174,15 +172,17 @@ export default function Dashboard() {
       value: `${data.stats?.devopsScore ?? 0}%`,
       sub: "CI/CD & infrastructure",
       icon: "⚙",
-      color: "teal",
       delay: "140ms",
     },
   ];
 
-  // Compact overrides for spacing and sizing
+  // Compact overrides for spacing and sizing. No top padding here —
+  // the Navbar is `sticky` (already in normal document flow, taking
+  // up its own real space), so adding pt-16/pt-14 on top of that was
+  // double-counting the navbar's height and creating the extra gap
+  // above "System online". None of the other pages add this padding.
   const compactClasses = compact
     ? {
-        container: "pt-14",
         mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
         headerSpacing: "gap-0.5",
         heading: "text-lg sm:text-xl",
@@ -197,19 +197,18 @@ export default function Dashboard() {
         analyzerDesc: "text-[9px] sm:text-[10px]",
         inputHeight: "h-10",
         inputPadding: "pl-7 pr-3",
-        buttonPadding: "px-4 py-2 text-[10px]",
+        buttonPadding: "px-4 py-2 text-[11px]",
         featuresGap: "gap-1.5",
-        featuresTag: "px-2 py-1 text-[8px]",
+        featuresTag: "px-2 py-1 text-[9px]",
         recentHeaderPadding: "px-4 py-3",
         recentTitle: "text-xs",
-        recentSub: "text-[8px]",
+        recentSub: "text-[9px]",
         reportRowPadding: "px-2 py-2",
         emptyStatePadding: "py-8 px-4",
         footerMargin: "mt-4",
-        footerText: "text-[7px]",
+        footerText: "text-[9px]",
       }
     : {
-        container: "pt-16",
         mainPadding: "px-4 py-6 sm:px-6 lg:px-8",
         headerSpacing: "gap-1",
         heading: "text-xl sm:text-2xl",
@@ -224,7 +223,7 @@ export default function Dashboard() {
         analyzerDesc: "text-[10px] sm:text-xs",
         inputHeight: "h-12",
         inputPadding: "pl-8 pr-4",
-        buttonPadding: "px-6 py-3 text-xs",
+        buttonPadding: "px-6 py-3 text-[11px]",
         featuresGap: "gap-2",
         featuresTag: "px-2.5 py-1.5 text-[9px]",
         recentHeaderPadding: "px-5 py-4",
@@ -233,15 +232,15 @@ export default function Dashboard() {
         reportRowPadding: "px-3 py-3",
         emptyStatePadding: "py-12 px-6",
         footerMargin: "mt-6",
-        footerText: "text-[8px]",
+        footerText: "text-[9px]",
       };
 
   /* =========================================================
-     MAIN UI – pt-16 for navbar, compact-aware
+     MAIN UI – compact-aware, no navbar-compensation padding
   ========================================================= */
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.container}`}>
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {/* =====================================================
           RESULT VIEW
       ===================================================== */}
@@ -272,7 +271,7 @@ export default function Dashboard() {
             ================================================= */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   System online
                 </span>
@@ -305,12 +304,12 @@ export default function Dashboard() {
                 ANALYZER
             ================================================= */}
             <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-green-500/10 blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl" />
+              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
               <div className={`relative ${compactClasses.analyzerPadding}`}>
                 <div className={`flex items-start ${compactClasses.analyzerHeaderGap}`}>
-                  <div className={`flex shrink-0 items-center justify-center rounded-xl border border-green-500/20 bg-green-500/10 text-green-400 ${compactClasses.analyzerIconSize}`}>
+                  <div className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)] ${compactClasses.analyzerIconSize}`}>
                     ⌁
                   </div>
                   <div>
@@ -330,7 +329,7 @@ export default function Dashboard() {
                       $
                     </span>
                     <input
-                      className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition focus:border-green-500/60 focus:ring-1 focus:ring-green-500/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
+                      className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
                       placeholder="https://github.com/username/repository"
                       value={repoUrl}
                       onChange={(e) => {
@@ -345,10 +344,10 @@ export default function Dashboard() {
                   <button
                     onClick={generateReport}
                     disabled={loading}
-                    className={`shrink-0 rounded-xl font-semibold text-white transition-all duration-200 ${
+                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 ${
                       loading
-                        ? "cursor-not-allowed bg-[var(--border-light)] text-[var(--text-muted)]"
-                        : "bg-gradient-to-r from-[#238636] to-[#2ea043] shadow-lg shadow-green-500/20 hover:scale-[1.01] hover:shadow-green-500/30 active:scale-95"
+                        ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)]"
+                        : "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] shadow-lg shadow-[var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] hover:scale-[1.01] active:scale-95"
                     } ${compactClasses.buttonPadding}`}
                   >
                     {loading ? (
@@ -386,7 +385,7 @@ export default function Dashboard() {
                       key={f.label}
                       className={`flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compactClasses.featuresTag}`}
                     >
-                      <span className="text-[#3fb950]">{f.icon}</span>
+                      <span className="text-[var(--accent)]">{f.icon}</span>
                       {f.label}
                     </span>
                   ))}
@@ -411,14 +410,14 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <span
                       key={statsKey}
-                      className={`hidden items-center gap-1.5 text-[9px] text-[#3fb950] sm:flex ${compact ? "text-[8px]" : ""}`}
+                      className="hidden items-center gap-1.5 text-[9px] text-emerald-400 sm:flex"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-[#3fb950] animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                       Live
                     </span>
                     <button
                       onClick={() => navigate("/history")}
-                      className={`rounded-lg px-2.5 py-1.5 text-[9px] font-medium text-[#3fb950] transition hover:bg-green-500/10 ${compact ? "text-[8px] px-2 py-1" : ""}`}
+                      className="rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft)]"
                     >
                       View all →
                     </button>
@@ -463,7 +462,7 @@ export default function Dashboard() {
             {/* =================================================
                 FOOTER
             ================================================= */}
-            <div className={`flex items-center justify-center gap-2 py-3 text-[var(--border-light)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
+            <div className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
               <span>CodeVerity</span>
               <span>•</span>
               <span>AI Repository Intelligence</span>
@@ -498,12 +497,13 @@ export default function Dashboard() {
 }
 
 /* =========================================================
-   CODEVERITY LOGO – updated to green shield (used only in loading)
+   CODEVERITY LOGO – flat indigo tile (used only in loading),
+   matches the CodeVerityLogo used on every other page
 ========================================================= */
 
 function CodeVerityLogo() {
   return (
-    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 via-emerald-500 to-teal-600 shadow-lg shadow-green-500/20">
+    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
       <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
       <svg
         width="18"
@@ -514,68 +514,49 @@ function CodeVerityLogo() {
         strokeWidth="2"
         strokeLinecap="round"
         strokeLinejoin="round"
-        className="relative text-green-400"
+        className="relative text-[var(--accent)]"
       >
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <path d="m9 12 2 2 4-4" />
       </svg>
       <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-        <span className="text-[6px] font-bold text-green-400">&lt;/&gt;</span>
+        <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
       </div>
-      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-green-400 animate-pulse" />
+      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
     </div>
   );
 }
 
 /* =========================================================
-   STAT CARD – now accepts compact props
+   STAT CARD – single indigo accent (the three stats aren't
+   semantically different, so one flat color reads as more
+   intentional than three decorative hues — same reasoning as
+   ScoreCard in Result.jsx)
 ========================================================= */
 
-function StatCard({ label, value, sub, icon, color, delay, compact, statValueClass, statPaddingClass }) {
+function StatCard({ label, value, sub, icon, delay, compact, statValueClass, statPaddingClass }) {
   const animated = useCountUp(value, 800);
-
-  const colors = {
-    green: {
-      border: "border-green-500/20",
-      icon: "bg-green-500/10 text-[#3fb950]",
-      glow: "bg-green-500/5",
-    },
-    emerald: {
-      border: "border-emerald-500/20",
-      icon: "bg-emerald-500/10 text-[#10b981]",
-      glow: "bg-emerald-500/5",
-    },
-    teal: {
-      border: "border-teal-500/20",
-      icon: "bg-teal-500/10 text-[#2dd4bf]",
-      glow: "bg-teal-500/5",
-    },
-  };
-
-  const c = colors[color] || colors.green;
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border ${c.border} bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 ${statPaddingClass}`}
+      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 ${statPaddingClass}`}
       style={{
         animation: "fadeUp 0.45s ease both",
         animationDelay: delay,
       }}
     >
-      <div
-        className={`pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full blur-2xl ${c.glow}`}
-      />
+      <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className={`font-medium uppercase tracking-[0.12em] text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>
+          <p className={`font-medium uppercase tracking-[0.12em] text-[var(--text-muted)] text-[9px]`}>
             {label}
           </p>
           <p className={`mt-2 font-bold tabular-nums text-[var(--text-primary)] ${statValueClass}`}>
             {animated}
           </p>
-          <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[8px]" : "text-[9px]"}`}>{sub}</p>
+          <p className="mt-1 text-[var(--text-muted)] text-[9px]">{sub}</p>
         </div>
-        <div className={`flex items-center justify-center rounded-lg text-sm ${c.icon} ${compact ? "h-6 w-6 text-xs" : "h-8 w-8"}`}>
+        <div className={`flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-6 w-6 text-xs" : "h-8 w-8"}`}>
           {icon}
         </div>
       </div>
@@ -584,7 +565,8 @@ function StatCard({ label, value, sub, icon, color, delay, compact, statValueCla
 }
 
 /* =========================================================
-   REPORT ROW – now accepts compact
+   REPORT ROW – grade colors aligned with History.jsx/Result.jsx
+   (C is yellow, not amber, everywhere now)
 ========================================================= */
 
 function ReportRow({ report, onView, compact }) {
@@ -602,9 +584,9 @@ function ReportRow({ report, onView, compact }) {
         border: "border-blue-500/20",
       },
       C: {
-        text: "text-amber-400",
-        bg: "bg-amber-500/10",
-        border: "border-amber-500/20",
+        text: "text-yellow-400",
+        bg: "bg-yellow-500/10",
+        border: "border-yellow-500/20",
       },
       D: {
         text: "text-orange-400",
@@ -643,9 +625,9 @@ function ReportRow({ report, onView, compact }) {
   const rowPadding = compact ? "px-2 py-2" : "px-3 py-3";
   const gradeSize = compact ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]";
   const repoFontSize = compact ? "text-[10px]" : "text-[11px]";
-  const dateFontSize = compact ? "text-[8px]" : "text-[9px]";
-  const scoreBadgePadding = compact ? "px-1.5 py-0.5 text-[8px]" : "px-2 py-1 text-[9px]";
-  const viewButtonPadding = compact ? "px-2 py-1 text-[8px]" : "px-3 py-1.5 text-[9px]";
+  const dateFontSize = "text-[9px]";
+  const scoreBadgePadding = compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]";
+  const viewButtonPadding = compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]";
 
   return (
     <div className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[var(--border-light)] hover:bg-[var(--bg-primary)] ${rowPadding}`}>
@@ -673,7 +655,7 @@ function ReportRow({ report, onView, compact }) {
           ].map((v, i) => (
             <div
               key={i}
-              className="w-1.5 rounded-sm bg-green-500/50 transition-all duration-200 group-hover:bg-green-400"
+              className="w-1.5 rounded-sm bg-[var(--accent)]/50 transition-all duration-200 group-hover:bg-[var(--accent)]"
               style={{ height: `${Math.max(20, v)}%` }}
             />
           ))}
@@ -686,7 +668,7 @@ function ReportRow({ report, onView, compact }) {
 
       <button
         onClick={onView}
-        className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition hover:border-green-500/30 hover:bg-green-500/10 hover:text-[#3fb950] ${viewButtonPadding}`}
+        className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent)]/30 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${viewButtonPadding}`}
       >
         View →
       </button>
@@ -729,7 +711,7 @@ function useCountUp(target, duration = 800) {
 }
 
 /* =========================================================
-   LOADING SCREEN – updated logo
+   LOADING SCREEN – flat indigo logo
 ========================================================= */
 
 function LoadingScreen() {
@@ -737,7 +719,7 @@ function LoadingScreen() {
     <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
       <div className="flex flex-col items-center gap-4">
         <CodeVerityLogo />
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[#3fb950]" />
+        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
         <p className="font-mono text-[10px] text-[var(--text-muted)]">loading dashboard…</p>
       </div>
     </div>

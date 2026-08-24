@@ -6,7 +6,7 @@ import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingP
 // Built on the existing Indigo Slate theme (same CSS vars as Navbar):
 // --bg-primary / --bg-card / --bg-hover / --border-light / --accent /
 // --accent-hover / --accent-soft / --accent-contrast / --text-*.
-// No gradients — flat accent fills only, matching the rest of the app.
+// No gradients flat accent fills only, matching the rest of the app.
 // -----------------------------------------------------------------
 
 function CheckIcon({ className = "" }) {
@@ -166,7 +166,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
 const FAQ = [
   {
     q: "What counts as a repository scan?",
-    a: "One scan is one full analysis of a repo — code quality, structure, and the AI-generated summary — regenerated any time the repo changes.",
+    a: "One scan is one full analysis of a repo  code quality, structure, and the AI-generated summary regenerated any time the repo changes.",
   },
   {
     q: "Can I switch plans later?",
@@ -174,11 +174,11 @@ const FAQ = [
   },
   {
     q: "Do you support Indian GST invoices?",
-    a: "Yes — GST is calculated at checkout for INR billing, and a GST-compliant invoice is emailed after every payment.",
+    a: "Yes GST is calculated at checkout for INR billing, and a GST-compliant invoice is emailed after every payment.",
   },
   {
     q: "Is there a free trial on Pro or Team?",
-    a: "Solo is free forever with no card required. Pro and Team can be cancelled anytime from Settings — no lock-in.",
+    a: "Solo is free forever with no card required. Pro and Team can be cancelled anytime from Settings no lock-in.",
   },
 ];
 
