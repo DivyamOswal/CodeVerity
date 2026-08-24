@@ -13,7 +13,7 @@ import Login from "./components/Auth/Login";
 import Register from "./components/Auth/Register";
 import History from "./components/History";
 import About from "./pages/About";
-import Contact from "./pages/Dashboard";
+import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import ProtectedRoute from "./components/ProtectedRoute";
 import Result from "./components/Result";
@@ -76,6 +76,8 @@ function Layout() {
       {showNav && <Navbar />}
       <Routes>
         <Route path="/" element={<Home />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route
           path="/login"
           element={isAuth ? <Navigate to="/dashboard" replace /> : <Login />}
