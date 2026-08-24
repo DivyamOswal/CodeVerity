@@ -175,7 +175,7 @@ export default function GithubAnalyzer({ setData }) {
       />
 
       <div className="mx-auto max-w-3xl relative z-10">
-        <div className="relative">
+        <div className="relative" style={{ animation: "fadeUp 0.6s ease both" }}>
           {/* Corner brackets — decorative frame accents */}
           <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
           <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
@@ -183,7 +183,10 @@ export default function GithubAnalyzer({ setData }) {
           <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
 
           <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/30">
-            <div className={`border-b border-[var(--border-light)] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}>
+            <div
+              className={`border-b border-[var(--border-light)] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}
+              style={{ animation: "fadeDown 0.5s 0.05s ease both" }}
+            >
               <CodeVerityLogo />
               <div>
                 <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">CODEVERITY</p>
@@ -227,7 +230,7 @@ export default function GithubAnalyzer({ setData }) {
                   disabled={loading}
                   className={`group relative overflow-hidden rounded-lg font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${compactClasses.button} ${
                     loading
-                      ? "cursor-not-allowed bg-[var(--border-light)] text-[var(--text-muted)] shadow-none"
+                      ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)] shadow-none"
                       : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] shadow-[0_0_30px_var(--accent-soft-strong)]"
                   }`}
                 >
@@ -248,7 +251,7 @@ export default function GithubAnalyzer({ setData }) {
                 </button>
               </div>
 
-              <div className={`font-mono text-xs text-[var(--border-medium)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
+              <div className={`font-mono text-xs text-[var(--text-muted)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
                 💡 Tip: Try popular repos like{" "}
                 <span className="text-[var(--accent)]">https://github.com/facebook/react</span>
               </div>
@@ -256,9 +259,12 @@ export default function GithubAnalyzer({ setData }) {
           </div>
         </div>
 
-        <div className={`flex items-center justify-center gap-2 text-xs text-[var(--border-medium)] ${compactClasses.footer}`}>
+        <div
+          className={`flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footer}`}
+          style={{ animation: "fadeUp 0.6s 0.15s ease both" }}
+        >
           <span>Powered by</span>
-          <span className="font-semibold text-[var(--text-muted)]">CodeVerity AI</span>
+          <span className="font-semibold text-[var(--text-secondary)]">CodeVerity AI</span>
           <span>•</span>
           <span>Built for developers</span>
         </div>

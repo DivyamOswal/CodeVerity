@@ -250,6 +250,29 @@ a:hover {
   outline-offset: 2px;
 }
 
+/* =====================================================
+   ACCENT-BACKGROUND BUTTON GUARD
+   Root cause of the recurring "invisible button text" bug: <Link>
+   renders as <a>, and the "Links" rule above makes every anchor
+   accent-colored text by default. Any button/link styled with a
+   solid accent background (bg-[var(--accent)] or
+   bg-[var(--accent-hover)]) is supposed to override that with its
+   own accent-contrast text class — but if that per-component
+   arbitrary-value class ever fails to generate for any reason, the
+   element silently falls back to the global accent-colored link
+   text sitting on an accent background: invisible.
+   This rule matches on the literal compiled class name (Tailwind
+   arbitrary values keep the bracket syntax as-is in the DOM) and
+   forces contrast text with !important, so this class of bug can't
+   happen again regardless of what any individual component does.
+======================================================== */
+a[class*="bg-[var(--accent)]"],
+a[class*="bg-[var(--accent-hover)]"],
+button[class*="bg-[var(--accent)]"],
+button[class*="bg-[var(--accent-hover)]"] {
+  color: var(--accent-contrast, #ffffff) !important;
+}
+
 /* Reduce motion preference */
 @media (prefers-reduced-motion: reduce) {
   *,

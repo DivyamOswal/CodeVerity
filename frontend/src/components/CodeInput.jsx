@@ -114,6 +114,7 @@ function Feature({ icon, title, desc, intensity }) {
 export default function CodeInput({ setResult, model }) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
 
   // Get preferences for compact mode
   const { compact } = usePreferences();
@@ -121,11 +122,13 @@ export default function CodeInput({ setResult, model }) {
   const runAnalysis = async () => {
     if (!code.trim()) return;
     setLoading(true);
+    setError("");
     try {
       const res = await analyzeCode(code, model);
       setResult(res.data.analysis);
     } catch (err) {
       console.error(err);
+      setError(err.response?.data?.message || err.response?.data?.error || "Analysis failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -176,7 +179,10 @@ export default function CodeInput({ setResult, model }) {
 
       <div className="mx-auto max-w-6xl relative z-10">
         {/* ================= HEADER ================= */}
-        <div className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${compactClasses.header}`}>
+        <div
+          className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${compactClasses.header}`}
+          style={{ animation: "fadeDown 0.6s ease both" }}
+        >
           <div>
             <div className="mb-3 flex items-center gap-3">
               <CodeVerityLogo />
@@ -216,8 +222,18 @@ export default function CodeInput({ setResult, model }) {
           </div>
         </div>
 
+        {/* ================= ERROR BANNER ================= */}
+        {error && (
+          <div
+            className="mb-4 font-mono text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3"
+            style={{ animation: "fadeUp 0.4s ease both" }}
+          >
+            error: {error}
+          </div>
+        )}
+
         {/* ================= EDITOR CARD ================= */}
-        <div className="relative">
+        <div className="relative" style={{ animation: "fadeUp 0.6s 0.1s ease both" }}>
           {/* Corner brackets — purely decorative frame accents */}
           <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
           <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
@@ -330,7 +346,10 @@ export default function CodeInput({ setResult, model }) {
         </div>
 
         {/* ================= FEATURE CARDS ================= */}
-        <div className={`mt-5 grid grid-cols-1 sm:grid-cols-3 ${compactClasses.featuresGrid}`}>
+        <div
+          className={`mt-5 grid grid-cols-1 sm:grid-cols-3 ${compactClasses.featuresGrid}`}
+          style={{ animation: "fadeUp 0.6s 0.2s ease both" }}
+        >
           <Feature
             icon="🔐"
             title="Security Analysis"
@@ -352,7 +371,10 @@ export default function CodeInput({ setResult, model }) {
         </div>
 
         {/* ================= FOOTER ================= */}
-        <div className={`flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footerText}`}>
+        <div
+          className={`flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footerText}`}
+          style={{ animation: "fadeUp 0.6s 0.3s ease both" }}
+        >
           <span>Powered by</span>
           <span className="font-semibold text-[var(--text-secondary)]">CodeVerity AI</span>
           <span>•</span>
