@@ -1,9 +1,10 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { usePreferences } from "../context/PreferencesContext";
+import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
 
 /* =========================================================
-   PARTICLE FIELD – indigo theme
+   PARTICLE FIELD – indigo theme (UNCHANGED)
 ========================================================= */
 
 function ParticleField() {
@@ -79,7 +80,7 @@ function ParticleField() {
 }
 
 /* =========================================================
-   TYPED WORD – flat accent color (no gradient text fill)
+   TYPED WORD – flat accent color (UNCHANGED)
 ========================================================= */
 
 function TypedWord({ words }) {
@@ -115,7 +116,7 @@ function TypedWord({ words }) {
 }
 
 /* =========================================================
-   CODEVERITY LOGO – flat accent tile, no gradient
+   CODEVERITY LOGO – flat accent tile (UNCHANGED)
 ========================================================= */
 
 function CodeVerityLogo() {
@@ -150,7 +151,7 @@ function CodeVerityLogo() {
 }
 
 /* =========================================================
-   FEATURE CARD – indigo theme, with entrance animation
+   FEATURE CARD – indigo theme (UNCHANGED except hover)
 ========================================================= */
 
 function Feature({ icon, title, desc, delay }) {
@@ -166,7 +167,6 @@ function Feature({ icon, title, desc, delay }) {
         border: `1px solid ${hovered ? "rgba(99,102,241,0.40)" : "var(--border-light)"}`,
         transform: hovered ? "translateY(-4px)" : "translateY(0)",
         boxShadow: hovered ? "0 20px 40px rgba(99,102,241,0.10)" : "none",
-        animation: `fadeUp 0.6s ${delay} ease both`,
       }}
     >
       <div
@@ -193,7 +193,7 @@ function Feature({ icon, title, desc, delay }) {
 }
 
 /* =========================================================
-   FEATURE ICONS
+   FEATURE ICONS (UNCHANGED)
 ========================================================= */
 
 function BugIcon() {
@@ -224,16 +224,13 @@ function FlaskIcon() {
 }
 
 /* =========================================================
-   STAT PILL – indigo theme, hover scale + count-up on mount
+   STAT PILL – indigo theme (unchanged, count-up remains)
 ========================================================= */
 
 function StatPill({ value, label, delayMs = 0 }) {
   const [hovered, setHovered] = useState(false);
   const [display, setDisplay] = useState(value);
 
-  // Count up from 0 to the target number on mount (e.g. "100+" counts
-  // 0→100 then appends the "+"). Purely cosmetic — falls back to the
-  // static value immediately if the browser prefers reduced motion.
   useEffect(() => {
     const match = value.match(/\d+/);
     if (!match) {
@@ -295,7 +292,7 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 /* =========================================================
-   SCAN LINE – indigo sweep
+   SCAN LINE – indigo sweep (UNCHANGED)
 ========================================================= */
 
 function ScanLine() {
@@ -314,7 +311,7 @@ function ScanLine() {
 }
 
 /* =========================================================
-   HOME – now fully theme‑aware (Indigo Slate)
+   HOME – GSAP-enhanced version
 ========================================================= */
 
 export default function Home() {
@@ -322,12 +319,160 @@ export default function Home() {
   const [show, setShow] = useState(false);
   const { compact } = usePreferences();
 
+  // Refs for GSAP animation targets
+  const containerRef = useRef(null);
+  const brandRef = useRef(null);
+  const badgeRef = useRef(null);
+  const headingRef = useRef(null);
+  const typedRef = useRef(null);
+  const descriptionRef = useRef(null);
+  const ctasRef = useRef(null);
+  const trustRef = useRef(null);
+  const statsRef = useRef(null);
+  const featureLabelRef = useRef(null);
+  const featureCardsRef = useRef([]);
+  const bgGlow1Ref = useRef(null);
+  const bgGlow2Ref = useRef(null);
+  const bgGridRef = useRef(null);
+
+  // Show container after mount (for a smooth entrance)
   useEffect(() => {
     const t = setTimeout(() => setShow(true), 80);
     return () => clearTimeout(t);
   }, []);
 
-  // Compact overrides for the landing page (keep it visually balanced)
+  // ---- GSAP animations ----
+  useGSAP(
+    () => {
+      const mm = gsap.matchMedia();
+
+      // --- Entrance timeline (only if no reduced motion) ---
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "power3.out", duration: 0.6 },
+        });
+
+        // Set initial states (hidden)
+        gsap.set([brandRef.current, badgeRef.current, headingRef.current, typedRef.current, descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current], {
+          opacity: 0,
+          y: 20,
+        });
+
+        // Sequential reveal
+        tl.to(brandRef.current, { opacity: 1, y: 0, duration: 0.5 })
+          .to(badgeRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
+          .to(headingRef.current, { opacity: 1, y: 0, duration: 0.5 }, "-=0.2")
+          .to(typedRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
+          .to(descriptionRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.2")
+          .to(ctasRef.current, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06 }, "-=0.2")
+          .to(trustRef.current, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
+          .to(statsRef.current, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, "-=0.15");
+
+        // ---- Scroll-triggered reveals ----
+        // Feature section label
+        ScrollTrigger.create({
+          trigger: featureLabelRef.current,
+          start: "top 85%",
+          onEnter: () => {
+            gsap.fromTo(featureLabelRef.current, { opacity: 0, y: 15 }, { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" });
+          },
+          once: true,
+        });
+
+        // Feature cards (stagger)
+        ScrollTrigger.create({
+          trigger: featureCardsRef.current,
+          start: "top 80%",
+          onEnter: () => {
+            gsap.fromTo(
+              featureCardsRef.current,
+              { opacity: 0, y: 20 },
+              {
+                opacity: 1,
+                y: 0,
+                duration: 0.5,
+                stagger: 0.12,
+                ease: "power2.out",
+                clearProps: "opacity",
+              }
+            );
+          },
+          once: true,
+        });
+
+        // ---- Parallax on background glows ----
+        const bgGlow1 = bgGlow1Ref.current;
+        const bgGlow2 = bgGlow2Ref.current;
+        const bgGrid = bgGridRef.current;
+        if (bgGlow1) {
+          ScrollTrigger.create({
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            onUpdate: (self) => {
+              const progress = self.progress;
+              gsap.to(bgGlow1, { y: progress * 20, duration: 0.1, overwrite: true });
+            },
+          });
+        }
+        if (bgGlow2) {
+          ScrollTrigger.create({
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            onUpdate: (self) => {
+              const progress = self.progress;
+              gsap.to(bgGlow2, { y: -progress * 25, duration: 0.1, overwrite: true });
+            },
+          });
+        }
+        if (bgGrid) {
+          ScrollTrigger.create({
+            trigger: containerRef.current,
+            start: "top bottom",
+            end: "bottom top",
+            onUpdate: (self) => {
+              const progress = self.progress;
+              gsap.to(bgGrid, { y: progress * 10, duration: 0.1, overwrite: true });
+            },
+          });
+        }
+
+        // Clean up ScrollTriggers on unmount (handled by useGSAP)
+        return () => {
+          ScrollTrigger.getAll().forEach((st) => st.kill());
+        };
+      });
+
+      // --- Reduced motion: set all elements visible immediately ---
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set([
+          brandRef.current,
+          badgeRef.current,
+          headingRef.current,
+          typedRef.current,
+          descriptionRef.current,
+          ctasRef.current,
+          trustRef.current,
+          statsRef.current,
+          featureLabelRef.current,
+          featureCardsRef.current,
+        ], {
+          opacity: 1,
+          y: 0,
+          clearProps: "all",
+        });
+      });
+
+      return () => mm.revert();
+    },
+    {
+      scope: containerRef,
+      dependencies: [],
+    }
+  );
+
+  // Compact overrides (unchanged from original)
   const compactClasses = compact
     ? {
         container: "py-8",
@@ -361,9 +506,10 @@ export default function Home() {
       };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
-      {/* Background glows and dot grid – indigo */}
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
+      {/* Background glows and dot grid – with refs for parallax */}
       <div
+        ref={bgGlow1Ref}
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           background: "rgba(99,102,241,0.10)",
@@ -371,6 +517,7 @@ export default function Home() {
         }}
       />
       <div
+        ref={bgGlow2Ref}
         className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full"
         style={{
           background: "rgba(99,102,241,0.06)",
@@ -378,13 +525,7 @@ export default function Home() {
         }}
       />
       <div
-        className="pointer-events-none absolute left-0 top-0 h-[400px] w-[400px] rounded-full"
-        style={{
-          background: "rgba(99,102,241,0.04)",
-          filter: "blur(110px)",
-        }}
-      />
-      <div
+        ref={bgGridRef}
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
           backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
@@ -402,10 +543,7 @@ export default function Home() {
       >
         <div className="w-full max-w-5xl text-center">
           {/* BRAND */}
-          <div
-            className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}
-            style={{ animation: "fadeDown 0.6s ease both" }}
-          >
+          <div ref={brandRef} className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}>
             <CodeVerityLogo />
             <div className="text-left">
               <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)] uppercase">
@@ -419,27 +557,24 @@ export default function Home() {
 
           {/* BADGE */}
           <div
+            ref={badgeRef}
             className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
-            style={{ animation: "fadeDown 0.6s 0.05s ease both" }}
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
             AI-powered GitHub code analysis
           </div>
 
-          {/* HEADING — flat accent color, no gradient text fill */}
+          {/* HEADING */}
           <h1
+            ref={headingRef}
             className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
-            style={{ animation: "fadeUp 0.6s 0.1s ease both" }}
           >
             <span className="text-[var(--text-primary)]">Code</span>
             <span className="text-[var(--accent)]">Verity</span>
           </h1>
 
           {/* TYPED SUBTITLE */}
-          <p
-            className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
-            style={{ animation: "fadeUp 0.6s 0.2s ease both" }}
-          >
+          <p ref={typedRef} className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}>
             <TypedWord
               words={[
                 "Finds your bugs.",
@@ -452,18 +587,15 @@ export default function Home() {
 
           {/* DESCRIPTION */}
           <p
+            ref={descriptionRef}
             className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
-            style={{ animation: "fadeUp 0.6s 0.3s ease both" }}
           >
             Drop any public GitHub URL and get a complete AI-powered repository audit with architecture
             analysis, security findings, bug detection, performance insights, and generated tests.
           </p>
 
-          {/* CTA BUTTONS — flat accent fill, no gradient */}
-          <div
-            className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
-            style={{ animation: "fadeUp 0.6s 0.4s ease both" }}
-          >
+          {/* CTA BUTTONS */}
+          <div ref={ctasRef} className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}>
             {token ? (
               <Link
                 to="/dashboard"
@@ -495,8 +627,8 @@ export default function Home() {
 
           {/* TRUST LINE */}
           <div
+            ref={trustRef}
             className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
-            style={{ animation: "fadeUp 0.6s 0.45s ease both" }}
           >
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
             No credit card required
@@ -504,10 +636,10 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
-          {/* STATS — count up on mount */}
+          {/* STATS */}
           <div
+            ref={statsRef}
             className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
-            style={{ animation: "fadeUp 0.6s 0.5s ease both" }}
           >
             <StatPill value="100+" label="Repos Scanned" delayMs={500} />
             <StatPill value="98%" label="Issue Accuracy" delayMs={600} />
@@ -516,8 +648,9 @@ export default function Home() {
 
           {/* FEATURE SECTION LABEL */}
           <div
+            ref={featureLabelRef}
             className="mb-4 flex items-center gap-3"
-            style={{ animation: "fadeUp 0.6s 0.52s ease both" }}
+            style={{ opacity: 0 }} // hidden initially, GSAP will reveal
           >
             <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--border-light)]" />
             <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
@@ -528,46 +661,43 @@ export default function Home() {
 
           {/* FEATURE CARDS */}
           <div className={`grid ${compactClasses.featureGap} md:grid-cols-3`}>
-            <Feature
-              icon={<BugIcon />}
-              title="AI Bug Detection"
-              desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
-              delay="0.55s"
-            />
-            <Feature
-              icon={<ShieldIcon />}
-              title="Security Analysis"
-              desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
-              delay="0.65s"
-            />
-            <Feature
-              icon={<FlaskIcon />}
-              title="Smart Test Generation"
-              desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
-              delay="0.75s"
-            />
+            <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
+              <Feature
+                icon={<BugIcon />}
+                title="AI Bug Detection"
+                desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
+                delay="0.55s"
+              />
+            </div>
+            <div ref={(el) => (featureCardsRef.current[1] = el)} style={{ opacity: 0 }}>
+              <Feature
+                icon={<ShieldIcon />}
+                title="Security Analysis"
+                desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
+                delay="0.65s"
+              />
+            </div>
+            <div ref={(el) => (featureCardsRef.current[2] = el)} style={{ opacity: 0 }}>
+              <Feature
+                icon={<FlaskIcon />}
+                title="Smart Test Generation"
+                desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
+                delay="0.75s"
+              />
+            </div>
           </div>
 
           {/* FOOTER */}
           <p
             className={`text-[9px] text-[var(--text-muted)] ${compactClasses.footerMargin}`}
-            style={{ animation: "fadeUp 0.6s 0.85s ease both" }}
           >
             CodeVerity · AI Repository Intelligence
           </p>
         </div>
       </div>
 
-      {/* ANIMATIONS – moved to global CSS, kept inline here as fallback */}
+      {/* ANIMATIONS – kept as fallback (some are still used by existing components like .animate-float, .animate-pulse-glow, .animate-ping) */}
       <style>{`
-        @keyframes fadeUp {
-          from { transform: translateY(18px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes fadeDown {
-          from { transform: translateY(-12px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
         @keyframes scanline {
           0% { top: -2px; opacity: 0; }
           8% { opacity: 1; }
