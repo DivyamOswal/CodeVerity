@@ -2,7 +2,42 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
-import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
+import { gsap, useGSAP } from "../lib/gsap";
+
+// -----------------------------------------------------------------
+// THEME — Indigo Slate — add these to your global CSS (e.g. index.css
+// / theme file) alongside your existing --bg-primary / --border-light
+// / --bg-card / --bg-hover / --text-primary / --text-secondary /
+// --text-muted variables (keep those, just point --accent* at indigo).
+// -----------------------------------------------------------------
+//
+// :root {
+//   --bg-primary: #0f1117;              /* page background */
+//   --bg-card: #161922;                 /* surface / card background */
+//   --bg-hover: #1e2230;                /* hover / elevated surface */
+//   --border-light: #2a2f3d;            /* thin, subtle dividers */
+//
+//   --text-primary: #e5e7eb;            /* high-contrast primary text */
+//   --text-secondary: #9ca3af;          /* secondary text */
+//   --text-muted: #6b7280;              /* muted / icon-default text */
+//
+//   --accent: #6366f1;                  /* indigo — primary brand accent */
+//   --accent-hover: #7477f5;            /* indigo, lighter — hover state */
+//   --accent-soft: rgba(99, 102, 241, 0.12);        /* tinted backgrounds */
+//   --accent-soft-strong: rgba(99, 102, 241, 0.22);
+//   --accent-contrast: #ffffff;          /* text/icon color ON TOP of solid accent */
+// }
+//
+// No gradients anywhere — every accent surface below is a flat color.
+//
+// DESIGN NOTE — this nav borrows its visual language from the rest of
+// the app (editor chrome, corner brackets, monospace paths) instead of
+// a generic pill nav, so it reads as part of the same product:
+//   - center nav = a small "tab strip", active tab marked with a top
+//     bar (like an open editor tab), not a floating pill
+//   - avatar / logo = squircles (rounded-lg), matching the app's
+//     editor-card radii — not circular social-app avatars
+//   - nav labels set in monospace, echoing the code-editor identity
 
 // -----------------------------------------------------------------
 // Helper functions
@@ -167,33 +202,25 @@ export default function Navbar() {
   const { compact } = usePreferences();
 
   const [dropOpen, setDropOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
+const [menuOpen, setMenuOpen] = useState(false);
 
-  const navRef = useRef(null);
-  const navContentRef = useRef(null);
-  const logoRef = useRef(null);
-  const navItemsRef = useRef([]);
-  const dropRef = useRef(null);
-  const dropdownRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-  const mobileItemsRef = useRef([]);
+const navRef = useRef(null);
+const navContentRef = useRef(null);
+const logoRef = useRef(null);
+const navItemsRef = useRef([]);
+const dropdownRef = useRef(null);
+const mobileMenuRef = useRef(null);
+const activeIndicatorRef = useRef(null);
 
   const addNavItemRef = (element) => {
-    if (element && !navItemsRef.current.includes(element)) {
-      navItemsRef.current.push(element);
-    }
-  };
-
-  const addMobileItemRef = (element) => {
-    if (element && !mobileItemsRef.current.includes(element)) {
-      mobileItemsRef.current.push(element);
-    }
-  };
+  if (element && !navItemsRef.current.includes(element)) {
+    navItemsRef.current.push(element);
+  }
+};
 
   const initials = useMemo(() => getInitials(token), [token]);
   const userInfo = useMemo(() => getUserInfo(token), [token]);
 
-  // Outside click to close dropdown
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (dropRef.current && !dropRef.current.contains(event.target)) {
@@ -204,13 +231,12 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  // Close dropdown & mobile menu on route change
   useEffect(() => {
     setDropOpen(false);
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // Lock body scroll when mobile menu is open
+  // lock body scroll while the mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -218,215 +244,74 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  // ------------------------------------------------------------
-  // GSAP – Navbar entrance (existing)
-  // ------------------------------------------------------------
   useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
+  () => {
+    const mm = gsap.matchMedia();
 
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const tl = gsap.timeline({
-          defaults: {
-            ease: "power3.out",
-          },
-        });
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const timeline = gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
 
-        tl.from(navRef.current, {
+      timeline
+        .from(navRef.current, {
           y: -18,
           autoAlpha: 0,
           duration: 0.55,
         })
-          .from(
-            logoRef.current,
-            {
-              scale: 0.85,
-              autoAlpha: 0,
-              duration: 0.4,
-              ease: "back.out(1.5)",
-            },
-            "-=0.3",
-          )
-          .from(
-            navItemsRef.current,
-            {
-              y: -8,
-              autoAlpha: 0,
-              duration: 0.35,
-              stagger: 0.055,
-            },
-            "-=0.25",
-          )
-          .from(
-            navContentRef.current,
-            {
-              x: 8,
-              autoAlpha: 0,
-              duration: 0.35,
-            },
-            "-=0.25",
-          );
-      });
-
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(navRef.current, {
-          clearProps: "all",
-        });
-      });
-
-      return () => mm.revert();
-    },
-    {
-      scope: navRef,
-    },
-  );
-
-  // ------------------------------------------------------------
-  // GSAP – Scroll shadow (existing)
-  // ------------------------------------------------------------
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        if (!navRef.current) return;
-
-        const trigger = ScrollTrigger.create({
-          start: "top top",
-          end: 99999,
-          onUpdate: (self) => {
-            gsap.to(navRef.current, {
-              boxShadow:
-                self.scroll() > 30
-                  ? "0 8px 30px rgba(0, 0, 0, 0.18)"
-                  : "0 0 0 rgba(0, 0, 0, 0)",
-              duration: 0.25,
-              overwrite: true,
-            });
+        .from(
+          logoRef.current,
+          {
+            scale: 0.85,
+            autoAlpha: 0,
+            duration: 0.4,
+            ease: "back.out(1.5)",
           },
-        });
-
-        return () => trigger.kill();
-      });
-
-      return () => mm.revert();
-    },
-    {
-      scope: navRef,
-    },
-  );
-
-  // ------------------------------------------------------------
-  // GSAP – Dropdown open/close animation (NEW)
-  // ------------------------------------------------------------
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const el = dropdownRef.current;
-        if (!el) return;
-
-        if (dropOpen) {
-          gsap.fromTo(
-            el,
-            { opacity: 0, y: -8, scale: 0.95 },
-            {
-              opacity: 1,
-              y: 0,
-              scale: 1,
-              duration: 0.2,
-              ease: "power2.out",
-              clearProps: "opacity",
-            },
-          );
-        } else {
-          gsap.to(el, {
-            opacity: 0,
+          "-=0.3"
+        )
+        .from(
+          navItemsRef.current,
+          {
             y: -8,
-            scale: 0.95,
-            duration: 0.15,
-            ease: "power2.in",
-            onComplete: () => gsap.set(el, { clearProps: "all" }),
-          });
-        }
+            autoAlpha: 0,
+            duration: 0.35,
+            stagger: 0.055,
+          },
+          "-=0.25"
+        )
+        .from(
+          navContentRef.current,
+          {
+            x: 8,
+            autoAlpha: 0,
+            duration: 0.35,
+          },
+          "-=0.25"
+        );
+    });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(navRef.current, {
+        clearProps: "all",
       });
+    });
 
-      // Reduced motion fallback: CSS classes handle visibility
-      return () => mm.revert();
-    },
-    {
-      scope: dropdownRef,
-      dependencies: [dropOpen],
-    },
-  );
+    return () => mm.revert();
+  },
+  {
+    scope: navRef,
+  }
+);
 
-  // ------------------------------------------------------------
-  // GSAP – Mobile menu open/close with stagger (NEW)
-  // ------------------------------------------------------------
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const container = mobileMenuRef.current;
-        const items = mobileItemsRef.current.filter(Boolean);
-        if (!container) return;
-
-        if (menuOpen) {
-          // Open: expand container, then stagger items in
-          gsap.to(container, {
-            height: "auto",
-            opacity: 1,
-            duration: 0.3,
-            ease: "power2.out",
-            clearProps: "height",
-            onStart: () => gsap.set(container, { height: 0, opacity: 0 }),
-          });
-          gsap.fromTo(
-            items,
-            { y: -6, opacity: 0 },
-            {
-              y: 0,
-              opacity: 1,
-              duration: 0.3,
-              stagger: 0.04,
-              ease: "power2.out",
-              clearProps: "opacity",
-            },
-          );
-        } else {
-          // Close: fade items out, then collapse container
-          const tl = gsap.timeline({
-            defaults: { duration: 0.2, ease: "power2.in" },
-          });
-          tl.to(items, { y: -4, opacity: 0, stagger: 0.03 }, 0).to(
-            container,
-            { height: 0, opacity: 0, clearProps: "all" },
-            ">-0.05",
-          );
-        }
-      });
-
-      // Reduced motion fallback: CSS max-height/opacity with classes
-      return () => mm.revert();
-    },
-    {
-      scope: mobileMenuRef,
-      dependencies: [menuOpen],
-    },
-  );
-
-  // ------------------------------------------------------------
-  // Handlers
-  // ------------------------------------------------------------
   const handleLogout = () => {
     setDropOpen(false);
     logout();
     navigate("/login");
   };
 
-  // Compact overrides (kept from original)
+  // Compact overrides
   const navbarHeight = compact ? "h-14" : "h-16";
   const logoSize = compact ? "h-8 w-8" : "h-9 w-9";
   const iconSize = compact ? 15 : 17;
@@ -438,124 +323,66 @@ export default function Navbar() {
   const avatarFont = compact ? "text-[9px]" : "text-[10px]";
   const userInfoNameSize = compact ? "text-[10px]" : "text-[11px]";
   const userInfoRoleSize = compact ? "text-[7px]" : "text-[8px]";
-  const buttonPadding = compact
-    ? "px-3 py-1.5 text-[11px]"
-    : "px-3.5 py-2 text-[12px]";
+  const buttonPadding = compact ? "px-3 py-1.5 text-[11px]" : "px-3.5 py-2 text-[12px]";
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
-  const mobileMenuItemPadding = compact
-    ? "px-3 py-2.5 text-sm"
-    : "px-4 py-3 text-sm";
+  const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
 
-  // ------------------------------------------------------------
-  // NavigationItem – with GSAP active indicator (NEW)
-  // ------------------------------------------------------------
-  const NavigationItem = ({ to, label, icon }) => {
-    const barRef = useRef(null);
-    const isActive = location.pathname === to;
+  // NavigationItem — an "editor tab", not a floating pill.
+  // Active state is marked by a top bar (like an open tab in a code
+  // editor) plus a raised card surface, instead of a bottom underline —
+  // nothing to misalign on hover, and it echoes the tab strips used
+  // elsewhere in the product.
+  const NavigationItem = ({ to, label, icon }) => (
+    <NavLink
+      to={to}
+      className={({ isActive }) =>
+        `group relative flex items-center gap-1.5 rounded-lg px-3 font-mono transition-colors duration-200 ${navItemHeight} ${navItemFont} ${
+          isActive
+            ? "bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm"
+            : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+        }`
+      }
+    >
+      {({ isActive }) => (
+        <>
+          {/* top bar — the "open tab" marker */}
+          <span
+            aria-hidden="true"
+            className={`absolute left-1.5 right-1.5 top-0 h-[2px] rounded-full bg-[var(--accent)] transition-opacity duration-200 ${
+              isActive ? "opacity-100" : "opacity-0"
+            }`}
+          />
+          <Icon name={icon} size={compact ? 12 : 13} className={isActive ? "text-[var(--accent)]" : ""} />
+          <span>{label}</span>
+        </>
+      )}
+    </NavLink>
+  );
 
-    useGSAP(
-      () => {
-        const mm = gsap.matchMedia();
-
-        mm.add("(prefers-reduced-motion: no-preference)", () => {
-          const bar = barRef.current;
-          if (!bar) return;
-          if (isActive) {
-            gsap.fromTo(
-              bar,
-              { scaleX: 0 },
-              {
-                scaleX: 1,
-                duration: 0.3,
-                ease: "power2.out",
-                transformOrigin: "left",
-              },
-            );
-          } else {
-            gsap.to(bar, {
-              scaleX: 0,
-              duration: 0.2,
-              ease: "power2.in",
-              clearProps: "scaleX",
-            });
-          }
-        });
-
-        // Reduced motion: keep CSS opacity transition
-        return () => mm.revert();
-      },
-      {
-        scope: barRef,
-        dependencies: [isActive],
-      },
-    );
-
-    return (
-      <NavLink
-        to={to}
-        className={({ isActive }) =>
-          `group relative flex items-center gap-1.5 rounded-lg px-3 font-mono transition-colors duration-200 ${navItemHeight} ${navItemFont} ${
-            isActive
-              ? "bg-[var(--bg-primary)] text-[var(--accent)] shadow-sm"
-              : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
-          }`
-        }
-      >
-        {({ isActive }) => (
-          <>
-            <span
-              ref={barRef}
-              aria-hidden="true"
-              className={`absolute left-1.5 right-1.5 top-0 h-[2px] rounded-full bg-[var(--accent)] transition-opacity duration-200 ${
-                isActive ? "opacity-100" : "opacity-0"
-              }`}
-              style={{ transformOrigin: "left" }}
-            />
-            <Icon
-              name={icon}
-              size={compact ? 12 : 13}
-              className={isActive ? "text-[var(--accent)]" : ""}
-            />
-            <span>{label}</span>
-          </>
-        )}
-      </NavLink>
-    );
-  };
-
-  // ------------------------------------------------------------
-  // JSX
-  // ------------------------------------------------------------
   return (
     <nav
-      ref={navRef}
-      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
-    >
+  ref={navRef}
+  className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
+>
       <div
-        ref={navContentRef}
-        className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
-          compact ? "px-3 sm:px-4" : ""
-        }`}
-      >
+  ref={navContentRef}
+  className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
+    compact ? "px-3 sm:px-4" : ""
+  }`}
+>
         {/* LEFT – Logo */}
         <div className="flex min-w-0 items-center">
           <NavLink
-            ref={logoRef}
-            to="/"
-            className="group flex items-center gap-2.5"
-          >
+  ref={logoRef}
+  to="/"
+  className="group flex items-center gap-2.5"
+>
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
-              <Icon
-                name="shield"
-                size={iconSize}
-                className="text-[var(--accent)]"
-              />
+              <Icon name="shield" size={iconSize} className="text-[var(--accent)]" />
               <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
-                <span className="font-mono text-[5px] font-bold text-[var(--accent)]">
-                  {"</>"}
-                </span>
+                <span className="font-mono text-[5px] font-bold text-[var(--accent)]">{"</>"}</span>
               </span>
               <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)]">
                 <span className="absolute inset-0 animate-ping rounded-full bg-[var(--accent)] opacity-75" />
@@ -563,9 +390,7 @@ export default function Navbar() {
             </div>
 
             <div className="hidden sm:block">
-              <div
-                className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}
-              >
+              <div className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}>
                 <span className="text-[var(--text-primary)]">Code</span>
                 <span className="text-[var(--accent)]">Verity</span>
               </div>
@@ -578,15 +403,11 @@ export default function Navbar() {
           </NavLink>
         </div>
 
-        {/* CENTER – Navigation tabs */}
+        {/* CENTER – Navigation, styled as a small tab strip */}
         <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
           {isAuth && (
             <>
-              <NavigationItem
-                to="/dashboard"
-                label="Dashboard"
-                icon="dashboard"
-              />
+              <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
               <NavigationItem to="/history" label="History" icon="history" />
             </>
           )}
@@ -619,11 +440,7 @@ export default function Navbar() {
                   >
                     {userInfo.name || initials}
                   </p>
-                  <p
-                    className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}
-                  >
-                    {userInfo.role || "developer"}
-                  </p>
+                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>{userInfo.role || "developer"}</p>
                 </div>
 
                 <span
@@ -635,13 +452,13 @@ export default function Navbar() {
                 </span>
               </button>
 
-              {/* Dropdown – animated via GSAP */}
+              {/* Dropdown — kept mounted so open/close both animate */}
               <div
-                ref={dropdownRef}
-                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 ${
-                  dropOpen ? "pointer-events-auto" : "pointer-events-none"
+                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
+                  dropOpen
+                    ? "translate-y-0 scale-100 opacity-100"
+                    : "pointer-events-none -translate-y-1 scale-95 opacity-0"
                 }`}
-                style={{ opacity: 0, transform: "translateY(-8px) scale(0.95)" }}
               >
                 <div className="border-b border-[var(--border-light)] p-4">
                   <div className="flex items-center gap-3">
@@ -738,18 +555,20 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation – animated with GSAP */}
+      {/* Mobile Navigation — animated height/opacity, no unmount-jank.
+          Active item gets a left rail (file-explorer selection style)
+          instead of a full tint block. Public links (Pricing/About/
+          Contact) always show; auth-only links are conditional. */}
       <div
-        ref={mobileMenuRef}
-        className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-none md:hidden`}
-        style={{ height: 0, opacity: 0 }}
+        className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
+          menuOpen ? "max-h-[36rem] opacity-100" : "max-h-0 border-t-0 opacity-0"
+        }`}
       >
         <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
           {isAuth && (
             <>
               <NavLink
                 to="/dashboard"
-                ref={addMobileItemRef}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                     isActive
@@ -763,7 +582,6 @@ export default function Navbar() {
               </NavLink>
               <NavLink
                 to="/history"
-                ref={addMobileItemRef}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                     isActive
@@ -779,7 +597,6 @@ export default function Navbar() {
           )}
           <NavLink
             to="/pricing"
-            ref={addMobileItemRef}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                 isActive
@@ -793,7 +610,6 @@ export default function Navbar() {
           </NavLink>
           <NavLink
             to="/about"
-            ref={addMobileItemRef}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                 isActive
@@ -807,7 +623,6 @@ export default function Navbar() {
           </NavLink>
           <NavLink
             to="/contact"
-            ref={addMobileItemRef}
             className={({ isActive }) =>
               `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
                 isActive
@@ -822,43 +637,40 @@ export default function Navbar() {
 
           {isAuth ? (
             <>
-              <NavLink
-                to="/profile"
-                ref={addMobileItemRef}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-                    isActive
-                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                  }`
-                }
-              >
-                <Icon name="profile" size={compact ? 14 : 16} />
-                profile
-              </NavLink>
-              <NavLink
-                to="/settings"
-                ref={addMobileItemRef}
-                className={({ isActive }) =>
-                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-                    isActive
-                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                  }`
-                }
-              >
-                <Icon name="settings" size={compact ? 14 : 16} />
-                settings
-              </NavLink>
-              <button
-                type="button"
-                ref={addMobileItemRef}
-                onClick={handleLogout}
-                className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
-              >
-                <Icon name="logout" size={compact ? 14 : 16} />
-                sign out
-              </button>
+            <NavLink
+              to="/profile"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                  isActive
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                }`
+              }
+            >
+              <Icon name="profile" size={compact ? 14 : 16} />
+              profile
+            </NavLink>
+            <NavLink
+              to="/settings"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                  isActive
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                }`
+              }
+            >
+              <Icon name="settings" size={compact ? 14 : 16} />
+              settings
+            </NavLink>
+            <button
+              type="button"
+              onClick={handleLogout}
+              className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
+            >
+              <Icon name="logout" size={compact ? 14 : 16} />
+              sign out
+            </button>
             </>
           ) : (
             <div className="flex flex-col gap-2 pt-2">

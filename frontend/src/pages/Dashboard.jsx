@@ -4,6 +4,8 @@ import { analyzeGithub, generateTests } from "../api/github";
 import { useNavigate } from "react-router-dom";
 import Result from "../components/Result";
 import { usePreferences } from "../context/PreferencesContext";
+import { gsap, useGSAP } from "../lib/gsap";
+import { useAuth } from "../App";
 
 /* =========================================================
    CODEVERITY DASHBOARD
@@ -22,6 +24,14 @@ export default function Dashboard() {
   const [mounted, setMounted] = useState(false);
 
   const navigate = useNavigate();
+  const { logout } = useAuth();
+
+  // Refs for GSAP
+  const mainContainerRef = useRef(null);
+  const statsContainerRef = useRef(null);
+  const analyzerRef = useRef(null);
+  const recentReportsRef = useRef(null);
+  const emptyStateRef = useRef(null);
 
   // Get compact preference
   const { compact } = usePreferences();
@@ -42,7 +52,7 @@ export default function Dashboard() {
           localStorage.removeItem("token");
           navigate("/login");
         }),
-    [navigate]
+    [navigate, logout]
   );
 
   useEffect(() => {
@@ -50,7 +60,100 @@ export default function Dashboard() {
   }, [loadDashboard]);
 
   /* =========================================================
-     DOWNLOAD PDF
+     GSAP – Entrance & Stagger Animations
+  ========================================================= */
+
+  useGSAP(
+    () => {
+      // Only run when the home view is active and data is loaded
+      if (activeView !== "home" || !mounted) return;
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const tl = gsap.timeline({
+          defaults: { ease: "power2.out", duration: 0.5 },
+        });
+
+        // Set initial hidden states
+        gsap.set(mainContainerRef.current, { opacity: 0, y: 15 });
+        gsap.set(statsContainerRef.current?.children, { opacity: 0, y: 10 });
+        gsap.set(analyzerRef.current, { opacity: 0, y: 12 });
+        if (recentReportsRef.current) {
+          const reportRows = recentReportsRef.current.querySelectorAll(".report-row");
+          gsap.set(reportRows, { opacity: 0, y: 8 });
+        }
+        if (emptyStateRef.current) {
+          gsap.set(emptyStateRef.current, { opacity: 0, y: 8 });
+        }
+
+        // Animate main container
+        tl.to(mainContainerRef.current, { opacity: 1, y: 0, duration: 0.6 })
+          // Stats cards stagger
+          .to(
+            statsContainerRef.current?.children,
+            {
+              opacity: 1,
+              y: 0,
+              duration: 0.4,
+              stagger: 0.08,
+              clearProps: "opacity",
+            },
+            "-=0.2"
+          )
+          // Analyzer section
+          .to(
+            analyzerRef.current,
+            { opacity: 1, y: 0, duration: 0.45 },
+            "-=0.15"
+          )
+          // Recent reports or empty state
+          .call(() => {
+            if (recentReportsRef.current) {
+              const reportRows = recentReportsRef.current.querySelectorAll(".report-row");
+              gsap.to(reportRows, {
+                opacity: 1,
+                y: 0,
+                duration: 0.35,
+                stagger: 0.05,
+                clearProps: "opacity",
+              });
+            }
+            if (emptyStateRef.current) {
+              gsap.to(emptyStateRef.current, {
+                opacity: 1,
+                y: 0,
+                duration: 0.4,
+                clearProps: "opacity",
+              });
+            }
+          }, "-=0.1");
+      });
+
+      // Reduced motion: show everything immediately
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set(mainContainerRef.current, { opacity: 1, y: 0, clearProps: "all" });
+        gsap.set(statsContainerRef.current?.children, { opacity: 1, y: 0, clearProps: "all" });
+        gsap.set(analyzerRef.current, { opacity: 1, y: 0, clearProps: "all" });
+        if (recentReportsRef.current) {
+          const reportRows = recentReportsRef.current.querySelectorAll(".report-row");
+          gsap.set(reportRows, { opacity: 1, y: 0, clearProps: "all" });
+        }
+        if (emptyStateRef.current) {
+          gsap.set(emptyStateRef.current, { opacity: 1, y: 0, clearProps: "all" });
+        }
+      });
+
+      return () => mm.revert();
+    },
+    {
+      scope: mainContainerRef,
+      dependencies: [mounted, activeView, data],
+    }
+  );
+
+  /* =========================================================
+     DOWNLOAD PDF, GENERATE REPORT, OPEN RESULT (unchanged)
   ========================================================= */
 
   const downloadPDF = async () => {
@@ -74,10 +177,6 @@ export default function Dashboard() {
       alert("Download failed");
     }
   };
-
-  /* =========================================================
-     GENERATE REPORT
-  ========================================================= */
 
   const generateReport = async () => {
     if (!repoUrl.startsWith("https://github.com/")) {
@@ -110,10 +209,6 @@ export default function Dashboard() {
     }
   };
 
-  /* =========================================================
-     OPEN RESULT
-  ========================================================= */
-
   const openResult = (report) => {
     setAnalysis({
       summary: report.summary ?? "",
@@ -140,7 +235,7 @@ export default function Dashboard() {
   }
 
   /* =========================================================
-     STATS
+     STATS (unchanged)
   ========================================================= */
 
   const avgQuality = data.recentReports?.length
@@ -176,12 +271,7 @@ export default function Dashboard() {
     },
   ];
 
-  // Compact overrides for spacing and sizing. Top padding is NOT part
-  // of this — Navbar is `position: sticky`, which already occupies
-  // its own space in the document flow, so adding pt-16/pt-14 here
-  // double-counted the navbar height and created the extra gap above
-  // "System online". Vertical spacing comes from mainPadding's own
-  // py-4/py-6 only, same as every other page.
+  // Compact overrides (unchanged)
   const compactClasses = compact
     ? {
         mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
@@ -237,14 +327,12 @@ export default function Dashboard() {
       };
 
   /* =========================================================
-     MAIN UI – compact-aware, no navbar-compensation padding
+     MAIN UI – with refs for GSAP
   ========================================================= */
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      {/* =====================================================
-          RESULT VIEW
-      ===================================================== */}
+      {/* RESULT VIEW – unchanged */}
       {activeView === "result" && analysis && (
         <div className="animate-[fadeUp_0.3s_ease_both]">
           <Result
@@ -255,26 +343,16 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* =====================================================
-          HOME VIEW
-      ===================================================== */}
+      {/* HOME VIEW – now animated with GSAP */}
       {activeView === "home" && (
         <main
-          className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${
-            mounted
-              ? "translate-y-0 opacity-100"
-              : "translate-y-3 opacity-0"
-          } transition-all duration-500 ease-out`}
+          ref={mainContainerRef}
+          className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding}`}
         >
           <div className="space-y-5">
-            {/* =================================================
-                WELCOME HEADER
-            ================================================= */}
+            {/* HEADER – unchanged (not animated by GSAP, but visible from start) */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2">
-                {/* "online" status dot kept emerald — universal success
-                    semantics, same reasoning as the Navbar avatar dot
-                    and History's "Analysis complete" dot. */}
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   System online
@@ -289,10 +367,11 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* =================================================
-                STATS
-            ================================================= */}
-            <div className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}>
+            {/* STATS – container with ref for stagger */}
+            <div
+              ref={statsContainerRef}
+              className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}
+            >
               {stats.map((s) => (
                 <StatCard
                   key={`${s.label}-${statsKey}`}
@@ -304,10 +383,9 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* =================================================
-                ANALYZER
-            ================================================= */}
-            <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+            {/* ANALYZER – with ref */}
+            <div ref={analyzerRef} className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+              {/* ... (unchanged content) */}
               <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
@@ -397,11 +475,9 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* =================================================
-                RECENT REPORTS
-            ================================================= */}
+            {/* RECENT REPORTS – container with ref for stagger */}
             {data.recentReports?.length > 0 && (
-              <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+              <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
                 <div className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compactClasses.recentHeaderPadding}`}>
                   <div>
                     <h2 className={`font-semibold text-[var(--text-primary)] ${compactClasses.recentTitle}`}>
@@ -412,8 +488,6 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    {/* "Live" kept emerald — same status-dot reasoning as
-                        "System online" above. */}
                     <span
                       key={statsKey}
                       className="hidden items-center gap-1.5 text-[9px] text-emerald-400 sm:flex"
@@ -434,11 +508,8 @@ export default function Dashboard() {
                   {data.recentReports.map((report, i) => (
                     <div
                       key={`${report._id}-${statsKey}`}
-                      className="animate-[fadeUp_0.35s_ease_both]"
-                      style={{
-                        animationDelay: `${i * 40}ms`,
-                        animationFillMode: "both",
-                      }}
+                      className="report-row" // class used by GSAP to target rows
+                      // We removed inline animation; GSAP will handle
                     >
                       <ReportRow report={report} onView={() => openResult(report)} compact={compact} />
                     </div>
@@ -447,11 +518,12 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* =================================================
-                EMPTY REPORT STATE
-            ================================================= */}
+            {/* EMPTY STATE – with ref */}
             {!data.recentReports?.length && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center ${compactClasses.emptyStatePadding}`}>
+              <div
+                ref={emptyStateRef}
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center ${compactClasses.emptyStatePadding}`}
+              >
                 <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-lg text-[var(--text-muted)]">
                   ◈
                 </div>
@@ -465,9 +537,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* =================================================
-                FOOTER
-            ================================================= */}
+            {/* FOOTER */}
             <div className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
               <span>CodeVerity</span>
               <span>•</span>
@@ -477,9 +547,7 @@ export default function Dashboard() {
         </main>
       )}
 
-      {/* =====================================================
-          ANIMATIONS
-      ===================================================== */}
+      {/* ANIMATIONS – kept for fallback and other components */}
       <style>{`
         @keyframes fadeUp {
           from {
@@ -503,7 +571,7 @@ export default function Dashboard() {
 }
 
 /* =========================================================
-   CODEVERITY LOGO – flat indigo tile (used only in loading)
+   SUB-COMPONENTS (unchanged)
 ========================================================= */
 
 function CodeVerityLogo() {
@@ -532,23 +600,13 @@ function CodeVerityLogo() {
   );
 }
 
-/* =========================================================
-   STAT CARD – single indigo accent (color prop removed — the three
-   stats aren't semantically different, so one flat accent reads as
-   more intentional than three decorative hues, same call as
-   Result.jsx's ScoreCard).
-========================================================= */
-
 function StatCard({ label, value, sub, icon, delay, compact, statValueClass, statPaddingClass }) {
   const animated = useCountUp(value, 800);
 
   return (
     <div
       className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 ${statPaddingClass}`}
-      style={{
-        animation: "fadeUp 0.45s ease both",
-        animationDelay: delay,
-      }}
+      // removed inline animation – now controlled by GSAP
     >
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start justify-between">
@@ -568,12 +626,6 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
     </div>
   );
 }
-
-/* =========================================================
-   REPORT ROW – now accepts compact. Grade colors were already
-   correctly semantic multi-hue here (unlike the old hardcoded-green
-   grade box in Result.jsx) — left untouched.
-========================================================= */
 
 function ReportRow({ report, onView, compact }) {
   const grade = report.grade ?? "N/A";
@@ -682,10 +734,6 @@ function ReportRow({ report, onView, compact }) {
   );
 }
 
-/* =========================================================
-   COUNT UP HOOK (unchanged)
-========================================================= */
-
 function useCountUp(target, duration = 800) {
   const [value, setValue] = useState(0);
   const rafRef = useRef(null);
@@ -715,10 +763,6 @@ function useCountUp(target, duration = 800) {
 
   return value;
 }
-
-/* =========================================================
-   LOADING SCREEN – indigo logo + spinner
-========================================================= */
 
 function LoadingScreen() {
   return (

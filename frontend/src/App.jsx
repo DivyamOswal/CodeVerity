@@ -34,6 +34,7 @@ import Checkout from "./pages/Checkout";
 import { PreferencesProvider } from "./context/PreferencesContext";
 
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
+import { ScrollSmoother, ScrollTrigger } from "gsap/all";
 
 //  Auth Context — single source of truth
 export const AuthContext = createContext(null);
