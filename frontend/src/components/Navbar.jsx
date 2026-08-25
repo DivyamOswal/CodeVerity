@@ -2,6 +2,7 @@ import { useState, useRef, useEffect, useMemo } from "react";
 import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
+import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
 // THEME — Indigo Slate — add these to your global CSS (e.g. index.css
@@ -201,8 +202,21 @@ export default function Navbar() {
   const { compact } = usePreferences();
 
   const [dropOpen, setDropOpen] = useState(false);
-  const [menuOpen, setMenuOpen] = useState(false);
-  const dropRef = useRef(null);
+const [menuOpen, setMenuOpen] = useState(false);
+
+const navRef = useRef(null);
+const navContentRef = useRef(null);
+const logoRef = useRef(null);
+const navItemsRef = useRef([]);
+const dropdownRef = useRef(null);
+const mobileMenuRef = useRef(null);
+const activeIndicatorRef = useRef(null);
+
+  const addNavItemRef = (element) => {
+  if (element && !navItemsRef.current.includes(element)) {
+    navItemsRef.current.push(element);
+  }
+};
 
   const initials = useMemo(() => getInitials(token), [token]);
   const userInfo = useMemo(() => getUserInfo(token), [token]);
@@ -229,6 +243,67 @@ export default function Navbar() {
       document.body.style.overflow = "";
     };
   }, [menuOpen]);
+
+  useGSAP(
+  () => {
+    const mm = gsap.matchMedia();
+
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const timeline = gsap.timeline({
+        defaults: {
+          ease: "power3.out",
+        },
+      });
+
+      timeline
+        .from(navRef.current, {
+          y: -18,
+          autoAlpha: 0,
+          duration: 0.55,
+        })
+        .from(
+          logoRef.current,
+          {
+            scale: 0.85,
+            autoAlpha: 0,
+            duration: 0.4,
+            ease: "back.out(1.5)",
+          },
+          "-=0.3"
+        )
+        .from(
+          navItemsRef.current,
+          {
+            y: -8,
+            autoAlpha: 0,
+            duration: 0.35,
+            stagger: 0.055,
+          },
+          "-=0.25"
+        )
+        .from(
+          navContentRef.current,
+          {
+            x: 8,
+            autoAlpha: 0,
+            duration: 0.35,
+          },
+          "-=0.25"
+        );
+    });
+
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      gsap.set(navRef.current, {
+        clearProps: "all",
+      });
+    });
+
+    return () => mm.revert();
+  },
+  {
+    scope: navRef,
+  }
+);
 
   const handleLogout = () => {
     setDropOpen(false);
@@ -286,16 +361,22 @@ export default function Navbar() {
 
   return (
     <nav
-      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
-    >
+  ref={navRef}
+  className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
+>
       <div
-        className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
-          compact ? "px-3 sm:px-4" : ""
-        }`}
-      >
+  ref={navContentRef}
+  className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
+    compact ? "px-3 sm:px-4" : ""
+  }`}
+>
         {/* LEFT – Logo */}
         <div className="flex min-w-0 items-center">
-          <NavLink to="/" className="group flex items-center gap-2.5">
+          <NavLink
+  ref={logoRef}
+  to="/"
+  className="group flex items-center gap-2.5"
+>
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
