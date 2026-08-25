@@ -6,7 +6,14 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
-import { useState, useCallback, createContext, useContext } from "react";
+import {
+  useState,
+  useCallback,
+  createContext,
+  useContext,
+  useEffect,
+} from "react";
+import SmoothScroll from "./components/SmoothScroll";
 import Navbar from "./components/Navbar";
 import Home from "./components/Home";
 import Login from "./components/Auth/Login";
@@ -71,67 +78,130 @@ function Layout() {
   const hideNavbar = ["/login", "/register"];
   const showNav = !hideNavbar.includes(location.pathname);
 
+  useEffect(() => {
+    // Wait until the new route has rendered.
+    const frame = requestAnimationFrame(() => {
+      const smoother = ScrollSmoother.get();
+
+      if (smoother) {
+        // Reset the virtual scroll position used by ScrollSmoother.
+        smoother.scrollTo(0, false);
+      } else {
+        // Mobile / reduced-motion fallback.
+        window.scrollTo({
+          top: 0,
+          left: 0,
+          behavior: "auto",
+        });
+      }
+
+      // Give the new page a chance to render before measuring
+      // ScrollTrigger positions.
+      requestAnimationFrame(() => {
+        ScrollTrigger.refresh();
+      });
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [location.pathname]);
+
   return (
     <>
       {showNav && <Navbar />}
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route
-          path="/login"
-          element={isAuth ? <Navigate to="/dashboard" replace /> : <Login />}
-        />
-        <Route
-          path="/register"
-          element={isAuth ? <Navigate to="/dashboard" replace /> : <Register />}
-        />
-        <Route path="/oauth-success" element={<OAuthSuccess />} />
-        <Route path="/oauth-error" element={<Navigate to="/login" replace />} />
-        <Route
-          path="/history"
-          element={
-            <ProtectedRoute>
-              <History />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/analyze" element={<AnalyzePage />} />
-        <Route
-          path="/profile"
-          element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/settings"
-          element={
-            <ProtectedRoute>
-              <Settings />
-            </ProtectedRoute>
-          }
-        />
-        <Route
-          path="/dashboard"
-          element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="/pricing" element={<Pricing />} />
-        <Route
-          path="/checkout"
-          element={
-            <ProtectedRoute>
-              <Checkout />
-            </ProtectedRoute>
-          }
-        />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+
+      <SmoothScroll>
+        <Routes>
+          <Route path="/" element={<Home />} />
+
+          <Route path="/about" element={<About />} />
+
+          <Route path="/contact" element={<Contact />} />
+
+          <Route
+            path="/login"
+            element={
+              isAuth ? <Navigate to="/dashboard" replace /> : <Login />
+            }
+          />
+
+          <Route
+            path="/register"
+            element={
+              isAuth ? <Navigate to="/dashboard" replace /> : <Register />
+            }
+          />
+
+          <Route
+            path="/oauth-success"
+            element={<OAuthSuccess />}
+          />
+
+          <Route
+            path="/oauth-error"
+            element={<Navigate to="/login" replace />}
+          />
+
+          <Route
+            path="/history"
+            element={
+              <ProtectedRoute>
+                <History />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/analyze"
+            element={<AnalyzePage />}
+          />
+
+          <Route
+            path="/profile"
+            element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/dashboard"
+            element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="/pricing"
+            element={<Pricing />}
+          />
+
+          <Route
+            path="/checkout"
+            element={
+              <ProtectedRoute>
+                <Checkout />
+              </ProtectedRoute>
+            }
+          />
+
+          <Route
+            path="*"
+            element={<Navigate to="/" replace />}
+          />
+        </Routes>
+      </SmoothScroll>
     </>
   );
 }
