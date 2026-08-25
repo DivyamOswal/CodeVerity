@@ -67,7 +67,12 @@ export default function Reveal({
 
       return () => mm.revert();
     },
-    { scope: ref }
+    {
+      // ❗ No `scope` – we animate the ref directly.
+      // ✅ Run once (empty deps) and clean up properly on unmount.
+      dependencies: [],
+      revertOnUpdate: true, // ensures old ScrollTriggers are killed if deps change
+    }
   );
 
   return (

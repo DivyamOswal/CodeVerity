@@ -33,13 +33,11 @@ export default function Dashboard() {
   const recentReportsRef = useRef(null);
   const emptyStateRef = useRef(null);
 
-  // Get compact preference
   const { compact } = usePreferences();
 
   /* =========================================================
      LOAD DASHBOARD
   ========================================================= */
-
   const loadDashboard = useCallback(
     () =>
       fetchDashboard()
@@ -60,38 +58,42 @@ export default function Dashboard() {
   }, [loadDashboard]);
 
   /* =========================================================
-     GSAP – Entrance & Stagger Animations
+     GSAP – Entrance & Stagger Animations (PERMANENT FIX)
   ========================================================= */
-
   useGSAP(
     () => {
-      // Only run when the home view is active and data is loaded
-      if (activeView !== "home" || !mounted) return;
+      // Only run once when dashboard is mounted and data is loaded
+      if (activeView !== "home" || !mounted || !data) return;
 
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const tl = gsap.timeline({
-          defaults: { ease: "power2.out", duration: 0.5 },
-        });
+        const tl = gsap.timeline({ defaults: { ease: "power2.out", duration: 0.5 } });
 
-        // Set initial hidden states
-        gsap.set(mainContainerRef.current, { opacity: 0, y: 15 });
-        gsap.set(statsContainerRef.current?.children, { opacity: 0, y: 10 });
-        gsap.set(analyzerRef.current, { opacity: 0, y: 12 });
-        if (recentReportsRef.current) {
-          const reportRows = recentReportsRef.current.querySelectorAll(".report-row");
-          gsap.set(reportRows, { opacity: 0, y: 8 });
+        // ---- set initial states ----
+        if (mainContainerRef.current) {
+          gsap.set(mainContainerRef.current, { opacity: 0, y: 15 });
         }
-        if (emptyStateRef.current) {
-          gsap.set(emptyStateRef.current, { opacity: 0, y: 8 });
+        const statsChildren = statsContainerRef.current?.children;
+        if (statsChildren?.length) {
+          gsap.set(statsChildren, { opacity: 0, y: 10 });
+        }
+        if (analyzerRef.current) {
+          gsap.set(analyzerRef.current, { opacity: 0, y: 12 });
         }
 
-        // Animate main container
-        tl.to(mainContainerRef.current, { opacity: 1, y: 0, duration: 0.6 })
-          // Stats cards stagger
-          .to(
-            statsContainerRef.current?.children,
+        // Use scoped selectors – these will be scoped to mainContainerRef
+        gsap.set(".report-row", { opacity: 0, y: 8 });
+        gsap.set(".empty-state", { opacity: 0, y: 8 });
+
+        // ---- animate ----
+        if (mainContainerRef.current) {
+          tl.to(mainContainerRef.current, { opacity: 1, y: 0, duration: 0.6 });
+        }
+
+        if (statsChildren?.length) {
+          tl.to(
+            statsChildren,
             {
               opacity: 1,
               y: 0,
@@ -100,71 +102,75 @@ export default function Dashboard() {
               clearProps: "opacity",
             },
             "-=0.2"
-          )
-          // Analyzer section
-          .to(
-            analyzerRef.current,
-            { opacity: 1, y: 0, duration: 0.45 },
-            "-=0.15"
-          )
-          // Recent reports or empty state
-          .call(() => {
-            if (recentReportsRef.current) {
-              const reportRows = recentReportsRef.current.querySelectorAll(".report-row");
-              gsap.to(reportRows, {
-                opacity: 1,
-                y: 0,
-                duration: 0.35,
-                stagger: 0.05,
-                clearProps: "opacity",
-              });
-            }
-            if (emptyStateRef.current) {
-              gsap.to(emptyStateRef.current, {
-                opacity: 1,
-                y: 0,
-                duration: 0.4,
-                clearProps: "opacity",
-              });
-            }
-          }, "-=0.1");
+          );
+        }
+
+        if (analyzerRef.current) {
+          tl.to(analyzerRef.current, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
+        }
+
+        // ---- animate report rows or empty state – NO CALLBACK! ----
+        tl.to(
+          ".report-row",
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.35,
+            stagger: 0.05,
+            clearProps: "opacity",
+          },
+          "-=0.1"
+        );
+
+        tl.to(
+          ".empty-state",
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+            clearProps: "opacity",
+          },
+          "-=0.1"
+        );
       });
 
-      // Reduced motion: show everything immediately
+      // ---- reduced motion – show instantly ----
       mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(mainContainerRef.current, { opacity: 1, y: 0, clearProps: "all" });
-        gsap.set(statsContainerRef.current?.children, { opacity: 1, y: 0, clearProps: "all" });
-        gsap.set(analyzerRef.current, { opacity: 1, y: 0, clearProps: "all" });
-        if (recentReportsRef.current) {
-          const reportRows = recentReportsRef.current.querySelectorAll(".report-row");
-          gsap.set(reportRows, { opacity: 1, y: 0, clearProps: "all" });
+        if (mainContainerRef.current) {
+          gsap.set(mainContainerRef.current, { opacity: 1, y: 0, clearProps: "all" });
         }
-        if (emptyStateRef.current) {
-          gsap.set(emptyStateRef.current, { opacity: 1, y: 0, clearProps: "all" });
+        const statsChildren = statsContainerRef.current?.children;
+        if (statsChildren?.length) {
+          gsap.set(statsChildren, { opacity: 1, y: 0, clearProps: "all" });
         }
+        if (analyzerRef.current) {
+          gsap.set(analyzerRef.current, { opacity: 1, y: 0, clearProps: "all" });
+        }
+        gsap.set(".report-row", { opacity: 1, y: 0, clearProps: "all" });
+        gsap.set(".empty-state", { opacity: 1, y: 0, clearProps: "all" });
       });
 
       return () => mm.revert();
     },
     {
+      // ✅ Scope – so selectors only target elements inside the dashboard
       scope: mainContainerRef,
-      dependencies: [mounted, activeView, data],
+      // ✅ Only re-run when these change – no `data` needed
+      dependencies: [mounted, activeView],
+      // ❌ No `revertOnUpdate` – prevents premature revert
     }
   );
 
   /* =========================================================
      DOWNLOAD PDF, GENERATE REPORT, OPEN RESULT (unchanged)
   ========================================================= */
-
   const downloadPDF = async () => {
     try {
       const token = localStorage.getItem("token");
       if (!token || !reportId) throw new Error();
       const res = await fetch(
         `http://localhost:5000/api/report/${reportId}/pdf`,
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
@@ -229,7 +235,6 @@ export default function Dashboard() {
   /* =========================================================
      LOADING SCREEN
   ========================================================= */
-
   if (!data) {
     return <LoadingScreen />;
   }
@@ -237,13 +242,10 @@ export default function Dashboard() {
   /* =========================================================
      STATS (unchanged)
   ========================================================= */
-
   const avgQuality = data.recentReports?.length
     ? Math.round(
-        data.recentReports.reduce(
-          (s, r) => s + (r.scores?.codeQuality ?? 0),
-          0
-        ) / data.recentReports.length
+        data.recentReports.reduce((s, r) => s + (r.scores?.codeQuality ?? 0), 0) /
+          data.recentReports.length
       )
     : data.stats?.avgScore ?? 0;
 
@@ -271,10 +273,11 @@ export default function Dashboard() {
     },
   ];
 
-  // Compact overrides (unchanged)
+  // Compact overrides – now includes top padding to account for sticky navbar
   const compactClasses = compact
     ? {
         mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
+        topPadding: "pt-14", // matches navbar compact height (h-14)
         headerSpacing: "gap-0.5",
         heading: "text-lg sm:text-xl",
         subHeading: "text-[10px]",
@@ -301,6 +304,7 @@ export default function Dashboard() {
       }
     : {
         mainPadding: "px-4 py-6 sm:px-6 lg:px-8",
+        topPadding: "pt-16", // matches navbar normal height (h-16)
         headerSpacing: "gap-1",
         heading: "text-xl sm:text-2xl",
         subHeading: "text-xs",
@@ -329,10 +333,9 @@ export default function Dashboard() {
   /* =========================================================
      MAIN UI – with refs for GSAP
   ========================================================= */
-
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      {/* RESULT VIEW – unchanged */}
+      {/* RESULT VIEW */}
       {activeView === "result" && analysis && (
         <div className="animate-[fadeUp_0.3s_ease_both]">
           <Result
@@ -343,14 +346,14 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* HOME VIEW – now animated with GSAP */}
+      {/* HOME VIEW */}
       {activeView === "home" && (
         <main
           ref={mainContainerRef}
-          className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding}`}
+          className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
         >
           <div className="space-y-5">
-            {/* HEADER – unchanged (not animated by GSAP, but visible from start) */}
+            {/* HEADER */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -358,16 +361,17 @@ export default function Dashboard() {
                   System online
                 </span>
               </div>
-              <h2 className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
+              <h2
+                className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+              >
                 Repository Dashboard
               </h2>
               <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>
-                Analyze your GitHub repositories and get
-                AI-powered engineering insights.
+                Analyze your GitHub repositories and get AI-powered engineering insights.
               </p>
             </div>
 
-            {/* STATS – container with ref for stagger */}
+            {/* STATS */}
             <div
               ref={statsContainerRef}
               className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}
@@ -383,15 +387,19 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* ANALYZER – with ref */}
-            <div ref={analyzerRef} className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-              {/* ... (unchanged content) */}
+            {/* ANALYZER */}
+            <div
+              ref={analyzerRef}
+              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]"
+            >
               <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
               <div className={`relative ${compactClasses.analyzerPadding}`}>
                 <div className={`flex items-start ${compactClasses.analyzerHeaderGap}`}>
-                  <div className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)] ${compactClasses.analyzerIconSize}`}>
+                  <div
+                    className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)] ${compactClasses.analyzerIconSize}`}
+                  >
                     ⌁
                   </div>
                   <div>
@@ -399,8 +407,7 @@ export default function Dashboard() {
                       Analyze a GitHub repository
                     </h2>
                     <p className={`mt-1 leading-relaxed text-[var(--text-muted)] ${compactClasses.analyzerDesc}`}>
-                      Paste a public repository URL for a
-                      complete AI-powered engineering audit.
+                      Paste a public repository URL for a complete AI-powered engineering audit.
                     </p>
                   </div>
                 </div>
@@ -418,9 +425,7 @@ export default function Dashboard() {
                         setRepoUrl(e.target.value);
                         setError("");
                       }}
-                      onKeyDown={(e) =>
-                        e.key === "Enter" && !loading && generateReport()
-                      }
+                      onKeyDown={(e) => e.key === "Enter" && !loading && generateReport()}
                     />
                   </div>
                   <button
@@ -475,10 +480,12 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* RECENT REPORTS – container with ref for stagger */}
+            {/* RECENT REPORTS */}
             {data.recentReports?.length > 0 && (
               <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-                <div className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compactClasses.recentHeaderPadding}`}>
+                <div
+                  className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compactClasses.recentHeaderPadding}`}
+                >
                   <div>
                     <h2 className={`font-semibold text-[var(--text-primary)] ${compactClasses.recentTitle}`}>
                       Recent reports
@@ -505,11 +512,10 @@ export default function Dashboard() {
                 </div>
 
                 <div className="space-y-1.5 p-2">
-                  {data.recentReports.map((report, i) => (
+                  {data.recentReports.map((report) => (
                     <div
                       key={`${report._id}-${statsKey}`}
                       className="report-row" // class used by GSAP to target rows
-                      // We removed inline animation; GSAP will handle
                     >
                       <ReportRow report={report} onView={() => openResult(report)} compact={compact} />
                     </div>
@@ -518,27 +524,30 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* EMPTY STATE – with ref */}
+            {/* EMPTY STATE – with class "empty-state" for GSAP targeting, NO inline style */}
             {!data.recentReports?.length && (
               <div
                 ref={emptyStateRef}
-                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center ${compactClasses.emptyStatePadding}`}
+                className="empty-state rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center"
               >
-                <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-lg text-[var(--text-muted)]">
-                  ◈
+                <div className={`${compactClasses.emptyStatePadding}`}>
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-lg text-[var(--text-muted)]">
+                    ◈
+                  </div>
+                  <h3 className={`font-semibold text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}>
+                    No reports yet
+                  </h3>
+                  <p className={`mx-auto mt-1.5 max-w-sm leading-relaxed text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>
+                    Enter a public GitHub repository above to generate your first CodeVerity audit.
+                  </p>
                 </div>
-                <h3 className={`font-semibold text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}>
-                  No reports yet
-                </h3>
-                <p className={`mx-auto mt-1.5 max-w-sm leading-relaxed text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>
-                  Enter a public GitHub repository above
-                  to generate your first CodeVerity audit.
-                </p>
               </div>
             )}
 
             {/* FOOTER */}
-            <div className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
+            <div
+              className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
+            >
               <span>CodeVerity</span>
               <span>•</span>
               <span>AI Repository Intelligence</span>
@@ -547,7 +556,6 @@ export default function Dashboard() {
         </main>
       )}
 
-      {/* ANIMATIONS – kept for fallback and other components */}
       <style>{`
         @keyframes fadeUp {
           from {
@@ -573,7 +581,6 @@ export default function Dashboard() {
 /* =========================================================
    SUB-COMPONENTS (unchanged)
 ========================================================= */
-
 function CodeVerityLogo() {
   return (
     <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
@@ -606,20 +613,23 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
   return (
     <div
       className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 ${statPaddingClass}`}
-      // removed inline animation – now controlled by GSAP
     >
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className={`font-medium uppercase tracking-[0.12em] text-[var(--text-muted)] text-[9px]`}>
+          <p className="font-medium uppercase tracking-[0.12em] text-[var(--text-muted)] text-[9px]">
             {label}
           </p>
           <p className={`mt-2 font-bold tabular-nums text-[var(--text-primary)] ${statValueClass}`}>
             {animated}
           </p>
-          <p className={`mt-1 text-[var(--text-muted)] text-[9px]`}>{sub}</p>
+          <p className="mt-1 text-[var(--text-muted)] text-[9px]">{sub}</p>
         </div>
-        <div className={`flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-6 w-6 text-xs" : "h-8 w-8"}`}>
+        <div
+          className={`flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${
+            compact ? "h-6 w-6 text-xs" : "h-8 w-8"
+          }`}
+        >
           {icon}
         </div>
       </div>
@@ -688,7 +698,9 @@ function ReportRow({ report, onView, compact }) {
   const viewButtonPadding = compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[9px]";
 
   return (
-    <div className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[var(--border-light)] hover:bg-[var(--bg-primary)] ${rowPadding}`}>
+    <div
+      className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[var(--border-light)] hover:bg-[var(--bg-primary)] ${rowPadding}`}
+    >
       <span
         className={`flex shrink-0 items-center justify-center rounded-lg border font-bold ${gradeColor.text} ${gradeColor.bg} ${gradeColor.border} ${gradeSize}`}
       >
@@ -720,7 +732,9 @@ function ReportRow({ report, onView, compact }) {
         </div>
       )}
 
-      <div className={`hidden rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] sm:block ${scoreBadgePadding}`}>
+      <div
+        className={`hidden rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] sm:block ${scoreBadgePadding}`}
+      >
         {avg}%
       </div>
 

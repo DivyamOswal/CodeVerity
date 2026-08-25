@@ -202,25 +202,26 @@ export default function Navbar() {
   const { compact } = usePreferences();
 
   const [dropOpen, setDropOpen] = useState(false);
-const [menuOpen, setMenuOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
-const navRef = useRef(null);
-const navContentRef = useRef(null);
-const logoRef = useRef(null);
-const navItemsRef = useRef([]);
-const dropdownRef = useRef(null);
-const mobileMenuRef = useRef(null);
-const activeIndicatorRef = useRef(null);
+  const navRef = useRef(null);
+  const navContentRef = useRef(null);
+  const logoRef = useRef(null);
+  const navItemsRef = useRef([]);
+  const dropRef = useRef(null);
+  const mobileMenuRef = useRef(null);
+  const activeIndicatorRef = useRef(null);
 
   const addNavItemRef = (element) => {
-  if (element && !navItemsRef.current.includes(element)) {
-    navItemsRef.current.push(element);
-  }
-};
+    if (element && !navItemsRef.current.includes(element)) {
+      navItemsRef.current.push(element);
+    }
+  };
 
   const initials = useMemo(() => getInitials(token), [token]);
   const userInfo = useMemo(() => getUserInfo(token), [token]);
 
+  // Click outside to close dropdown
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (dropRef.current && !dropRef.current.contains(event.target)) {
@@ -231,12 +232,13 @@ const activeIndicatorRef = useRef(null);
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  // Close dropdowns on route change
   useEffect(() => {
     setDropOpen(false);
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // lock body scroll while the mobile menu is open
+  // Lock body scroll while mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -244,66 +246,84 @@ const activeIndicatorRef = useRef(null);
     };
   }, [menuOpen]);
 
+  // -----------------------------------------------------------------
+  // GSAP Entrance Animation – without `scope` to avoid "Invalid scope"
+  // -----------------------------------------------------------------
   useGSAP(
-  () => {
-    const mm = gsap.matchMedia();
+    () => {
+      const mm = gsap.matchMedia();
 
-    mm.add("(prefers-reduced-motion: no-preference)", () => {
-      const timeline = gsap.timeline({
-        defaults: {
-          ease: "power3.out",
-        },
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const timeline = gsap.timeline({
+          defaults: { ease: "power3.out" },
+        });
+
+        // Animate nav container
+        if (navRef.current) {
+          timeline.from(navRef.current, {
+            y: -18,
+            autoAlpha: 0,
+            duration: 0.55,
+          });
+        }
+
+        // Animate logo
+        if (logoRef.current) {
+          timeline.from(
+            logoRef.current,
+            {
+              scale: 0.85,
+              autoAlpha: 0,
+              duration: 0.4,
+              ease: "back.out(1.5)",
+            },
+            "-=0.3"
+          );
+        }
+
+        // Animate nav items – only if we have any
+        if (navItemsRef.current && navItemsRef.current.length) {
+          timeline.from(
+            navItemsRef.current,
+            {
+              y: -8,
+              autoAlpha: 0,
+              duration: 0.35,
+              stagger: 0.055,
+            },
+            "-=0.25"
+          );
+        }
+
+        // Animate nav content
+        if (navContentRef.current) {
+          timeline.from(
+            navContentRef.current,
+            {
+              x: 8,
+              autoAlpha: 0,
+              duration: 0.35,
+            },
+            "-=0.25"
+          );
+        }
       });
 
-      timeline
-        .from(navRef.current, {
-          y: -18,
-          autoAlpha: 0,
-          duration: 0.55,
-        })
-        .from(
-          logoRef.current,
-          {
-            scale: 0.85,
-            autoAlpha: 0,
-            duration: 0.4,
-            ease: "back.out(1.5)",
-          },
-          "-=0.3"
-        )
-        .from(
-          navItemsRef.current,
-          {
-            y: -8,
-            autoAlpha: 0,
-            duration: 0.35,
-            stagger: 0.055,
-          },
-          "-=0.25"
-        )
-        .from(
-          navContentRef.current,
-          {
-            x: 8,
-            autoAlpha: 0,
-            duration: 0.35,
-          },
-          "-=0.25"
-        );
-    });
-
-    mm.add("(prefers-reduced-motion: reduce)", () => {
-      gsap.set(navRef.current, {
-        clearProps: "all",
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        if (navRef.current) {
+          gsap.set(navRef.current, { clearProps: "all" });
+        }
+        // Optionally clear others – not strictly required
       });
-    });
 
-    return () => mm.revert();
-  },
-  {
-    scope: navRef,
-  }
-);
+      return () => mm.revert();
+    },
+    // ❗ No `scope` option – we animate refs directly
+  );
+
+  // -----------------------------------------------------------------
+  // Handlers
+  // -----------------------------------------------------------------
 
   const handleLogout = () => {
     setDropOpen(false);
@@ -311,7 +331,10 @@ const activeIndicatorRef = useRef(null);
     navigate("/login");
   };
 
-  // Compact overrides
+  // -----------------------------------------------------------------
+  // Compact overrides (styling)
+  // -----------------------------------------------------------------
+
   const navbarHeight = compact ? "h-14" : "h-16";
   const logoSize = compact ? "h-8 w-8" : "h-9 w-9";
   const iconSize = compact ? 15 : 17;
@@ -327,11 +350,7 @@ const activeIndicatorRef = useRef(null);
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
   const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
 
-  // NavigationItem — an "editor tab", not a floating pill.
-  // Active state is marked by a top bar (like an open tab in a code
-  // editor) plus a raised card surface, instead of a bottom underline —
-  // nothing to misalign on hover, and it echoes the tab strips used
-  // elsewhere in the product.
+  // NavigationItem — "editor tab" style
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
       to={to}
@@ -359,24 +378,28 @@ const activeIndicatorRef = useRef(null);
     </NavLink>
   );
 
+  // -----------------------------------------------------------------
+  // Render
+  // -----------------------------------------------------------------
+
   return (
     <nav
-  ref={navRef}
-  className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
->
+      ref={navRef}
+      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
+    >
       <div
-  ref={navContentRef}
-  className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
-    compact ? "px-3 sm:px-4" : ""
-  }`}
->
+        ref={navContentRef}
+        className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
+          compact ? "px-3 sm:px-4" : ""
+        }`}
+      >
         {/* LEFT – Logo */}
         <div className="flex min-w-0 items-center">
           <NavLink
-  ref={logoRef}
-  to="/"
-  className="group flex items-center gap-2.5"
->
+            ref={logoRef}
+            to="/"
+            className="group flex items-center gap-2.5"
+          >
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
@@ -440,7 +463,9 @@ const activeIndicatorRef = useRef(null);
                   >
                     {userInfo.name || initials}
                   </p>
-                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>{userInfo.role || "developer"}</p>
+                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>
+                    {userInfo.role || "developer"}
+                  </p>
                 </div>
 
                 <span
@@ -452,7 +477,7 @@ const activeIndicatorRef = useRef(null);
                 </span>
               </button>
 
-              {/* Dropdown — kept mounted so open/close both animate */}
+              {/* Dropdown */}
               <div
                 className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
                   dropOpen
@@ -555,10 +580,7 @@ const activeIndicatorRef = useRef(null);
         </div>
       </div>
 
-      {/* Mobile Navigation — animated height/opacity, no unmount-jank.
-          Active item gets a left rail (file-explorer selection style)
-          instead of a full tint block. Public links (Pricing/About/
-          Contact) always show; auth-only links are conditional. */}
+      {/* Mobile Navigation */}
       <div
         className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
           menuOpen ? "max-h-[36rem] opacity-100" : "max-h-0 border-t-0 opacity-0"
@@ -637,40 +659,40 @@ const activeIndicatorRef = useRef(null);
 
           {isAuth ? (
             <>
-            <NavLink
-              to="/profile"
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-                  isActive
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                }`
-              }
-            >
-              <Icon name="profile" size={compact ? 14 : 16} />
-              profile
-            </NavLink>
-            <NavLink
-              to="/settings"
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-                  isActive
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-                }`
-              }
-            >
-              <Icon name="settings" size={compact ? 14 : 16} />
-              settings
-            </NavLink>
-            <button
-              type="button"
-              onClick={handleLogout}
-              className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
-            >
-              <Icon name="logout" size={compact ? 14 : 16} />
-              sign out
-            </button>
+              <NavLink
+                to="/profile"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                    isActive
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`
+                }
+              >
+                <Icon name="profile" size={compact ? 14 : 16} />
+                profile
+              </NavLink>
+              <NavLink
+                to="/settings"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                    isActive
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`
+                }
+              >
+                <Icon name="settings" size={compact ? 14 : 16} />
+                settings
+              </NavLink>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
+              >
+                <Icon name="logout" size={compact ? 14 : 16} />
+                sign out
+              </button>
             </>
           ) : (
             <div className="flex flex-col gap-2 pt-2">

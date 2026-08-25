@@ -7,20 +7,8 @@ import { usePreferences } from "../context/PreferencesContext";
 const API = "http://localhost:5000";
 
 // -----------------------------------------------------------------
-// TYPE SCALE — kept deliberately small and consistent so the page
-// reads as one system instead of many one-off sizes:
-//   text-[10px]  micro-labels / eyebrows (uppercase, decorative meta)
-//   text-[11px]  anything interactive — buttons, clickable text links
-//   text-xs      body/summary copy, form inputs
-//   text-sm      card titles, page subtitle
-//   text-lg+     section headings, page H1 (capped to match the H1
-//                scale used on CodeInput/GithubAnalyzer — no lg:text-5xl)
-// -----------------------------------------------------------------
-
-// -----------------------------------------------------------------
-// Mini component – ScanLine
-// Flat-color sweep (opacity fade, not a color gradient), radius
-// matched to the small "View Report" button it sits inside.
+// ScanLine – consistent with the one used in Dashboard/Home
+// Flat sweep with opacity, matched to button radius.
 // -----------------------------------------------------------------
 function ScanLine() {
   return (
@@ -125,7 +113,7 @@ export default function History() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
             <button
               onClick={() => setSelected(null)}
-              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
             >
               <span className="transition-transform group-hover:-translate-x-1">←</span>
               Back to History
@@ -144,7 +132,7 @@ export default function History() {
                 <path d="M14.5 17.5 21 12l-6.5-5.5" />
                 <path d="M9.5 6.5 3 12l6.5 5.5" />
               </svg>
-              <span className="truncate font-mono text-xs text-[var(--text-muted)]">{selected.repoUrl}</span>
+              <span className="truncate font-mono text-[11px] text-[var(--text-muted)]">{selected.repoUrl}</span>
             </div>
           </div>
         </div>
@@ -161,6 +149,7 @@ export default function History() {
 
   // ---- Main History View with compact overrides ----
   const containerPadding = compact ? "py-3" : "py-5";
+  const topPadding = compact ? "pt-14" : "pt-16"; // Account for sticky navbar
   const headerMargin = compact ? "mb-3" : "mb-5";
   const toolbarPadding = compact ? "p-1.5" : "p-2";
   const gradeGap = compact ? "gap-1.5" : "gap-2";
@@ -168,14 +157,11 @@ export default function History() {
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden">
-      <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${containerPadding}`}>
+      <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${containerPadding} ${topPadding}`}>
         {/* HEADER */}
         <div className={headerMargin}>
           <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
             <div>
-              {/* H1 capped to match the scale used on CodeInput/GithubAnalyzer
-                  (no lg:text-5xl escalation) so page titles read as one
-                  consistent system across the app. */}
               <h1
                 className={`font-bold leading-[1.05] tracking-tight text-[var(--text-primary)] ${
                   compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
@@ -183,7 +169,7 @@ export default function History() {
               >
                 Review <span className="text-[var(--accent)]">History</span>
               </h1>
-              <p className={`mt-2 max-w-xl text-sm leading-5 text-[var(--text-secondary)] ${compact ? "text-xs" : ""}`}>
+              <p className={`mt-2 max-w-xl text-[13px] leading-5 text-[var(--text-secondary)] ${compact ? "text-xs" : ""}`}>
                 Browse, compare and revisit your previous GitHub repository audits.
               </p>
             </div>
@@ -199,16 +185,14 @@ export default function History() {
                 </svg>
               </div>
               <div>
-                <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Total Reviews</p>
+                <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Total Reviews</p>
                 <p className="font-mono text-base font-semibold text-[var(--text-primary)]">{reports.length}</p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* GRADE SUMMARY — kept as distinct hues per grade; this is
-            semantic status information (A..F), not brand decoration,
-            same reasoning as leaving the traffic-light dots alone. */}
+        {/* GRADE SUMMARY */}
         {reports.length > 0 && (
           <div className={`mb-4 grid grid-cols-2 ${gradeGap} sm:grid-cols-5`}>
             {["A", "B", "C", "D", "F"].map((g) => {
@@ -226,15 +210,15 @@ export default function History() {
                   } ${compact ? "p-2" : "p-3"}`}
                 >
                   <div className="flex items-center justify-between">
-                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg font-mono text-xs font-bold ${style.badge}`}>
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg font-mono text-[11px] font-bold ${style.badge}`}>
                       {g}
                     </span>
-                    <span className="text-[10px] text-[var(--text-muted)]">
+                    <span className="text-[9px] text-[var(--text-muted)]">
                       {filterGrade === g ? "Selected" : "Filter"}
                     </span>
                   </div>
                   <p className={`mt-2 font-mono text-lg font-semibold text-[var(--text-primary)] ${compact ? "text-base" : ""}`}>{count}</p>
-                  <p className="text-[10px] text-[var(--text-muted)]">{label}</p>
+                  <p className="text-[9px] text-[var(--text-muted)]">{label}</p>
                 </button>
               );
             })}
@@ -262,14 +246,14 @@ export default function History() {
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search repositories or summaries..."
-                  className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-[13px] text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 />
               </div>
               <div className="flex gap-2">
                 <select
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
-                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="all">All grades</option>
                   {["A", "B", "C", "D", "F"].map((g) => (
@@ -281,7 +265,7 @@ export default function History() {
                 <select
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="date">Newest</option>
                   <option value="score">Highest Score</option>
@@ -291,7 +275,7 @@ export default function History() {
             </div>
             {(search || filterGrade !== "all") && (
               <div className="mt-2 flex items-center justify-between border-t border-[var(--border-dark)] pt-2">
-                <p className="text-[10px] text-[var(--text-muted)]">
+                <p className="text-[9px] text-[var(--text-muted)]">
                   Showing <span className="font-mono font-medium text-[var(--text-secondary)]">{filtered.length}</span> of{" "}
                   <span className="font-mono font-medium text-[var(--text-secondary)]">{reports.length}</span> reports
                 </p>
@@ -342,7 +326,7 @@ export default function History() {
                 </svg>
               </div>
               <h2 className="text-lg font-semibold text-[var(--text-primary)]">No reviews yet</h2>
-              <p className="mt-2 text-sm leading-5 text-[var(--text-muted)]">
+              <p className="mt-2 text-[13px] leading-5 text-[var(--text-muted)]">
                 Analyze a GitHub repository and your AI-powered code audit will appear here.
               </p>
             </div>
@@ -359,7 +343,7 @@ export default function History() {
               </svg>
             </div>
             <p className="text-sm font-medium text-[var(--text-primary)]">No matching reports</p>
-            <p className="mt-1 text-xs text-[var(--text-muted)]">Try changing your search or filters.</p>
+            <p className="mt-1 text-[10px] text-[var(--text-muted)]">Try changing your search or filters.</p>
             <button
               onClick={() => {
                 setSearch("");
@@ -395,7 +379,7 @@ export default function History() {
 
         {/* FOOTER */}
         {!loading && reports.length > 0 && (
-          <div className={`mt-6 flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compact ? "mt-4" : ""}`}>
+          <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] text-[var(--text-muted)] ${compact ? "mt-4" : ""}`}>
             <span>CodeVerity</span>
             <span>•</span>
             <span>AI Repository Intelligence</span>
@@ -416,7 +400,7 @@ export default function History() {
 }
 
 // -----------------------------------------------------------------
-// Report Card – now respects compact and showScores
+// Report Card – consistent sizing and styles
 // -----------------------------------------------------------------
 function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   const grade = r.grade ?? "N/A";
@@ -443,9 +427,6 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 
   const cardPadding = compact ? "p-3" : "p-4";
   const headerPadding = compact ? "p-3" : "p-4";
-  // Card title held at a constant, legible size regardless of compact
-  // mode — compact mode should tighten spacing, not shrink text below
-  // a comfortable reading size.
   const titleSize = "text-sm";
   const scoreSize = compact ? "text-xl" : "text-2xl";
   const gap = compact ? "gap-2" : "gap-2.5";
@@ -464,18 +445,18 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
               </svg>
             </div>
             <div className="min-w-0">
-              <p className="mb-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Repository</p>
+              <p className="mb-0.5 font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Repository</p>
               <h2 className={`truncate font-mono font-semibold text-[var(--text-primary)] ${titleSize}`}>{repoName}</h2>
             </div>
           </div>
           <div className="flex shrink-0 flex-col items-end gap-1">
-            <span className={`rounded-md border px-2 py-0.5 font-mono text-xs font-bold ${styles.badge} ${styles.border}`}>
+            <span className={`rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold ${styles.badge} ${styles.border}`}>
               {grade}
             </span>
-            <span className="font-mono text-[10px] text-[var(--text-muted)]">{date}</span>
+            <span className="font-mono text-[9px] text-[var(--text-muted)]">{date}</span>
           </div>
         </div>
-        <p className="mt-3 line-clamp-2 text-xs leading-5 text-[var(--text-secondary)]">
+        <p className="mt-3 line-clamp-2 text-[13px] leading-5 text-[var(--text-secondary)]">
           {r.summary || "No summary available"}
         </p>
       </div>
@@ -483,7 +464,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
       <div className={cardPadding}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Overall Score</p>
+            <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Overall Score</p>
             <div className="mt-0.5 flex items-baseline gap-1">
               <span className={`font-mono font-bold ${scoreSize} ${styles.text}`}>{avg}</span>
               <span className="font-mono text-[10px] text-[var(--text-muted)]">/ 100</span>
@@ -526,8 +507,8 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
         {r.toolsAndPackages?.length > 0 && (
           <div className={`mt-4 border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
             <div className="mb-2 flex items-center justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Technologies</span>
-              <span className="font-mono text-[10px] text-[var(--text-muted)]">{r.toolsAndPackages.length} detected</span>
+              <span className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Technologies</span>
+              <span className="font-mono text-[9px] text-[var(--text-muted)]">{r.toolsAndPackages.length} detected</span>
             </div>
             <div className="flex flex-wrap gap-1.5">
               {r.toolsAndPackages.slice(0, 4).map((t, i) => (
@@ -548,10 +529,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
         )}
 
         <div className={`mt-4 flex items-center justify-between border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
-          {/* "complete" status dot kept green — universal success
-              semantics, same reasoning as the online-status dot on the
-              Navbar avatar */}
-          <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-muted)]">
+          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             Analysis complete
           </span>
@@ -580,18 +558,14 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 }
 
 // -----------------------------------------------------------------
-// ScoreBar – now accepts compact prop
-// Flat fill color per band (no gradient) — the band itself already
-// carries the meaning, so a two-stop blend added nothing.
+// ScoreBar – flat fill with consistent sizing
 // -----------------------------------------------------------------
 function ScoreBar({ label, value, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
   const color = val >= 75 ? "bg-emerald-500" : val >= 50 ? "bg-amber-400" : "bg-rose-500";
 
-  // Held at a constant 10px in both modes — compact drops the bar's
-  // height below, not the text below a legible floor.
-  const labelSize = "text-[10px]";
-  const valueSize = "text-[10px]";
+  const labelSize = "text-[9px]";
+  const valueSize = "text-[9px]";
   const barHeight = compact ? "h-0.5" : "h-1";
 
   return (
@@ -613,10 +587,7 @@ function ScoreBar({ label, value, compact }) {
 }
 
 // -----------------------------------------------------------------
-// Grade Styles — deliberately kept as distinct hues (unlike the
-// decorative green/emerald/teal removed elsewhere): A–F is semantic
-// status information, the same category as the red error box or the
-// traffic-light dots, not brand decoration.
+// Grade Styles – semantic status colors
 // -----------------------------------------------------------------
 function gradeStyle(letter) {
   const map = {

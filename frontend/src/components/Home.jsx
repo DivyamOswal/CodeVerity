@@ -2,49 +2,278 @@ import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
+import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
 
 // ============================================================
-//  EXISTING COMPONENTS (unchanged – ParticleField, TypedWord,
-//  CodeVerityLogo, Feature, Feature icons, StatPill, ScanLine)
+//  COMPONENT: ParticleField (canvas particles)
 // ============================================================
-
 function ParticleField() {
-  // ... (unchanged)
+  const canvasRef = useRef(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas.getContext("2d");
+    let width, height, particles = [];
+    const count = 80;
+    let animationFrame;
+
+    const resize = () => {
+      width = canvas.width = window.innerWidth;
+      height = canvas.height = window.innerHeight;
+    };
+    window.addEventListener("resize", resize);
+    resize();
+
+    class Particle {
+      constructor() {
+        this.x = Math.random() * width;
+        this.y = Math.random() * height;
+        this.vx = (Math.random() - 0.5) * 0.5;
+        this.vy = (Math.random() - 0.5) * 0.5;
+        this.radius = Math.random() * 1.5 + 0.5;
+      }
+      update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.x < 0 || this.x > width) this.vx *= -1;
+        if (this.y < 0 || this.y > height) this.vy *= -1;
+      }
+      draw() {
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fillStyle = "rgba(99,102,241,0.25)";
+        ctx.fill();
+      }
+    }
+
+    for (let i = 0; i < count; i++) {
+      particles.push(new Particle());
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, width, height);
+      particles.forEach((p) => {
+        p.update();
+        p.draw();
+      });
+      // connect nearby particles
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(99,102,241,${0.08 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.6;
+            ctx.stroke();
+          }
+        }
+      }
+      animationFrame = requestAnimationFrame(animate);
+    };
+    animate();
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      window.removeEventListener("resize", resize);
+    };
+  }, []);
+
+  return (
+    <canvas
+      ref={canvasRef}
+      className="pointer-events-none fixed inset-0 z-0"
+      style={{ width: "100%", height: "100%" }}
+    />
+  );
 }
 
+// ============================================================
+//  COMPONENT: TypedWord (cycle through words)
+// ============================================================
 function TypedWord({ words }) {
-  // ... (unchanged)
+  const [index, setIndex] = useState(0);
+  const [charIndex, setCharIndex] = useState(0);
+  const [display, setDisplay] = useState("");
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  useEffect(() => {
+    const currentWord = words[index];
+    const timeout = setTimeout(() => {
+      if (!isDeleting) {
+        if (charIndex < currentWord.length) {
+          setDisplay((prev) => prev + currentWord[charIndex]);
+          setCharIndex(charIndex + 1);
+        } else {
+          setIsDeleting(true);
+          setTimeout(() => {}, 1500);
+        }
+      } else {
+        if (charIndex > 0) {
+          setDisplay((prev) => prev.slice(0, -1));
+          setCharIndex(charIndex - 1);
+        } else {
+          setIsDeleting(false);
+          setIndex((i) => (i + 1) % words.length);
+        }
+      }
+    }, isDeleting ? 30 : 80);
+
+    return () => clearTimeout(timeout);
+  }, [charIndex, isDeleting, index, words]);
+
+  return (
+    <span className="text-[var(--accent)]">
+      {display}
+      <span className="inline-block w-[2px] h-[1em] bg-[var(--accent)] ml-0.5 animate-pulse" />
+    </span>
+  );
 }
 
+// ============================================================
+//  COMPONENT: CodeVerityLogo
+// ============================================================
 function CodeVerityLogo() {
-  // ... (unchanged)
+  return (
+    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
+      <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
+      <svg
+        width="18"
+        height="18"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="relative text-[var(--accent)]"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-primary)] border border-[var(--border-light)]">
+        <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+      </div>
+      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
+    </div>
+  );
 }
 
+// ============================================================
+//  COMPONENT: Feature
+// ============================================================
 function Feature({ icon, title, desc, delay }) {
-  // ... (unchanged)
+  return (
+    <div
+      className="group rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 text-center transition-all hover:border-[var(--accent)]/50 hover:-translate-y-1 hover:shadow-[0_0_30px_var(--accent-soft)]"
+      style={{ animationDelay: delay }}
+    >
+      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+        {icon}
+      </div>
+      <h3 className="mb-1.5 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{desc}</p>
+    </div>
+  );
 }
 
+// ============================================================
+//  ICON COMPONENTS
+// ============================================================
 function BugIcon() {
-  // ... (unchanged)
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
+      <path d="M18 13h-2" />
+      <path d="M8 13H6" />
+      <path d="M10 4 8 2" />
+      <path d="M14 4 16 2" />
+      <path d="M12 22v-4" />
+    </svg>
+  );
 }
 function ShieldIcon() {
-  // ... (unchanged)
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      <path d="m9 12 2 2 4-4" />
+    </svg>
+  );
 }
 function FlaskIcon() {
-  // ... (unchanged)
+  return (
+    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
+      <path d="M8 2h8" />
+    </svg>
+  );
 }
 
+// ============================================================
+//  COMPONENT: StatPill (animated count)
+// ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
-  // ... (unchanged)
+  const [display, setDisplay] = useState(0);
+  const hasTarget = useRef(false);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hasTarget.current = true;
+    }, delayMs);
+    return () => clearTimeout(timer);
+  }, [delayMs]);
+
+  useEffect(() => {
+    if (!hasTarget.current) return;
+    const num = parseFloat(String(value).replace(/[^0-9.]/g, ""));
+    const isPct = String(value).includes("%");
+    const isPlus = String(value).includes("+");
+    const isLt = String(value).includes("<");
+    const duration = 800;
+    const start = performance.now();
+
+    let raf;
+    const tick = (now) => {
+      const elapsed = now - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      const current = Math.round(num * eased);
+      let output = isPct ? `${current}%` : isPlus ? `${current}+` : isLt ? `<${current}s` : String(current);
+      setDisplay(output);
+      if (progress < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [value, delayMs]);
+
+  return (
+    <div className="flex flex-col items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3 min-w-[110px]">
+      <span className="text-xl font-bold text-[var(--text-primary)]">{display}</span>
+      <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
+    </div>
+  );
 }
 
+// ============================================================
+//  COMPONENT: ScanLine (for button hover)
+// ============================================================
 function ScanLine() {
-  // ... (unchanged)
+  return (
+    <span className="absolute inset-0 z-0 overflow-hidden">
+      <span className="absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-transparent via-[var(--accent-contrast)] to-transparent opacity-40 animate-scan" />
+    </span>
+  );
 }
 
 // ============================================================
-//  NEW COMPONENTS – full‑fledged sections
+//  SECTION: How It Works, Testimonials, Pricing, FAQ, Footer
+//  (already defined in your file keep them as they are)
 // ============================================================
+// ... (the rest of the components remain identical to your version)
+// I'll include them below for completeness, but they are unchanged.
 
 /* ---------- How It Works ---------- */
 function HowItWorks() {
@@ -57,7 +286,7 @@ function HowItWorks() {
         </svg>
       ),
       title: "Paste your GitHub URL",
-      desc: "Enter any public repository link – CodeVerity immediately analyses the codebase structure.",
+      desc: "Enter any public repository link CodeVerity immediately analyses the codebase structure.",
     },
     {
       icon: (
@@ -88,7 +317,7 @@ function HowItWorks() {
           How CodeVerity works
         </h2>
         <p className="text-[var(--text-secondary)] text-sm mb-10 max-w-xl mx-auto">
-          From repository to report – three simple steps to code confidence.
+          From repository to report three simple steps to code confidence.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((step, idx) => (
@@ -121,7 +350,7 @@ function Testimonials() {
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote: "I use it before every PR. The bug detection is surprisingly accurate – it's like having a senior reviewer.",
+      quote: "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full‑stack Developer, OpenSource Collective",
     },
@@ -167,34 +396,9 @@ function Testimonials() {
   );
 }
 
-/* ---------- Pricing ---------- */
+/* ---------- Pricing (UPDATED with shared data) ---------- */
 function Pricing() {
-  const plans = [
-    {
-      name: "Free",
-      price: "$0",
-      period: "/month",
-      features: ["1 repository scan / day", "Basic bug & security report", "Public repos only", "Community support"],
-      cta: "Get Started",
-      highlight: false,
-    },
-    {
-      name: "Pro",
-      price: "$29",
-      period: "/month",
-      features: ["Unlimited scans", "Advanced AI analysis", "Private repos", "Test generation", "Priority support"],
-      cta: "Start Free Trial",
-      highlight: true,
-    },
-    {
-      name: "Enterprise",
-      price: "Custom",
-      period: "",
-      features: ["Self‑hosted options", "Custom integrations", "SLA guarantee", "Dedicated success manager"],
-      cta: "Contact Sales",
-      highlight: false,
-    },
-  ];
+  const plans = PRICING_PLANS;
 
   return (
     <section className="py-16 px-4 sm:px-6 border-t border-[var(--border-light)]">
@@ -206,43 +410,65 @@ function Pricing() {
           Start for free, upgrade as you grow.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-          {plans.map((plan, idx) => (
-            <div
-              key={idx}
-              className={`rounded-xl border p-6 text-left transition-all ${
-                plan.highlight
-                  ? "border-[var(--accent)] bg-[var(--accent-soft)]/20 shadow-lg shadow-[var(--accent)]/5"
-                  : "border-[var(--border-light)] bg-[var(--bg-card)]"
-              } hover:scale-[1.02]`}
-            >
-              <h3 className="text-lg font-bold text-[var(--text-primary)]">{plan.name}</h3>
-              <div className="mt-2 flex items-baseline">
-                <span className="text-3xl font-extrabold text-[var(--text-primary)]">{plan.price}</span>
-                <span className="ml-1 text-sm text-[var(--text-muted)]">{plan.period}</span>
-              </div>
-              <ul className="mt-4 space-y-2 text-xs text-[var(--text-secondary)]">
-                {plan.features.map((f, fi) => (
-                  <li key={fi} className="flex items-start gap-2">
-                    <svg className="mt-0.5 w-3 h-3 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
-                      <polyline points="20 6 9 17 4 12" />
-                    </svg>
-                    {f}
-                  </li>
-                ))}
-              </ul>
-              <Link
-                to={plan.highlight ? "/register" : "/login"}
-                className={`mt-6 block w-full rounded-lg px-4 py-2 text-center text-sm font-semibold transition-all ${
+          {plans.map((plan) => {
+            const price = plan.monthly.INR;
+            const isFree = price === 0;
+            const displayPrice = formatPrice(price, "INR");
+
+            return (
+              <div
+                key={plan.id}
+                className={`rounded-xl border p-6 text-left transition-all ${
                   plan.highlight
-                    ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] hover:bg-[var(--accent-hover)]"
-                    : "border border-[var(--border-light)] bg-[var(--bg-card)]/75 text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
-                }`}
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)]/20 shadow-lg shadow-[var(--accent)]/5"
+                    : "border-[var(--border-light)] bg-[var(--bg-card)]"
+                } hover:scale-[1.02]`}
               >
-                {plan.cta}
-              </Link>
-            </div>
-          ))}
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">{plan.name}</h3>
+                <div className="mt-2 flex items-baseline">
+                  <span className="text-3xl font-extrabold text-[var(--text-primary)]">
+                    {displayPrice}
+                  </span>
+                  {!isFree && (
+                    <span className="ml-1 text-sm text-[var(--text-muted)]">/mo</span>
+                  )}
+                </div>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[10px] text-[var(--accent)]">
+                    {formatTokens(plan.tokensPerMonth)} tokens / mo
+                  </span>
+                </div>
+                <ul className="mt-4 space-y-2 text-xs text-[var(--text-secondary)]">
+                  {plan.features.map((f, fi) => (
+                    <li key={fi} className="flex items-start gap-2">
+                      <svg className="mt-0.5 w-3 h-3 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                        <polyline points="20 6 9 17 4 12" />
+                      </svg>
+                      {f}
+                    </li>
+                  ))}
+                </ul>
+                <Link
+                  to={
+                    isFree
+                      ? "/register"
+                      : `/checkout?plan=${plan.id}&cycle=monthly&currency=INR`
+                  }
+                  className={`mt-6 block w-full rounded-lg px-4 py-2 text-center text-sm font-semibold transition-all ${
+                    plan.highlight
+                      ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] hover:bg-[var(--accent-hover)]"
+                      : "border border-[var(--border-light)] bg-[var(--bg-card)]/75 text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
+                  }`}
+                >
+                  {plan.cta}
+                </Link>
+              </div>
+            );
+          })}
         </div>
+        <p className="mt-6 text-[10px] text-[var(--text-muted)]">
+          * All prices in INR. Yearly plans offer 20% off see full pricing page.
+        </p>
       </div>
     </section>
   );
@@ -563,7 +789,7 @@ export default function Home() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
-      {/* Background glows and dot grid – unchanged */}
+      {/* Background glows and dot grid unchanged */}
       <div
         ref={bgGlow1Ref}
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -591,14 +817,14 @@ export default function Home() {
 
       <ParticleField />
 
-      {/* MAIN CONTENT – existing hero + new sections */}
+      {/* MAIN CONTENT existing hero + new sections */}
       <div
         className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container} transition-all duration-700 ease-out ${
           show ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
         }`}
       >
         <div className="w-full max-w-5xl text-center">
-          {/* ---- BRAND (unchanged) ---- */}
+          {/* ---- BRAND ---- */}
           <div ref={brandRef} className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}>
             <CodeVerityLogo />
             <div className="text-left">
@@ -611,7 +837,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ---- BADGE (unchanged) ---- */}
+          {/* ---- BADGE ---- */}
           <div
             ref={badgeRef}
             className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
@@ -620,7 +846,7 @@ export default function Home() {
             AI-powered GitHub code analysis
           </div>
 
-          {/* ---- HEADING (unchanged) ---- */}
+          {/* ---- HEADING ---- */}
           <h1
             ref={headingRef}
             className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
@@ -629,7 +855,7 @@ export default function Home() {
             <span className="text-[var(--accent)]">Verity</span>
           </h1>
 
-          {/* ---- TYPED SUBTITLE (unchanged) ---- */}
+          {/* ---- TYPED SUBTITLE ---- */}
           <p ref={typedRef} className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}>
             <TypedWord
               words={[
@@ -641,7 +867,7 @@ export default function Home() {
             />
           </p>
 
-          {/* ---- DESCRIPTION (unchanged) ---- */}
+          {/* ---- DESCRIPTION ---- */}
           <p
             ref={descriptionRef}
             className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
@@ -650,7 +876,7 @@ export default function Home() {
             analysis, security findings, bug detection, performance insights, and generated tests.
           </p>
 
-          {/* ---- CTA BUTTONS (unchanged) ---- */}
+          {/* ---- CTA BUTTONS ---- */}
           <div ref={ctasRef} className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}>
             {token ? (
               <Link
@@ -681,7 +907,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* ---- TRUST LINE (unchanged) ---- */}
+          {/* ---- TRUST LINE ---- */}
           <div
             ref={trustRef}
             className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
@@ -692,7 +918,7 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
-          {/* ---- STATS (unchanged) ---- */}
+          {/* ---- STATS ---- */}
           <div
             ref={statsRef}
             className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
@@ -702,7 +928,7 @@ export default function Home() {
             <StatPill value="<60s" label="Avg Audit Time" delayMs={700} />
           </div>
 
-          {/* ---- FEATURE LABEL (unchanged) ---- */}
+          {/* ---- FEATURE LABEL ---- */}
           <div
             ref={featureLabelRef}
             className="mb-4 flex items-center gap-3"
@@ -715,7 +941,7 @@ export default function Home() {
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--border-light)]" />
           </div>
 
-          {/* ---- FEATURE CARDS (unchanged) ---- */}
+          {/* ---- FEATURE CARDS ---- */}
           <div className={`grid ${compactClasses.featureGap} md:grid-cols-3`}>
             <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
               <Feature
@@ -742,14 +968,11 @@ export default function Home() {
               />
             </div>
           </div>
-
-          {/* ---- FOOTER TEXT (existing, but we'll move it to the new Footer component) ---- */}
-          {/* We remove the old footer text here because we have a full footer below */}
         </div>
       </div>
 
       {/* ============================================================ */}
-      {/*  NEW SECTIONS – appear below the hero, with scroll reveals    */}
+      {/*  NEW SECTIONS appear below the hero, with scroll reveals    */}
       {/* ============================================================ */}
 
       <div className="relative z-10 max-w-7xl mx-auto">
@@ -768,7 +991,7 @@ export default function Home() {
         <Footer />
       </div>
 
-      {/* ---- Global styles (unchanged) ---- */}
+      {/* ---- Global styles ---- */}
       <style>{`
         @keyframes scanline {
           0% { top: -2px; opacity: 0; }
@@ -790,6 +1013,9 @@ export default function Home() {
         }
         .animate-pulse-glow {
           animation: pulseGlow 3s ease-in-out infinite;
+        }
+        .animate-scan {
+          animation: scanline 2.5s ease-in-out infinite;
         }
       `}</style>
     </div>
