@@ -176,11 +176,12 @@ export default function Dashboard() {
     },
   ];
 
-  // Compact overrides for spacing and sizing. No top padding here —
-  // the Navbar is `sticky` (already in normal document flow, taking
-  // up its own real space), so adding pt-16/pt-14 on top of that was
-  // double-counting the navbar's height and creating the extra gap
-  // above "System online". None of the other pages add this padding.
+  // Compact overrides for spacing and sizing. Top padding is NOT part
+  // of this — Navbar is `position: sticky`, which already occupies
+  // its own space in the document flow, so adding pt-16/pt-14 here
+  // double-counted the navbar height and created the extra gap above
+  // "System online". Vertical spacing comes from mainPadding's own
+  // py-4/py-6 only, same as every other page.
   const compactClasses = compact
     ? {
         mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
@@ -197,7 +198,7 @@ export default function Dashboard() {
         analyzerDesc: "text-[9px] sm:text-[10px]",
         inputHeight: "h-10",
         inputPadding: "pl-7 pr-3",
-        buttonPadding: "px-4 py-2 text-[11px]",
+        buttonPadding: "px-4 py-2 text-[10px]",
         featuresGap: "gap-1.5",
         featuresTag: "px-2 py-1 text-[9px]",
         recentHeaderPadding: "px-4 py-3",
@@ -223,7 +224,7 @@ export default function Dashboard() {
         analyzerDesc: "text-[10px] sm:text-xs",
         inputHeight: "h-12",
         inputPadding: "pl-8 pr-4",
-        buttonPadding: "px-6 py-3 text-[11px]",
+        buttonPadding: "px-6 py-3 text-xs",
         featuresGap: "gap-2",
         featuresTag: "px-2.5 py-1.5 text-[9px]",
         recentHeaderPadding: "px-5 py-4",
@@ -271,6 +272,9 @@ export default function Dashboard() {
             ================================================= */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2">
+                {/* "online" status dot kept emerald — universal success
+                    semantics, same reasoning as the Navbar avatar dot
+                    and History's "Analysis complete" dot. */}
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   System online
@@ -408,6 +412,8 @@ export default function Dashboard() {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {/* "Live" kept emerald — same status-dot reasoning as
+                        "System online" above. */}
                     <span
                       key={statsKey}
                       className="hidden items-center gap-1.5 text-[9px] text-emerald-400 sm:flex"
@@ -417,7 +423,7 @@ export default function Dashboard() {
                     </span>
                     <button
                       onClick={() => navigate("/history")}
-                      className="rounded-lg px-2.5 py-1.5 text-[11px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft)]"
+                      className={`rounded-lg px-2.5 py-1.5 text-[9px] font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft)] ${compact ? "px-2 py-1" : ""}`}
                     >
                       View all →
                     </button>
@@ -497,8 +503,7 @@ export default function Dashboard() {
 }
 
 /* =========================================================
-   CODEVERITY LOGO – flat indigo tile (used only in loading),
-   matches the CodeVerityLogo used on every other page
+   CODEVERITY LOGO – flat indigo tile (used only in loading)
 ========================================================= */
 
 function CodeVerityLogo() {
@@ -528,10 +533,10 @@ function CodeVerityLogo() {
 }
 
 /* =========================================================
-   STAT CARD – single indigo accent (the three stats aren't
-   semantically different, so one flat color reads as more
-   intentional than three decorative hues — same reasoning as
-   ScoreCard in Result.jsx)
+   STAT CARD – single indigo accent (color prop removed — the three
+   stats aren't semantically different, so one flat accent reads as
+   more intentional than three decorative hues, same call as
+   Result.jsx's ScoreCard).
 ========================================================= */
 
 function StatCard({ label, value, sub, icon, delay, compact, statValueClass, statPaddingClass }) {
@@ -554,7 +559,7 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
           <p className={`mt-2 font-bold tabular-nums text-[var(--text-primary)] ${statValueClass}`}>
             {animated}
           </p>
-          <p className="mt-1 text-[var(--text-muted)] text-[9px]">{sub}</p>
+          <p className={`mt-1 text-[var(--text-muted)] text-[9px]`}>{sub}</p>
         </div>
         <div className={`flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-6 w-6 text-xs" : "h-8 w-8"}`}>
           {icon}
@@ -565,8 +570,9 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
 }
 
 /* =========================================================
-   REPORT ROW – grade colors aligned with History.jsx/Result.jsx
-   (C is yellow, not amber, everywhere now)
+   REPORT ROW – now accepts compact. Grade colors were already
+   correctly semantic multi-hue here (unlike the old hardcoded-green
+   grade box in Result.jsx) — left untouched.
 ========================================================= */
 
 function ReportRow({ report, onView, compact }) {
@@ -584,9 +590,9 @@ function ReportRow({ report, onView, compact }) {
         border: "border-blue-500/20",
       },
       C: {
-        text: "text-yellow-400",
-        bg: "bg-yellow-500/10",
-        border: "border-yellow-500/20",
+        text: "text-amber-400",
+        bg: "bg-amber-500/10",
+        border: "border-amber-500/20",
       },
       D: {
         text: "text-orange-400",
@@ -627,7 +633,7 @@ function ReportRow({ report, onView, compact }) {
   const repoFontSize = compact ? "text-[10px]" : "text-[11px]";
   const dateFontSize = "text-[9px]";
   const scoreBadgePadding = compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]";
-  const viewButtonPadding = compact ? "px-2 py-1 text-[11px]" : "px-3 py-1.5 text-[11px]";
+  const viewButtonPadding = compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[9px]";
 
   return (
     <div className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[var(--border-light)] hover:bg-[var(--bg-primary)] ${rowPadding}`}>
@@ -668,7 +674,7 @@ function ReportRow({ report, onView, compact }) {
 
       <button
         onClick={onView}
-        className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent)]/30 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${viewButtonPadding}`}
+        className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] ${viewButtonPadding}`}
       >
         View →
       </button>
@@ -711,7 +717,7 @@ function useCountUp(target, duration = 800) {
 }
 
 /* =========================================================
-   LOADING SCREEN – flat indigo logo
+   LOADING SCREEN – indigo logo + spinner
 ========================================================= */
 
 function LoadingScreen() {
