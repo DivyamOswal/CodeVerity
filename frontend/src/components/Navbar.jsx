@@ -97,6 +97,12 @@ function Icon({ name, size = 16, className = "" }) {
         <path d="M12 7v5l3 2" />
       </>
     ),
+    users: (
+  <>
+    <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" />
+    <path d="M4 22v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" />
+  </>
+),
     profile: (
       <>
         <circle cx="12" cy="8" r="3.5" />
@@ -431,6 +437,7 @@ export default function Navbar() {
           {isAuth && (
             <>
               <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
+              <NavigationItem to="/workspace" label="Workspace" icon="users" />
               <NavigationItem to="/history" label="History" icon="history" />
             </>
           )}
@@ -602,6 +609,19 @@ export default function Navbar() {
                 <Icon name="dashboard" size={compact ? 14 : 16} />
                 dashboard
               </NavLink>
+               <NavLink
+      to="/workspace"
+      className={({ isActive }) =>
+        `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+          isActive
+            ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+            : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+        }`
+      }
+    >
+      <Icon name="users" size={compact ? 14 : 16} />
+      workspace
+    </NavLink>
               <NavLink
                 to="/history"
                 className={({ isActive }) =>
