@@ -26,6 +26,7 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Result from "./components/Result";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
+import Workspace from "./pages/Workspace"; // ✅ NEW
 import OAuthSuccess from "./pages/OAuthSuccess";
 import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
@@ -179,6 +180,16 @@ function Layout() {
             element={
               <ProtectedRoute>
                 <Dashboard />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* ✅ NEW: Workspace route */}
+          <Route
+            path="/workspace"
+            element={
+              <ProtectedRoute>
+                <Workspace />
               </ProtectedRoute>
             }
           />
