@@ -140,7 +140,7 @@ export default function Settings() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] pt-16">
-        <div className="w-10 h-10 border-4 border-green-500 border-t-transparent rounded-full animate-spin" />
+        <div className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
@@ -158,12 +158,13 @@ export default function Settings() {
     name.trim() !== (user?.name ?? "") ||
     email.trim() !== (user?.email ?? "");
 
-  // Compact overrides
+  // Compact overrides – now includes top padding for navbar
   const compactClasses = compact
     ? {
-        container: "pt-14 px-3 py-4 sm:px-4",
+        container: "px-3 py-4 sm:px-4",
+        topPadding: "pt-14",
         headerMargin: "mb-4",
-        heading: "text-xl",
+        heading: "text-lg sm:text-xl",
         subHeading: "text-[10px]",
         sidebarWidth: "md:w-36",
         sidebarButton: "px-3 py-2 text-xs",
@@ -187,9 +188,10 @@ export default function Settings() {
         toastSize: "text-xs px-4 py-2",
       }
     : {
-        container: "pt-16 px-4 py-6 sm:px-6 lg:px-8",
+        container: "px-4 py-6 sm:px-6 lg:px-8",
+        topPadding: "pt-16",
         headerMargin: "mb-6",
-        heading: "text-2xl",
+        heading: "text-xl sm:text-2xl",
         subHeading: "text-xs",
         sidebarWidth: "md:w-44",
         sidebarButton: "px-4 py-2.5 text-sm",
@@ -214,238 +216,246 @@ export default function Settings() {
       };
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.container}`}>
-      <div className={`max-w-7xl mx-auto ${compact ? "space-y-4" : "space-y-6"}`}>
-        {/* HEADER */}
-        <div className={compactClasses.headerMargin}>
-          <h1 className={`font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>Settings</h1>
-          <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>Manage your account and preferences</p>
-        </div>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}>
+      <div className={`mx-auto w-full max-w-7xl ${compactClasses.container}`}>
+        <div className={`${compact ? "space-y-4" : "space-y-6"}`}>
+          {/* HEADER – matches Dashboard/Profile style */}
+          <div className={compactClasses.headerMargin}>
+            <div className="flex items-center gap-2">
+              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                Preferences
+              </span>
+            </div>
+            <h1 className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
+              Settings
+            </h1>
+            <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>
+              Manage your account and preferences
+            </p>
+          </div>
 
-        {/* LAYOUT */}
-        <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
-          {/* SIDEBAR */}
-          <nav className={`flex md:flex-col gap-1 ${compactClasses.sidebarWidth} shrink-0`} aria-label="Settings tabs">
-            {TABS.map((t) => (
-              <button
-                key={t}
-                onClick={() => setTab(t)}
-                className={`${compactClasses.sidebarButton} font-medium text-left transition-all rounded-xl
-                  ${
-                    tab === t
-                      ? "bg-[#238636]/20 text-[#3fb950] border border-[#238636]/40"
+          {/* LAYOUT */}
+          <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
+            {/* SIDEBAR */}
+            <nav className={`flex md:flex-col gap-1 ${compactClasses.sidebarWidth} shrink-0`} aria-label="Settings tabs">
+              {TABS.map((t) => (
+                <button
+                  key={t}
+                  onClick={() => setTab(t)}
+                  className={`${compactClasses.sidebarButton} font-medium text-left transition-all rounded-xl
+                    ${tab === t
+                      ? "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30"
                       : t === "Danger Zone"
-                      ? "text-red-400 hover:bg-white/5 hover:text-red-300"
+                      ? "text-red-400 hover:bg-red-500/10 hover:text-red-300"
                       : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                  }`}
-                aria-current={tab === t ? "page" : undefined}
-              >
-                {tabIcon(t)} {t}
-              </button>
-            ))}
-          </nav>
+                    }`}
+                  aria-current={tab === t ? "page" : undefined}
+                >
+                  {tabIcon(t)} {t}
+                </button>
+              ))}
+            </nav>
 
-          {/* PANEL */}
-          <div className={`flex-1 ${compact ? "space-y-4" : "space-y-5"}`}>
-            {/* ACCOUNT */}
-            {tab === "Account" && (
-              <Section title="Public Profile" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
-                <div className={`flex items-center ${compact ? "gap-3 mb-3" : "gap-4 mb-5"}`}>
-                  <div className={`rounded-2xl bg-gradient-to-br from-green-500 to-emerald-600
-                    flex items-center justify-center font-bold text-white shadow-lg shadow-green-500/20
-                    ${compactClasses.avatarSize}`}>
-                    {initials}
+            {/* PANEL */}
+            <div className={`flex-1 ${compact ? "space-y-4" : "space-y-5"}`}>
+              {/* ACCOUNT */}
+              {tab === "Account" && (
+                <Section title="Public Profile" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                  <div className={`flex items-center ${compact ? "gap-3 mb-3" : "gap-4 mb-5"}`}>
+                    <div className={`rounded-2xl bg-[var(--accent)] flex items-center justify-center font-bold text-[var(--accent-contrast,#ffffff)] shadow-lg shadow-[var(--accent-soft-strong)] ${compactClasses.avatarSize}`}>
+                      {initials}
+                    </div>
+                    <div>
+                      <p className={`font-medium text-[var(--text-primary)] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
+                      <p className={`text-[var(--text-muted)] ${compactClasses.userEmail}`}>{email}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className={`font-medium text-[var(--text-primary)] ${compactClasses.avatarText}`}>{name || "Your Name"}</p>
-                    <p className={`text-[var(--text-muted)] ${compactClasses.userEmail}`}>{email}</p>
+
+                  <Field label="Full Name" compact={compact} labelClass={compactClasses.fieldLabel}>
+                    <Input
+                      value={name}
+                      onChange={setName}
+                      placeholder="Your full name"
+                      compact={compact}
+                      padding={compactClasses.inputPadding}
+                    />
+                  </Field>
+
+                  <Field label="Email Address" compact={compact} labelClass={compactClasses.fieldLabel}>
+                    <Input
+                      value={email}
+                      onChange={setEmail}
+                      placeholder="you@example.com"
+                      type="email"
+                      compact={compact}
+                      padding={compactClasses.inputPadding}
+                    />
+                  </Field>
+
+                  <div className="flex items-center justify-between">
+                    {profileDirty && <p className="text-xs text-amber-400">Unsaved changes</p>}
+                    <div className="ml-auto">
+                      <SaveButton
+                        onClick={saveProfile}
+                        loading={saving}
+                        disabled={!profileDirty}
+                        compact={compact}
+                        buttonClass={compactClasses.saveButton}
+                      />
+                    </div>
                   </div>
-                </div>
+                </Section>
+              )}
 
-                <Field label="Full Name" compact={compact} labelClass={compactClasses.fieldLabel}>
-                  <Input
-                    value={name}
-                    onChange={setName}
-                    placeholder="Your full name"
-                    compact={compact}
-                    padding={compactClasses.inputPadding}
-                  />
-                </Field>
+              {/* SECURITY */}
+              {tab === "Security" && (
+                <Section title="Change Password" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                  <Field label="Current Password" compact={compact} labelClass={compactClasses.fieldLabel}>
+                    <Input
+                      value={oldPass}
+                      onChange={setOldPass}
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="current-password"
+                      compact={compact}
+                      padding={compactClasses.inputPadding}
+                    />
+                  </Field>
+                  <Field label="New Password" compact={compact} labelClass={compactClasses.fieldLabel}>
+                    <Input
+                      value={newPass}
+                      onChange={setNewPass}
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      compact={compact}
+                      padding={compactClasses.inputPadding}
+                    />
+                  </Field>
+                  <Field label="Confirm New Password" compact={compact} labelClass={compactClasses.fieldLabel}>
+                    <Input
+                      value={confPass}
+                      onChange={setConfPass}
+                      type="password"
+                      placeholder="••••••••"
+                      autoComplete="new-password"
+                      compact={compact}
+                      padding={compactClasses.inputPadding}
+                    />
+                    {newPass && confPass && newPass !== confPass && (
+                      <p className="text-red-400 text-xs mt-1" role="alert">
+                        Passwords don't match
+                      </p>
+                    )}
+                  </Field>
 
-                <Field label="Email Address" compact={compact} labelClass={compactClasses.fieldLabel}>
-                  <Input
-                    value={email}
-                    onChange={setEmail}
-                    placeholder="you@example.com"
-                    type="email"
-                    compact={compact}
-                    padding={compactClasses.inputPadding}
-                  />
-                </Field>
+                  <PasswordStrength password={newPass} compact={compact} />
 
-                <div className="flex items-center justify-between">
-                  {profileDirty && <p className="text-xs text-amber-400">Unsaved changes</p>}
-                  <div className="ml-auto">
+                  <div className="flex justify-end">
                     <SaveButton
-                      onClick={saveProfile}
+                      onClick={changePassword}
                       loading={saving}
-                      disabled={!profileDirty}
+                      label="Update Password"
+                      disabled={!oldPass || !newPass || !confPass}
                       compact={compact}
                       buttonClass={compactClasses.saveButton}
                     />
                   </div>
-                </div>
-              </Section>
-            )}
+                </Section>
+              )}
 
-            {/* SECURITY */}
-            {tab === "Security" && (
-              <Section title="Change Password" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
-                <Field label="Current Password" compact={compact} labelClass={compactClasses.fieldLabel}>
-                  <Input
-                    value={oldPass}
-                    onChange={setOldPass}
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="current-password"
-                    compact={compact}
-                    padding={compactClasses.inputPadding}
-                  />
-                </Field>
-                <Field label="New Password" compact={compact} labelClass={compactClasses.fieldLabel}>
-                  <Input
-                    value={newPass}
-                    onChange={setNewPass}
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    compact={compact}
-                    padding={compactClasses.inputPadding}
-                  />
-                </Field>
-                <Field label="Confirm New Password" compact={compact} labelClass={compactClasses.fieldLabel}>
-                  <Input
-                    value={confPass}
-                    onChange={setConfPass}
-                    type="password"
-                    placeholder="••••••••"
-                    autoComplete="new-password"
-                    compact={compact}
-                    padding={compactClasses.inputPadding}
-                  />
-                  {newPass && confPass && newPass !== confPass && (
-                    <p className="text-red-400 text-xs mt-1" role="alert">
-                      Passwords don't match
-                    </p>
-                  )}
-                </Field>
+              {/* APPEARANCE */}
+              {tab === "Appearance" && (
+                <Section title="Display Preferences" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                  <Field label="Theme" compact={compact} labelClass={compactClasses.fieldLabel}>
+                    <div className="flex gap-3">
+                      {["dark", "light", "system"].map((t) => (
+                        <button
+                          key={t}
+                          onClick={() => setTheme(t)}
+                          className={`flex-1 ${compactClasses.themeButton} capitalize border rounded-xl transition
+                            ${theme === t
+                              ? "bg-[var(--accent-soft)] border-[var(--accent)]/40 text-[var(--accent)]"
+                              : "bg-[var(--bg-primary)] border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                            }`}
+                        >
+                          {t === "dark" ? "🌙" : t === "light" ? "☀️" : "💻"} {t}
+                        </button>
+                      ))}
+                    </div>
+                  </Field>
 
-                <PasswordStrength password={newPass} compact={compact} />
-
-                <div className="flex justify-end">
-                  <SaveButton
-                    onClick={changePassword}
-                    loading={saving}
-                    label="Update Password"
-                    disabled={!oldPass || !newPass || !confPass}
+                  <Toggle
+                    label="Compact View"
+                    description="Show report cards in a condensed layout"
+                    value={compact}
+                    onChange={setCompact}
                     compact={compact}
-                    buttonClass={compactClasses.saveButton}
+                    textClass={compactClasses.toggleText}
+                    descClass={compactClasses.toggleDesc}
                   />
-                </div>
-              </Section>
-            )}
+                  <Toggle
+                    label="Show Score Bars"
+                    description="Display score progress bars on report cards"
+                    value={showScores}
+                    onChange={setShowScores}
+                    compact={compact}
+                    textClass={compactClasses.toggleText}
+                    descClass={compactClasses.toggleDesc}
+                  />
 
-            {/* APPEARANCE */}
-            {tab === "Appearance" && (
-              <Section title="Display Preferences" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
-                <Field label="Theme" compact={compact} labelClass={compactClasses.fieldLabel}>
-                  <div className="flex gap-3">
-                    {["dark", "light", "system"].map((t) => (
-                      <button
-                        key={t}
-                        onClick={() => setTheme(t)}
-                        className={`flex-1 ${compactClasses.themeButton} capitalize border rounded-xl transition
-                          ${
-                            theme === t
-                              ? "bg-[#238636]/20 border-[#238636]/40 text-[#3fb950]"
-                              : "bg-white/5 border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                          }`}
-                      >
-                        {t === "dark" ? "🌙" : t === "light" ? "☀️" : "💻"} {t}
-                      </button>
-                    ))}
+                  <div className="flex justify-end">
+                    <SaveButton
+                      onClick={saveAppearance}
+                      loading={false}
+                      label="Save Preferences"
+                      compact={compact}
+                      buttonClass={compactClasses.saveButton}
+                    />
                   </div>
-                </Field>
+                </Section>
+              )}
 
-                <Toggle
-                  label="Compact View"
-                  description="Show report cards in a condensed layout"
-                  value={compact}
-                  onChange={setCompact}
-                  compact={compact}
-                  textClass={compactClasses.toggleText}
-                  descClass={compactClasses.toggleDesc}
-                />
-                <Toggle
-                  label="Show Score Bars"
-                  description="Display score progress bars on report cards"
-                  value={showScores}
-                  onChange={setShowScores}
-                  compact={compact}
-                  textClass={compactClasses.toggleText}
-                  descClass={compactClasses.toggleDesc}
-                />
-
-                <div className="flex justify-end">
-                  <SaveButton
-                    onClick={saveAppearance}
-                    loading={false}
-                    label="Save Preferences"
-                    compact={compact}
-                    buttonClass={compactClasses.saveButton}
-                  />
-                </div>
-              </Section>
-            )}
-
-            {/* DANGER ZONE */}
-            {tab === "Danger Zone" && (
-              <Section title="Danger Zone" danger compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
-                <div className={`space-y-4 ${compact ? "space-y-3" : ""}`}>
-                  <DangerRow
-                    title="Clear Report History"
-                    description="Permanently delete all your past analysis reports."
-                    label="Clear History"
-                    onClick={clearHistory}
-                    compact={compact}
-                    padding={compactClasses.dangerRowPadding}
-                    titleClass={compactClasses.dangerTitle}
-                    descClass={compactClasses.dangerDesc}
-                    buttonClass={compactClasses.dangerButton}
-                  />
-                  <DangerRow
-                    title="Delete Account"
-                    description="Permanently delete your account, reports, and all associated data."
-                    label="Delete Account"
-                    onClick={deleteAccount}
-                    bold
-                    compact={compact}
-                    padding={compactClasses.dangerRowPadding}
-                    titleClass={compactClasses.dangerTitle}
-                    descClass={compactClasses.dangerDesc}
-                    buttonClass={compactClasses.dangerButton}
-                  />
-                </div>
-              </Section>
-            )}
+              {/* DANGER ZONE */}
+              {tab === "Danger Zone" && (
+                <Section title="Danger Zone" danger compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
+                  <div className={`space-y-4 ${compact ? "space-y-3" : ""}`}>
+                    <DangerRow
+                      title="Clear Report History"
+                      description="Permanently delete all your past analysis reports."
+                      label="Clear History"
+                      onClick={clearHistory}
+                      compact={compact}
+                      padding={compactClasses.dangerRowPadding}
+                      titleClass={compactClasses.dangerTitle}
+                      descClass={compactClasses.dangerDesc}
+                      buttonClass={compactClasses.dangerButton}
+                    />
+                    <DangerRow
+                      title="Delete Account"
+                      description="Permanently delete your account, reports, and all associated data."
+                      label="Delete Account"
+                      onClick={deleteAccount}
+                      bold
+                      compact={compact}
+                      padding={compactClasses.dangerRowPadding}
+                      titleClass={compactClasses.dangerTitle}
+                      descClass={compactClasses.dangerDesc}
+                      buttonClass={compactClasses.dangerButton}
+                    />
+                  </div>
+                </Section>
+              )}
+            </div>
           </div>
-        </div>
 
-        {/* FOOTER */}
-        <div className={`flex items-center justify-center gap-2 py-3 text-[var(--border-light)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
-          <span>CodeVerity</span>
-          <span>•</span>
-          <span>AI Repository Intelligence</span>
+          {/* FOOTER */}
+          <div className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
+            <span>CodeVerity</span>
+            <span>•</span>
+            <span>AI Repository Intelligence</span>
+          </div>
         </div>
       </div>
 
@@ -457,10 +467,9 @@ export default function Settings() {
           className={`fixed bottom-6 right-6 rounded-xl shadow-2xl font-medium
             transition-all duration-300 z-50
             ${compactClasses.toastSize}
-            ${
-              toast.type === "error"
-                ? "bg-red-500/90 text-white border border-red-400/30"
-                : "bg-[#238636] text-white border border-[#3fb950]/30"
+            ${toast.type === "error"
+              ? "bg-red-500/90 text-white border border-red-400/30"
+              : "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] border border-[var(--accent)]/30"
             }`}
         >
           {toast.type === "error" ? "⚠️" : "✅"} {toast.msg}
@@ -470,7 +479,7 @@ export default function Settings() {
   );
 }
 
-/*  UI helpers – now accept compact and use CSS variables  */
+/*  UI helpers – now use CSS variables  */
 
 function Section({ title, children, danger, compact, padding, gap }) {
   return (
@@ -504,7 +513,7 @@ function Input({ value, onChange, type = "text", placeholder, autoComplete, comp
       placeholder={placeholder}
       autoComplete={autoComplete}
       className={`w-full rounded-xl bg-[var(--bg-input)] border border-[var(--border-light)] text-[var(--text-primary)]
-        placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#238636]/50 transition ${padding}`}
+        placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition ${padding}`}
     />
   );
 }
@@ -521,7 +530,7 @@ function Toggle({ label, description, value, onChange, compact, textClass, descC
         aria-checked={value}
         onClick={() => onChange(!value)}
         className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0
-          ${value ? "bg-[#238636]" : "bg-[var(--border-light)]"}`}
+          ${value ? "bg-[var(--accent)]" : "bg-[var(--border-light)]"}`}
       >
         <span
           className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow
@@ -538,10 +547,9 @@ function SaveButton({ onClick, loading, label = "Save Changes", disabled = false
       onClick={onClick}
       disabled={loading || disabled}
       className={`rounded-xl font-semibold
-        bg-gradient-to-r from-[#238636] to-[#2ea043]
-        hover:from-[#2ea043] hover:to-[#3fb950]
-        disabled:opacity-40 disabled:cursor-not-allowed transition-all hover:scale-105
-        text-white shadow-lg shadow-green-500/20 ${buttonClass}`}
+        bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)]
+        hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed
+        transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)] ${buttonClass}`}
     >
       {loading ? (
         <span className="flex items-center gap-2">

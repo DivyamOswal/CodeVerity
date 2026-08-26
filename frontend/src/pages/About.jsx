@@ -1,5 +1,7 @@
+import { useRef } from "react";
 import { Link } from "react-router-dom";
 import Reveal from "../components/Reveal";
+import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
 // Local mini components — same pattern as CodeInput/GithubAnalyzer
@@ -93,6 +95,67 @@ const stats = [
   { value: "<60s", label: "Avg Audit Time" },
 ];
 
+// Counts the numeric part of a stat up from 0 the moment it scrolls
+// into view, keeping any prefix/suffix ("<", "%", "+") fixed. Runs
+// independently of the parent Reveal fade — Reveal handles the block
+// entrance, this handles the number itself. Same
+// prefers-reduced-motion pattern as Reveal.jsx / Pricing's price
+// animation: skip straight to the static value if that's set.
+function StatItem({ value, label }) {
+  const numRef = useRef(null);
+  const containerRef = useRef(null);
+
+  useGSAP(
+    () => {
+      const el = numRef.current;
+      const match = value.match(/\d+/);
+      if (!el || !match) return;
+
+      const target = parseInt(match[0], 10);
+      const prefix = value.slice(0, match.index);
+      const suffix = value.slice(match.index + match[0].length);
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const counter = { val: 0 };
+        gsap.to(counter, {
+          val: target,
+          duration: 1.1,
+          ease: "power2.out",
+          scrollTrigger: {
+            trigger: containerRef.current,
+            start: "top 88%",
+            toggleActions: "play none none none",
+          },
+          onUpdate: () => {
+            el.textContent = `${prefix}${Math.round(counter.val)}${suffix}`;
+          },
+        });
+      });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        el.textContent = value;
+      });
+
+      return () => mm.revert();
+    },
+    { scope: containerRef }
+  );
+
+  return (
+    <div
+      ref={containerRef}
+      className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-5 text-center"
+    >
+      <p ref={numRef} className="font-mono text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+        {value}
+      </p>
+      <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{label}</p>
+    </div>
+  );
+}
+
 export default function About() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
@@ -128,16 +191,11 @@ export default function About() {
           </p>
         </Reveal>
 
-        {/* STATS — was fadeUp, 0.1s delay */}
+        {/* STATS — was fadeUp, 0.1s delay. Numbers count up on scroll-in
+            via StatItem, independent of this Reveal's fade/rise. */}
         <Reveal className="mt-14 grid grid-cols-3 gap-3 sm:gap-4" delay={0.1} duration={0.6}>
           {stats.map((s) => (
-            <div
-              key={s.label}
-              className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-5 text-center"
-            >
-              <p className="font-mono text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">{s.value}</p>
-              <p className="mt-1 text-[10px] uppercase tracking-wider text-[var(--text-muted)]">{s.label}</p>
-            </div>
+            <StatItem key={s.label} value={s.value} label={s.label} />
           ))}
         </Reveal>
 

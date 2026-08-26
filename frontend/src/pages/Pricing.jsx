@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
 import Reveal from "../components/Reveal";
+import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
 // Built on the existing Indigo Slate theme (same CSS vars as Navbar):
@@ -97,6 +98,35 @@ function Toggle({ options, value, onChange }) {
 function PlanCard({ plan, cycle, currency, onSelect }) {
   const price = plan[cycle][currency];
   const isFree = price === 0;
+  const priceRef = useRef(null);
+
+  // Interaction-driven GSAP: Reveal above only handles scroll-entrance —
+  // this handles the moment the user actually flips monthly/yearly or
+  // INR/USD, which previously just snapped to the new number with no
+  // motion. Skips the animation for prefers-reduced-motion, same
+  // pattern as Reveal.jsx.
+  useGSAP(
+    () => {
+      if (!priceRef.current) return;
+
+      const mm = gsap.matchMedia();
+
+      mm.add("(prefers-reduced-motion: no-preference)", () => {
+        gsap.fromTo(
+          priceRef.current,
+          { opacity: 0, y: -6, scale: 0.96 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power2.out" }
+        );
+      });
+
+      mm.add("(prefers-reduced-motion: reduce)", () => {
+        gsap.set(priceRef.current, { opacity: 1, y: 0, scale: 1 });
+      });
+
+      return () => mm.revert();
+    },
+    { dependencies: [price], scope: priceRef }
+  );
 
   return (
     <div
@@ -118,7 +148,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
       <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">{plan.tagline}</p>
 
       <div className="mt-6 flex items-baseline gap-1.5">
-        <span className="text-4xl font-bold tracking-tight text-[var(--text-primary)]">
+        <span ref={priceRef} className="text-4xl font-bold tracking-tight text-[var(--text-primary)]">
           {formatPrice(price, currency)}
         </span>
         {!isFree && (
