@@ -1,3 +1,4 @@
+// backend/models/Report.js
 import mongoose from "mongoose";
 
 // ---- Existing sub‑schemas ----
@@ -47,7 +48,7 @@ const SecretSchema = new mongoose.Schema(
 const TechDebtIssueSchema = new mongoose.Schema(
   {
     file: String,
-    severity: { type: String, enum: ["low", "medium", "high", "critical"] }, // changed from ["minor", "major", "critical"]
+    severity: { type: String, enum: ["low", "medium", "high", "critical"] },
     effort: { type: Number, default: 0 },
     description: String,
   },
@@ -72,18 +73,26 @@ const GraphEdgeSchema = new mongoose.Schema(
   { _id: false }
 );
 
+// ---- Main Report Schema ----
 const ReportSchema = new mongoose.Schema(
   {
-    // ---- Existing fields ----
+    // ---- User & Workspace ----
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
+      required: true,
+    },
+    workspaceId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Workspace",
       required: true,
     },
     repoUrl: {
       type: String,
       required: true,
     },
+
+    // ---- Existing fields (AI analysis) ----
     summary: String,
     architecture: {
       type: [ArchitectureSchema],
@@ -117,7 +126,7 @@ const ReportSchema = new mongoose.Schema(
     },
     finalVerdict: String,
 
-    // ---- NEW Phase 1 fields ----
+    // ---- Phase 1 Enhanced Fields ----
     healthScore: {
       overall: { type: Number, default: 0 },
       grade: { type: String, default: "N/A" },
@@ -159,9 +168,12 @@ const ReportSchema = new mongoose.Schema(
       },
     },
 
-    // Keep source code (optional) – already present in your code? 
-    // If not, we add it now for consistency with the controller:
+    // ---- Source code (optional) ----
     _sourceCode: { type: String, default: "" },
+
+    // ---- Token usage metadata ----
+    tokensUsed: { type: Number, default: 0 },
+    tokensRemaining: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
