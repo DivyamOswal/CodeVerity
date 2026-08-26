@@ -1,81 +1,109 @@
 // backend/controllers/dashboardController.js
 import Report from "../models/Report.js";
 import User from "../models/User.js";
+import Workspace from "../models/Workspace.js";
 
 export const getDashboardData = async (req, res) => {
   try {
     const userId = req.user.id;
+    const workspaceId = req.user.workspaceId;
 
-    // Fetch all the reports
-    const reports = await Report.find({ userId })
+    // Fetch workspace (for member count, name, etc.)
+    const workspace = await Workspace.findById(workspaceId)
+      .select("name members totalScans totalReports")
+      .lean();
+
+    if (!workspace) {
+      // Fallback: if no workspace, create one (shouldn't happen)
+      return res.status(404).json({ error: "Workspace not found. Please contact support." });
+    }
+
+    // Fetch all reports for this workspace
+    const reports = await Report.find({ workspaceId })
       .sort({ createdAt: -1 })
       .lean();
 
     const totalScans = reports.length;
-    let avgScore    = 0;
+
+    let avgScore = 0;
     let avgSecurity = 0;
-    let avgDevops   = 0;
+    let avgDevops = 0;
 
     if (totalScans > 0) {
       const sum = reports.reduce(
         (acc, r) => {
           const s = r.scores ?? {};
-          acc.quality  += s.codeQuality    ?? 0;
-          acc.security += s.security       ?? 0;
-          acc.perf     += s.performance    ?? 0;
-          acc.maint    += s.maintainability ?? 0;
+          acc.quality += s.codeQuality ?? 0;
+          acc.security += s.security ?? 0;
+          acc.perf += s.performance ?? 0;
+          acc.maint += s.maintainability ?? 0;
           return acc;
         },
         { quality: 0, security: 0, perf: 0, maint: 0 }
       );
 
-      avgScore    = Math.round((sum.quality + sum.perf + sum.maint) / (totalScans * 3));
+      avgScore = Math.round((sum.quality + sum.perf + sum.maint) / (totalScans * 3));
       avgSecurity = Math.round(sum.security / totalScans);
-      avgDevops   = Math.round((sum.perf + sum.maint) / (totalScans * 2));
+      avgDevops = Math.round((sum.perf + sum.maint) / (totalScans * 2));
     }
 
     const recentReports = reports.slice(0, 5).map((r) => ({
-      _id:             r._id,
-      repoUrl:         r.repoUrl,
-      grade:           r.grade,
-      scores:          r.scores,
-      summary:         r.summary,
-      architecture:    r.architecture,
-      bugs:            r.bugs,
-      securityIssues:  r.securityIssues,
-      futureRoadmap:   r.futureRoadmap,
-      toolsAndPackages:r.toolsAndPackages,
-      finalVerdict:    r.finalVerdict,
-      createdAt:       r.createdAt,
+      _id: r._id,
+      repoUrl: r.repoUrl,
+      grade: r.grade,
+      scores: r.scores,
+      summary: r.summary,
+      architecture: r.architecture,
+      bugs: r.bugs,
+      securityIssues: r.securityIssues,
+      futureRoadmap: r.futureRoadmap,
+      toolsAndPackages: r.toolsAndPackages,
+      finalVerdict: r.finalVerdict,
+      createdAt: r.createdAt,
     }));
 
     const gradeDistribution = reports.reduce((acc, r) => {
       const g = (r.grade ?? "N/A")[0];
-      acc[g]  = (acc[g] ?? 0) + 1;
+      acc[g] = (acc[g] ?? 0) + 1;
       return acc;
     }, {});
 
-    const user = await User.findById(userId).select("name email tokensRemaining totalTokensUsed plan createdAt").lean();
+    // Get current user (for token/scan status)
+    const user = await User.findById(userId)
+      .select("name email tokensRemaining totalTokensUsed scansUsedThisMonth scansLimit plan role")
+      .lean();
 
     res.json({
+      // ---- User info (compatible with frontend) ----
       user: {
-        id:    userId,
-        name:  user?.name  ?? "",
+        id: userId,
+        name: user?.name ?? "",
         email: user?.email ?? req.user.email ?? "",
         tokensRemaining: user?.tokensRemaining ?? 0,
         totalTokensUsed: user?.totalTokensUsed ?? 0,
+        scansUsedThisMonth: user?.scansUsedThisMonth ?? 0,
+        scansLimit: user?.scansLimit ?? 0,
         plan: user?.plan ?? "starter",
+        role: user?.role ?? "member",
       },
+      // ---- Workspace info (new) ----
+      workspace: {
+        id: workspace._id,
+        name: workspace.name,
+        memberCount: workspace.members?.length ?? 0,
+        totalScans: workspace.totalScans ?? totalScans,
+      },
+      // ---- Stats (same structure as before) ----
       stats: {
         totalScans,
         avgScore,
-        securityScore:   avgSecurity,
-        devopsScore:     avgDevops,
+        securityScore: avgSecurity,
+        devopsScore: avgDevops,
         gradeDistribution,
       },
+      // ---- Recent reports (same structure) ----
       recentReports,
     });
-
   } catch (err) {
     console.error("Dashboard fetch failed:", err.message);
     res.status(500).json({ error: "Dashboard fetch failed" });
