@@ -3,7 +3,15 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
-import axios from "../api/axios";
+import {
+  getWorkspace,
+  updateWorkspace,
+  getMembers,
+  addMember,
+  removeMember,
+  updateMemberRole,
+  leaveWorkspace,
+} from "../api/workspace";
 
 export default function Workspace() {
   const { token, user } = useAuth();
@@ -22,7 +30,6 @@ export default function Workspace() {
   const [inviteRole, setInviteRole] = useState("member");
   const [submitting, setSubmitting] = useState(false);
 
-  // ── Load workspace data ──────────────────────────────────────
   useEffect(() => {
     if (!token) {
       navigate("/login");
@@ -35,8 +42,8 @@ export default function Workspace() {
     try {
       setLoading(true);
       const [workspaceRes, membersRes] = await Promise.all([
-        axios.get("/workspace"),
-        axios.get("/workspace/members"),
+        getWorkspace(),
+        getMembers(),
       ]);
       setWorkspace(workspaceRes.data.workspace);
       setMembers(membersRes.data.members || []);
@@ -49,12 +56,11 @@ export default function Workspace() {
     }
   };
 
-  // ── Update workspace name ──────────────────────────────────
   const updateWorkspaceName = async () => {
     if (!newName.trim()) return;
     try {
       setSubmitting(true);
-      const res = await axios.put("/workspace", { name: newName.trim() });
+      const res = await updateWorkspace({ name: newName.trim() });
       setWorkspace(res.data.workspace);
       setEditingName(false);
       setSuccess("Workspace name updated");
@@ -66,18 +72,13 @@ export default function Workspace() {
     }
   };
 
-  // ── Add member ──────────────────────────────────────────────
-  const addMember = async (e) => {
+  const handleAddMember = async (e) => {
     e.preventDefault();
     if (!inviteEmail.trim()) return;
     try {
       setSubmitting(true);
-      await axios.post("/workspace/members", {
-        email: inviteEmail.trim(),
-        role: inviteRole,
-      });
-      // Reload members
-      const membersRes = await axios.get("/workspace/members");
+      await addMember({ email: inviteEmail.trim(), role: inviteRole });
+      const membersRes = await getMembers();
       setMembers(membersRes.data.members || []);
       setShowAddMember(false);
       setInviteEmail("");
@@ -91,11 +92,10 @@ export default function Workspace() {
     }
   };
 
-  // ── Remove member ───────────────────────────────────────────
-  const removeMember = async (userId) => {
+  const handleRemoveMember = async (userId) => {
     if (!window.confirm("Remove this member from the workspace?")) return;
     try {
-      await axios.delete(`/workspace/members/${userId}`);
+      await removeMember(userId);
       setMembers(members.filter(m => m.userId._id !== userId));
       setSuccess("Member removed");
       setTimeout(() => setSuccess(null), 3000);
@@ -104,10 +104,9 @@ export default function Workspace() {
     }
   };
 
-  // ── Update member role ──────────────────────────────────────
-  const updateRole = async (userId, role) => {
+  const handleUpdateRole = async (userId, role) => {
     try {
-      await axios.put(`/workspace/members/${userId}/role`, { role });
+      await updateMemberRole(userId, role);
       setMembers(members.map(m => {
         if (m.userId._id === userId) {
           return { ...m, role };
@@ -121,18 +120,17 @@ export default function Workspace() {
     }
   };
 
-  // ── Leave workspace ──────────────────────────────────────────
-  const leaveWorkspace = async () => {
+  const handleLeaveWorkspace = async () => {
     if (!window.confirm("Are you sure you want to leave this workspace?")) return;
     try {
-      await axios.post("/workspace/leave");
+      await leaveWorkspace();
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.error || "Failed to leave workspace");
     }
   };
 
-  // ── Compact classes ──────────────────────────────────────────
+  // Compact classes (unchanged)
   const compactClasses = compact
     ? {
         container: "px-3 py-4 sm:px-4",
@@ -294,7 +292,7 @@ export default function Workspace() {
                   {members.map((member) => {
                     const isMe = member.userId._id === user?.id;
                     const isOwner = member.role === "owner";
-                    const canEdit = !isMe || (isMe && isOwner); // you can't change your own role, but you can remove yourself if not last owner
+                    const canEdit = !isMe || (isMe && isOwner);
 
                     return (
                       <tr key={member.userId._id} className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30">
@@ -305,8 +303,8 @@ export default function Workspace() {
                         <td className={`${compactClasses.tableCell}`}>
                           <select
                             value={member.role}
-                            onChange={(e) => updateRole(member.userId._id, e.target.value)}
-                            disabled={!canEdit || isOwner} // only owner can change roles
+                            onChange={(e) => handleUpdateRole(member.userId._id, e.target.value)}
+                            disabled={!canEdit || isOwner}
                             className={`rounded border border-[var(--border-light)] bg-[var(--bg-input)] px-2 py-1 text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] disabled:opacity-60 ${compact ? "text-[9px]" : "text-[10px]"}`}
                           >
                             <option value="owner">Owner</option>
@@ -318,7 +316,7 @@ export default function Workspace() {
                         <td className={`${compactClasses.tableCell} text-right`}>
                           {!isMe && (
                             <button
-                              onClick={() => removeMember(member.userId._id)}
+                              onClick={() => handleRemoveMember(member.userId._id)}
                               className={`rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 transition hover:bg-red-500/20 ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[10px]"}`}
                             >
                               Remove
@@ -326,7 +324,7 @@ export default function Workspace() {
                           )}
                           {isMe && (
                             <button
-                              onClick={leaveWorkspace}
+                              onClick={handleLeaveWorkspace}
                               className={`rounded-lg border border-red-500/30 bg-red-500/10 text-red-400 transition hover:bg-red-500/20 ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[10px]"}`}
                             >
                               Leave
@@ -349,7 +347,7 @@ export default function Workspace() {
                 <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-xs"}`}>
                   Enter the email of an existing CodeVerity user.
                 </p>
-                <form onSubmit={addMember} className="mt-4 space-y-4">
+                <form onSubmit={handleAddMember} className="mt-4 space-y-4">
                   <div>
                     <label className={`block font-mono text-[11px] uppercase tracking-wide text-[var(--text-muted)] ${compact ? "text-[10px]" : ""}`}>
                       Email
