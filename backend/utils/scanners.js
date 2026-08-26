@@ -166,11 +166,11 @@ export function calculateTechDebt(issues) {
 
 export async function generateArchitectureGraph(repoPath) {
   try {
-    // Dynamic import because madge may not be installed
     const madge = await import("madge");
     const res = await madge.default(repoPath, {
       extensions: ["js", "jsx", "ts", "tsx", "mjs", "cjs"],
-      excludeRegExp: /node_modules|\.test\.|\.spec\./,
+      // Use a function instead of a RegExp literal
+      exclude: (filePath) => /node_modules|\.test\.|\.spec\./.test(filePath),
     });
     const deps = res.obj();
     const nodes = Object.keys(deps).map((id) => ({
