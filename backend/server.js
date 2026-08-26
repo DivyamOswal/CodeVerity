@@ -8,8 +8,9 @@ import connectDB from "./config/db.js";
 import authRoutes from "./routes/auth.js";
 import analyzeRoutes from "./routes/analyze.js";
 import reportRoutes from "./routes/report.js";
-import githubRoutes from "./routes/github.js"; 
+import githubRoutes from "./routes/github.js";
 import dashboardRoutes from "./routes/dashboard.js";
+import workspaceRoutes from "./routes/workspace.js";
 
 connectDB();
 
@@ -20,10 +21,12 @@ app.use(express.json());
 
 app.use("/api/auth", authRoutes);
 app.use("/api/analyze", analyzeRoutes);
-app.use("/api/github", githubRoutes); 
+app.use("/api/github", githubRoutes);
 app.use("/api/report", reportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
+app.use("/api/workspace", workspaceRoutes);
 
-app.listen(process.env.PORT, () =>
-  console.log("Server running on", process.env.PORT)
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () =>
+  console.log(`Server running on port ${PORT}`)
 );
