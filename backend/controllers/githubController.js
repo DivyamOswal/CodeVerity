@@ -38,10 +38,18 @@ export const analyzeGithubRepo = async (req, res) => {
   let code = null;
 
   try {
-    // 1. Get user and check token balance
+    // 1. Get user and check token balance / scan limits
     const user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({ error: "User not found" });
+    }
+
+    // Check scan limit (monthly)
+    const canScan = await user.incrementScanUsage();
+    if (!canScan) {
+      return res.status(429).json({
+        error: `Monthly scan limit reached (${user.scansLimit} scans). Upgrade your plan or wait for next month.`,
+      });
     }
 
     // 2. Clone and parse the repo
@@ -60,9 +68,13 @@ export const analyzeGithubRepo = async (req, res) => {
     const tokensUsed = usage.total_tokens || 0;
 
     // Deduct tokens
-    user.tokensRemaining = Math.max(0, user.tokensRemaining - tokensUsed);
-    user.totalTokensUsed = (user.totalTokensUsed || 0) + tokensUsed;
-    await user.save();
+    const deducted = await user.deductTokens(tokensUsed);
+    if (!deducted) {
+      return res.status(429).json({
+        error: `Insufficient tokens. You have ${user.tokensRemaining} tokens remaining.`,
+      });
+    }
+    // user.tokensRemaining is updated by deductTokens
 
     // Build AI analysis object
     const aiAnalysis = {
@@ -85,7 +97,6 @@ export const analyzeGithubRepo = async (req, res) => {
     let techDebt = { estimatedHours: 0, issues: [] };
 
     if (repoPath) {
-      // Wrap each scanner to isolate failures
       try {
         depVulns = await scanDependencies(repoPath);
       } catch (err) {
@@ -111,7 +122,6 @@ export const analyzeGithubRepo = async (req, res) => {
         graph = { nodes: [], edges: [] };
       }
 
-      // Tech debt – combine issues
       const allIssues = [
         ...secVulns.map((v) => ({ ...v, severity: v.severity })),
         ...aiAnalysis.bugs.map((b) => ({ ...b, severity: "medium" })),
@@ -142,9 +152,10 @@ export const analyzeGithubRepo = async (req, res) => {
       tokensRemaining: user.tokensRemaining,
     };
 
-    // 7. Save report
+    // 7. Save report with workspaceId
     const report = await Report.create({
       userId: req.user.id,
+      workspaceId: user.workspaceId, // ← NEW
       repoUrl: repoUrl.trim(),
       ...analysis,
     });
@@ -157,7 +168,7 @@ export const analyzeGithubRepo = async (req, res) => {
     return res.json({ success: true, analysis, reportId: report._id });
   } catch (err) {
     console.error("❌ GitHub analysis error:", err.message);
-    console.error("📌 Full stack:", err.stack); // <-- ADD THIS LINE
+    console.error("📌 Full stack:", err.stack);
     if (repoPath) {
       await fs.rm(repoPath, { recursive: true, force: true }).catch(() => {});
     }
