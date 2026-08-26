@@ -177,35 +177,45 @@ export default function Dashboard() {
   };
 
   const generateReport = async () => {
-    if (!repoUrl.startsWith("https://github.com/")) {
-      return setError("Enter a valid GitHub URL");
+  if (!repoUrl.startsWith("https://github.com/")) {
+    return setError("Enter a valid GitHub URL");
+  }
+  try {
+    setLoading(true);
+    setError("");
+    const res = await analyzeGithub({ repoUrl });
+    setReportId(res.data.reportId);
+    const a = res.data.analysis || {};
+    setAnalysis({
+      summary: a.summary ?? "",
+      architecture: a.architecture ?? [],
+      bugs: a.bugs ?? [],
+      securityIssues: a.securityIssues ?? [],
+      futureRoadmap: a.futureRoadmap ?? [],
+      toolsAndPackages: a.toolsAndPackages ?? [],
+      scores: a.scores ?? {},
+      grade: a.grade ?? "N/A",
+      finalVerdict: a.finalVerdict ?? "",
+      _sourceCode: a._sourceCode ?? "",
+    });
+    setActiveView("result");
+    loadDashboard();
+  } catch (err) {
+    const errorMsg = err.response?.data?.error || "Analysis failed";
+    
+    // Check if it's a limit error
+    if (errorMsg === "Monthly scan limit reached" || errorMsg === "Insufficient tokens") {
+      // Add an upgrade link
+      setError(
+        `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
+      );
+    } else {
+      setError(errorMsg);
     }
-    try {
-      setLoading(true);
-      setError("");
-      const res = await analyzeGithub({ repoUrl });
-      setReportId(res.data.reportId);
-      const a = res.data.analysis || {};
-      setAnalysis({
-        summary: a.summary ?? "",
-        architecture: a.architecture ?? [],
-        bugs: a.bugs ?? [],
-        securityIssues: a.securityIssues ?? [],
-        futureRoadmap: a.futureRoadmap ?? [],
-        toolsAndPackages: a.toolsAndPackages ?? [],
-        scores: a.scores ?? {},
-        grade: a.grade ?? "N/A",
-        finalVerdict: a.finalVerdict ?? "",
-        _sourceCode: a._sourceCode ?? "",
-      });
-      setActiveView("result");
-      loadDashboard();
-    } catch (err) {
-      setError(err.response?.data?.error || "Analysis failed");
-    } finally {
-      setLoading(false);
-    }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const openResult = (report) => {
     setAnalysis({
