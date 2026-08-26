@@ -86,13 +86,23 @@ export const getReports = async (req, res) => {
   try {
     const { workspaceId, id: userId, role } = req.user;
 
-    // Determine filter: if role is 'owner' or 'admin', show all workspace reports; else show only user's own.
-    let filter = { workspaceId };
+    // If workspaceId is missing, return empty (should not happen for normal users)
+    if (!workspaceId) {
+      return res.status(400).json({ error: "Workspace not set for this user" });
+    }
+
+    // Build filter: always scope to workspace
+    const filter = { workspaceId };
+
+    // If role is 'owner' or 'admin', show all workspace reports; else show only user's own.
     if (role !== 'owner' && role !== 'admin') {
       filter.userId = userId;
     }
 
-    const reports = await Report.find(filter).sort({ createdAt: -1 });
+    const reports = await Report.find(filter)
+      .sort({ createdAt: -1 })
+      .lean();
+
     res.json({ success: true, reports });
   } catch (err) {
     console.error("Get reports error:", err);
@@ -107,8 +117,8 @@ export const downloadReportPDF = async (req, res) => {
     const report = await Report.findById(req.params.id);
     if (!report) return res.status(404).json({ error: "Report not found" });
 
-    // Ensure report belongs to user's workspace (security)
-    if (report.workspaceId.toString() !== req.user.workspaceId.toString()) {
+    // Security: ensure report belongs to user's workspace
+    if (report.workspaceId?.toString() !== req.user.workspaceId?.toString()) {
       return res.status(403).json({ error: "Access denied" });
     }
 
