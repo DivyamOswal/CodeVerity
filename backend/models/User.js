@@ -28,6 +28,24 @@ const userSchema = new mongoose.Schema({
     enum: ["starter", "pro", "team"],
     default: "starter",
   },
+  // ── Stripe / Billing ────────────────────────────────────────────
+stripeCustomerId: {
+  type: String,
+  default: null,
+},
+stripeSubscriptionId: {
+  type: String,
+  default: null,
+},
+subscriptionStatus: {
+  type: String,
+  enum: ["active", "past_due", "canceled", "incomplete", "trialing"],
+  default: null,
+},
+subscriptionEndsAt: {
+  type: Date,
+  default: null,
+},
 
   tokensRemaining: { type: Number, default: 50000 },
   totalTokensUsed: { type: Number, default: 0 },
