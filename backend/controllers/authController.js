@@ -1,13 +1,11 @@
+// backend/controllers/authController.js
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/User.js";
+import Workspace from "../models/Workspace.js";
 import PDFDocument from "pdfkit";
 import Report from "../models/Report.js";
-
-/* =========================================================
-   HELPERS
-========================================================= */
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
@@ -19,20 +17,34 @@ const generateToken = (user) => {
   );
 };
 
-const getOAuthUserPassword = () => {
-  return bcrypt.hash(
+const getOAuthUserPassword = async () => {
+  return await bcrypt.hash(
     crypto.randomBytes(32).toString("hex"),
     10
   );
 };
 
-// ✅ Improved cookie helper – uses res.cookie()
+// Helper to create a workspace for a user
+const createUserWorkspace = async (user) => {
+  const workspace = await Workspace.create({
+    name: `${user.name}'s Workspace`,
+    ownerId: user._id,
+    members: [{ userId: user._id, role: "owner" }],
+  });
+  user.workspaceId = workspace._id;
+  user.role = "owner";
+  await user.save();
+  return workspace;
+};
+
+// ── Cookie helpers ─────────────────────────────────────────────
+
 const setOAuthStateCookie = (res, state) => {
   res.cookie('oauth_state', state, {
     httpOnly: true,
     secure: process.env.NODE_ENV === 'production',
     sameSite: 'lax',
-    maxAge: 600000, // 10 minutes
+    maxAge: 600000,
     path: '/',
   });
 };
@@ -56,26 +68,72 @@ const clearOAuthStateCookie = (res) => {
   });
 };
 
-// Helper to redirect with error
 const redirectWithError = (res, errorMessage) => {
   res.redirect(`${FRONTEND_URL}/oauth-error?error=${encodeURIComponent(errorMessage)}`);
 };
 
-/* =========================================================
-   NORMAL REGISTER & LOGIN (unchanged)
-========================================================= */
+// ── Register ────────────────────────────────────────────────────
 
 export const register = async (req, res) => {
-  // ... (your existing code)
+  const { name, email, password } = req.body;
+
+  if (!name || !email || !password) {
+    return res.status(400).json({ error: "All fields are required." });
+  }
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(400).json({ error: "User already exists." });
+    }
+
+    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.create({
+      name,
+      email,
+      password: hashedPassword,
+    });
+
+    // Create workspace
+    await createUserWorkspace(user);
+
+    const token = generateToken(user);
+    res.status(201).json({ token, user: { id: user._id, name, email, workspaceId: user.workspaceId, role: user.role } });
+  } catch (err) {
+    console.error("Registration error:", err);
+    res.status(500).json({ error: "Registration failed. Please try again." });
+  }
 };
+
+// ── Login ───────────────────────────────────────────────────────
 
 export const login = async (req, res) => {
-  // ... (your existing code)
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    return res.status(400).json({ error: "Email and password are required." });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({ error: "Invalid credentials." });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ error: "Invalid credentials." });
+    }
+
+    const token = generateToken(user);
+    res.json({ token, user: { id: user._id, name: user.name, email, workspaceId: user.workspaceId, role: user.role } });
+  } catch (err) {
+    console.error("Login error:", err);
+    res.status(500).json({ error: "Login failed. Please try again." });
+  }
 };
 
-/* =========================================================
-   GOOGLE OAUTH
-========================================================= */
+// ── Google OAuth ───────────────────────────────────────────────
 
 export const googleAuth = async (req, res) => {
   try {
@@ -113,7 +171,6 @@ export const googleAuthCallback = async (req, res) => {
 
     clearOAuthStateCookie(res);
 
-    // Exchange code for access token
     const tokenResponse = await fetch(
       "https://oauth2.googleapis.com/token",
       {
@@ -135,7 +192,6 @@ export const googleAuthCallback = async (req, res) => {
       return redirectWithError(res, "Failed to authenticate with Google");
     }
 
-    // Get user info
     const googleUserResponse = await fetch(
       "https://www.googleapis.com/oauth2/v3/userinfo",
       {
@@ -154,11 +210,12 @@ export const googleAuthCallback = async (req, res) => {
       return redirectWithError(res, "Google account has no email address");
     }
 
-    // Find or create user
     let user = await User.findOne({ email });
     if (!user) {
       const password = await getOAuthUserPassword();
       user = await User.create({ name, email, password });
+      // Create workspace for new user
+      await createUserWorkspace(user);
     }
 
     const token = generateToken(user);
@@ -169,9 +226,7 @@ export const googleAuthCallback = async (req, res) => {
   }
 };
 
-/* =========================================================
-   GITHUB OAUTH
-========================================================= */
+// ── GitHub OAuth ───────────────────────────────────────────────
 
 export const githubAuth = async (req, res) => {
   try {
@@ -206,7 +261,6 @@ export const githubAuthCallback = async (req, res) => {
 
     clearOAuthStateCookie(res);
 
-    // Exchange code for access token
     const tokenResponse = await fetch(
       "https://github.com/login/oauth/access_token",
       {
@@ -230,7 +284,6 @@ export const githubAuthCallback = async (req, res) => {
       return redirectWithError(res, "Failed to authenticate with GitHub");
     }
 
-    // Get GitHub user
     const githubUserResponse = await fetch(
       "https://api.github.com/user",
       {
@@ -247,7 +300,6 @@ export const githubAuthCallback = async (req, res) => {
       return redirectWithError(res, "Failed to fetch GitHub user profile");
     }
 
-    // Get email (primary verified)
     let email = githubUser.email;
     if (!email) {
       const emailResponse = await fetch(
@@ -273,11 +325,12 @@ export const githubAuthCallback = async (req, res) => {
 
     const name = githubUser.name || githubUser.login || "GitHub User";
 
-    // Find or create user
     let user = await User.findOne({ email });
     if (!user) {
       const password = await getOAuthUserPassword();
       user = await User.create({ name, email, password });
+      // Create workspace for new user
+      await createUserWorkspace(user);
     }
 
     const token = generateToken(user);
@@ -286,12 +339,4 @@ export const githubAuthCallback = async (req, res) => {
     console.error("GitHub callback error:", error);
     redirectWithError(res, "GitHub authentication failed");
   }
-};
-
-/* =========================================================
-   DOWNLOAD REPORT (unchanged)
-========================================================= */
-
-export const downloadReportPDF = async (req, res) => {
-  // ... (your existing code)
 };
