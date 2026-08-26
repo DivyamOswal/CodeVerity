@@ -141,17 +141,21 @@ export async function scanSecurity(repoPath) {
 
 // ─── 4. Technical Debt Calculator ──────────────────────────────
 
-const SEVERITY_HOURS = { critical: 8, high: 4, medium: 2, low: 1 };
+const SEVERITY_HOURS = { critical: 8, major: 4, minor: 2 };
 
 export function calculateTechDebt(issues) {
   let totalHours = 0;
   const list = issues.map((issue) => {
-    const sev = (issue.severity?.toLowerCase() || "low");
-    const effort = SEVERITY_HOURS[sev] || 1;
+    // Map incoming severity to our enum: critical, major, minor
+    let sev = (issue.severity?.toLowerCase() || "minor");
+    // Normalize: if it's "high" -> "major", "medium" -> "minor", "low" -> "minor"
+    if (sev === "high") sev = "major";
+    if (sev === "medium" || sev === "low") sev = "minor";
+    const effort = SEVERITY_HOURS[sev] || 2;
     totalHours += effort;
     return {
       file: issue.file || issue.component || "unknown",
-      severity: sev,
+      severity: sev,  // will be "critical", "major", or "minor"
       effort,
       description: issue.title || issue.description || "No description",
     };
@@ -169,8 +173,8 @@ export async function generateArchitectureGraph(repoPath) {
     const madge = await import("madge");
     const res = await madge.default(repoPath, {
       extensions: ["js", "jsx", "ts", "tsx", "mjs", "cjs"],
-      // Use a function instead of a RegExp literal
-      exclude: (filePath) => /node_modules|\.test\.|\.spec\./.test(filePath),
+      // excludeRegExp must be a RegExp object, not a string
+      excludeRegExp: /node_modules|\.test\.|\.spec\./,
     });
     const deps = res.obj();
     const nodes = Object.keys(deps).map((id) => ({
