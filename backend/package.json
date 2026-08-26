@@ -16,9 +16,11 @@
     "chartjs-node-canvas": "^5.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
+    "eslint-plugin-security": "^4.0.1",
     "express": "^5.2.1",
     "groq-sdk": "^0.37.0",
     "jsonwebtoken": "^9.0.3",
+    "madge": "^8.0.0",
     "mongoose": "^9.1.6",
     "openai": "^6.18.0",
     "pdfkit": "^0.17.2"

@@ -1,6 +1,6 @@
 // backend/controllers/dashboardController.js
 import Report from "../models/Report.js";
-import User   from "../models/User.js";
+import User from "../models/User.js";
 
 export const getDashboardData = async (req, res) => {
   try {
@@ -8,8 +8,8 @@ export const getDashboardData = async (req, res) => {
 
     // Fetch all the reports
     const reports = await Report.find({ userId })
-      .sort({ createdAt: -1 })   
-      .lean();                   
+      .sort({ createdAt: -1 })
+      .lean();
 
     const totalScans = reports.length;
     let avgScore    = 0;
@@ -49,19 +49,22 @@ export const getDashboardData = async (req, res) => {
       createdAt:       r.createdAt,
     }));
 
-    // Grade Distribution
     const gradeDistribution = reports.reduce((acc, r) => {
       const g = (r.grade ?? "N/A")[0];
       acc[g]  = (acc[g] ?? 0) + 1;
       return acc;
     }, {});
 
-    const user = await User.findById(userId).select("name email createdAt").lean();
+    const user = await User.findById(userId).select("name email tokensRemaining totalTokensUsed plan createdAt").lean();
+
     res.json({
       user: {
         id:    userId,
         name:  user?.name  ?? "",
         email: user?.email ?? req.user.email ?? "",
+        tokensRemaining: user?.tokensRemaining ?? 0,
+        totalTokensUsed: user?.totalTokensUsed ?? 0,
+        plan: user?.plan ?? "starter",
       },
       stats: {
         totalScans,

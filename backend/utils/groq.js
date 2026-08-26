@@ -1,17 +1,15 @@
+// backend/utils/groq.js
 import Groq from "groq-sdk";
 
 // ── JSON extraction with repair ──────────────────────────────
 
 function repairJSON(jsonStr) {
-  // 1. Remove trailing commas before } or ]
   let repaired = jsonStr.replace(/,(\s*[}\]])/g, "$1");
-  // 2. Quote unquoted keys (simple case)
   repaired = repaired.replace(/([{,]\s*)(\w+)(\s*:)/g, '$1"$2"$3');
   return repaired;
 }
 
 function extractJSON(raw) {
-  // Remove markdown fences
   let cleaned = raw
     .replace(/```json\s*/gi, "")
     .replace(/```\s*/g, "")
@@ -24,11 +22,9 @@ function extractJSON(raw) {
   }
   let jsonStr = cleaned.slice(start, end + 1);
 
-  // Attempt to parse as-is
   try {
     return JSON.parse(jsonStr);
   } catch (parseErr) {
-    // Attempt repair
     const repaired = repairJSON(jsonStr);
     try {
       return JSON.parse(repaired);
@@ -68,15 +64,15 @@ GRADE FORMULA (follow exactly):
 
 OUTPUT STRUCTURE:
 {
-  "summary": "6-8 sentence overview: what the project does, tech stack, architecture pattern, top strengths/weaknesses, one key recommendation.",
-  "architecture": [{"component": "Frontend|Backend|Database|DevOps|Security|Testing", "description": "...", "recommendation": "..."}],
+  "summary": "6-8 sentence overview...",
+  "architecture": [{"component": "...", "description": "...", "recommendation": "..."}],
   "bugs": [{"title": "...", "impact": "Low|Medium|High", "location": "...", "fix": "..."}],
   "securityIssues": [{"issue": "...", "severity": "Low|Medium|High|Critical", "location": "...", "recommendation": "..."}],
   "futureRoadmap": [{"phase": "Short-term|Mid-term|Long-term", "details": "..."}],
-  "toolsAndPackages": ["only what you see imported or used"],
+  "toolsAndPackages": ["..."],
   "scores": {"codeQuality": 0, "security": 0, "performance": 0, "maintainability": 0},
-  "grade": "computed from formula above",
-  "finalVerdict": "2-3 sentences: most important finding + single highest-priority action."
+  "grade": "...",
+  "finalVerdict": "..."
 }
 
 RULES:
@@ -94,10 +90,10 @@ Start your response with { and end with }.
 
 {
   "framework": "jest | vitest | mocha",
-  "setupInstructions": "Short setup note, e.g. npm install --save-dev jest",
-  "testFiles": [{"fileName": "src/utils.test.js", "description": "...", "testCode": "Full runnable test file as a string (use \\n for newlines)"}],
-  "unitTests": [{"functionName": "myFunction", "filePath": "src/utils.js", "description": "...", "cases": [{"label": "...", "type": "unit", "input": "...", "expected": "...", "codeSnippet": "..."}]}],
-  "edgeCases": [{"functionName": "myFunction", "label": "...", "type": "edge", "input": "...", "expected": "...", "codeSnippet": "..."}],
+  "setupInstructions": "...",
+  "testFiles": [{"fileName": "...", "description": "...", "testCode": "..."}],
+  "unitTests": [{"functionName": "...", "filePath": "...", "description": "...", "cases": [{"label": "...", "type": "unit", "input": "...", "expected": "...", "codeSnippet": "..."}]}],
+  "edgeCases": [{"functionName": "...", "label": "...", "type": "edge", "input": "...", "expected": "...", "codeSnippet": "..."}],
   "integrationTests": [{"label": "...", "description": "...", "codeSnippet": "..."}],
   "mocks": [{"target": "...", "reason": "...", "snippet": "..."}],
   "coverageSummary": {"estimatedCoverage": 85, "uncoveredAreas": ["..."], "recommendation": "..."}
@@ -107,15 +103,14 @@ RULES:
 - Analyse ONLY the code provided — do not invent functions that don't exist
 - Generate REAL, RUNNABLE test code — not pseudo-code
 - Cover happy paths, error paths, boundary values, and null/undefined inputs
-- If no async functions exist, omit async/await from snippets
+- If no async functions exist, omit async/await
 - Prefer jest.fn() for mocks unless vitest is detected (then use vi.fn())
 - If a section has nothing to report, return an empty array []`;
 
 // ── Fallbacks ──────────────────────────────────────────────────
 
 const FALLBACK_RESULT = {
-  summary:
-    "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
+  summary: "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
   architecture: [],
   bugs: [],
   securityIssues: [],
@@ -145,10 +140,9 @@ const FALLBACK_TEST_RESULT = {
   },
 };
 
-// ── Groq call with model fallback ────────────────────────────
-
 const MODELS_TO_TRY = [process.env.GROQ_MODEL || "openai/gpt-oss-20b", "openai/gpt-oss-120b"];
 
+// ── Core: call Groq with model fallback ──────────────────────
 async function callGroqWithRetry(groq, systemPrompt, userContent, maxTokens = 4000) {
   let lastError;
   for (const model of MODELS_TO_TRY) {
@@ -166,35 +160,53 @@ async function callGroqWithRetry(groq, systemPrompt, userContent, maxTokens = 40
       const raw = completion.choices[0].message.content;
       const parsed = extractJSON(raw);
       console.log(`✅ Parsed successfully with model: ${model}`);
-      return parsed;
+
+      // Extract usage
+      const usage = completion.usage || { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 };
+
+      return {
+        result: parsed,
+        usage,
+      };
     } catch (err) {
       console.warn(`⚠️ Model ${model} failed: ${err.message}`);
       lastError = err;
     }
   }
   console.error("❌ All models failed:", lastError?.message);
-  return null;
+  return null; // caller handles fallback
 }
 
 // ── Public API ────────────────────────────────────────────────
 
 export async function analyzeWithGroq(input) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
-  const result = await callGroqWithRetry(groq, SYSTEM_PROMPT, input.slice(0, 9000), 4000);
-  return result ?? FALLBACK_RESULT;
+  const response = await callGroqWithRetry(groq, SYSTEM_PROMPT, input.slice(0, 9000), 4000);
+  if (!response) {
+    return {
+      result: FALLBACK_RESULT,
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+    };
+  }
+  return response; // { result, usage }
 }
 
 export async function generateTests(input) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
   console.log(`🧪 Generating tests for ${input.length} chars…`);
-  // Reduce input to 6000 chars, allow 5000 tokens for output
-  const result = await callGroqWithRetry(
+  const response = await callGroqWithRetry(
     groq,
     TEST_GENERATOR_SYSTEM_PROMPT,
     input.slice(0, 6000),
     5000
   );
-  return result ?? FALLBACK_TEST_RESULT;
+  if (!response) {
+    return {
+      result: FALLBACK_TEST_RESULT,
+      usage: { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 },
+    };
+  }
+  return response; // { result, usage }
 }
 
 export async function writeTestFiles(testResult, { outDir = "", write } = {}) {

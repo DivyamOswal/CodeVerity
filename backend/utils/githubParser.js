@@ -1,13 +1,12 @@
 // backend/utils/githubParser.js
 // Fetches a GitHub repo's source and concatenates it for AI analysis.
-// Design principle: NEVER silently substitute placeholder text. If the
-// real source can't be fetched, throw a specific, actionable error and
-// let the caller surface it — a fabricated "no README found" prompt
-// sent to the LLM produces a plausible-looking but meaningless report.
+// Also provides cloning for local scanners and token estimation.
+
+import { cloneGithubRepo } from "./gitUtils.js";
 
 const GITHUB_API = "https://api.github.com";
 const MAX_CHARS_DEFAULT = 28_000;
-const CONCURRENCY = 6; // parallel file fetches — keeps this fast without hammering the API
+const CONCURRENCY = 6;
 
 const CODE_EXTENSIONS = new Set([
   ".js", ".jsx", ".ts", ".tsx", ".mjs", ".cjs",
@@ -45,7 +44,6 @@ function authHeaders() {
 
 async function githubFetch(url) {
   const res = await fetch(url, { headers: authHeaders() });
-
   if (res.status === 403 || res.status === 429) {
     const remaining = res.headers.get("x-ratelimit-remaining");
     if (remaining === "0") {
@@ -84,8 +82,6 @@ async function fetchTree(owner, repo, branch) {
 }
 
 async function fetchBlobContent(owner, repo, sha) {
-  // Blob API by SHA — one call regardless of path encoding issues, and
-  // works uniformly for every file since we already have the tree.
   const res = await githubFetch(`${GITHUB_API}/repos/${owner}/${repo}/git/blobs/${sha}`);
   if (!res.ok) return null;
   const data = await res.json();
@@ -93,7 +89,7 @@ async function fetchBlobContent(owner, repo, sha) {
   try {
     return Buffer.from(data.content.replace(/\n/g, ""), "base64").toString("utf-8");
   } catch {
-    return null; // binary or undecodable content
+    return null;
   }
 }
 
@@ -109,16 +105,12 @@ export async function parseGithubRepo(repoUrl, { maxChars = MAX_CHARS_DEFAULT, b
 
   let codeFiles = tree.filter((f) => isCodeFile(f.path));
   if (codeFiles.length === 0) {
-    // Fall back to any non-binary file rather than failing outright —
-    // but this is a real fallback over real repo data, not fabricated text.
     codeFiles = tree.filter((f) => !/\.(png|jpe?g|gif|ico|svg|woff2?|ttf|eot|bin|exe|zip)$/i.test(f.path));
   }
   if (codeFiles.length === 0) {
     throw new Error(`No readable source files found in ${owner}/${repo}@${resolvedBranch}.`);
   }
 
-  // Sort so smaller, higher-signal files (configs, entry points) aren't
-  // starved by one huge file eating the whole budget first.
   codeFiles.sort((a, b) => (a.size ?? 0) - (b.size ?? 0));
 
   let combined = `# Repository: ${owner}/${repo}\n\n`;
@@ -160,4 +152,24 @@ export async function parseGithubRepo(repoUrl, { maxChars = MAX_CHARS_DEFAULT, b
 
   console.log(`✅ parseGithubRepo: ${filesFetched}/${codeFiles.length} files, ${combined.length} chars from ${owner}/${repo}`);
   return combined;
+}
+
+/**
+ * Clone a GitHub repo and return both the source code string and the local repo path.
+ * This is used when we need to run scanners that require the file system.
+ */
+export async function cloneAndParseGithubRepo(repoUrl, options = {}) {
+  const repoPath = await cloneGithubRepo(repoUrl);
+  // We still fetch the code via the API for speed; the cloned repo is for scanners.
+  // But we could also read from disk to avoid extra API calls. For simplicity, we keep the API call.
+  const code = await parseGithubRepo(repoUrl, options);
+  return { code, repoPath };
+}
+
+/**
+ * Estimate token usage for a given input string.
+ * Rough estimate: ~4 characters per token for code text.
+ */
+export function estimateTokens(input) {
+  return Math.ceil(input.length / 4);
 }

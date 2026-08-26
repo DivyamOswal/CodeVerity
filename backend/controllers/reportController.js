@@ -2,29 +2,124 @@ import PDFDocument from "pdfkit";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import Report from "../models/Report.js";
 
-// ── Theme colors ──────────────────────────────────────────────
+// ── Theme: Indigo Slate (matches frontend) ──────────────────
 const COLORS = {
-  primary: "#3fb950",      // green
-  secondary: "#10b981",    // emerald
-  accent: "#2dd4bf",       // teal
+  primary: "#6366f1",      // indigo
+  primaryLight: "#818cf8",
+  primarySoft: "rgba(99, 102, 241, 0.15)",
   textDark: "#1f2937",
   textLight: "#6b7280",
   border: "#e5e7eb",
   white: "#ffffff",
   red: "#ef4444",
+  orange: "#f59e0b",
+  yellow: "#facc15",
   blue: "#3b82f6",
-  yellow: "#f59e0b",
+  green: "#22c55e",
+  gray: "#9ca3af",
 };
 
-/* ====== GET HISTORY ====== */
-export const getReports = async (req, res) => {
-  const reports = await Report.find({ userId: req.user.id }).sort({
-    createdAt: -1,
+// Severity colors
+const SEVERITY_COLORS = {
+  critical: "#ef4444",
+  high: "#f59e0b",
+  medium: "#facc15",
+  low: "#3b82f6",
+};
+
+// ── Helper: Draw a section header ────────────────────────────
+function sectionTitle(doc, title, color = COLORS.primary) {
+  doc
+    .fontSize(16)
+    .fillColor(color)
+    .text(title);
+  doc
+    .moveDown(0.2)
+    .strokeColor(color)
+    .lineWidth(1.5)
+    .moveTo(50, doc.y)
+    .lineTo(550, doc.y)
+    .stroke();
+  doc.moveDown(0.8);
+}
+
+// ── Helper: Draw a severity badge ─────────────────────────────
+function drawSeverityBadge(doc, severity, x, y) {
+  const color = SEVERITY_COLORS[severity?.toLowerCase()] || COLORS.gray;
+  const label = severity || "Unknown";
+  doc
+    .fontSize(8)
+    .fillColor(color)
+    .rect(x, y, 50, 14)
+    .strokeColor(color)
+    .lineWidth(0.5)
+    .stroke();
+  doc.text(label, x + 4, y + 3);
+  return y + 16;
+}
+
+// ── Helper: Draw a score bar (existing, but with indigo) ─────
+const drawScoreBar = (doc, label, value, color = COLORS.primary) => {
+  const x = 50;
+  const y = doc.y;
+  const barWidth = 300;
+  const barHeight = 12;
+  const max = 100;
+
+  doc.fontSize(11).fillColor(COLORS.textDark).text(`${label}: ${value}%`, x, y);
+  doc.moveDown(0.4);
+  doc
+    .rect(x, doc.y, barWidth, barHeight)
+    .fill(COLORS.border);
+  const fillWidth = Math.min((value / max) * barWidth, barWidth);
+  doc
+    .rect(x, doc.y, fillWidth, barHeight)
+    .fill(color);
+  doc.moveDown(1.2);
+};
+
+// ── Helper: Draw a table ──────────────────────────────────────
+function drawTable(doc, headers, rows, columnWidths) {
+  const startX = 50;
+  let y = doc.y;
+  const rowHeight = 20;
+  const colCount = headers.length;
+
+  // Header row
+  doc.fontSize(10).fillColor(COLORS.primary);
+  headers.forEach((h, i) => {
+    const x = startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0);
+    doc.text(h, x, y, { width: columnWidths[i], align: 'left' });
   });
+  y += rowHeight;
+  doc.moveTo(startX, y).lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), y).stroke(COLORS.border);
+
+  // Data rows
+  doc.fontSize(9).fillColor(COLORS.textDark);
+  rows.forEach((row) => {
+    // Ensure row fits; if not, we truncate or skip.
+    const maxY = 750; // page bottom margin
+    if (y > maxY) {
+      doc.addPage();
+      y = 50;
+    }
+    row.forEach((cell, i) => {
+      const x = startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0);
+      doc.text(String(cell || ""), x, y + 2, { width: columnWidths[i], align: 'left' });
+    });
+    y += rowHeight;
+    doc.moveTo(startX, y).lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), y).stroke(COLORS.border);
+  });
+  doc.moveDown(0.5);
+}
+
+// ── GET HISTORY (unchanged) ──────────────────────────────────
+export const getReports = async (req, res) => {
+  const reports = await Report.find({ userId: req.user.id }).sort({ createdAt: -1 });
   res.json({ success: true, reports });
 };
 
-/* ====== DOWNLOAD PDF ====== */
+// ── DOWNLOAD PDF ──────────────────────────────────────────────
 export const downloadReportPDF = async (req, res) => {
   const report = await Report.findById(req.params.id);
   if (!report) return res.status(404).json({ error: "Report not found" });
@@ -76,56 +171,16 @@ export const downloadReportPDF = async (req, res) => {
 
   doc.addPage();
 
-  // ── Helper: Section Header ──────────────────────────────────
-  const sectionTitle = (title, color = COLORS.primary) => {
-    doc
-      .fontSize(16)
-      .fillColor(color)
-      .text(title);
-    doc
-      .moveDown(0.2)
-      .strokeColor(color)
-      .lineWidth(1.5)
-      .moveTo(50, doc.y)
-      .lineTo(550, doc.y)
-      .stroke();
-    doc.moveDown(0.8);
-  };
-
-  // ── Helper: Score Bar ──────────────────────────────────────
-  const drawScoreBar = (label, value, color = COLORS.primary) => {
-    const x = 50;
-    const y = doc.y;
-    const barWidth = 300;
-    const barHeight = 12;
-    const max = 100;
-
-    doc.fontSize(11).fillColor(COLORS.textDark).text(`${label}: ${value}%`, x, y);
-    doc.moveDown(0.4);
-    // background
-    doc
-      .rect(x, doc.y, barWidth, barHeight)
-      .fill(COLORS.border);
-    // fill
-    const fillWidth = Math.min((value / max) * barWidth, barWidth);
-    doc
-      .rect(x, doc.y, fillWidth, barHeight)
-      .fill(color);
-    doc.moveDown(1.2);
-  };
-
   // ── Executive Summary ──────────────────────────────────────
-  sectionTitle("Executive Summary", COLORS.primary);
+  sectionTitle(doc, "Executive Summary", COLORS.primary);
   doc
     .fontSize(11)
     .fillColor(COLORS.textDark)
-    .text(report.summary || "No summary available.", {
-      align: "justify",
-    });
+    .text(report.summary || "No summary available.", { align: "justify" });
   doc.moveDown(1);
 
   // ── Architecture Review ────────────────────────────────────
-  sectionTitle("Architecture Review", COLORS.secondary);
+  sectionTitle(doc, "Architecture Review", COLORS.primaryLight);
   if (report.architecture?.length) {
     report.architecture.forEach((a) => {
       doc
@@ -143,12 +198,12 @@ export const downloadReportPDF = async (req, res) => {
   doc.moveDown(1);
 
   // ── Quality Scores ──────────────────────────────────────────
-  sectionTitle("Quality Scores", COLORS.accent);
+  sectionTitle(doc, "Quality Scores", COLORS.primary);
   const scores = report.scores || {};
-  drawScoreBar("Code Quality", scores.codeQuality || 0, COLORS.primary);
-  drawScoreBar("Security", scores.security || 0, COLORS.secondary);
-  drawScoreBar("Performance", scores.performance || 0, COLORS.accent);
-  drawScoreBar("Maintainability", scores.maintainability || 0, "#6b7280");
+  drawScoreBar(doc, "Code Quality", scores.codeQuality || 0, COLORS.primary);
+  drawScoreBar(doc, "Security", scores.security || 0, COLORS.primaryLight);
+  drawScoreBar(doc, "Performance", scores.performance || 0, "#818cf8");
+  drawScoreBar(doc, "Maintainability", scores.maintainability || 0, COLORS.gray);
 
   // ── Radar Chart ─────────────────────────────────────────────
   const chartImage = await generateRadarChart(scores);
@@ -159,13 +214,125 @@ export const downloadReportPDF = async (req, res) => {
   });
   doc.addPage();
 
+  // ── NEW: Health Score ──────────────────────────────────────
+  if (report.healthScore) {
+    sectionTitle(doc, "Health Score", COLORS.primary);
+    // Doughnut chart
+    const healthChart = await generateHealthChart(report.healthScore);
+    doc.image(healthChart, {
+      fit: [180, 180],
+      align: "left",
+    });
+    // Grade and breakdown
+    const x = 250;
+    let y = doc.y;
+    doc.fontSize(14).fillColor(COLORS.primary).text(`Grade: ${report.healthScore.grade || "N/A"}`, x, y);
+    y += 20;
+    doc.fontSize(11).fillColor(COLORS.textDark).text(`Overall: ${report.healthScore.overall || 0} / 100`, x, y);
+    y += 18;
+    const breakdown = report.healthScore.breakdown || {};
+    Object.entries(breakdown).forEach(([key, val]) => {
+      doc.fontSize(10).fillColor(COLORS.textLight).text(`${key}: ${val}%`, x + 10, y);
+      y += 15;
+    });
+    doc.moveDown(1);
+  }
+
+  // ── NEW: Security Vulnerabilities ──────────────────────────
+  if (report.securityVulnerabilities?.length) {
+    sectionTitle(doc, `Security Vulnerabilities (${report.securityVulnerabilities.length})`, COLORS.red);
+    const headers = ["Severity", "Title", "File", "Line"];
+    const colWidths = [60, 200, 150, 50];
+    const rows = report.securityVulnerabilities.map(v => [
+      v.severity || "N/A",
+      v.title || "",
+      v.file || "",
+      v.line || ""
+    ]);
+    drawTable(doc, headers, rows, colWidths);
+    doc.moveDown(0.5);
+  }
+
+  // ── NEW: Dependency Vulnerabilities ────────────────────────
+  if (report.dependencyVulnerabilities?.length) {
+    sectionTitle(doc, `Dependency Vulnerabilities (${report.dependencyVulnerabilities.length})`, COLORS.orange);
+    const headers = ["Package", "Version", "CVE", "Severity", "Fixed In"];
+    const colWidths = [100, 60, 80, 60, 80];
+    const rows = report.dependencyVulnerabilities.map(v => [
+      v.package || "",
+      v.version || "",
+      v.cve || "",
+      v.severity || "",
+      v.fixedIn || ""
+    ]);
+    drawTable(doc, headers, rows, colWidths);
+    doc.moveDown(0.5);
+  }
+
+  // ── NEW: Detected Secrets ──────────────────────────────────
+  if (report.secrets?.length) {
+    sectionTitle(doc, `Detected Secrets (${report.secrets.length})`, COLORS.red);
+    report.secrets.forEach((s, i) => {
+      doc
+        .fontSize(10)
+        .fillColor(COLORS.textDark)
+        .text(`${i+1}. ${s.pattern || "Unknown"} — ${s.file || ""} (line ${s.line || "?"})`, { continued: false });
+      doc.fillColor(COLORS.textLight).text(`   Confidence: ${s.confidence || 0}%`);
+      doc.moveDown(0.3);
+    });
+    doc.moveDown(0.5);
+  }
+
+  // ── NEW: Technical Debt ─────────────────────────────────────
+  if (report.techDebt) {
+    sectionTitle(doc, "Technical Debt", COLORS.orange);
+    const techDebt = report.techDebt;
+    doc
+      .fontSize(14)
+      .fillColor(COLORS.primary)
+      .text(`Estimated Hours: ${techDebt.estimatedHours || 0}h`);
+    doc.moveDown(0.5);
+    if (techDebt.issues?.length) {
+      doc.fontSize(11).fillColor(COLORS.textDark).text("Breakdown:");
+      techDebt.issues.forEach((issue, i) => {
+        doc
+          .fontSize(10)
+          .fillColor(COLORS.textDark)
+          .text(`${i+1}. ${issue.description || "No description"} (${issue.severity || "low"}) — ${issue.effort || 0}h`);
+        doc.fillColor(COLORS.textLight).text(`   File: ${issue.file || "unknown"}`);
+        doc.moveDown(0.2);
+      });
+    } else {
+      doc.fontSize(11).fillColor(COLORS.textLight).text("No technical debt issues listed.");
+    }
+    doc.moveDown(0.5);
+  }
+
+  // ── NEW: Architecture Graph ────────────────────────────────
+  if (report.architectureGraph?.nodes?.length) {
+    sectionTitle(doc, "Architecture Graph", COLORS.primaryLight);
+    const graph = report.architectureGraph;
+    doc.fontSize(10).fillColor(COLORS.textDark).text("Nodes:");
+    graph.nodes.forEach(node => {
+      doc.text(`  • ${node.label || node.id} (${node.type || "module"})`);
+    });
+    doc.moveDown(0.5);
+    if (graph.edges?.length) {
+      doc.fontSize(10).fillColor(COLORS.textDark).text("Dependencies:");
+      graph.edges.forEach(edge => {
+        doc.text(`  • ${edge.from} → ${edge.to} (${edge.type || "import"})`);
+      });
+    }
+    doc.moveDown(0.5);
+  }
+
   // ── Identified Bugs ─────────────────────────────────────────
-  sectionTitle("Identified Bugs", "#ef4444");
+  sectionTitle(doc, "Identified Bugs", COLORS.red);
   if (report.bugs?.length) {
     report.bugs.forEach((b, i) => {
       doc
         .fontSize(12)
-        .fillColor("#dc2626")
+        .fillColor(COLORS.red)
         .text(`${i + 1}. ${b.title} (${b.impact || "Unknown impact"})`);
       doc
         .fontSize(11)
@@ -181,13 +348,13 @@ export const downloadReportPDF = async (req, res) => {
   }
   doc.moveDown(1);
 
-  // ── Security Issues ─────────────────────────────────────────
+  // ── Security Issues (existing) ─────────────────────────────
   if (report.securityIssues?.length) {
-    sectionTitle("Security Issues", "#f59e0b");
+    sectionTitle(doc, "Security Issues (AI)", COLORS.orange);
     report.securityIssues.forEach((s, i) => {
       doc
         .fontSize(12)
-        .fillColor("#d97706")
+        .fillColor(COLORS.orange)
         .text(`${i + 1}. ${s.issue || "Issue"}`);
       doc
         .fontSize(11)
@@ -202,12 +369,12 @@ export const downloadReportPDF = async (req, res) => {
   }
 
   // ── Future Roadmap ──────────────────────────────────────────
-  sectionTitle("Future Roadmap", COLORS.primary);
+  sectionTitle(doc, "Future Roadmap", COLORS.primary);
   if (report.futureRoadmap?.length) {
     report.futureRoadmap.forEach((f, i) => {
       doc
         .fontSize(12)
-        .fillColor(COLORS.secondary)
+        .fillColor(COLORS.primaryLight)
         .text(`${i + 1}. ${f.phase || "Phase"}`);
       doc
         .fontSize(11)
@@ -221,7 +388,7 @@ export const downloadReportPDF = async (req, res) => {
   doc.moveDown(1);
 
   // ── Tools & Packages ────────────────────────────────────────
-  sectionTitle("Tools & Packages Used", COLORS.accent);
+  sectionTitle(doc, "Tools & Packages Used", COLORS.primary);
   if (report.toolsAndPackages?.length) {
     report.toolsAndPackages.forEach((t) => {
       doc.fontSize(11).fillColor(COLORS.textDark).text(`• ${t}`);
@@ -232,19 +399,17 @@ export const downloadReportPDF = async (req, res) => {
   doc.moveDown(1);
 
   // ── Final Grade & Verdict ──────────────────────────────────
-  sectionTitle("Final Grade", COLORS.primary);
+  sectionTitle(doc, "Final Grade", COLORS.primary);
   doc
     .fontSize(28)
     .fillColor(COLORS.primary)
     .text(report.grade || "N/A");
   doc.moveDown(0.5);
-  sectionTitle("Final Verdict", COLORS.secondary);
+  sectionTitle(doc, "Final Verdict", COLORS.primaryLight);
   doc
     .fontSize(12)
     .fillColor(COLORS.textDark)
-    .text(report.finalVerdict || "No verdict provided.", {
-      align: "justify",
-    });
+    .text(report.finalVerdict || "No verdict provided.", { align: "justify" });
 
   // ── Footer ──────────────────────────────────────────────────
   doc.moveDown(2);
@@ -275,10 +440,10 @@ async function generateRadarChart(scores) {
             scores.performance || 0,
             scores.maintainability || 0,
           ],
-          backgroundColor: "rgba(63, 185, 80, 0.25)",   // green with opacity
-          borderColor: "#3fb950",
+          backgroundColor: "rgba(99, 102, 241, 0.25)", // indigo with opacity
+          borderColor: "#6366f1",
           borderWidth: 2,
-          pointBackgroundColor: "#3fb950",
+          pointBackgroundColor: "#6366f1",
         },
       ],
     },
@@ -307,6 +472,39 @@ async function generateRadarChart(scores) {
             color: "#1f2937",
             font: { size: 12 },
           },
+        },
+      },
+    },
+  };
+
+  return await canvas.renderToBuffer(config);
+}
+
+/* ===== HEALTH CHART (doughnut) ===== */
+async function generateHealthChart(healthScore) {
+  const width = 200;
+  const height = 200;
+  const canvas = new ChartJSNodeCanvas({ width, height });
+  const overall = healthScore.overall || 0;
+  const remaining = 100 - overall;
+
+  const config = {
+    type: "doughnut",
+    data: {
+      labels: ["Health Score", "Remaining"],
+      datasets: [
+        {
+          data: [overall, remaining],
+          backgroundColor: ["#6366f1", "#e5e7eb"],
+          borderWidth: 0,
+        },
+      ],
+    },
+    options: {
+      cutout: "70%",
+      plugins: {
+        legend: {
+          display: false,
         },
       },
     },

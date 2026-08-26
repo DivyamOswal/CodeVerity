@@ -62,7 +62,6 @@ export default function Dashboard() {
   ========================================================= */
   useGSAP(
     () => {
-      // Only run once when dashboard is mounted and data is loaded
       if (activeView !== "home" || !mounted || !data) return;
 
       const mm = gsap.matchMedia();
@@ -70,7 +69,6 @@ export default function Dashboard() {
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         const tl = gsap.timeline({ defaults: { ease: "power2.out", duration: 0.5 } });
 
-        // ---- set initial states ----
         if (mainContainerRef.current) {
           gsap.set(mainContainerRef.current, { opacity: 0, y: 15 });
         }
@@ -82,11 +80,9 @@ export default function Dashboard() {
           gsap.set(analyzerRef.current, { opacity: 0, y: 12 });
         }
 
-        // Use scoped selectors – these will be scoped to mainContainerRef
         gsap.set(".report-row", { opacity: 0, y: 8 });
         gsap.set(".empty-state", { opacity: 0, y: 8 });
 
-        // ---- animate ----
         if (mainContainerRef.current) {
           tl.to(mainContainerRef.current, { opacity: 1, y: 0, duration: 0.6 });
         }
@@ -109,7 +105,6 @@ export default function Dashboard() {
           tl.to(analyzerRef.current, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
         }
 
-        // ---- animate report rows or empty state – NO CALLBACK! ----
         tl.to(
           ".report-row",
           {
@@ -134,7 +129,6 @@ export default function Dashboard() {
         );
       });
 
-      // ---- reduced motion – show instantly ----
       mm.add("(prefers-reduced-motion: reduce)", () => {
         if (mainContainerRef.current) {
           gsap.set(mainContainerRef.current, { opacity: 1, y: 0, clearProps: "all" });
@@ -153,16 +147,13 @@ export default function Dashboard() {
       return () => mm.revert();
     },
     {
-      // ✅ Scope – so selectors only target elements inside the dashboard
       scope: mainContainerRef,
-      // ✅ Only re-run when these change – no `data` needed
       dependencies: [mounted, activeView],
-      // ❌ No `revertOnUpdate` – prevents premature revert
     }
   );
 
   /* =========================================================
-     DOWNLOAD PDF, GENERATE REPORT, OPEN RESULT (unchanged)
+     DOWNLOAD PDF, GENERATE REPORT, OPEN RESULT
   ========================================================= */
   const downloadPDF = async () => {
     try {
@@ -232,16 +223,10 @@ export default function Dashboard() {
     setActiveView("result");
   };
 
-  /* =========================================================
-     LOADING SCREEN
-  ========================================================= */
   if (!data) {
     return <LoadingScreen />;
   }
 
-  /* =========================================================
-     STATS (unchanged)
-  ========================================================= */
   const avgQuality = data.recentReports?.length
     ? Math.round(
         data.recentReports.reduce((s, r) => s + (r.scores?.codeQuality ?? 0), 0) /
@@ -273,11 +258,10 @@ export default function Dashboard() {
     },
   ];
 
-  // Compact overrides – now includes top padding to account for sticky navbar
   const compactClasses = compact
     ? {
         mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
-        topPadding: "pt-14", // matches navbar compact height (h-14)
+        topPadding: "pt-14",
         headerSpacing: "gap-0.5",
         heading: "text-lg sm:text-xl",
         subHeading: "text-[10px]",
@@ -304,7 +288,7 @@ export default function Dashboard() {
       }
     : {
         mainPadding: "px-4 py-6 sm:px-6 lg:px-8",
-        topPadding: "pt-16", // matches navbar normal height (h-16)
+        topPadding: "pt-16",
         headerSpacing: "gap-1",
         heading: "text-xl sm:text-2xl",
         subHeading: "text-xs",
@@ -330,12 +314,8 @@ export default function Dashboard() {
         footerText: "text-[9px]",
       };
 
-  /* =========================================================
-     MAIN UI – with refs for GSAP
-  ========================================================= */
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      {/* RESULT VIEW */}
       {activeView === "result" && analysis && (
         <div className="animate-[fadeUp_0.3s_ease_both]">
           <Result
@@ -346,21 +326,37 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* HOME VIEW */}
       {activeView === "home" && (
         <main
           ref={mainContainerRef}
           className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
         >
           <div className="space-y-5">
-            {/* HEADER */}
+            {/* HEADER – now includes token usage */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 flex-wrap">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   System online
                 </span>
+
+                {/* Token indicator – only if user data is available */}
+                {data?.user && typeof data.user.tokensRemaining === "number" && (
+                  <>
+                    <span className="text-[var(--text-muted)] text-[9px]">•</span>
+                    <span className="text-[9px] font-mono text-[var(--text-muted)]">
+                      <span className="text-[var(--accent)]">⚡</span>
+                      {data.user.tokensRemaining.toLocaleString()} tokens remaining
+                      {data.user.totalTokensUsed > 0 && (
+                        <span className="text-[var(--text-muted)]/60">
+                          &nbsp;({data.user.totalTokensUsed.toLocaleString()} used)
+                        </span>
+                      )}
+                    </span>
+                  </>
+                )}
               </div>
+
               <h2
                 className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
               >
@@ -371,7 +367,7 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* STATS */}
+            {/* STATS – unchanged */}
             <div
               ref={statsContainerRef}
               className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}
@@ -387,7 +383,7 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* ANALYZER */}
+            {/* ANALYZER – unchanged */}
             <div
               ref={analyzerRef}
               className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]"
@@ -480,7 +476,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* RECENT REPORTS */}
+            {/* RECENT REPORTS – unchanged */}
             {data.recentReports?.length > 0 && (
               <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
                 <div
@@ -515,7 +511,7 @@ export default function Dashboard() {
                   {data.recentReports.map((report) => (
                     <div
                       key={`${report._id}-${statsKey}`}
-                      className="report-row" // class used by GSAP to target rows
+                      className="report-row"
                     >
                       <ReportRow report={report} onView={() => openResult(report)} compact={compact} />
                     </div>
@@ -524,7 +520,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* EMPTY STATE – with class "empty-state" for GSAP targeting, NO inline style */}
+            {/* EMPTY STATE – unchanged */}
             {!data.recentReports?.length && (
               <div
                 ref={emptyStateRef}
@@ -544,7 +540,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* FOOTER */}
+            {/* FOOTER – unchanged */}
             <div
               className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
             >
