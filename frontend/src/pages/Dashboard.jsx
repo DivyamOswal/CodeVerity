@@ -6,6 +6,7 @@ import Result from "../components/Result";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 import { useAuth } from "../App";
+import { Search } from "lucide-react";
 
 /* =========================================================
    CODEVERITY DASHBOARD
@@ -332,7 +333,7 @@ export default function Dashboard() {
           className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
         >
           <div className="space-y-5">
-            {/* HEADER – now includes token usage */}
+            {/* HEADER – now includes scan usage */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
@@ -340,7 +341,7 @@ export default function Dashboard() {
                   System online
                 </span>
 
-                {/* Token indicator – only if user data is available */}
+                {/* Token indicator */}
                 {data?.user && typeof data.user.tokensRemaining === "number" && (
                   <>
                     <span className="text-[var(--text-muted)] text-[9px]">•</span>
@@ -352,6 +353,19 @@ export default function Dashboard() {
                           &nbsp;({data.user.totalTokensUsed.toLocaleString()} used)
                         </span>
                       )}
+                    </span>
+                  </>
+                )}
+
+                {/*  NEW: Scan usage indicator */}
+                {data?.user && typeof data.user.scansLimit === "number" && (
+                  <>
+                    <span className="text-[var(--text-muted)] text-[9px]">•</span>
+                    <span className="text-[9px] font-mono text-[var(--text-muted)]">
+                      <span className="text-[var(--accent)]">
+                      <Search size={12} className="text-[var(--accent)] inline" />
+                      </span>
+                      {data.user.scansUsedThisMonth ?? 0}/{data.user.scansLimit} scans used this month
                     </span>
                   </>
                 )}
