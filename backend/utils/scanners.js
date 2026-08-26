@@ -29,9 +29,8 @@ async function walkDir(dir, ignore = ["node_modules", ".git", ".env", "dist", "b
 
 export async function scanDependencies(repoPath) {
   try {
-    // Try to run npm audit – but only if npm is available
     const { stdout } = await execAsync(`npm audit --json --prefix ${repoPath}`, {
-      timeout: 30000, // 30 seconds max
+      timeout: 30000,
     });
     const audit = JSON.parse(stdout);
     const advisories = audit.advisories || {};
@@ -43,7 +42,6 @@ export async function scanDependencies(repoPath) {
       fixedIn: adv.patches?.[0]?.version || "N/A",
     }));
   } catch (err) {
-    // npm audit exits non‑zero when vulnerabilities exist, but stdout still has JSON
     if (err.stdout) {
       try {
         const audit = JSON.parse(err.stdout);
@@ -59,7 +57,6 @@ export async function scanDependencies(repoPath) {
         // fall through
       }
     }
-    // If npm audit fails (e.g., no package.json), return empty
     return [];
   }
 }
@@ -111,7 +108,6 @@ export async function scanSecrets(repoPath) {
 
 export async function scanSecurity(repoPath) {
   try {
-    // Check if eslint is available in the repo or globally
     const { stdout } = await execAsync(
       `npx eslint --format json --no-eslintrc --plugin security --rule 'security/detect-non-literal-require: error' "${repoPath}" 2>/dev/null || true`,
       { timeout: 30000 }
@@ -134,28 +130,29 @@ export async function scanSecurity(repoPath) {
     }
     return vulns;
   } catch (err) {
-    // ESLint may fail if no config or if security plugin isn't installed; return empty
     return [];
   }
 }
 
 // ─── 4. Technical Debt Calculator ──────────────────────────────
 
-const SEVERITY_HOURS = { critical: 8, major: 4, minor: 2 };
+// ✅ Map severity to hours – enum values MUST match Report model: ["low", "medium", "high", "critical"]
+const SEVERITY_HOURS = { critical: 8, high: 4, medium: 2, low: 1 };
 
 export function calculateTechDebt(issues) {
   let totalHours = 0;
   const list = issues.map((issue) => {
-    // Map incoming severity to our enum: critical, major, minor
-    let sev = (issue.severity?.toLowerCase() || "minor");
-    // Normalize: if it's "high" -> "major", "medium" -> "minor", "low" -> "minor"
-    if (sev === "high") sev = "major";
-    if (sev === "medium" || sev === "low") sev = "minor";
-    const effort = SEVERITY_HOURS[sev] || 2;
+    let sev = (issue.severity?.toLowerCase() || "low");
+    // Normalize: if it's "major" -> "medium", "minor" -> "low"
+    if (sev === "major") sev = "medium";
+    if (sev === "minor") sev = "low";
+    // Ensure it's one of the allowed enum values
+    if (!["critical", "high", "medium", "low"].includes(sev)) sev = "low";
+    const effort = SEVERITY_HOURS[sev] || 1;
     totalHours += effort;
     return {
       file: issue.file || issue.component || "unknown",
-      severity: sev,  // will be "critical", "major", or "minor"
+      severity: sev,
       effort,
       description: issue.title || issue.description || "No description",
     };
@@ -173,8 +170,8 @@ export async function generateArchitectureGraph(repoPath) {
     const madge = await import("madge");
     const res = await madge.default(repoPath, {
       extensions: ["js", "jsx", "ts", "tsx", "mjs", "cjs"],
-      // excludeRegExp must be a RegExp object, not a string
-      excludeRegExp: /node_modules|\.test\.|\.spec\./,
+      // Use a function (more compatible than excludeRegExp)
+      exclude: (filePath) => /node_modules|\.test\.|\.spec\./.test(filePath),
     });
     const deps = res.obj();
     const nodes = Object.keys(deps).map((id) => ({
@@ -205,7 +202,6 @@ export function computeHealthScore(scores, depVulns, secVulns, techDebt) {
       (scores.maintainability || 0) * 0.20
   );
 
-  // Penalise based on issues
   let penalty = 0;
   if (depVulns.length > 0) penalty += Math.min(depVulns.length * 2, 10);
   if (secVulns.length > 0) penalty += Math.min(secVulns.length * 3, 15);

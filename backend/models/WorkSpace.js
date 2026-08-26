@@ -8,13 +8,11 @@ const workspaceSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
-    // The user who created the workspace (owner)
     ownerId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
       required: true,
     },
-    // Members of the workspace with their roles
     members: [
       {
         userId: {
@@ -33,9 +31,7 @@ const workspaceSchema = new mongoose.Schema(
         },
       },
     ],
-    // Workspace-level settings
     settings: {
-      // Integration settings
       integrations: {
         slack: {
           enabled: { type: Boolean, default: false },
@@ -49,24 +45,15 @@ const workspaceSchema = new mongoose.Schema(
           projectKey: { type: String, default: "" },
         },
       },
-      // Scan settings
       scanSettings: {
         maxFiles: { type: Number, default: 500 },
-        maxFileSize: { type: Number, default: 1048576 }, // 1MB
+        maxFileSize: { type: Number, default: 1048576 },
         includePatterns: { type: [String], default: [] },
         excludePatterns: { type: [String], default: ["node_modules", ".git", "dist"] },
       },
     },
-    // Aggregated usage
-    totalScans: {
-      type: Number,
-      default: 0,
-    },
-    totalReports: {
-      type: Number,
-      default: 0,
-    },
-    // Optional: billing/subscription reference
+    totalScans: { type: Number, default: 0 },
+    totalReports: { type: Number, default: 0 },
     billing: {
       customerId: { type: String, default: "" },
       subscriptionId: { type: String, default: "" },
@@ -76,10 +63,9 @@ const workspaceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// Pre-save middleware: ensure owner is in members with role "owner"
-workspaceSchema.pre("save", function (next) {
+// ── Pre‑save: async – no `next` ──────────────────────────────
+workspaceSchema.pre("save", async function () {
   if (this.isNew) {
-    // Ensure owner is in members
     const ownerExists = this.members.some(
       (m) => m.userId.toString() === this.ownerId.toString()
     );
@@ -87,10 +73,10 @@ workspaceSchema.pre("save", function (next) {
       this.members.push({ userId: this.ownerId, role: "owner" });
     }
   }
-  next();
 });
 
-// Instance method: add a member
+// ── Instance methods ──────────────────────────────────────────
+
 workspaceSchema.methods.addMember = async function (userId, role = "member") {
   const existing = this.members.find(
     (m) => m.userId.toString() === userId.toString()
@@ -104,7 +90,6 @@ workspaceSchema.methods.addMember = async function (userId, role = "member") {
   return this;
 };
 
-// Instance method: remove a member
 workspaceSchema.methods.removeMember = async function (userId) {
   this.members = this.members.filter(
     (m) => m.userId.toString() !== userId.toString()
@@ -113,7 +98,6 @@ workspaceSchema.methods.removeMember = async function (userId) {
   return this;
 };
 
-// Instance method: check if user has role
 workspaceSchema.methods.hasRole = function (userId, roles = []) {
   const member = this.members.find(
     (m) => m.userId.toString() === userId.toString()

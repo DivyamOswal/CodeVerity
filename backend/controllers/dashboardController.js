@@ -3,22 +3,46 @@ import Report from "../models/Report.js";
 import User from "../models/User.js";
 import Workspace from "../models/Workspace.js";
 
+// Helper to ensure a user has a workspace
+async function ensureWorkspace(user) {
+  let workspaceId = user.workspaceId;
+  let workspace = null;
+
+  if (workspaceId) {
+    workspace = await Workspace.findById(workspaceId).select("name members totalScans totalReports").lean();
+  }
+
+  if (!workspace) {
+    // Create a new workspace
+    const newWorkspace = await Workspace.create({
+      name: `${user.name}'s Workspace`,
+      ownerId: user._id,
+      members: [{ userId: user._id, role: "owner" }],
+    });
+    user.workspaceId = newWorkspace._id;
+    user.role = "owner";
+    await user.save();
+    workspace = newWorkspace.toObject();
+  }
+
+  return workspace;
+}
+
 export const getDashboardData = async (req, res) => {
   try {
     const userId = req.user.id;
-    const workspaceId = req.user.workspaceId;
 
-    // Fetch workspace (for member count, name, etc.)
-    const workspace = await Workspace.findById(workspaceId)
-      .select("name members totalScans totalReports")
-      .lean();
-
-    if (!workspace) {
-      // Fallback: if no workspace, create one (shouldn't happen)
-      return res.status(404).json({ error: "Workspace not found. Please contact support." });
+    // 1. Fetch the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
     }
 
-    // Fetch all reports for this workspace
+    // 2. Ensure workspace exists
+    const workspace = await ensureWorkspace(user);
+    const workspaceId = workspace._id;
+
+    // 3. Fetch reports for this workspace
     const reports = await Report.find({ workspaceId })
       .sort({ createdAt: -1 })
       .lean();
@@ -69,31 +93,28 @@ export const getDashboardData = async (req, res) => {
     }, {});
 
     // Get current user (for token/scan status)
-    const user = await User.findById(userId)
+    const userData = await User.findById(userId)
       .select("name email tokensRemaining totalTokensUsed scansUsedThisMonth scansLimit plan role")
       .lean();
 
     res.json({
-      // ---- User info (compatible with frontend) ----
       user: {
         id: userId,
-        name: user?.name ?? "",
-        email: user?.email ?? req.user.email ?? "",
-        tokensRemaining: user?.tokensRemaining ?? 0,
-        totalTokensUsed: user?.totalTokensUsed ?? 0,
-        scansUsedThisMonth: user?.scansUsedThisMonth ?? 0,
-        scansLimit: user?.scansLimit ?? 0,
-        plan: user?.plan ?? "starter",
-        role: user?.role ?? "member",
+        name: userData?.name ?? "",
+        email: userData?.email ?? req.user.email ?? "",
+        tokensRemaining: userData?.tokensRemaining ?? 0,
+        totalTokensUsed: userData?.totalTokensUsed ?? 0,
+        scansUsedThisMonth: userData?.scansUsedThisMonth ?? 0,
+        scansLimit: userData?.scansLimit ?? 0,
+        plan: userData?.plan ?? "starter",
+        role: userData?.role ?? "member",
       },
-      // ---- Workspace info (new) ----
       workspace: {
         id: workspace._id,
         name: workspace.name,
         memberCount: workspace.members?.length ?? 0,
         totalScans: workspace.totalScans ?? totalScans,
       },
-      // ---- Stats (same structure as before) ----
       stats: {
         totalScans,
         avgScore,
@@ -101,7 +122,6 @@ export const getDashboardData = async (req, res) => {
         devopsScore: avgDevops,
         gradeDistribution,
       },
-      // ---- Recent reports (same structure) ----
       recentReports,
     });
   } catch (err) {
