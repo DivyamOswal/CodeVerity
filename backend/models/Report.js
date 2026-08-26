@@ -47,7 +47,7 @@ const SecretSchema = new mongoose.Schema(
 const TechDebtIssueSchema = new mongoose.Schema(
   {
     file: String,
-    severity: { type: String, enum: ["minor", "major", "critical"] },
+    severity: { type: String, enum: ["low", "medium", "high", "critical"] }, // changed from ["minor", "major", "critical"]
     effort: { type: Number, default: 0 },
     description: String,
   },
