@@ -111,12 +111,20 @@ export const getReports = async (req, res) => {
     const workspace = await ensureWorkspace(user);
     const workspaceId = workspace._id;
 
-    // Build filter: always scope to workspace
-    const filter = { workspaceId };
+    // ── Build filter ──────────────────────────────────────
+    let filter;
 
-    // If role is 'owner' or 'admin', show all workspace reports; else show only user's own.
-    if (user.role !== 'owner' && user.role !== 'admin') {
-      filter.userId = userId;
+    // If user is owner or admin: show all workspace reports + old reports without workspaceId
+    if (user.role === 'owner' || user.role === 'admin') {
+      filter = {
+        $or: [
+          { workspaceId: workspaceId },
+          { workspaceId: { $exists: false }, userId: userId } // fallback for old reports
+        ]
+      };
+    } else {
+      // Members/Viewers: only their own reports (regardless of workspaceId)
+      filter = { userId: userId };
     }
 
     const reports = await Report.find(filter)
