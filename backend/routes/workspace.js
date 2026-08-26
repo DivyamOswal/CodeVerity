@@ -6,6 +6,7 @@ import {
   addMember,
   removeMember,
   updateMemberRole,
+  leaveWorkspace, // 👈 add this
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -16,5 +17,6 @@ router.put("/", auth, updateWorkspace);
 router.post("/members", auth, addMember);
 router.delete("/members/:userId", auth, removeMember);
 router.put("/members/:userId", auth, updateMemberRole);
+router.post("/leave", auth, leaveWorkspace); // 👈 add this
 
 export default router;
