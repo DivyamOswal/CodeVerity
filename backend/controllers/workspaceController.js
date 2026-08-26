@@ -2,19 +2,36 @@
 import Workspace from "../models/Workspace.js";
 import User from "../models/User.js";
 
+// ─── Helper: Ensure user has a workspace ──────────────────────
+async function ensureWorkspace(user) {
+  if (user.workspaceId) {
+    const existing = await Workspace.findById(user.workspaceId);
+    if (existing) return existing;
+  }
+  // Create a new workspace for the user
+  const newWorkspace = await Workspace.create({
+    name: `${user.name}'s Workspace`,
+    ownerId: user._id,
+    members: [{ userId: user._id, role: "owner" }],
+  });
+  user.workspaceId = newWorkspace._id;
+  user.role = "owner";
+  await user.save();
+  return newWorkspace;
+}
+
 // ─── Get workspace details ────────────────────────────────────
 export const getWorkspace = async (req, res) => {
   try {
-    const workspaceId = req.user.workspaceId;
-    const workspace = await Workspace.findById(workspaceId)
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const populated = await Workspace.findById(workspace._id)
       .populate("members.userId", "name email")
       .lean();
 
-    if (!workspace) {
-      return res.status(404).json({ error: "Workspace not found" });
-    }
-
-    res.json({ success: true, workspace });
+    res.json({ success: true, workspace: populated });
   } catch (err) {
     console.error("Get workspace error:", err);
     res.status(500).json({ error: "Failed to fetch workspace" });
@@ -25,19 +42,17 @@ export const getWorkspace = async (req, res) => {
 export const updateWorkspace = async (req, res) => {
   try {
     const { name } = req.body;
-    const workspaceId = req.user.workspaceId;
-
     if (!name || name.trim().length < 2) {
       return res.status(400).json({ error: "Workspace name must be at least 2 characters." });
     }
 
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: "Workspace not found" });
-    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === req.user.id
+      (m) => m.userId.toString() === user._id.toString()
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -57,19 +72,17 @@ export const updateWorkspace = async (req, res) => {
 export const addMember = async (req, res) => {
   try {
     const { email, role = "member" } = req.body;
-    const workspaceId = req.user.workspaceId;
-
     if (!email) {
       return res.status(400).json({ error: "Email is required." });
     }
 
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: "Workspace not found" });
-    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
 
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === req.user.id
+      (m) => m.userId.toString() === user._id.toString()
     );
     if (!currentMember || !["owner", "admin"].includes(currentMember.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -80,10 +93,7 @@ export const addMember = async (req, res) => {
       return res.status(404).json({ error: "User not found." });
     }
 
-    const alreadyMember = workspace.members.some(
-      (m) => m.userId.toString() === userToAdd._id.toString()
-    );
-    if (alreadyMember) {
+    if (workspace.members.some((m) => m.userId.toString() === userToAdd._id.toString())) {
       return res.status(400).json({ error: "User is already a member of this workspace." });
     }
 
@@ -91,7 +101,7 @@ export const addMember = async (req, res) => {
     await workspace.save();
 
     if (!userToAdd.workspaceId) {
-      userToAdd.workspaceId = workspaceId;
+      userToAdd.workspaceId = workspace._id;
       userToAdd.role = role;
       await userToAdd.save();
     }
@@ -107,21 +117,20 @@ export const addMember = async (req, res) => {
 export const removeMember = async (req, res) => {
   try {
     const { userId } = req.params;
-    const workspaceId = req.user.workspaceId;
 
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: "Workspace not found" });
-    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
 
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === req.user.id
+      (m) => m.userId.toString() === user._id.toString()
     );
     if (!currentMember) {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-    if (userId === req.user.id) {
+    if (userId === user._id.toString()) {
       return res.status(400).json({ error: "Cannot remove yourself from workspace." });
     }
 
@@ -159,19 +168,18 @@ export const updateMemberRole = async (req, res) => {
   try {
     const { userId } = req.params;
     const { role } = req.body;
-    const workspaceId = req.user.workspaceId;
 
     if (!["owner", "admin", "member", "viewer"].includes(role)) {
       return res.status(400).json({ error: "Invalid role." });
     }
 
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: "Workspace not found" });
-    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
 
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === req.user.id
+      (m) => m.userId.toString() === user._id.toString()
     );
     if (!currentMember || !["owner", "admin"].includes(currentMember.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -197,10 +205,10 @@ export const updateMemberRole = async (req, res) => {
     targetMember.role = role;
     await workspace.save();
 
-    const user = await User.findById(userId);
-    if (user && user.workspaceId?.toString() === workspaceId.toString()) {
-      user.role = role;
-      await user.save();
+    const targetUser = await User.findById(userId);
+    if (targetUser && targetUser.workspaceId?.toString() === workspace._id.toString()) {
+      targetUser.role = role;
+      await targetUser.save();
     }
 
     res.json({ success: true, member: { userId, role } });
@@ -210,25 +218,21 @@ export const updateMemberRole = async (req, res) => {
   }
 };
 
-// ─── Leave workspace (NEW) ──────────────────────────────────────
+// ─── Leave workspace ──────────────────────────────────────────
 export const leaveWorkspace = async (req, res) => {
   try {
-    const workspaceId = req.user.workspaceId;
-    const userId = req.user.id;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
 
-    const workspace = await Workspace.findById(workspaceId);
-    if (!workspace) {
-      return res.status(404).json({ error: "Workspace not found" });
-    }
+    const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === userId
+      (m) => m.userId.toString() === user._id.toString()
     );
     if (!member) {
       return res.status(404).json({ error: "You are not a member of this workspace." });
     }
 
-    // If owner, check if they're the only owner
     if (member.role === "owner") {
       const ownerCount = workspace.members.filter(m => m.role === "owner").length;
       if (ownerCount === 1) {
@@ -236,23 +240,36 @@ export const leaveWorkspace = async (req, res) => {
       }
     }
 
-    // Remove member
     workspace.members = workspace.members.filter(
-      (m) => m.userId.toString() !== userId
+      (m) => m.userId.toString() !== user._id.toString()
     );
     await workspace.save();
 
-    // Update user
-    const user = await User.findById(userId);
-    if (user) {
-      user.workspaceId = null;
-      user.role = "member";
-      await user.save();
-    }
+    user.workspaceId = null;
+    user.role = "member";
+    await user.save();
 
     res.json({ success: true, message: "Left workspace." });
   } catch (err) {
     console.error("Leave workspace error:", err);
     res.status(500).json({ error: "Failed to leave workspace" });
+  }
+};
+
+// ─── List members ──────────────────────────────────────────────
+export const listMembers = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const populated = await Workspace.findById(workspace._id)
+      .populate("members.userId", "name email")
+      .lean();
+
+    res.json({ success: true, members: populated.members });
+  } catch (err) {
+    console.error("List members error:", err);
+    res.status(500).json({ error: "Failed to list members" });
   }
 };

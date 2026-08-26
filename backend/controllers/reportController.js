@@ -3,6 +3,7 @@ import PDFDocument from "pdfkit";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import Report from "../models/Report.js";
 import Workspace from "../models/Workspace.js";
+import User from "../models/User.js"; // 👈 added
 
 // ── Theme: Indigo Slate ──────────────────────────────────────
 const COLORS = {
@@ -27,6 +28,23 @@ const SEVERITY_COLORS = {
   medium: "#facc15",
   low: "#3b82f6",
 };
+
+// ─── Helper: Ensure user has a workspace ──────────────────────
+async function ensureWorkspace(user) {
+  if (user.workspaceId) {
+    const existing = await Workspace.findById(user.workspaceId);
+    if (existing) return existing;
+  }
+  const newWorkspace = await Workspace.create({
+    name: `${user.name}'s Workspace`,
+    ownerId: user._id,
+    members: [{ userId: user._id, role: "owner" }],
+  });
+  user.workspaceId = newWorkspace._id;
+  user.role = "owner";
+  await user.save();
+  return newWorkspace;
+}
 
 // ── Helpers ──────────────────────────────────────────────────
 
@@ -84,18 +102,20 @@ function drawTable(doc, headers, rows, columnWidths) {
 
 export const getReports = async (req, res) => {
   try {
-    const { workspaceId, id: userId, role } = req.user;
-
-    // If workspaceId is missing, return empty (should not happen for normal users)
-    if (!workspaceId) {
-      return res.status(400).json({ error: "Workspace not set for this user" });
+    const userId = req.user.id;
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(401).json({ error: "User not found" });
     }
+
+    const workspace = await ensureWorkspace(user);
+    const workspaceId = workspace._id;
 
     // Build filter: always scope to workspace
     const filter = { workspaceId };
 
     // If role is 'owner' or 'admin', show all workspace reports; else show only user's own.
-    if (role !== 'owner' && role !== 'admin') {
+    if (user.role !== 'owner' && user.role !== 'admin') {
       filter.userId = userId;
     }
 
@@ -117,8 +137,12 @@ export const downloadReportPDF = async (req, res) => {
     const report = await Report.findById(req.params.id);
     if (!report) return res.status(404).json({ error: "Report not found" });
 
-    // Security: ensure report belongs to user's workspace
-    if (report.workspaceId?.toString() !== req.user.workspaceId?.toString()) {
+    // Ensure user has a workspace and verify ownership
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    if (report.workspaceId?.toString() !== workspace._id.toString()) {
       return res.status(403).json({ error: "Access denied" });
     }
 
