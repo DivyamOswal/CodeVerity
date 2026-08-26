@@ -217,25 +217,27 @@ function FlaskIcon() {
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
-  const hasTarget = useRef(false);
+  const [hasStarted, setHasStarted] = useState(false);
+  const rafRef = useRef(null);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      hasTarget.current = true;
+      setHasStarted(true);
     }, delayMs);
     return () => clearTimeout(timer);
   }, [delayMs]);
 
   useEffect(() => {
-    if (!hasTarget.current) return;
+    if (!hasStarted) return;
+    // Reset display to 0 when value changes
+    setDisplay(0);
     const num = parseFloat(String(value).replace(/[^0-9.]/g, ""));
+    if (isNaN(num)) return;
     const isPct = String(value).includes("%");
     const isPlus = String(value).includes("+");
     const isLt = String(value).includes("<");
     const duration = 800;
     const start = performance.now();
-
-    let raf;
     const tick = (now) => {
       const elapsed = now - start;
       const progress = Math.min(elapsed / duration, 1);
@@ -243,11 +245,17 @@ function StatPill({ value, label, delayMs = 0 }) {
       const current = Math.round(num * eased);
       let output = isPct ? `${current}%` : isPlus ? `${current}+` : isLt ? `<${current}s` : String(current);
       setDisplay(output);
-      if (progress < 1) raf = requestAnimationFrame(tick);
+      if (progress < 1) {
+        rafRef.current = requestAnimationFrame(tick);
+      }
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, [value, delayMs]);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (rafRef.current) {
+        cancelAnimationFrame(rafRef.current);
+      }
+    };
+  }, [value, hasStarted]);
 
   return (
     <div className="flex flex-col items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3 min-w-[110px]">
@@ -270,10 +278,7 @@ function ScanLine() {
 
 // ============================================================
 //  SECTION: How It Works, Testimonials, Pricing, FAQ, Footer
-//  (already defined in your file keep them as they are)
 // ============================================================
-// ... (the rest of the components remain identical to your version)
-// I'll include them below for completeness, but they are unchanged.
 
 /* ---------- How It Works ---------- */
 function HowItWorks() {
@@ -286,7 +291,7 @@ function HowItWorks() {
         </svg>
       ),
       title: "Paste your GitHub URL",
-      desc: "Enter any public repository link CodeVerity immediately analyses the codebase structure.",
+      desc: "Enter any public repository link – CodeVerity immediately analyses the codebase structure.",
     },
     {
       icon: (
@@ -317,7 +322,7 @@ function HowItWorks() {
           How CodeVerity works
         </h2>
         <p className="text-[var(--text-secondary)] text-sm mb-10 max-w-xl mx-auto">
-          From repository to report three simple steps to code confidence.
+          From repository to report – three simple steps to code confidence.
         </p>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {steps.map((step, idx) => (
@@ -350,7 +355,7 @@ function Testimonials() {
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote: "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.",
+      quote: "I use it before every PR. The bug detection is surprisingly accurate – it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full‑stack Developer, OpenSource Collective",
     },
@@ -467,7 +472,7 @@ function Pricing() {
           })}
         </div>
         <p className="mt-6 text-[10px] text-[var(--text-muted)]">
-          * All prices in INR. Yearly plans offer 20% off see full pricing page.
+          * All prices in INR. Yearly plans offer 20% off – see full pricing page.
         </p>
       </div>
     </section>
@@ -560,7 +565,7 @@ function Footer() {
 }
 
 // ============================================================
-//  MAIN HOME COMPONENT (existing + new sections)
+//  MAIN HOME COMPONENT (with real stats)
 // ============================================================
 
 export default function Home() {
@@ -568,7 +573,37 @@ export default function Home() {
   const [show, setShow] = useState(false);
   const { compact } = usePreferences();
 
-  // Refs for GSAP animation targets (existing)
+  // ── Stats state ──
+  const [stats, setStats] = useState({
+    totalScans: 0,
+    avgQuality: 0,
+    avgTime: "0s",
+  });
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // ── Fetch real stats ──
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        const res = await fetch("/api/stats/public");
+        const data = await res.json();
+        if (data.success) {
+          setStats({
+            totalScans: data.stats.totalScans,
+            avgQuality: data.stats.avgQuality,
+            avgTime: data.stats.avgTime || "< 2 min",
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch stats:", err);
+      } finally {
+        setStatsLoading(false);
+      }
+    };
+    fetchStats();
+  }, []);
+
+  // Refs for GSAP animation targets
   const containerRef = useRef(null);
   const brandRef = useRef(null);
   const badgeRef = useRef(null);
@@ -584,7 +619,7 @@ export default function Home() {
   const bgGlow2Ref = useRef(null);
   const bgGridRef = useRef(null);
 
-  // Refs for new sections (to be animated on scroll)
+  // Refs for new sections
   const howRef = useRef(null);
   const testimonialRef = useRef(null);
   const pricingRef = useRef(null);
@@ -595,13 +630,12 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  // ---- GSAP animations (existing + new) ----
+  // ---- GSAP animations ----
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        // --- Existing entrance timeline (unchanged) ---
         const tl = gsap.timeline({
           defaults: { ease: "power3.out", duration: 0.6 },
         });
@@ -629,7 +663,7 @@ export default function Home() {
           .to(trustRef.current, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
           .to(statsRef.current, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, "-=0.15");
 
-        // --- Existing scroll triggers for feature section ---
+        // Feature section
         ScrollTrigger.create({
           trigger: featureLabelRef.current,
           start: "top 85%",
@@ -663,7 +697,7 @@ export default function Home() {
           once: true,
         });
 
-        // --- NEW scroll triggers for new sections ---
+        // New sections
         const sections = [
           { ref: howRef, start: "top 80%" },
           { ref: testimonialRef, start: "top 80%" },
@@ -686,7 +720,7 @@ export default function Home() {
           });
         });
 
-        // --- Existing parallax glows (unchanged) ---
+        // Parallax glows
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
@@ -727,7 +761,6 @@ export default function Home() {
       });
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
-        // Ensure all elements (including new) are visible immediately
         gsap.set(
           [
             brandRef.current,
@@ -754,7 +787,7 @@ export default function Home() {
     { scope: containerRef, dependencies: [] }
   );
 
-  // Compact overrides (unchanged)
+  // Compact overrides
   const compactClasses = compact
     ? {
         container: "py-8",
@@ -789,7 +822,7 @@ export default function Home() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
-      {/* Background glows and dot grid unchanged */}
+      {/* Background glows and dot grid */}
       <div
         ref={bgGlow1Ref}
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
@@ -817,14 +850,14 @@ export default function Home() {
 
       <ParticleField />
 
-      {/* MAIN CONTENT existing hero + new sections */}
+      {/* MAIN CONTENT */}
       <div
         className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container} transition-all duration-700 ease-out ${
           show ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
         }`}
       >
         <div className="w-full max-w-5xl text-center">
-          {/* ---- BRAND ---- */}
+          {/* BRAND */}
           <div ref={brandRef} className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}>
             <CodeVerityLogo />
             <div className="text-left">
@@ -837,7 +870,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* ---- BADGE ---- */}
+          {/* BADGE */}
           <div
             ref={badgeRef}
             className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
@@ -846,7 +879,7 @@ export default function Home() {
             AI-powered GitHub code analysis
           </div>
 
-          {/* ---- HEADING ---- */}
+          {/* HEADING */}
           <h1
             ref={headingRef}
             className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
@@ -855,7 +888,7 @@ export default function Home() {
             <span className="text-[var(--accent)]">Verity</span>
           </h1>
 
-          {/* ---- TYPED SUBTITLE ---- */}
+          {/* TYPED SUBTITLE */}
           <p ref={typedRef} className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}>
             <TypedWord
               words={[
@@ -867,7 +900,7 @@ export default function Home() {
             />
           </p>
 
-          {/* ---- DESCRIPTION ---- */}
+          {/* DESCRIPTION */}
           <p
             ref={descriptionRef}
             className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
@@ -876,7 +909,7 @@ export default function Home() {
             analysis, security findings, bug detection, performance insights, and generated tests.
           </p>
 
-          {/* ---- CTA BUTTONS ---- */}
+          {/* CTA BUTTONS */}
           <div ref={ctasRef} className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}>
             {token ? (
               <Link
@@ -907,7 +940,7 @@ export default function Home() {
             )}
           </div>
 
-          {/* ---- TRUST LINE ---- */}
+          {/* TRUST LINE */}
           <div
             ref={trustRef}
             className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
@@ -918,17 +951,29 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
-          {/* ---- STATS ---- */}
+          {/* STATS – now with real data */}
           <div
             ref={statsRef}
             className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
           >
-            <StatPill value="100+" label="Repos Scanned" delayMs={500} />
-            <StatPill value="98%" label="Issue Accuracy" delayMs={600} />
-            <StatPill value="<60s" label="Avg Audit Time" delayMs={700} />
+            <StatPill
+              value={statsLoading ? "..." : `${stats.totalScans}+`}
+              label="Repos Scanned"
+              delayMs={500}
+            />
+            <StatPill
+              value={statsLoading ? "..." : `${stats.avgQuality}%`}
+              label="Issue Accuracy"
+              delayMs={600}
+            />
+            <StatPill
+              value={statsLoading ? "..." : stats.avgTime}
+              label="Avg Audit Time"
+              delayMs={700}
+            />
           </div>
 
-          {/* ---- FEATURE LABEL ---- */}
+          {/* FEATURE LABEL */}
           <div
             ref={featureLabelRef}
             className="mb-4 flex items-center gap-3"
@@ -941,7 +986,7 @@ export default function Home() {
             <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--border-light)]" />
           </div>
 
-          {/* ---- FEATURE CARDS ---- */}
+          {/* FEATURE CARDS */}
           <div className={`grid ${compactClasses.featureGap} md:grid-cols-3`}>
             <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
               <Feature
@@ -971,10 +1016,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* ============================================================ */}
-      {/*  NEW SECTIONS appear below the hero, with scroll reveals    */}
-      {/* ============================================================ */}
-
+      {/* NEW SECTIONS */}
       <div className="relative z-10 max-w-7xl mx-auto">
         <div ref={howRef} style={{ opacity: 0 }}>
           <HowItWorks />
@@ -991,7 +1033,7 @@ export default function Home() {
         <Footer />
       </div>
 
-      {/* ---- Global styles ---- */}
+      {/* Global styles */}
       <style>{`
         @keyframes scanline {
           0% { top: -2px; opacity: 0; }

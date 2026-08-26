@@ -12,6 +12,7 @@ import githubRoutes from "./routes/github.js";
 import dashboardRoutes from "./routes/dashboard.js";
 // import billingRoutes from "./routes/billing.js";
 import workspaceRoutes from "./routes/workspace.js";
+import statsRoutes from "./routes/stats.js";
 
 connectDB();
 
@@ -28,6 +29,7 @@ app.use("/api/report", reportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 // app.use("/api/billing", billingRoutes);
 app.use("/api/workspace", workspaceRoutes);
+app.use("/api/stats", statsRoutes);
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () =>
