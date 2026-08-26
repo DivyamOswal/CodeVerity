@@ -36,7 +36,6 @@ export const updateWorkspace = async (req, res) => {
       return res.status(404).json({ error: "Workspace not found" });
     }
 
-    // Check permission: only owner or admin can update
     const member = workspace.members.find(
       (m) => m.userId.toString() === req.user.id
     );
@@ -69,7 +68,6 @@ export const addMember = async (req, res) => {
       return res.status(404).json({ error: "Workspace not found" });
     }
 
-    // Check permission: only owner or admin can add members
     const currentMember = workspace.members.find(
       (m) => m.userId.toString() === req.user.id
     );
@@ -77,13 +75,11 @@ export const addMember = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-    // Find user by email
     const userToAdd = await User.findOne({ email });
     if (!userToAdd) {
       return res.status(404).json({ error: "User not found." });
     }
 
-    // Check if already in workspace
     const alreadyMember = workspace.members.some(
       (m) => m.userId.toString() === userToAdd._id.toString()
     );
@@ -91,11 +87,9 @@ export const addMember = async (req, res) => {
       return res.status(400).json({ error: "User is already a member of this workspace." });
     }
 
-    // Add member
     workspace.members.push({ userId: userToAdd._id, role });
     await workspace.save();
 
-    // Update user's workspaceId if they don't have one
     if (!userToAdd.workspaceId) {
       userToAdd.workspaceId = workspaceId;
       userToAdd.role = role;
@@ -120,7 +114,6 @@ export const removeMember = async (req, res) => {
       return res.status(404).json({ error: "Workspace not found" });
     }
 
-    // Check permission: owner can remove anyone; admin can remove members/viewers
     const currentMember = workspace.members.find(
       (m) => m.userId.toString() === req.user.id
     );
@@ -128,7 +121,6 @@ export const removeMember = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-    // Prevent removing self (should go through delete account flow)
     if (userId === req.user.id) {
       return res.status(400).json({ error: "Cannot remove yourself from workspace." });
     }
@@ -140,12 +132,9 @@ export const removeMember = async (req, res) => {
       return res.status(404).json({ error: "Member not found." });
     }
 
-    // Role-based checks
     if (currentMember.role === "owner") {
-      // owner can remove anyone except another owner (shouldn't happen)
-      // We'll allow removing all, but you could add extra checks
+      // owner can remove anyone
     } else if (currentMember.role === "admin") {
-      // admin can remove members and viewers, not other admins or owner
       if (targetMember.role === "owner" || targetMember.role === "admin") {
         return res.status(403).json({ error: "Cannot remove admin or owner." });
       }
@@ -153,14 +142,10 @@ export const removeMember = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-    // Remove member
     workspace.members = workspace.members.filter(
       (m) => m.userId.toString() !== userId
     );
     await workspace.save();
-
-    // Optionally, reset user's workspaceId if they're not in any other workspace
-    // For now, we'll leave it; could add logic to assign to a default or null.
 
     res.json({ success: true, message: "Member removed." });
   } catch (err) {
@@ -199,12 +184,10 @@ export const updateMemberRole = async (req, res) => {
       return res.status(404).json({ error: "Member not found." });
     }
 
-    // Only owner can assign owner role
     if (role === "owner" && currentMember.role !== "owner") {
       return res.status(403).json({ error: "Only owner can assign owner role." });
     }
 
-    // Admin cannot change roles of owner or other admin
     if (currentMember.role === "admin") {
       if (targetMember.role === "owner" || targetMember.role === "admin") {
         return res.status(403).json({ error: "Cannot change role of owner or admin." });
@@ -214,7 +197,6 @@ export const updateMemberRole = async (req, res) => {
     targetMember.role = role;
     await workspace.save();
 
-    // Update user's role field if necessary
     const user = await User.findById(userId);
     if (user && user.workspaceId?.toString() === workspaceId.toString()) {
       user.role = role;
@@ -225,5 +207,52 @@ export const updateMemberRole = async (req, res) => {
   } catch (err) {
     console.error("Update member role error:", err);
     res.status(500).json({ error: "Failed to update member role" });
+  }
+};
+
+// ─── Leave workspace (NEW) ──────────────────────────────────────
+export const leaveWorkspace = async (req, res) => {
+  try {
+    const workspaceId = req.user.workspaceId;
+    const userId = req.user.id;
+
+    const workspace = await Workspace.findById(workspaceId);
+    if (!workspace) {
+      return res.status(404).json({ error: "Workspace not found" });
+    }
+
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === userId
+    );
+    if (!member) {
+      return res.status(404).json({ error: "You are not a member of this workspace." });
+    }
+
+    // If owner, check if they're the only owner
+    if (member.role === "owner") {
+      const ownerCount = workspace.members.filter(m => m.role === "owner").length;
+      if (ownerCount === 1) {
+        return res.status(400).json({ error: "You are the only owner. Transfer ownership first." });
+      }
+    }
+
+    // Remove member
+    workspace.members = workspace.members.filter(
+      (m) => m.userId.toString() !== userId
+    );
+    await workspace.save();
+
+    // Update user
+    const user = await User.findById(userId);
+    if (user) {
+      user.workspaceId = null;
+      user.role = "member";
+      await user.save();
+    }
+
+    res.json({ success: true, message: "Left workspace." });
+  } catch (err) {
+    console.error("Leave workspace error:", err);
+    res.status(500).json({ error: "Failed to leave workspace" });
   }
 };
