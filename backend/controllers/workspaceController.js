@@ -263,7 +263,7 @@ export const listMembers = async (req, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
-    const populated = await Workspace.findById(workspace._id)
+    const populated = await WorkSpace.findById(workspace._id)
       .populate("members.userId", "name email")
       .lean();
 

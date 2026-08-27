@@ -1,8 +1,7 @@
 // backend/controllers/dashboardController.js
 import Report from "../models/Report.js";
 import User from "../models/User.js";
-import WorkSpace from "../models/WorkSpace.js";
-
+import WorkSpace from "../models/WorkSpace.js"; 
 
 // Helper to ensure a user has a workspace
 async function ensureWorkspace(user) {
@@ -10,7 +9,9 @@ async function ensureWorkspace(user) {
   let workspace = null;
 
   if (workspaceId) {
-    workspace = await Workspace.findById(workspaceId).select("name members totalScans totalReports").lean();
+    workspace = await WorkSpace.findById(workspaceId)
+      .select("name members totalScans totalReports")
+      .lean();
   }
 
   if (!workspace) {
@@ -33,17 +34,14 @@ export const getDashboardData = async (req, res) => {
   try {
     const userId = req.user.id;
 
-    // 1. Fetch the user
     const user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // 2. Ensure workspace exists
     const workspace = await ensureWorkspace(user);
     const workspaceId = workspace._id;
 
-    // 3. Fetch reports for this workspace
     const reports = await Report.find({ workspaceId })
       .sort({ createdAt: -1 })
       .lean();
@@ -93,7 +91,6 @@ export const getDashboardData = async (req, res) => {
       return acc;
     }, {});
 
-    // Get current user (for token/scan status)
     const userData = await User.findById(userId)
       .select("name email tokensRemaining totalTokensUsed scansUsedThisMonth scansLimit plan role")
       .lean();

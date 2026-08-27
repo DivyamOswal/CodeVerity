@@ -2,7 +2,7 @@
 import PDFDocument from "pdfkit";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import Report from "../models/Report.js";
-import User from "../models/User.js"; // 👈 added
+import User from "../models/User.js"; 
 import WorkSpace from "../models/WorkSpace.js";
 
 // ── Theme: Indigo Slate ──────────────────────────────────────
@@ -35,7 +35,7 @@ async function ensureWorkspace(user) {
     const existing = await WorkSpace.findById(user.workspaceId);
     if (existing) return existing;
   }
-  const newWorkspace = await Workspace.create({
+  const newWorkspace = await WorkSpace.create({
     name: `${user.name}'s Workspace`,
     ownerId: user._id,
     members: [{ userId: user._id, role: "owner" }],
