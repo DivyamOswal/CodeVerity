@@ -10,7 +10,7 @@ import analyzeRoutes from "./routes/analyze.js";
 import reportRoutes from "./routes/report.js";
 import githubRoutes from "./routes/github.js";
 import dashboardRoutes from "./routes/dashboard.js";
-// import billingRoutes from "./routes/billing.js";
+import billingRoutes from "./routes/billing.js";
 import workspaceRoutes from "./routes/workspace.js";
 import statsRoutes from "./routes/stats.js";
 
@@ -23,7 +23,7 @@ const allowedOrigins = [
 ];
 
 app.use(cors({ origin: allowedOrigins, }));
-// app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
+app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -31,7 +31,7 @@ app.use("/api/analyze", analyzeRoutes);
 app.use("/api/github", githubRoutes);
 app.use("/api/report", reportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
-// app.use("/api/billing", billingRoutes);
+app.use("/api/billing", billingRoutes);
 app.use("/api/workspace", workspaceRoutes);
 app.use("/api/stats", statsRoutes);
 
