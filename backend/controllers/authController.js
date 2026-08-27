@@ -3,9 +3,9 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/User.js";
-import Workspace from "../models/Workspace.js";
 import PDFDocument from "pdfkit";
 import Report from "../models/Report.js";
+import WorkSpace from "../models/WorkSpace.js";
 
 /* =========================================================
    HELPERS
@@ -64,7 +64,7 @@ const redirectWithError = (res, errorMessage) => {
 
 // ── Helper: Create workspace for a user ────────────────────────
 const createWorkspaceForUser = async (user) => {
-  const workspace = await Workspace.create({
+  const workspace = await WorkSpace.create({
     name: `${user.name}'s Workspace`,
     ownerId: user._id,
     members: [{ userId: user._id, role: "owner" }],

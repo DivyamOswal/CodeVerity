@@ -1,7 +1,8 @@
 // backend/controllers/dashboardController.js
 import Report from "../models/Report.js";
 import User from "../models/User.js";
-import Workspace from "../models/Workspace.js";
+import WorkSpace from "../models/WorkSpace.js";
+
 
 // Helper to ensure a user has a workspace
 async function ensureWorkspace(user) {
@@ -14,7 +15,7 @@ async function ensureWorkspace(user) {
 
   if (!workspace) {
     // Create a new workspace
-    const newWorkspace = await Workspace.create({
+    const newWorkspace = await WorkSpace.create({
       name: `${user.name}'s Workspace`,
       ownerId: user._id,
       members: [{ userId: user._id, role: "owner" }],

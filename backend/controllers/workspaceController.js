@@ -1,15 +1,15 @@
 // backend/controllers/workspaceController.js
-import Workspace from "../models/Workspace.js";
 import User from "../models/User.js";
+import WorkSpace from "../models/WorkSpace.js";
 
 // ─── Helper: Ensure user has a workspace ──────────────────────
 async function ensureWorkspace(user) {
   if (user.workspaceId) {
-    const existing = await Workspace.findById(user.workspaceId);
+    const existing = await WorkSpace.findById(user.workspaceId);
     if (existing) return existing;
   }
   // Create a new workspace for the user
-  const newWorkspace = await Workspace.create({
+  const newWorkspace = await WorkSpace.create({
     name: `${user.name}'s Workspace`,
     ownerId: user._id,
     members: [{ userId: user._id, role: "owner" }],
@@ -27,7 +27,7 @@ export const getWorkspace = async (req, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
-    const populated = await Workspace.findById(workspace._id)
+    const populated = await WorkSpace.findById(workspace._id)
       .populate("members.userId", "name email")
       .lean();
 

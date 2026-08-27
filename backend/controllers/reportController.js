@@ -2,8 +2,8 @@
 import PDFDocument from "pdfkit";
 import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import Report from "../models/Report.js";
-import Workspace from "../models/Workspace.js";
 import User from "../models/User.js"; // 👈 added
+import WorkSpace from "../models/WorkSpace.js";
 
 // ── Theme: Indigo Slate ──────────────────────────────────────
 const COLORS = {
@@ -32,7 +32,7 @@ const SEVERITY_COLORS = {
 // ─── Helper: Ensure user has a workspace ──────────────────────
 async function ensureWorkspace(user) {
   if (user.workspaceId) {
-    const existing = await Workspace.findById(user.workspaceId);
+    const existing = await WorkSpace.findById(user.workspaceId);
     if (existing) return existing;
   }
   const newWorkspace = await Workspace.create({
