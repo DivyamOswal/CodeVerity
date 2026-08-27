@@ -17,8 +17,12 @@ import statsRoutes from "./routes/stats.js";
 connectDB();
 
 const app = express();
+const allowedOrigins = [
+  "http://localhost:5173",
+  process.env.FRONTEND_URL || "https://codeverity.pages.dev"
+];
 
-app.use(cors({ origin: "http://localhost:5173" }));
+app.use(cors({ origin: allowedOrigins, }));
 // app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
 app.use(express.json());
 
