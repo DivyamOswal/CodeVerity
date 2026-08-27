@@ -45,7 +45,9 @@ export const createCheckoutSession = async (req, res) => {
     const userId = req.user.id;
 
     if (!plan || !cycle || !currency) {
-      return res.status(400).json({ error: "Missing plan, cycle, or currency." });
+      return res
+        .status(400)
+        .json({ error: "Missing plan, cycle, or currency." });
     }
 
     const user = await User.findById(userId);
@@ -57,7 +59,9 @@ export const createCheckoutSession = async (req, res) => {
     const priceId = PRICE_LOOKUP[priceKey];
 
     if (!priceId) {
-      return res.status(400).json({ error: "Invalid plan or price configuration." });
+      return res
+        .status(400)
+        .json({ error: "Invalid plan or price configuration." });
     }
 
     const customerId = await getOrCreateCustomer(user);
@@ -71,6 +75,7 @@ export const createCheckoutSession = async (req, res) => {
       cancel_url: process.env.STRIPE_CANCEL_URL,
       metadata: { userId: userId, plan, cycle, currency },
       allow_promotion_codes: true,
+      automatic_tax: { enabled: true },
     });
 
     res.json({ sessionId: session.id, url: session.url });
@@ -84,7 +89,7 @@ export const createCheckoutSession = async (req, res) => {
 export const getSubscription = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
-      "plan stripeCustomerId stripeSubscriptionId subscriptionStatus subscriptionEndsAt tokensRemaining scansLimit"
+      "plan stripeCustomerId stripeSubscriptionId subscriptionStatus subscriptionEndsAt tokensRemaining scansLimit",
     );
     res.json({ subscription: user });
   } catch (err) {
@@ -98,7 +103,9 @@ export const cancelSubscription = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user || !user.stripeSubscriptionId) {
-      return res.status(400).json({ error: "No active subscription to cancel." });
+      return res
+        .status(400)
+        .json({ error: "No active subscription to cancel." });
     }
 
     await stripe.subscriptions.update(user.stripeSubscriptionId, {
@@ -108,7 +115,10 @@ export const cancelSubscription = async (req, res) => {
     user.subscriptionStatus = "canceled";
     await user.save();
 
-    res.json({ success: true, message: "Subscription will be canceled at period end." });
+    res.json({
+      success: true,
+      message: "Subscription will be canceled at period end.",
+    });
   } catch (err) {
     console.error("Cancel subscription error:", err);
     res.status(500).json({ error: "Failed to cancel subscription." });
@@ -124,7 +134,7 @@ export const handleWebhook = async (req, res) => {
     event = stripe.webhooks.constructEvent(
       req.body,
       sig,
-      process.env.STRIPE_WEBHOOK_SECRET
+      process.env.STRIPE_WEBHOOK_SECRET,
     );
   } catch (err) {
     console.error("Webhook signature error:", err.message);
@@ -142,18 +152,26 @@ export const handleWebhook = async (req, res) => {
         user.plan = plan;
         user.stripeSubscriptionId = session.subscription;
         user.subscriptionStatus = "active";
-        user.subscriptionEndsAt = new Date(Date.now() + (cycle === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000);
+        user.subscriptionEndsAt = new Date(
+          Date.now() + (cycle === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000,
+        );
         await user.save();
         break;
       }
 
       case "invoice.paid": {
         const invoice = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(invoice.subscription);
-        const user = await User.findOne({ stripeSubscriptionId: invoice.subscription });
+        const subscription = await stripe.subscriptions.retrieve(
+          invoice.subscription,
+        );
+        const user = await User.findOne({
+          stripeSubscriptionId: invoice.subscription,
+        });
         if (user) {
           user.subscriptionStatus = "active";
-          user.subscriptionEndsAt = new Date(subscription.current_period_end * 1000);
+          user.subscriptionEndsAt = new Date(
+            subscription.current_period_end * 1000,
+          );
           await user.save();
         }
         break;
@@ -161,7 +179,9 @@ export const handleWebhook = async (req, res) => {
 
       case "invoice.payment_failed": {
         const invoice = event.data.object;
-        const user = await User.findOne({ stripeSubscriptionId: invoice.subscription });
+        const user = await User.findOne({
+          stripeSubscriptionId: invoice.subscription,
+        });
         if (user) {
           user.subscriptionStatus = "past_due";
           await user.save();
@@ -171,7 +191,9 @@ export const handleWebhook = async (req, res) => {
 
       case "customer.subscription.deleted": {
         const subscription = event.data.object;
-        const user = await User.findOne({ stripeSubscriptionId: subscription.id });
+        const user = await User.findOne({
+          stripeSubscriptionId: subscription.id,
+        });
         if (user) {
           user.plan = "starter";
           user.stripeSubscriptionId = null;
