@@ -44,7 +44,7 @@ export default function History() {
       return;
     }
     axios
-      .get(`${API}/api/report`, {
+      .get(`${API}/report`, {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setReports(res.data.reports || []))
@@ -56,7 +56,7 @@ export default function History() {
     e?.stopPropagation();
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch(`${API}/api/report/${id}/pdf`, {
+      const res = await fetch(`${API}/report/${id}/pdf`, {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (!res.ok) throw new Error("Failed to download PDF");
@@ -75,7 +75,7 @@ export default function History() {
   };
 
   const filtered = useMemo(() => {
-    let list = [...reports];
+    let list = [...reports]
     if (search.trim()) {
       const q = search.toLowerCase();
       list = list.filter(
