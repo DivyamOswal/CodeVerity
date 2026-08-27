@@ -4,7 +4,7 @@ import { generateTests } from "../api/github";
 import Result from "./Result";
 import { usePreferences } from "../context/PreferencesContext";
 
-const API = "http://localhost:5000";
+const API = import.meta.env.VITE_API_URL ;
 
 // -----------------------------------------------------------------
 // ScanLine – consistent with the one used in Dashboard/Home
