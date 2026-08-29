@@ -1,19 +1,49 @@
 // frontend/src/components/Auth/AuthLayout.jsx
 import { Link } from "react-router-dom";
 
+// -----------------------------------------------------------------
+// Shared shield mark — matches the CodeVerityLogo used on every other
+// page (Navbar, Home, Dashboard, Profile, About, Contact). AuthLayout
+// previously used a plain "C" letter square instead, which was the
+// one place in the app that didn't match the brand mark.
+// -----------------------------------------------------------------
+function CodeVerityLogo({ size = "h-11 w-11", iconSize = 20 }) {
+  return (
+    <div className={`relative flex ${size} shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]`}>
+      <div className="absolute inset-[1px] rounded-[10px] bg-[var(--bg-primary)]" />
+      <svg
+        width={iconSize}
+        height={iconSize}
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className="relative text-[var(--accent)]"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+        <path d="m9 12 2 2 4-4" />
+      </svg>
+      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
+        <span className="font-mono text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+      </div>
+      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
+    </div>
+  );
+}
+
 export default function AuthLayout({ title, terminalText, error, onOAuth, footer, children }) {
   return (
-    <div className="flex h-screen w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <div className="flex min-h-screen w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
 
       {/* ===== LEFT PANEL – Form ===== */}
       <div className="flex w-full flex-1 items-center justify-center overflow-y-auto bg-[var(--bg-primary)] p-4 sm:p-6 lg:w-1/2">
-        <div className="w-full max-w-md">
-          {/* Wordmark (mobile only) */}
+        <div className="w-full max-w-md py-6">
+          {/* Wordmark (mobile only) — same shield mark as the rest of the app */}
           <div className="mb-6 text-center lg:hidden cv-enter-1">
             <div className="inline-flex items-center gap-2">
-              <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent)]">
-                <span className="text-sm font-bold text-[var(--accent-contrast)]">C</span>
-              </span>
+              <CodeVerityLogo size="h-8 w-8" iconSize={15} />
               <span className="font-mono text-sm font-bold tracking-[0.2em] text-[var(--text-primary)]">
                 CodeVerity
               </span>
@@ -82,95 +112,72 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
         </div>
       </div>
 
-      {/* ===== RIGHT PANEL – Premium Animated Brand Side (3D effects) ===== */}
-      <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden bg-gradient-to-br from-[var(--accent)]/30 via-[var(--bg-card)] to-[var(--bg-primary)] p-12 lg:flex">
+      {/* ===== RIGHT PANEL – Brand side. Flat color + two soft glow
+          orbs + the same dot-grid texture used on every other page's
+          ambient background (Home/Dashboard/Profile/etc), instead of
+          an animated gradient mesh and a stack of competing floating
+          shapes. Restraint reads as more premium here, not less. ===== */}
+      <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden bg-[var(--bg-secondary)] p-12 lg:flex">
 
-        {/* ===== Animated Gradient Mesh ===== */}
-        <div className="absolute inset-0 animate-gradient-mesh bg-[length:400%_400%] bg-gradient-to-br from-[var(--accent)]/5 via-[var(--accent)]/15 to-transparent" />
+        {/* Soft glow orbs — flat accent color + blur, same convention
+            as the rest of the app's ambient backgrounds */}
+        <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-[var(--accent-soft)] blur-3xl animate-float-slow" />
+        <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[var(--accent-soft)] blur-3xl opacity-70 animate-float-slower" />
 
-        {/* ===== Glow Orbs with depth ===== */}
-        <div className="absolute -top-32 -left-32 h-96 w-96 rounded-full bg-[var(--accent)]/20 blur-3xl animate-pulse-slow" />
-        <div className="absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[var(--accent)]/10 blur-3xl animate-pulse-slower" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 h-80 w-80 rounded-full bg-[var(--accent)]/5 blur-3xl animate-pulse" />
+        {/* Dot grid texture — same pattern used on Home/Dashboard/
+            Profile/CodeInput's ambient backgrounds */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
+            backgroundSize: "32px 32px",
+          }}
+        />
 
-        {/* ===== 3D Floating Shapes Layer 1 (far background) ===== */}
-        <div className="absolute top-1/4 left-1/4 h-32 w-32 rounded-full bg-[var(--accent)]/10 blur-2xl animate-float-slower" />
-        <div className="absolute bottom-1/3 right-1/3 h-48 w-48 rounded-full bg-[var(--accent)]/5 blur-3xl animate-float" />
-
-        {/* ===== 3D Floating Shapes Layer 2 (mid – with transform perspective) ===== */}
-        <div className="absolute top-1/3 left-1/2 h-20 w-20 rotate-45 bg-[var(--accent)]/15 blur-xl animate-float-medium" style={{ borderRadius: '4px', transform: 'rotateX(15deg) rotateY(10deg)' }} />
-        <div className="absolute bottom-1/4 left-1/4 h-16 w-16 rotate-12 bg-[var(--accent)]/20 blur-xl animate-float-slow" style={{ borderRadius: '50% 50% 0 50%', transform: 'rotateX(10deg) rotateY(-5deg)' }} />
-        <div className="absolute top-2/3 right-1/4 h-14 w-14 bg-[var(--accent)]/10 blur-lg animate-float-fast" style={{ clipPath: 'polygon(50% 0%, 0% 100%, 100% 100%)', transform: 'rotateX(20deg) rotateY(15deg)' }} />
-
-        {/* ===== 3D Floating Shapes Layer 3 (foreground – crisp, with depth) ===== */}
-        <div className="absolute top-1/5 left-1/5 h-8 w-8 rounded-full bg-[var(--accent)]/30 blur-md animate-float-fast" style={{ transform: 'translateZ(30px)' }} />
-        <div className="absolute bottom-1/5 right-1/4 h-6 w-6 rotate-45 bg-[var(--accent)]/40 blur-sm animate-float-medium" style={{ borderRadius: '2px', transform: 'translateZ(40px) rotateX(10deg)' }} />
-        <div className="absolute top-1/2 left-1/4 h-10 w-10 rounded-full border border-[var(--accent)]/20 bg-[var(--accent)]/5 blur-sm animate-float-slow" style={{ transform: 'translateZ(20px)' }} />
-
-        {/* ===== Animated Grid Overlay with parallax ===== */}
-        <div className="absolute inset-0 opacity-[0.08]">
-          <svg className="h-full w-full" xmlns="http://www.w3.org/2000/svg">
-            <defs>
-              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="var(--accent)" strokeWidth="0.5" opacity="0.5">
-                  <animate attributeName="opacity" values="0.3;0.7;0.3" dur="4s" repeatCount="indefinite" />
-                </path>
-              </pattern>
-            </defs>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
-        </div>
-
-        {/* ===== Brand Content with 3D hover effect ===== */}
-        <div className="relative z-10 max-w-sm text-center perspective-800">
-          {/* Logo with pulse ring and 3D transform */}
-          <div className="relative inline-block transform-style-3d hover:rotate-y-[-5deg] hover:rotate-x-[3deg] transition-transform duration-700 ease-out">
-            <div className="absolute -inset-4 rounded-2xl bg-[var(--accent)]/10 blur-2xl animate-pulse-slow" />
+        {/* Brand content */}
+        <div className="relative z-10 max-w-sm text-center">
+          <div className="relative inline-block">
+            <div className="absolute -inset-4 rounded-2xl bg-[var(--accent-soft)] blur-2xl" />
             <div className="relative inline-flex items-center gap-3">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[var(--accent)] shadow-2xl shadow-[var(--accent)]/40 transition-transform duration-500 hover:scale-105">
-                <span className="text-2xl font-bold text-[var(--accent-contrast)]">C</span>
-              </span>
+              <CodeVerityLogo size="h-14 w-14" iconSize={28} />
               <span className="font-mono text-2xl font-bold tracking-[0.15em] text-[var(--text-primary)]">
                 CodeVerity
               </span>
             </div>
           </div>
 
-          {/* Heading with stagger */ }
           <h2 className="mt-8 text-4xl font-semibold leading-tight text-[var(--text-primary)] cv-enter-1">
             AI Code Intelligence
           </h2>
 
-          {/* Tagline with animated cursor */}
           <p className="mt-4 text-sm leading-relaxed text-[var(--text-secondary)] cv-enter-2">
-            Secure, AI‑powered repository analysis.
+            Secure, AI-powered repository analysis.
             <br />
             Ship with confidence.
             <span className="inline-block h-4 w-0.5 bg-[var(--accent)] ml-1 animate-cursor" />
           </p>
 
-          {/* Status indicator with shimmer */}
+          {/* Status indicator */}
           <div className="mt-8 flex items-center justify-center gap-3 text-xs font-mono text-[var(--text-muted)] cv-enter-3">
             <span className="relative flex h-2 w-2">
               <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
               <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
             </span>
             <span>System online</span>
-            <span className="text-[var(--border-light)]">•</span>
-            <span className="animate-pulse-slow">v3.2.1</span>
           </div>
 
-          {/* Decorative 3D line */}
-          <div className="mx-auto mt-8 h-px w-24 bg-gradient-to-r from-transparent via-[var(--accent)]/50 to-transparent transform-style-3d rotate-x-5" />
+          {/* Decorative line — flat accent at reduced opacity, no
+              gradient fade, no fake 3D tilt */}
+          <div className="mx-auto mt-8 h-px w-24 bg-[var(--accent)]/30" />
         </div>
 
         {/* Footer */}
         <p className="absolute bottom-6 left-0 right-0 text-center font-mono text-[10px] text-[var(--text-muted)] tracking-wider opacity-60">
-          © 2026 CodeVerity · All rights reserved
+          CodeVerity · All rights reserved
         </p>
       </div>
 
-      {/* ===== Animations (updated with 3D transforms) ===== */}
+      {/* ===== Animations ===== */}
       <style>{`
         /* Cursor blink */
         @keyframes cursor {
@@ -181,64 +188,18 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
           animation: cursor 1s steps(1) infinite;
         }
 
-        /* Gradient mesh */
-        @keyframes gradient-mesh {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-        .animate-gradient-mesh {
-          animation: gradient-mesh 15s ease-in-out infinite alternate;
-        }
-
-        /* Pulse variations */
-        @keyframes pulse-slow {
-          0%, 100% { opacity: 0.3; transform: scale(1); }
-          50% { opacity: 0.6; transform: scale(1.05); }
-        }
-        @keyframes pulse-slower {
-          0%, 100% { opacity: 0.15; transform: scale(1); }
-          50% { opacity: 0.35; transform: scale(1.1); }
-        }
-        .animate-pulse-slow {
-          animation: pulse-slow 4s ease-in-out infinite;
-        }
-        .animate-pulse-slower {
-          animation: pulse-slower 6s ease-in-out infinite;
-        }
-
-        /* Float variations with 3D */
+        /* Two slow, subtle drifts for the glow orbs — restrained on
+           purpose, no rotation/scale/clip-path stacking. */
         @keyframes float-slow {
-          0% { transform: translate(0, 0) rotate(0deg) scale(1) translateZ(0px); }
-          33% { transform: translate(30px, -20px) rotate(5deg) scale(1.05) translateZ(20px); }
-          66% { transform: translate(-20px, 25px) rotate(-3deg) scale(0.95) translateZ(-10px); }
-          100% { transform: translate(0, 0) rotate(0deg) scale(1) translateZ(0px); }
-        }
-        @keyframes float-medium {
-          0% { transform: translate(0, 0) rotate(0deg) translateZ(0px); }
-          50% { transform: translate(25px, -15px) rotate(10deg) translateZ(30px); }
-          100% { transform: translate(0, 0) rotate(0deg) translateZ(0px); }
-        }
-        @keyframes float-fast {
-          0% { transform: translate(0, 0) scale(1) translateZ(0px); }
-          50% { transform: translate(-15px, 20px) scale(1.1) translateZ(40px); }
-          100% { transform: translate(0, 0) scale(1) translateZ(0px); }
-        }
-        @keyframes float {
-          0% { transform: translate(0, 0) translateZ(0px); }
-          50% { transform: translate(20px, -25px) translateZ(15px); }
-          100% { transform: translate(0, 0) translateZ(0px); }
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(18px, -14px); }
         }
         @keyframes float-slower {
-          0% { transform: translate(0, 0) translateZ(0px); }
-          50% { transform: translate(-30px, 15px) translateZ(-5px); }
-          100% { transform: translate(0, 0) translateZ(0px); }
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-16px, 12px); }
         }
-        .animate-float-slow { animation: float-slow 18s ease-in-out infinite; }
-        .animate-float-medium { animation: float-medium 12s ease-in-out infinite; }
-        .animate-float-fast { animation: float-fast 8s ease-in-out infinite; }
-        .animate-float { animation: float 14s ease-in-out infinite; }
-        .animate-float-slower { animation: float-slower 22s ease-in-out infinite; }
+        .animate-float-slow { animation: float-slow 16s ease-in-out infinite; }
+        .animate-float-slower { animation: float-slower 20s ease-in-out infinite; }
 
         /* Card entrance */
         @keyframes fadeUp {
@@ -260,37 +221,19 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
         .cv-enter-3 { animation: fadeUp 0.5s 0.16s ease both; }
         .cv-breathe { animation: pulseGlow 3.2s ease-in-out infinite; }
 
-        /* 3D utilities */
-        .perspective-800 { perspective: 800px; }
-        .transform-style-3d { transform-style: preserve-3d; }
-        .rotate-y-\\[-5deg\\] { transform: rotateY(-5deg); }
-        .rotate-x-\\[3deg\\] { transform: rotateX(3deg); }
-        .rotate-x-5 { transform: rotateX(5deg); }
-
         /* Reduced motion */
         @media (prefers-reduced-motion: reduce) {
-          .animate-gradient-mesh,
-          .animate-pulse-slow,
-          .animate-pulse-slower,
           .animate-float-slow,
-          .animate-float-medium,
-          .animate-float-fast,
-          .animate-float,
           .animate-float-slower,
           .cv-caret,
           .cv-enter-1,
           .cv-enter-2,
           .cv-enter-3,
-          .cv-breathe {
+          .cv-breathe,
+          .animate-cursor {
             animation: none;
           }
-          .animate-gradient-mesh {
-            background-size: 100% 100%;
-          }
           .animate-float-slow,
-          .animate-float-medium,
-          .animate-float-fast,
-          .animate-float,
           .animate-float-slower {
             transform: none !important;
           }
