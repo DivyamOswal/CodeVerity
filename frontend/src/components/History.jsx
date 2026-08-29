@@ -4,21 +4,18 @@ import { generateTests } from "../api/github";
 import Result from "./Result";
 import { usePreferences } from "../context/PreferencesContext";
 
-const API = import.meta.env.VITE_API_URL ;
+const API = import.meta.env.VITE_API_URL;
 
 // -----------------------------------------------------------------
-// ScanLine – consistent with the one used in Dashboard/Home
-// Flat sweep with opacity, matched to button radius.
+// ScanLine – reuses the global .animate-scanline utility from
+// index.css instead of redefining the keyframe locally.
 // -----------------------------------------------------------------
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
       <div
-        className="absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
-        style={{
-          opacity: 0.35,
-          animation: "scanline 2.8s ease-in-out infinite",
-        }}
+        className="animate-scanline absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
+        style={{ opacity: 0.35 }}
       />
     </div>
   );
@@ -243,6 +240,7 @@ export default function History() {
                   <path d="m20 20-4-4" />
                 </svg>
                 <input
+                  aria-label="Search reports"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   placeholder="Search repositories or summaries..."
@@ -251,6 +249,7 @@ export default function History() {
               </div>
               <div className="flex gap-2">
                 <select
+                  aria-label="Filter by grade"
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
                   className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -263,6 +262,7 @@ export default function History() {
                   ))}
                 </select>
                 <select
+                  aria-label="Sort reports"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
                   className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -386,15 +386,6 @@ export default function History() {
           </div>
         )}
       </div>
-
-      <style>{`
-        @keyframes scanline {
-          0% { top: -2px; opacity: 0; }
-          8% { opacity: 1; }
-          92% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -530,7 +521,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 
         <div className={`mt-4 flex items-center justify-between border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
           <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
             Analysis complete
           </span>
           <div className="flex gap-1.5">
@@ -558,11 +549,16 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 }
 
 // -----------------------------------------------------------------
-// ScoreBar – flat fill with consistent sizing
+// ScoreBar – flat fill, now using semantic status tokens
 // -----------------------------------------------------------------
 function ScoreBar({ label, value, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
-  const color = val >= 75 ? "bg-emerald-500" : val >= 50 ? "bg-amber-400" : "bg-rose-500";
+  const color =
+    val >= 75
+      ? "bg-[var(--color-success)]"
+      : val >= 50
+      ? "bg-[var(--color-warning)]"
+      : "bg-[var(--color-danger)]";
 
   const labelSize = "text-[9px]";
   const valueSize = "text-[9px]";
@@ -587,47 +583,50 @@ function ScoreBar({ label, value, compact }) {
 }
 
 // -----------------------------------------------------------------
-// Grade Styles – semantic status colors
+// Grade Styles – now sourced from index.css semantic tokens instead
+// of hardcoded Tailwind colors. A→success, B→info, C→warning,
+// D→caution, F→danger. --color-info and --color-caution are new
+// additions to index.css (see chat note above).
 // -----------------------------------------------------------------
 function gradeStyle(letter) {
   const map = {
     A: {
-      badge: "bg-emerald-500/10 text-emerald-400",
-      text: "text-emerald-400",
-      border: "border-emerald-500/20",
-      background: "bg-emerald-500/5",
+      badge: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+      text: "text-[var(--color-success)]",
+      border: "border-[var(--color-success)]/20",
+      background: "bg-[var(--color-success-soft)]",
     },
     B: {
-      badge: "bg-blue-500/10 text-blue-400",
-      text: "text-blue-400",
-      border: "border-blue-500/20",
-      background: "bg-blue-500/5",
+      badge: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
+      text: "text-[var(--color-info)]",
+      border: "border-[var(--color-info)]/20",
+      background: "bg-[var(--color-info-soft)]",
     },
     C: {
-      badge: "bg-yellow-500/10 text-yellow-400",
-      text: "text-yellow-400",
-      border: "border-yellow-500/20",
-      background: "bg-yellow-500/5",
+      badge: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+      text: "text-[var(--color-warning)]",
+      border: "border-[var(--color-warning)]/20",
+      background: "bg-[var(--color-warning-soft)]",
     },
     D: {
-      badge: "bg-orange-500/10 text-orange-400",
-      text: "text-orange-400",
-      border: "border-orange-500/20",
-      background: "bg-orange-500/5",
+      badge: "bg-[var(--color-caution-soft)] text-[var(--color-caution)]",
+      text: "text-[var(--color-caution)]",
+      border: "border-[var(--color-caution)]/20",
+      background: "bg-[var(--color-caution-soft)]",
     },
     F: {
-      badge: "bg-red-500/10 text-red-400",
-      text: "text-red-400",
-      border: "border-red-500/20",
-      background: "bg-red-500/5",
+      badge: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
+      text: "text-[var(--color-danger)]",
+      border: "border-[var(--color-danger)]/20",
+      background: "bg-[var(--color-danger-soft)]",
     },
   };
   return (
     map[letter] ?? {
-      badge: "bg-gray-500/10 text-gray-400",
-      text: "text-gray-400",
-      border: "border-gray-500/20",
-      background: "bg-gray-500/5",
+      badge: "bg-[var(--bg-hover)] text-[var(--text-muted)]",
+      text: "text-[var(--text-muted)]",
+      border: "border-[var(--border-light)]",
+      background: "bg-[var(--bg-hover)]",
     }
   );
 }

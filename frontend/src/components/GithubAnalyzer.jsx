@@ -35,17 +35,13 @@ function CodeVerityLogo() {
   );
 }
 
-// Flat-color sweep (opacity fade, not a color gradient) so it stays
-// in line with the no-gradient theme.
+// Flat-color sweep — reuses the global .animate-scanline utility.
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
       <div
-        className="absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
-        style={{
-          opacity: 0.35,
-          animation: "scanline 2.8s ease-in-out infinite",
-        }}
+        className="animate-scanline absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
+        style={{ opacity: 0.35 }}
       />
     </div>
   );
@@ -117,8 +113,8 @@ export default function GithubAnalyzer({ setData }) {
   // ---- Results View ----
   if (analysis) {
     return (
-      <div>
-        <div className="sticky top-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur border-b border-[var(--border-light)] px-6 py-3 flex items-center gap-4">
+      <div className="min-h-screen bg-[var(--bg-primary)]">
+        <div className="animate-fadeDown sticky top-0 z-50 bg-[var(--bg-primary)]/80 backdrop-blur border-b border-[var(--border-light)] px-6 py-3 flex items-center gap-4">
           <button
             onClick={handleReset}
             className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-2"
@@ -136,21 +132,23 @@ export default function GithubAnalyzer({ setData }) {
           </span>
         </div>
 
-        <Result
-          data={analysis}
-          generateTestsFn={generateTests}
-          onDownload={() => {
-            const blob = new Blob([JSON.stringify(analysis, null, 2)], {
-              type: "application/json",
-            });
-            const url = URL.createObjectURL(blob);
-            Object.assign(document.createElement("a"), {
-              href: url,
-              download: "audit-report.json",
-            }).click();
-            URL.revokeObjectURL(url);
-          }}
-        />
+        <div className="animate-fadeUp">
+          <Result
+            data={analysis}
+            generateTestsFn={generateTests}
+            onDownload={() => {
+              const blob = new Blob([JSON.stringify(analysis, null, 2)], {
+                type: "application/json",
+              });
+              const url = URL.createObjectURL(blob);
+              Object.assign(document.createElement("a"), {
+                href: url,
+                download: "audit-report.json",
+              }).click();
+              URL.revokeObjectURL(url);
+            }}
+          />
+        </div>
       </div>
     );
   }
@@ -161,11 +159,9 @@ export default function GithubAnalyzer({ setData }) {
       className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
     >
       {/* ================= AMBIENT BACKGROUND ================= */}
-      {/* Soft blurred accent circles — flat color + blur, no gradients */}
       <div className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-60 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div className="pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] rounded-full bg-[var(--accent-soft)] opacity-30 blur-3xl" />
-      {/* Dot grid texture — a repeating dot pattern, not a color blend */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
@@ -175,17 +171,18 @@ export default function GithubAnalyzer({ setData }) {
       />
 
       <div className="mx-auto max-w-3xl relative z-10">
-        <div className="relative" style={{ animation: "fadeUp 0.6s ease both" }}>
-          {/* Corner brackets — decorative frame accents */}
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
+        <div className="animate-fadeUp relative">
+          {/* Corner brackets — with a subtle CSS-only breathing pulse,
+              same treatment as CodeInput's editor card. */}
+          <span className="cv-corner absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
+          <span className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" style={{ animationDelay: "0.4s" }} />
+          <span className="cv-corner absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" style={{ animationDelay: "0.8s" }} />
+          <span className="cv-corner absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" style={{ animationDelay: "1.2s" }} />
 
-          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/30">
+          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]">
             <div
-              className={`border-b border-[var(--border-light)] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}
-              style={{ animation: "fadeDown 0.5s 0.05s ease both" }}
+              className={`animate-fadeDown border-b border-[var(--border-light)] bg-[var(--bg-primary)] flex items-center gap-3 ${compactClasses.cardHeader}`}
+              style={{ animationDelay: "50ms" }}
             >
               <CodeVerityLogo />
               <div>
@@ -204,6 +201,7 @@ export default function GithubAnalyzer({ setData }) {
 
               <div className="relative mt-5">
                 <input
+                  aria-label="GitHub repository URL"
                   className={`w-full rounded-lg bg-[var(--bg-input)] text-[var(--text-primary)] font-mono border border-[var(--border-light)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 outline-none placeholder:text-[var(--text-muted)] transition-all ${compactClasses.input}`}
                   placeholder="https://github.com/username/repository"
                   value={repo}
@@ -214,7 +212,11 @@ export default function GithubAnalyzer({ setData }) {
               </div>
 
               {error && (
-                <div className="mt-3 text-red-400 text-sm bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="mt-3 text-[var(--color-danger)] text-sm bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/25 p-3 rounded-lg"
+                >
                   {error}
                 </div>
               )}
@@ -224,7 +226,6 @@ export default function GithubAnalyzer({ setData }) {
                   Supports public repositories only
                 </span>
 
-                {/* Generate Report button — flat accent fill, squircle radius to match Navbar/CodeInput buttons */}
                 <button
                   onClick={analyze}
                   disabled={loading}
@@ -260,8 +261,8 @@ export default function GithubAnalyzer({ setData }) {
         </div>
 
         <div
-          className={`flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footer}`}
-          style={{ animation: "fadeUp 0.6s 0.15s ease both" }}
+          className={`animate-fadeUp flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footer}`}
+          style={{ animationDelay: "150ms" }}
         >
           <span>Powered by</span>
           <span className="font-semibold text-[var(--text-secondary)]">CodeVerity AI</span>
@@ -271,11 +272,12 @@ export default function GithubAnalyzer({ setData }) {
       </div>
 
       <style>{`
-        @keyframes scanline {
-          0% { top: -2px; opacity: 0; }
-          8% { opacity: 1; }
-          92% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
+        @keyframes cv-corner-breathe {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        .cv-corner {
+          animation: cv-corner-breathe 2.4s ease-in-out infinite;
         }
       `}</style>
     </div>

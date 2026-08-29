@@ -1,15 +1,13 @@
 // frontend/src/components/Auth/AuthLayout.jsx
 import { Link } from "react-router-dom";
+import { useEffect, useRef } from "react";
+import { gsap } from "gsap";
 
-// -----------------------------------------------------------------
-// Shared shield mark — matches the CodeVerityLogo used on every other
-// page (Navbar, Home, Dashboard, Profile, About, Contact). AuthLayout
-// previously used a plain "C" letter square instead, which was the
-// one place in the app that didn't match the brand mark.
-// -----------------------------------------------------------------
 function CodeVerityLogo({ size = "h-11 w-11", iconSize = 20 }) {
   return (
-    <div className={`relative flex ${size} shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]`}>
+    <div
+      className={`relative flex ${size} shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-[0_0_0_1px_var(--accent-soft-strong),var(--shadow-lg)]`}
+    >
       <div className="absolute inset-[1px] rounded-[10px] bg-[var(--bg-primary)]" />
       <svg
         width={iconSize}
@@ -33,15 +31,69 @@ function CodeVerityLogo({ size = "h-11 w-11", iconSize = 20 }) {
   );
 }
 
-export default function AuthLayout({ title, terminalText, error, onOAuth, footer, children }) {
+function FeatureRow({ children }) {
   return (
-    <div className="flex min-h-screen w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+    <li className="flex items-center gap-2.5 text-sm text-[var(--text-secondary)]">
+      <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded-full bg-[var(--color-success-soft)]">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M20 6 9 17l-5-5" />
+        </svg>
+      </span>
+      {children}
+    </li>
+  );
+}
 
-      {/* ===== LEFT PANEL – Form ===== */}
-      <div className="flex w-full flex-1 items-center justify-center overflow-y-auto bg-[var(--bg-primary)] p-4 sm:p-6 lg:w-1/2">
-        <div className="w-full max-w-md py-6">
-          {/* Wordmark (mobile only) — same shield mark as the rest of the app */}
-          <div className="mb-6 text-center lg:hidden cv-enter-1">
+export default function AuthLayout({ title, terminalText, error, onOAuth, footer, children }) {
+  const cornersRef = useRef([]);
+  const cursorRef = useRef(null);
+  const orb1Ref = useRef(null);
+  const orb2Ref = useRef(null);
+
+  // GSAP is used ONLY for infinite/looping ambient animation here.
+  // One-shot entrances (card, fields, footnote) run on plain CSS
+  // (.animate-fadeUp) so they can never get stuck invisible if a
+  // JS effect fires late or twice — see chat note on the button bug.
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    const ctx = gsap.context(() => {
+      gsap.to(cornersRef.current, {
+        opacity: 0.9,
+        duration: 1.6,
+        ease: "sine.inOut",
+        repeat: -1,
+        yoyo: true,
+        stagger: 0.15,
+      });
+
+      if (cursorRef.current) {
+        gsap.to(cursorRef.current, {
+          opacity: 0,
+          duration: 0.5,
+          repeat: -1,
+          yoyo: true,
+          ease: "power1.inOut",
+        });
+      }
+
+      gsap.to(orb1Ref.current, { x: 18, y: -14, duration: 8, repeat: -1, yoyo: true, ease: "sine.inOut" });
+      gsap.to(orb2Ref.current, { x: -16, y: 12, duration: 10, repeat: -1, yoyo: true, ease: "sine.inOut" });
+    });
+
+    return () => ctx.revert();
+  }, []);
+
+  return (
+    <div className="flex h-dvh w-full overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+      {/* ===== LEFT PANEL – Form =====
+          no-scrollbar: if a very short viewport genuinely needs to
+          scroll, it does so silently instead of showing a scrollbar. */}
+      <div className="no-scrollbar flex w-full flex-1 items-center justify-center overflow-y-auto bg-[var(--bg-primary)] p-4 sm:p-6 lg:w-1/2">
+        <div className="w-full max-w-md py-4">
+          {/* Wordmark (mobile only) */}
+          <div className="animate-fadeUp mb-5 text-center lg:hidden">
             <div className="inline-flex items-center gap-2">
               <CodeVerityLogo size="h-8 w-8" iconSize={15} />
               <span className="font-mono text-sm font-bold tracking-[0.2em] text-[var(--text-primary)]">
@@ -50,21 +102,48 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
             </div>
           </div>
 
-          {/* Card – identical to before */}
-          <div className="relative cv-enter-2">
-            <span className="cv-breathe absolute -top-px -left-px h-4 w-4 rounded-tl-2xl border-t-2 border-l-2 border-[var(--accent)]/50" />
-            <span className="cv-breathe absolute -top-px -right-px h-4 w-4 rounded-tr-2xl border-t-2 border-r-2 border-[var(--accent)]/50" />
-            <span className="cv-breathe absolute -bottom-px -left-px h-4 w-4 rounded-bl-2xl border-b-2 border-l-2 border-[var(--accent)]/50" />
-            <span className="cv-breathe absolute -bottom-px -right-px h-4 w-4 rounded-br-2xl border-b-2 border-r-2 border-[var(--accent)]/50" />
+          {(title || terminalText) && (
+            <div className="animate-fadeUp mb-5 space-y-1.5">
+              {title && (
+                <h1 className="text-2xl font-semibold tracking-tight text-[var(--text-primary)]">{title}</h1>
+              )}
+              {terminalText && (
+                <p className="font-mono text-xs text-[var(--text-muted)]">
+                  <span className="text-[var(--accent)]">$</span> {terminalText}
+                  <span ref={cursorRef} className="ml-0.5 inline-block h-3 w-[6px] translate-y-[1px] bg-[var(--accent)]" />
+                </p>
+              )}
+            </div>
+          )}
 
-            <div className="relative space-y-4 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 sm:p-8">
+          {/* Card */}
+          <div className="animate-fadeUp relative" style={{ animationDelay: "80ms" }}>
+            <div className="absolute -top-px left-6 right-6 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/50 to-transparent" />
+
+            {[
+              "-top-px -left-px rounded-tl-2xl border-t-2 border-l-2",
+              "-top-px -right-px rounded-tr-2xl border-t-2 border-r-2",
+              "-bottom-px -left-px rounded-bl-2xl border-b-2 border-l-2",
+              "-bottom-px -right-px rounded-br-2xl border-b-2 border-r-2",
+            ].map((cls, i) => (
+              <span
+                key={cls}
+                ref={(el) => (cornersRef.current[i] = el)}
+                className={`absolute h-4 w-4 border-[var(--accent)]/50 ${cls}`}
+              />
+            ))}
+
+            <div className="relative space-y-3.5 overflow-visible rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 shadow-[var(--shadow-md)] sm:p-7">
               {error && (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-400">
+                <div
+                  role="alert"
+                  aria-live="assertive"
+                  className="rounded-xl border border-[var(--color-danger)]/25 bg-[var(--color-danger-soft)] px-4 py-3 font-mono text-xs text-[var(--color-danger)]"
+                >
                   error: {error}
                 </div>
               )}
 
-              {/* OAuth buttons */}
               <div className="space-y-2.5">
                 <button
                   type="button"
@@ -106,26 +185,17 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
             </div>
           </div>
 
-          <p className="cv-enter-3 mt-5 text-center font-mono text-[11px] tracking-wide text-[var(--text-muted)]">
+          <p className="animate-fadeUp mt-4 text-center font-mono text-[11px] tracking-wide text-[var(--text-muted)]" style={{ animationDelay: "160ms" }}>
             CodeVerity · AI Repository Intelligence
           </p>
         </div>
       </div>
 
-      {/* ===== RIGHT PANEL – Brand side. Flat color + two soft glow
-          orbs + the same dot-grid texture used on every other page's
-          ambient background (Home/Dashboard/Profile/etc), instead of
-          an animated gradient mesh and a stack of competing floating
-          shapes. Restraint reads as more premium here, not less. ===== */}
+      {/* ===== RIGHT PANEL – Brand side ===== */}
       <div className="relative hidden w-1/2 flex-col items-center justify-center overflow-hidden bg-[var(--bg-secondary)] p-12 lg:flex">
+        <div ref={orb1Ref} className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-[var(--accent-soft)] blur-3xl" />
+        <div ref={orb2Ref} className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[var(--accent-soft)] blur-3xl opacity-70" />
 
-        {/* Soft glow orbs — flat accent color + blur, same convention
-            as the rest of the app's ambient backgrounds */}
-        <div className="pointer-events-none absolute -top-32 -left-32 h-96 w-96 rounded-full bg-[var(--accent-soft)] blur-3xl animate-float-slow" />
-        <div className="pointer-events-none absolute -bottom-32 -right-32 h-96 w-96 rounded-full bg-[var(--accent-soft)] blur-3xl opacity-70 animate-float-slower" />
-
-        {/* Dot grid texture — same pattern used on Home/Dashboard/
-            Profile/CodeInput's ambient backgrounds */}
         <div
           className="pointer-events-none absolute inset-0 opacity-[0.06]"
           style={{
@@ -134,9 +204,8 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
           }}
         />
 
-        {/* Brand content */}
         <div className="relative z-10 max-w-sm text-center">
-          <div className="relative inline-block">
+          <div className="animate-fadeUp relative inline-block">
             <div className="absolute -inset-4 rounded-2xl bg-[var(--accent-soft)] blur-2xl" />
             <div className="relative inline-flex items-center gap-3">
               <CodeVerityLogo size="h-14 w-14" iconSize={28} />
@@ -146,106 +215,41 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
             </div>
           </div>
 
-          <h2 className="mt-8 text-4xl font-semibold leading-tight text-[var(--text-primary)] cv-enter-1">
+          <h2 className="animate-fadeUp mt-8 text-4xl font-semibold leading-tight text-[var(--text-primary)]" style={{ animationDelay: "80ms" }}>
             AI Code Intelligence
           </h2>
 
-          <p className="mt-4 text-sm leading-relaxed text-[var(--text-secondary)] cv-enter-2">
+          <p className="animate-fadeUp mt-4 text-sm leading-relaxed text-[var(--text-secondary)]" style={{ animationDelay: "140ms" }}>
             Secure, AI-powered repository analysis.
             <br />
             Ship with confidence.
-            <span className="inline-block h-4 w-0.5 bg-[var(--accent)] ml-1 animate-cursor" />
           </p>
 
-          {/* Status indicator */}
-          <div className="mt-8 flex items-center justify-center gap-3 text-xs font-mono text-[var(--text-muted)] cv-enter-3">
+          <ul className="animate-fadeUp mt-6 space-y-2.5 text-left" style={{ animationDelay: "200ms" }}>
+            <FeatureRow>Deep static + AI-driven code review</FeatureRow>
+            <FeatureRow>Native GitHub repo integration</FeatureRow>
+            <FeatureRow>Actionable, developer-first reports</FeatureRow>
+          </ul>
+
+          <div className="animate-fadeUp mt-8 flex items-center justify-center gap-3 text-xs font-mono text-[var(--text-muted)]" style={{ animationDelay: "260ms" }}>
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-success)] opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-[var(--color-success)]" />
             </span>
             <span>System online</span>
           </div>
 
-          {/* Decorative line — flat accent at reduced opacity, no
-              gradient fade, no fake 3D tilt */}
           <div className="mx-auto mt-8 h-px w-24 bg-[var(--accent)]/30" />
         </div>
 
-        {/* Footer */}
         <p className="absolute bottom-6 left-0 right-0 text-center font-mono text-[10px] text-[var(--text-muted)] tracking-wider opacity-60">
           CodeVerity · All rights reserved
         </p>
       </div>
-
-      {/* ===== Animations ===== */}
-      <style>{`
-        /* Cursor blink */
-        @keyframes cursor {
-          0%, 50% { opacity: 1; }
-          51%, 100% { opacity: 0; }
-        }
-        .animate-cursor {
-          animation: cursor 1s steps(1) infinite;
-        }
-
-        /* Two slow, subtle drifts for the glow orbs — restrained on
-           purpose, no rotation/scale/clip-path stacking. */
-        @keyframes float-slow {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(18px, -14px); }
-        }
-        @keyframes float-slower {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-16px, 12px); }
-        }
-        .animate-float-slow { animation: float-slow 16s ease-in-out infinite; }
-        .animate-float-slower { animation: float-slower 20s ease-in-out infinite; }
-
-        /* Card entrance */
-        @keyframes fadeUp {
-          0% { opacity: 0; transform: translateY(8px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes cv-caret {
-          0%, 45% { opacity: 1; }
-          50%, 95% { opacity: 0; }
-          100% { opacity: 1; }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { opacity: 0.3; }
-          50% { opacity: 0.8; }
-        }
-        .cv-caret { animation: cv-caret 1.1s steps(1) infinite; }
-        .cv-enter-1 { animation: fadeUp 0.5s ease both; }
-        .cv-enter-2 { animation: fadeUp 0.5s 0.08s ease both; }
-        .cv-enter-3 { animation: fadeUp 0.5s 0.16s ease both; }
-        .cv-breathe { animation: pulseGlow 3.2s ease-in-out infinite; }
-
-        /* Reduced motion */
-        @media (prefers-reduced-motion: reduce) {
-          .animate-float-slow,
-          .animate-float-slower,
-          .cv-caret,
-          .cv-enter-1,
-          .cv-enter-2,
-          .cv-enter-3,
-          .cv-breathe,
-          .animate-cursor {
-            animation: none;
-          }
-          .animate-float-slow,
-          .animate-float-slower {
-            transform: none !important;
-          }
-        }
-      `}</style>
     </div>
   );
 }
 
-// -----------------------------------------------------------------
-// Icons
-// -----------------------------------------------------------------
 function GitHubIcon({ className }) {
   return (
     <svg className={className} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">

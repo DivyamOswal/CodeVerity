@@ -34,18 +34,15 @@ function CodeVerityLogo() {
   );
 }
 
-// Single moving highlight bar across the button — a flat-color sweep
-// (opacity fade, not a left-to-right color gradient) so it stays in
-// line with the no-gradient theme.
+// Single moving highlight bar across the button — flat-color sweep,
+// reuses the global .animate-scanline utility from index.css instead
+// of redefining the same keyframe locally.
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
       <div
-        className="absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
-        style={{
-          opacity: 0.35,
-          animation: "scanline 2.8s ease-in-out infinite",
-        }}
+        className="animate-scanline absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
+        style={{ opacity: 0.35 }}
       />
     </div>
   );
@@ -164,11 +161,9 @@ export default function CodeInput({ setResult, model }) {
       className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
     >
       {/* ================= AMBIENT BACKGROUND ================= */}
-      {/* Soft blurred accent circles — flat color + blur, no gradients */}
       <div className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-60 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div className="pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] rounded-full bg-[var(--accent-soft)] opacity-30 blur-3xl" />
-      {/* Dot grid texture — a repeating dot pattern, not a color blend */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
@@ -180,8 +175,7 @@ export default function CodeInput({ setResult, model }) {
       <div className="mx-auto max-w-6xl relative z-10">
         {/* ================= HEADER ================= */}
         <div
-          className={`flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${compactClasses.header}`}
-          style={{ animation: "fadeDown 0.6s ease both" }}
+          className={`animate-fadeDown flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${compactClasses.header}`}
         >
           <div>
             <div className="mb-3 flex items-center gap-3">
@@ -205,7 +199,7 @@ export default function CodeInput({ setResult, model }) {
             </p>
           </div>
 
-          {/* Model badge — value styled like a model id, mono */}
+          {/* Model badge */}
           <div className="flex w-fit items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-3">
             <div className="relative">
               <span className="block h-2.5 w-2.5 rounded-full bg-[var(--accent)]" />
@@ -225,26 +219,26 @@ export default function CodeInput({ setResult, model }) {
         {/* ================= ERROR BANNER ================= */}
         {error && (
           <div
-            className="mb-4 font-mono text-xs text-red-400 bg-red-500/10 border border-red-500/20 rounded-xl px-4 py-3"
-            style={{ animation: "fadeUp 0.4s ease both" }}
+            role="alert"
+            aria-live="assertive"
+            className="animate-fadeUp mb-4 font-mono text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/25 rounded-xl px-4 py-3"
           >
             error: {error}
           </div>
         )}
 
         {/* ================= EDITOR CARD ================= */}
-        <div className="relative" style={{ animation: "fadeUp 0.6s 0.1s ease both" }}>
-          {/* Corner brackets — purely decorative frame accents */}
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
+        <div className="animate-fadeUp relative" style={{ animationDelay: "100ms" }}>
+          {/* Corner brackets — now with a subtle CSS-only breathing pulse */}
+          <span className="cv-corner absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
+          <span className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" style={{ animationDelay: "0.4s" }} />
+          <span className="cv-corner absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" style={{ animationDelay: "0.8s" }} />
+          <span className="cv-corner absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" style={{ animationDelay: "1.2s" }} />
 
-          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/30">
-            {/* Editor top bar — labels set in mono, like a real editor tab */}
+          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]">
+            {/* Editor top bar */}
             <div className="flex items-center justify-between border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-3 sm:px-5">
               <div className="flex items-center gap-3">
-                {/* Traffic-light dots — universal editor chrome, left as-is */}
                 <div className="flex gap-1.5">
                   <span className="h-3 w-3 rounded-full bg-[#ff5f57]" />
                   <span className="h-3 w-3 rounded-full bg-[#febc2e]" />
@@ -272,7 +266,6 @@ export default function CodeInput({ setResult, model }) {
 
             {/* Code area */}
             <div className="relative">
-              {/* Line numbers gutter */}
               <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[var(--border-light)] bg-[var(--bg-primary)] pt-5 text-right font-mono text-xs leading-6 text-[var(--text-muted)] sm:block">
                 {Array.from({ length: 12 }, (_, index) => (
                   <div key={index} className="pr-4">
@@ -286,6 +279,7 @@ export default function CodeInput({ setResult, model }) {
                 onChange={(e) => setCode(e.target.value)}
                 placeholder={`// Paste your code here...\n\nfunction example() {\n  // CodeVerity will analyze your code\n  // for bugs, security, performance & quality.\n}`}
                 spellCheck={false}
+                aria-label="Code to analyze"
                 className="min-h-[420px] w-full resize-none bg-[var(--bg-primary)] p-5 font-mono text-sm leading-6 text-[var(--text-primary)] outline-none placeholder:text-[var(--border-medium)] sm:pl-[76px] focus:ring-1 focus:ring-[var(--accent)]/30 transition-all"
               />
             </div>
@@ -294,7 +288,6 @@ export default function CodeInput({ setResult, model }) {
             <div
               className={`flex flex-col gap-4 border-t border-[var(--border-light)] bg-[var(--bg-primary)] sm:flex-row sm:items-center sm:justify-between ${compactClasses.footer}`}
             >
-              {/* Editor stats — terminal-style readout, mono */}
               <div className="flex items-center gap-5 font-mono text-xs text-[var(--text-muted)]">
                 <div className="flex items-center gap-2">
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
@@ -306,7 +299,6 @@ export default function CodeInput({ setResult, model }) {
                 <div className="hidden md:block">AI-powered analysis</div>
               </div>
 
-              {/* Analyze button — flat accent fill, squircle radius to match Navbar buttons */}
               <button
                 onClick={runAnalysis}
                 disabled={loading || !hasCode}
@@ -347,8 +339,8 @@ export default function CodeInput({ setResult, model }) {
 
         {/* ================= FEATURE CARDS ================= */}
         <div
-          className={`mt-5 grid grid-cols-1 sm:grid-cols-3 ${compactClasses.featuresGrid}`}
-          style={{ animation: "fadeUp 0.6s 0.2s ease both" }}
+          className={`animate-fadeUp mt-5 grid grid-cols-1 sm:grid-cols-3 ${compactClasses.featuresGrid}`}
+          style={{ animationDelay: "200ms" }}
         >
           <Feature
             icon="🔐"
@@ -372,8 +364,8 @@ export default function CodeInput({ setResult, model }) {
 
         {/* ================= FOOTER ================= */}
         <div
-          className={`flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footerText}`}
-          style={{ animation: "fadeUp 0.6s 0.3s ease both" }}
+          className={`animate-fadeUp flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footerText}`}
+          style={{ animationDelay: "300ms" }}
         >
           <span>Powered by</span>
           <span className="font-semibold text-[var(--text-secondary)]">CodeVerity AI</span>
@@ -382,13 +374,16 @@ export default function CodeInput({ setResult, model }) {
         </div>
       </div>
 
-      {/* Scanline animation keyframes */}
+      {/* Corner-bracket breathing — small, self-contained, pure CSS.
+          Covered automatically by index.css's global
+          prefers-reduced-motion rule. */}
       <style>{`
-        @keyframes scanline {
-          0% { top: -2px; opacity: 0; }
-          8% { opacity: 1; }
-          92% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
+        @keyframes cv-corner-breathe {
+          0%, 100% { opacity: 0.5; }
+          50% { opacity: 1; }
+        }
+        .cv-corner {
+          animation: cv-corner-breathe 2.4s ease-in-out infinite;
         }
       `}</style>
     </div>

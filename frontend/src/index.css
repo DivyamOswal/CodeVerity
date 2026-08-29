@@ -13,45 +13,15 @@
 
 /* =====================================================
    THEME VARIABLES
+   Dark is now the :root default. Every component in this app was
+   built assuming the dark palette (confirmed across every screenshot
+   reviewed so far), but nothing in the codebase seen so far actually
+   sets [data-theme="dark"] on the document. Gating dark behind that
+   attribute meant the app would silently render in light mode unless
+   something outside this file sets it — flipping the default removes
+   that dependency entirely. Light is now the opt-in variant.
 ======================================================== */
 :root {
-  /* Light theme defaults */
-  --bg-primary: #ffffff;
-  --bg-secondary: #f6f8fa;
-  --bg-card: #ffffff;
-  --bg-input: #f9fafb;
-  --bg-hover: #f3f4f6;
-
-  --text-primary: #1f2937;
-  --text-secondary: #4b5563;
-  --text-muted: #6b7280;
-  --text-inverse: #ffffff;
-
-  --border-light: #e5e7eb;
-  --border-medium: #d1d5db;
-  --border-dark: #9ca3af;
-
-  /* Indigo accent — primary brand color (matches Navbar) */
-  --accent: #6366f1;
-  --accent-hover: #7477f5;
-  --accent-soft: rgba(99, 102, 241, 0.12);
-  --accent-soft-strong: rgba(99, 102, 241, 0.22);
-  /* White reads reliably on the indigo accent at every weight we use it
-     (buttons, avatar fill, selection) — this was previously #0A0A0B,
-     which is what made the "Get started" button text disappear. */
-  --accent-contrast: #ffffff;
-
-  /* Legacy accent names kept for compatibility with existing components,
-     repointed to the indigo system so nothing else needs to change. */
-  --accent-green: var(--accent);
-  --accent-emerald: var(--accent-hover);
-  --accent-teal: var(--accent);
-
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-}
-
-[data-theme="dark"] {
   --bg-primary: #0f1117;
   --bg-secondary: #161922;
   --bg-card: #161922;
@@ -67,19 +37,93 @@
   --border-medium: #3a4052;
   --border-dark: #2a2f3d;
 
-  /* Indigo accent — dark surface variant */
+  /* Indigo accent — primary brand color (matches Navbar) */
   --accent: #6366f1;
   --accent-hover: #7477f5;
   --accent-soft: rgba(99, 102, 241, 0.16);
   --accent-soft-strong: rgba(99, 102, 241, 0.28);
   --accent-contrast: #ffffff;
 
+  /* Legacy accent names kept for compatibility with existing components,
+     repointed to the indigo system so nothing else needs to change. */
   --accent-green: var(--accent);
   --accent-emerald: var(--accent-hover);
   --accent-teal: var(--accent);
 
-  --shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
-  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+  /* Semantic status tokens — formalizes the red/amber/emerald hexes
+     that were hardcoded ad hoc across many files (Result.jsx's bug/
+     security cards, History/Dashboard/Profile's grade colors). Not
+     yet wired into every component; this is the foundation for
+     consolidating those literal hex values as each file gets revisited. */
+  --color-success: #34d399;
+  --color-success-soft: rgba(52, 211, 153, 0.14);
+  --color-info: #60a5fa;
+  --color-info-soft: rgba(96, 165, 250, 0.14);
+  --color-warning: #d29922;
+  --color-warning-soft: rgba(210, 153, 34, 0.14);
+  --color-caution: #f97316;
+  --color-caution-soft: rgba(249, 115, 22, 0.14);
+  --color-danger: #f85149;
+  --color-danger-soft: rgba(248, 81, 73, 0.14);
+
+  /* Layered, low-opacity shadows — a softer, more "real product"
+     elevation system than a single hard drop-shadow. Currently most
+     components reach for Tailwind's built-in shadow-lg/shadow-2xl or
+     one-off inline shadows rather than these; consolidating onto this
+     scale is a good next step for consistency across cards/modals. */
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.35), 0 2px 4px rgba(0, 0, 0, 0.2);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.4), 0 4px 10px rgba(0, 0, 0, 0.25);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.45);
+
+  color-scheme: dark;
+}
+
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f6f8fa;
+  --bg-card: #ffffff;
+  --bg-input: #f9fafb;
+  --bg-hover: #f3f4f6;
+
+  --text-primary: #1f2937;
+  --text-secondary: #4b5563;
+  --text-muted: #6b7280;
+  --text-inverse: #ffffff;
+
+  --border-light: #e5e7eb;
+  --border-medium: #d1d5db;
+  --border-dark: #9ca3af;
+
+  --accent: #6366f1;
+  --accent-hover: #7477f5;
+  --accent-soft: rgba(99, 102, 241, 0.12);
+  --accent-soft-strong: rgba(99, 102, 241, 0.22);
+  --accent-contrast: #ffffff;
+
+  --accent-green: var(--accent);
+  --accent-emerald: var(--accent-hover);
+  --accent-teal: var(--accent);
+
+  --color-success: #16a34a;
+  --color-success-soft: rgba(22, 163, 74, 0.1);
+  --color-info: #2563eb;
+  --color-info-soft: rgba(37, 99, 235, 0.1);
+  --color-warning: #b45309;
+  --color-warning-soft: rgba(180, 83, 9, 0.1);
+  --color-caution: #c2410c;
+  --color-caution-soft: rgba(194, 65, 12, 0.1);
+  --color-danger: #dc2626;
+  --color-danger-soft: rgba(220, 38, 38, 0.1);
+
+  --shadow-xs: 0 1px 2px rgba(0, 0, 0, 0.06);
+  --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 4px 10px rgba(0, 0, 0, 0.1), 0 2px 4px rgba(0, 0, 0, 0.05);
+  --shadow-lg: 0 12px 28px rgba(0, 0, 0, 0.12), 0 4px 10px rgba(0, 0, 0, 0.06);
+  --shadow-xl: 0 24px 48px rgba(0, 0, 0, 0.14);
+
+  color-scheme: light;
 }
 
 /* =====================================================
@@ -227,6 +271,11 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  /* Removes the default gray tap-flash on mobile Chrome/Safari — a
+     small but noticeable detail on a touch device that otherwise
+     makes custom-styled buttons briefly flash the browser's default
+     highlight instead of your own hover/active states. */
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Selection */
@@ -250,6 +299,18 @@ a:hover {
   outline-offset: 2px;
 }
 
+/* Utility: allow an element to scroll (if content genuinely overflows
+   its box) without ever showing a visible scrollbar. Used on the
+   AuthLayout form panel so a short viewport degrades to silent
+   scroll instead of a visible scrollbar or clipped content. */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 /* =====================================================
    ACCENT-BACKGROUND BUTTON GUARD
    Root cause of the recurring "invisible button text" bug: <Link>
@@ -271,6 +332,25 @@ a[class*="bg-[var(--accent-hover)]"],
 button[class*="bg-[var(--accent)]"],
 button[class*="bg-[var(--accent-hover)]"] {
   color: var(--accent-contrast, #ffffff) !important;
+}
+
+/* =====================================================
+   FORM AUTOFILL — Chrome/Edge/Safari paint autofilled fields with a
+   bright yellow/white background by default, regardless of your CSS.
+   On a dark UI (Login, Register, Contact, Checkout all have inputs
+   that will get autofilled by real users) that's a jarring flash of
+   light-mode chrome breaking an otherwise dark, deliberate design.
+======================================================== */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text-primary);
+  -webkit-box-shadow: 0 0 0px 1000px var(--bg-input) inset;
+  box-shadow: 0 0 0px 1000px var(--bg-input) inset;
+  transition: background-color 5000s ease-in-out 0s;
 }
 
 /* Reduce motion preference */
