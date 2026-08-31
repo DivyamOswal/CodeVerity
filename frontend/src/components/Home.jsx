@@ -5,6 +5,22 @@ import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
 import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
 
 // ============================================================
+//  Reads the current --accent token and converts it to an "r,g,b"
+//  string for use in canvas fillStyle/strokeStyle, which can't
+//  consume CSS custom properties directly. Read once at mount, so
+//  the particle field follows the active theme's accent color
+//  instead of a hardcoded literal.
+// ============================================================
+function getAccentRGB() {
+  if (typeof window === "undefined") return "34,211,238";
+  const hex = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  const clean = hex.replace("#", "");
+  const bigint = parseInt(clean, 16);
+  if (isNaN(bigint)) return "34,211,238";
+  return `${(bigint >> 16) & 255},${(bigint >> 8) & 255},${bigint & 255}`;
+}
+
+// ============================================================
 //  COMPONENT: ParticleField (canvas particles)
 // ============================================================
 function ParticleField() {
@@ -13,6 +29,7 @@ function ParticleField() {
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
+    const accentRGB = getAccentRGB();
     let width, height, particles = [];
     const count = 80;
     let animationFrame;
@@ -41,7 +58,7 @@ function ParticleField() {
       draw() {
         ctx.beginPath();
         ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = "rgba(99,102,241,0.25)";
+        ctx.fillStyle = `rgba(${accentRGB},0.25)`;
         ctx.fill();
       }
     }
@@ -56,7 +73,6 @@ function ParticleField() {
         p.update();
         p.draw();
       });
-      // connect nearby particles
       for (let i = 0; i < particles.length; i++) {
         for (let j = i + 1; j < particles.length; j++) {
           const dx = particles[i].x - particles[j].x;
@@ -66,7 +82,7 @@ function ParticleField() {
             ctx.beginPath();
             ctx.moveTo(particles[i].x, particles[i].y);
             ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(99,102,241,${0.08 * (1 - dist / 120)})`;
+            ctx.strokeStyle = `rgba(${accentRGB},${0.08 * (1 - dist / 120)})`;
             ctx.lineWidth = 0.6;
             ctx.stroke();
           }
@@ -229,7 +245,6 @@ function StatPill({ value, label, delayMs = 0 }) {
 
   useEffect(() => {
     if (!hasStarted) return;
-    // Reset display to 0 when value changes
     setDisplay(0);
     const num = parseFloat(String(value).replace(/[^0-9.]/g, ""));
     if (isNaN(num)) return;
@@ -266,12 +281,14 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 // ============================================================
-//  COMPONENT: ScanLine (for button hover)
+//  COMPONENT: ScanLine (for button hover) — uses the global
+//  .animate-scanline utility from index.css instead of a
+//  locally-duplicated keyframe.
 // ============================================================
 function ScanLine() {
   return (
     <span className="absolute inset-0 z-0 overflow-hidden">
-      <span className="absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-transparent via-[var(--accent-contrast)] to-transparent opacity-40 animate-scan" />
+      <span className="animate-scanline absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-transparent via-[var(--accent-contrast)] to-transparent opacity-40" />
     </span>
   );
 }
@@ -280,7 +297,6 @@ function ScanLine() {
 //  SECTION: How It Works, Testimonials, Pricing, FAQ, Footer
 // ============================================================
 
-/* ---------- How It Works ---------- */
 function HowItWorks() {
   const steps = [
     {
@@ -346,7 +362,6 @@ function HowItWorks() {
   );
 }
 
-/* ---------- Testimonials ---------- */
 function Testimonials() {
   const testimonials = [
     {
@@ -388,7 +403,7 @@ function Testimonials() {
                   </svg>
                 ))}
               </div>
-              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-3">“{t.quote}”</p>
+              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-3">"{t.quote}"</p>
               <div>
                 <p className="text-xs font-semibold text-[var(--text-primary)]">{t.author}</p>
                 <p className="text-[10px] text-[var(--text-muted)]">{t.role}</p>
@@ -401,7 +416,6 @@ function Testimonials() {
   );
 }
 
-/* ---------- Pricing (UPDATED with shared data) ---------- */
 function Pricing() {
   const plans = PRICING_PLANS;
 
@@ -461,7 +475,7 @@ function Pricing() {
                   }
                   className={`mt-6 block w-full rounded-lg px-4 py-2 text-center text-sm font-semibold transition-all ${
                     plan.highlight
-                      ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] hover:bg-[var(--accent-hover)]"
+                      ? "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
                       : "border border-[var(--border-light)] bg-[var(--bg-card)]/75 text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
                   }`}
                 >
@@ -479,7 +493,6 @@ function Pricing() {
   );
 }
 
-/* ---------- FAQ ---------- */
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
 
@@ -541,7 +554,6 @@ function FAQ() {
   );
 }
 
-/* ---------- Footer ---------- */
 function Footer() {
   return (
     <footer className="border-t border-[var(--border-light)] py-8 px-4 sm:px-6 text-[var(--text-muted)]">
@@ -565,7 +577,7 @@ function Footer() {
 }
 
 // ============================================================
-//  MAIN HOME COMPONENT (with real stats)
+//  MAIN HOME COMPONENT
 // ============================================================
 
 export default function Home() {
@@ -573,7 +585,6 @@ export default function Home() {
   const [show, setShow] = useState(false);
   const { compact } = usePreferences();
 
-  // ── Stats state ──
   const [stats, setStats] = useState({
     totalScans: 0,
     avgQuality: 0,
@@ -581,7 +592,6 @@ export default function Home() {
   });
   const [statsLoading, setStatsLoading] = useState(true);
 
-  // ── Fetch real stats ──
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -603,7 +613,6 @@ export default function Home() {
     fetchStats();
   }, []);
 
-  // Refs for GSAP animation targets
   const containerRef = useRef(null);
   const brandRef = useRef(null);
   const badgeRef = useRef(null);
@@ -619,7 +628,6 @@ export default function Home() {
   const bgGlow2Ref = useRef(null);
   const bgGridRef = useRef(null);
 
-  // Refs for new sections
   const howRef = useRef(null);
   const testimonialRef = useRef(null);
   const pricingRef = useRef(null);
@@ -630,7 +638,6 @@ export default function Home() {
     return () => clearTimeout(t);
   }, []);
 
-  // ---- GSAP animations ----
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -663,7 +670,6 @@ export default function Home() {
           .to(trustRef.current, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
           .to(statsRef.current, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, "-=0.15");
 
-        // Feature section
         ScrollTrigger.create({
           trigger: featureLabelRef.current,
           start: "top 85%",
@@ -697,7 +703,6 @@ export default function Home() {
           once: true,
         });
 
-        // New sections
         const sections = [
           { ref: howRef, start: "top 80%" },
           { ref: testimonialRef, start: "top 80%" },
@@ -720,7 +725,6 @@ export default function Home() {
           });
         });
 
-        // Parallax glows
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
@@ -787,7 +791,6 @@ export default function Home() {
     { scope: containerRef, dependencies: [] }
   );
 
-  // Compact overrides
   const compactClasses = compact
     ? {
         container: "py-8",
@@ -822,28 +825,21 @@ export default function Home() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
-      {/* Background glows and dot grid */}
+      {/* Background glows and dot grid — now theme-driven instead of
+          the old hardcoded indigo rgba(99,102,241,...) literals. */}
       <div
         ref={bgGlow1Ref}
-        className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full"
-        style={{
-          background: "rgba(99,102,241,0.10)",
-          filter: "blur(110px)",
-        }}
+        className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl"
       />
       <div
         ref={bgGlow2Ref}
-        className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full"
-        style={{
-          background: "rgba(99,102,241,0.06)",
-          filter: "blur(110px)",
-        }}
+        className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl"
       />
       <div
         ref={bgGridRef}
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(rgba(99,102,241,0.9) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -870,7 +866,8 @@ export default function Home() {
             </div>
           </div>
 
-          {/* BADGE */}
+          {/* BADGE — animate-pulse-glow now correctly follows the
+              theme since the duplicate local override is gone. */}
           <div
             ref={badgeRef}
             className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
@@ -914,8 +911,8 @@ export default function Home() {
             {token ? (
               <Link
                 to="/dashboard"
-                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
-                style={{ boxShadow: "0 0 30px rgba(99,102,241,0.25)" }}
+                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
+                style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
               >
                 <ScanLine />
                 <span className="relative z-10">Open Dashboard →</span>
@@ -924,8 +921,8 @@ export default function Home() {
               <>
                 <Link
                   to="/login"
-                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
-                  style={{ boxShadow: "0 0 30px rgba(99,102,241,0.25)" }}
+                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
+                  style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
                 >
                   <ScanLine />
                   <span className="relative z-10">Sign In</span>
@@ -951,7 +948,7 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
-          {/* STATS – now with real data */}
+          {/* STATS */}
           <div
             ref={statsRef}
             className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
@@ -1032,34 +1029,6 @@ export default function Home() {
         </div>
         <Footer />
       </div>
-
-      {/* Global styles */}
-      <style>{`
-        @keyframes scanline {
-          0% { top: -2px; opacity: 0; }
-          8% { opacity: 1; }
-          92% { opacity: 1; }
-          100% { top: 100%; opacity: 0; }
-        }
-        @keyframes float {
-          0% { transform: translateY(0px); }
-          50% { transform: translateY(-6px); }
-          100% { transform: translateY(0px); }
-        }
-        @keyframes pulseGlow {
-          0%, 100% { box-shadow: 0 0 8px rgba(99,102,241,0.1); }
-          50% { box-shadow: 0 0 20px rgba(99,102,241,0.3); }
-        }
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
-        }
-        .animate-pulse-glow {
-          animation: pulseGlow 3s ease-in-out infinite;
-        }
-        .animate-scan {
-          animation: scanline 2.5s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }
