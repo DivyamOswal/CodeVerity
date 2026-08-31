@@ -130,13 +130,16 @@ export default function Login() {
         <button
           type="submit"
           disabled={loading}
-          className="animate-fadeUp group relative w-full overflow-hidden rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] transition-all duration-300 hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 focus:ring-offset-2 focus:ring-offset-[var(--bg-card)]"
+          className="animate-fadeUp group relative w-full overflow-hidden rounded-xl bg-[var(--accent)] py-2.5 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-300 hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 focus:ring-offset-2 focus:ring-offset-[var(--bg-card)]"
           style={{ animationDelay: "260ms" }}
         >
           <span className="relative z-10 flex items-center justify-center gap-2">
             {loading ? (
               <>
-                <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                <span
+                  className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
+                  style={{ borderColor: "var(--accent-contrast)", borderTopColor: "transparent", opacity: 0.85 }}
+                />
                 <span className="font-mono text-xs">verifying…</span>
               </>
             ) : (
