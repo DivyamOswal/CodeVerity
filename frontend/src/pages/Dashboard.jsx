@@ -10,7 +10,8 @@ import { Search } from "lucide-react";
 
 /* =========================================================
    CODEVERITY DASHBOARD
-   Theme: Indigo Slate (matching the rest of the app)
+   Theme: Slate + Cyan (driven entirely by index.css tokens —
+   no hardcoded palette values live in this file).
 ========================================================= */
 
 export default function Dashboard() {
@@ -27,7 +28,6 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const { logout } = useAuth();
 
-  // Refs for GSAP
   const mainContainerRef = useRef(null);
   const statsContainerRef = useRef(null);
   const analyzerRef = useRef(null);
@@ -36,9 +36,6 @@ export default function Dashboard() {
 
   const { compact } = usePreferences();
 
-  /* =========================================================
-     LOAD DASHBOARD
-  ========================================================= */
   const loadDashboard = useCallback(
     () =>
       fetchDashboard()
@@ -58,9 +55,6 @@ export default function Dashboard() {
     loadDashboard();
   }, [loadDashboard]);
 
-  /* =========================================================
-     GSAP – Entrance & Stagger Animations (PERMANENT FIX)
-  ========================================================= */
   useGSAP(
     () => {
       if (activeView !== "home" || !mounted || !data) return;
@@ -153,9 +147,6 @@ export default function Dashboard() {
     }
   );
 
-  /* =========================================================
-     DOWNLOAD PDF, GENERATE REPORT, OPEN RESULT
-  ========================================================= */
   const downloadPDF = async () => {
     try {
       const token = localStorage.getItem("token");
@@ -203,9 +194,7 @@ export default function Dashboard() {
   } catch (err) {
     const errorMsg = err.response?.data?.error || "Analysis failed";
     
-    // Check if it's a limit error
     if (errorMsg === "Monthly scan limit reached" || errorMsg === "Insufficient tokens") {
-      // Add an upgrade link
       setError(
         `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
       );
@@ -328,7 +317,7 @@ export default function Dashboard() {
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       {activeView === "result" && analysis && (
-        <div className="animate-[fadeUp_0.3s_ease_both]">
+        <div className="animate-[cv-dash-fadeUp_0.3s_ease_both]">
           <Result
             data={analysis}
             onDownload={downloadPDF}
@@ -343,15 +332,14 @@ export default function Dashboard() {
           className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
         >
           <div className="space-y-5">
-            {/* HEADER – now includes scan usage */}
+            {/* HEADER */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
                 <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   System online
                 </span>
 
-                {/* Token indicator */}
                 {data?.user && typeof data.user.tokensRemaining === "number" && (
                   <>
                     <span className="text-[var(--text-muted)] text-[9px]">•</span>
@@ -367,7 +355,6 @@ export default function Dashboard() {
                   </>
                 )}
 
-                {/*  NEW: Scan usage indicator */}
                 {data?.user && typeof data.user.scansLimit === "number" && (
                   <>
                     <span className="text-[var(--text-muted)] text-[9px]">•</span>
@@ -391,7 +378,7 @@ export default function Dashboard() {
               </p>
             </div>
 
-            {/* STATS – unchanged */}
+            {/* STATS */}
             <div
               ref={statsContainerRef}
               className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}
@@ -407,7 +394,7 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* ANALYZER – unchanged */}
+            {/* ANALYZER */}
             <div
               ref={analyzerRef}
               className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]"
@@ -438,6 +425,7 @@ export default function Dashboard() {
                       $
                     </span>
                     <input
+                      aria-label="GitHub repository URL"
                       className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
                       placeholder="https://github.com/username/repository"
                       value={repoUrl}
@@ -454,12 +442,15 @@ export default function Dashboard() {
                     className={`shrink-0 rounded-xl font-semibold transition-all duration-200 ${
                       loading
                         ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)]"
-                        : "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] shadow-lg shadow-[var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] hover:scale-[1.01] active:scale-95"
+                        : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] hover:scale-[1.01] active:scale-95"
                     } ${compactClasses.buttonPadding}`}
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                        <span
+                          className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
+                          style={{ borderColor: "var(--accent-contrast)", borderTopColor: "transparent", opacity: 0.85 }}
+                        />
                         Analyzing…
                       </span>
                     ) : (
@@ -472,11 +463,11 @@ export default function Dashboard() {
                 </div>
 
                 {error && (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/10 px-3 py-2.5 text-[10px] text-red-400 animate-[fadeUp_0.2s_ease_both]">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-red-500/10">
+                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] px-3 py-2.5 text-[10px] text-[var(--color-danger)] animate-[cv-dash-fadeUp-sm_0.2s_ease_both]">
+                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-danger-soft)]">
                       !
                     </span>
-                    {error}
+                    <span dangerouslySetInnerHTML={{ __html: error }} />
                   </div>
                 )}
 
@@ -500,7 +491,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* RECENT REPORTS – unchanged */}
+            {/* RECENT REPORTS */}
             {data.recentReports?.length > 0 && (
               <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
                 <div
@@ -517,9 +508,9 @@ export default function Dashboard() {
                   <div className="flex items-center gap-3">
                     <span
                       key={statsKey}
-                      className="hidden items-center gap-1.5 text-[9px] text-emerald-400 sm:flex"
+                      className="hidden items-center gap-1.5 text-[9px] text-[var(--color-success)] sm:flex"
                     >
-                      <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
                       Live
                     </span>
                     <button
@@ -544,7 +535,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* EMPTY STATE – unchanged */}
+            {/* EMPTY STATE */}
             {!data.recentReports?.length && (
               <div
                 ref={emptyStateRef}
@@ -564,7 +555,7 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* FOOTER – unchanged */}
+            {/* FOOTER */}
             <div
               className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
             >
@@ -576,22 +567,20 @@ export default function Dashboard() {
         </main>
       )}
 
+      {/* Small local animations, namespaced (cv-dash-*) so they can
+          never collide with index.css's global @keyframes fadeUp —
+          @keyframes names are global in CSS regardless of where the
+          <style> tag lives, so an identically-named local keyframe
+          would silently override the app-wide entrance animation
+          while this component is mounted. */}
       <style>{`
-        @keyframes fadeUp {
-          from {
-            transform: translateY(8px);
-            opacity: 0;
-          }
-          to {
-            transform: translateY(0);
-            opacity: 1;
-          }
+        @keyframes cv-dash-fadeUp {
+          from { transform: translateY(8px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
-        @media (prefers-reduced-motion: reduce) {
-          * {
-            animation-duration: 0.01ms !important;
-            animation-iteration-count: 1 !important;
-          }
+        @keyframes cv-dash-fadeUp-sm {
+          from { transform: translateY(4px); opacity: 0; }
+          to { transform: translateY(0); opacity: 1; }
         }
       `}</style>
     </div>
@@ -599,7 +588,7 @@ export default function Dashboard() {
 }
 
 /* =========================================================
-   SUB-COMPONENTS (unchanged)
+   SUB-COMPONENTS
 ========================================================= */
 function CodeVerityLogo() {
   return (
@@ -657,34 +646,36 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
   );
 }
 
+// Grade → color mapping, aligned with the same 5-tier scale used in
+// History.jsx and Result.jsx (success/info/warning/caution/danger).
 function ReportRow({ report, onView, compact }) {
   const grade = report.grade ?? "N/A";
   const gradeColor =
     {
       A: {
-        text: "text-emerald-400",
-        bg: "bg-emerald-500/10",
-        border: "border-emerald-500/20",
+        text: "text-[var(--color-success)]",
+        bg: "bg-[var(--color-success-soft)]",
+        border: "border-[var(--color-success)]/20",
       },
       B: {
-        text: "text-blue-400",
-        bg: "bg-blue-500/10",
-        border: "border-blue-500/20",
+        text: "text-[var(--color-info)]",
+        bg: "bg-[var(--color-info-soft)]",
+        border: "border-[var(--color-info)]/20",
       },
       C: {
-        text: "text-amber-400",
-        bg: "bg-amber-500/10",
-        border: "border-amber-500/20",
+        text: "text-[var(--color-warning)]",
+        bg: "bg-[var(--color-warning-soft)]",
+        border: "border-[var(--color-warning)]/20",
       },
       D: {
-        text: "text-orange-400",
-        bg: "bg-orange-500/10",
-        border: "border-orange-500/20",
+        text: "text-[var(--color-caution)]",
+        bg: "bg-[var(--color-caution-soft)]",
+        border: "border-[var(--color-caution)]/20",
       },
       F: {
-        text: "text-red-400",
-        bg: "bg-red-500/10",
-        border: "border-red-500/20",
+        text: "text-[var(--color-danger)]",
+        bg: "bg-[var(--color-danger-soft)]",
+        border: "border-[var(--color-danger)]/20",
       },
     }[grade[0]] ?? {
       text: "text-[var(--text-secondary)]",

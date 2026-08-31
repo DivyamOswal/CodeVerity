@@ -20,5 +20,10 @@ router.post("/members", auth, addMember);
 router.delete("/members/:userId", auth, removeMember);
 router.put("/members/:userId", auth, updateMemberRole);
 router.post("/leave", auth, leaveWorkspace);
+router.get("/api-keys", auth, getApiKeys);
+router.post("/api-keys", auth, createApiKey);
+router.delete("/api-keys/:keyId", auth, deleteApiKey);
+router.put("/integrations", auth, updateIntegrations);
+router.get("/audit-logs", auth, getAuditLogs);
 
 export default router;

@@ -2,7 +2,11 @@ import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
-import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
+import {
+  PRICING_PLANS,
+  formatPrice,
+  formatTokens,
+} from "../components/PricingPlans";
 
 // ============================================================
 //  Reads the current --accent token and converts it to an "r,g,b"
@@ -13,7 +17,9 @@ import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingP
 // ============================================================
 function getAccentRGB() {
   if (typeof window === "undefined") return "34,211,238";
-  const hex = getComputedStyle(document.documentElement).getPropertyValue("--accent").trim();
+  const hex = getComputedStyle(document.documentElement)
+    .getPropertyValue("--accent")
+    .trim();
   const clean = hex.replace("#", "");
   const bigint = parseInt(clean, 16);
   if (isNaN(bigint)) return "34,211,238";
@@ -30,7 +36,9 @@ function ParticleField() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const accentRGB = getAccentRGB();
-    let width, height, particles = [];
+    let width,
+      height,
+      particles = [];
     const count = 80;
     let animationFrame;
 
@@ -118,25 +126,28 @@ function TypedWord({ words }) {
 
   useEffect(() => {
     const currentWord = words[index];
-    const timeout = setTimeout(() => {
-      if (!isDeleting) {
-        if (charIndex < currentWord.length) {
-          setDisplay((prev) => prev + currentWord[charIndex]);
-          setCharIndex(charIndex + 1);
+    const timeout = setTimeout(
+      () => {
+        if (!isDeleting) {
+          if (charIndex < currentWord.length) {
+            setDisplay((prev) => prev + currentWord[charIndex]);
+            setCharIndex(charIndex + 1);
+          } else {
+            setIsDeleting(true);
+            setTimeout(() => {}, 1500);
+          }
         } else {
-          setIsDeleting(true);
-          setTimeout(() => {}, 1500);
+          if (charIndex > 0) {
+            setDisplay((prev) => prev.slice(0, -1));
+            setCharIndex(charIndex - 1);
+          } else {
+            setIsDeleting(false);
+            setIndex((i) => (i + 1) % words.length);
+          }
         }
-      } else {
-        if (charIndex > 0) {
-          setDisplay((prev) => prev.slice(0, -1));
-          setCharIndex(charIndex - 1);
-        } else {
-          setIsDeleting(false);
-          setIndex((i) => (i + 1) % words.length);
-        }
-      }
-    }, isDeleting ? 30 : 80);
+      },
+      isDeleting ? 30 : 80,
+    );
 
     return () => clearTimeout(timeout);
   }, [charIndex, isDeleting, index, words]);
@@ -171,7 +182,9 @@ function CodeVerityLogo() {
         <path d="m9 12 2 2 4-4" />
       </svg>
       <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-primary)] border border-[var(--border-light)]">
-        <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+        <span className="text-[6px] font-bold text-[var(--accent)]">
+          &lt;/&gt;
+        </span>
       </div>
       <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
     </div>
@@ -190,8 +203,12 @@ function Feature({ icon, title, desc, delay }) {
       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
         {icon}
       </div>
-      <h3 className="mb-1.5 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
-      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">{desc}</p>
+      <h3 className="mb-1.5 text-sm font-semibold text-[var(--text-primary)]">
+        {title}
+      </h3>
+      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+        {desc}
+      </p>
     </div>
   );
 }
@@ -201,7 +218,16 @@ function Feature({ icon, title, desc, delay }) {
 // ============================================================
 function BugIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
       <path d="M18 13h-2" />
       <path d="M8 13H6" />
@@ -213,7 +239,16 @@ function BugIcon() {
 }
 function ShieldIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
@@ -221,7 +256,16 @@ function ShieldIcon() {
 }
 function FlaskIcon() {
   return (
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
       <path d="M8 2h8" />
     </svg>
@@ -258,7 +302,13 @@ function StatPill({ value, label, delayMs = 0 }) {
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(num * eased);
-      let output = isPct ? `${current}%` : isPlus ? `${current}+` : isLt ? `<${current}s` : String(current);
+      let output = isPct
+        ? `${current}%`
+        : isPlus
+          ? `${current}+`
+          : isLt
+            ? `<${current}s`
+            : String(current);
       setDisplay(output);
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
@@ -274,8 +324,12 @@ function StatPill({ value, label, delayMs = 0 }) {
 
   return (
     <div className="flex flex-col items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3 min-w-[110px]">
-      <span className="text-xl font-bold text-[var(--text-primary)]">{display}</span>
-      <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">{label}</span>
+      <span className="text-xl font-bold text-[var(--text-primary)]">
+        {display}
+      </span>
+      <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">
+        {label}
+      </span>
     </div>
   );
 }
@@ -301,7 +355,14 @@ function HowItWorks() {
   const steps = [
     {
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
@@ -311,7 +372,14 @@ function HowItWorks() {
     },
     {
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M12 6v6l4 2" />
         </svg>
@@ -321,7 +389,14 @@ function HowItWorks() {
     },
     {
       icon: (
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <svg
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+        >
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
@@ -349,8 +424,12 @@ function HowItWorks() {
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
                 {step.icon}
               </div>
-              <h3 className="font-semibold text-[var(--text-primary)] mb-1">{step.title}</h3>
-              <p className="text-xs text-[var(--text-secondary)]">{step.desc}</p>
+              <h3 className="font-semibold text-[var(--text-primary)] mb-1">
+                {step.title}
+              </h3>
+              <p className="text-xs text-[var(--text-secondary)]">
+                {step.desc}
+              </p>
               <span className="mt-4 inline-block text-[9px] font-mono text-[var(--text-muted)] bg-[var(--bg-primary)] px-2 py-0.5 rounded-full">
                 {`0${idx + 1}`}
               </span>
@@ -365,17 +444,20 @@ function HowItWorks() {
 function Testimonials() {
   const testimonials = [
     {
-      quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
+      quote:
+        "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
       author: "Sarah Chen",
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote: "I use it before every PR. The bug detection is surprisingly accurate – it's like having a senior reviewer.",
+      quote:
+        "I use it before every PR. The bug detection is surprisingly accurate – it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full‑stack Developer, OpenSource Collective",
     },
     {
-      quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
+      quote:
+        "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
       author: "Dr. Aisha Patel",
       role: "CTO, DevSafe",
     },
@@ -398,14 +480,24 @@ function Testimonials() {
             >
               <div className="mb-3 flex items-center gap-1 text-[var(--accent)]">
                 {[...Array(5)].map((_, s) => (
-                  <svg key={s} width="14" height="14" viewBox="0 0 24 24" fill="currentColor">
+                  <svg
+                    key={s}
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="currentColor"
+                  >
                     <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
                   </svg>
                 ))}
               </div>
-              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-3">"{t.quote}"</p>
+              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-3">
+                "{t.quote}"
+              </p>
               <div>
-                <p className="text-xs font-semibold text-[var(--text-primary)]">{t.author}</p>
+                <p className="text-xs font-semibold text-[var(--text-primary)]">
+                  {t.author}
+                </p>
                 <p className="text-[10px] text-[var(--text-muted)]">{t.role}</p>
               </div>
             </div>
@@ -443,13 +535,17 @@ function Pricing() {
                     : "border-[var(--border-light)] bg-[var(--bg-card)]"
                 } hover:scale-[1.02]`}
               >
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">{plan.name}</h3>
+                <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                  {plan.name}
+                </h3>
                 <div className="mt-2 flex items-baseline">
                   <span className="text-3xl font-extrabold text-[var(--text-primary)]">
                     {displayPrice}
                   </span>
                   {!isFree && (
-                    <span className="ml-1 text-sm text-[var(--text-muted)]">/mo</span>
+                    <span className="ml-1 text-sm text-[var(--text-muted)]">
+                      /mo
+                    </span>
                   )}
                 </div>
                 <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -460,7 +556,13 @@ function Pricing() {
                 <ul className="mt-4 space-y-2 text-xs text-[var(--text-secondary)]">
                   {plan.features.map((f, fi) => (
                     <li key={fi} className="flex items-start gap-2">
-                      <svg className="mt-0.5 w-3 h-3 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
+                      <svg
+                        className="mt-0.5 w-3 h-3 text-[var(--accent)]"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="3"
+                      >
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       {f}
@@ -486,7 +588,8 @@ function Pricing() {
           })}
         </div>
         <p className="mt-6 text-[10px] text-[var(--text-muted)]">
-          * All prices in INR. Yearly plans offer 20% off – see full pricing page.
+          * All prices in INR. Yearly plans offer 20% off – see full pricing
+          page.
         </p>
       </div>
     </section>
@@ -536,7 +639,9 @@ function FAQ() {
                 onClick={() => toggle(idx)}
                 className="w-full px-5 py-4 text-left flex items-center justify-between hover:bg-[var(--bg-hover)]/50 transition-colors"
               >
-                <span className="text-sm font-medium text-[var(--text-primary)]">{faq.q}</span>
+                <span className="text-sm font-medium text-[var(--text-primary)]">
+                  {faq.q}
+                </span>
                 <span className="text-[var(--accent)] text-lg font-mono">
                   {openIndex === idx ? "−" : "+"}
                 </span>
@@ -563,10 +668,30 @@ function Footer() {
           <span className="font-mono text-[10px]">CodeVerity © 2026</span>
         </div>
         <div className="flex items-center gap-4">
-          <Link to="/about" className="hover:text-[var(--text-primary)] transition-colors">About</Link>
-          <Link to="/privacy" className="hover:text-[var(--text-primary)] transition-colors">Privacy</Link>
-          <Link to="/terms" className="hover:text-[var(--text-primary)] transition-colors">Terms</Link>
-          <a href="mailto:support@codeverity.dev" className="hover:text-[var(--text-primary)] transition-colors">Support</a>
+          <Link
+            to="/about"
+            className="hover:text-[var(--text-primary)] transition-colors"
+          >
+            About
+          </Link>
+          <Link
+            to="/privacy"
+            className="hover:text-[var(--text-primary)] transition-colors"
+          >
+            Privacy
+          </Link>
+          <Link
+            to="/terms"
+            className="hover:text-[var(--text-primary)] transition-colors"
+          >
+            Terms
+          </Link>
+          <a
+            href="mailto:support@codeverity.dev"
+            className="hover:text-[var(--text-primary)] transition-colors"
+          >
+            Support
+          </a>
         </div>
         <div className="flex items-center gap-3">
           <span>Built with ❤️ for developers</span>
@@ -596,11 +721,31 @@ export default function Home() {
     const fetchStats = async () => {
       try {
         const res = await fetch("/api/stats/public");
-        const data = await res.json();
+
+        console.log("Stats response:", {
+          status: res.status,
+          statusText: res.statusText,
+          contentType: res.headers.get("content-type"),
+        });
+
+        const text = await res.text();
+
+        console.log("Stats raw response:", text);
+
+        if (!res.ok) {
+          throw new Error(`Stats API failed: ${res.status} ${res.statusText}`);
+        }
+
+        if (!text.trim()) {
+          throw new Error("Stats API returned an empty response");
+        }
+
+        const data = JSON.parse(text);
+
         if (data.success) {
           setStats({
-            totalScans: data.stats.totalScans,
-            avgQuality: data.stats.avgQuality,
+            totalScans: data.stats.totalScans ?? 0,
+            avgQuality: data.stats.avgQuality ?? 0,
             avgTime: data.stats.avgTime || "< 2 min",
           });
         }
@@ -610,6 +755,7 @@ export default function Home() {
         setStatsLoading(false);
       }
     };
+
     fetchStats();
   }, []);
 
@@ -658,17 +804,29 @@ export default function Home() {
             trustRef.current,
             statsRef.current,
           ],
-          { opacity: 0, y: 20 }
+          { opacity: 0, y: 20 },
         );
 
         tl.to(brandRef.current, { opacity: 1, y: 0, duration: 0.5 })
           .to(badgeRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
           .to(headingRef.current, { opacity: 1, y: 0, duration: 0.5 }, "-=0.2")
           .to(typedRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
-          .to(descriptionRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.2")
-          .to(ctasRef.current, { opacity: 1, y: 0, duration: 0.4, stagger: 0.06 }, "-=0.2")
+          .to(
+            descriptionRef.current,
+            { opacity: 1, y: 0, duration: 0.4 },
+            "-=0.2",
+          )
+          .to(
+            ctasRef.current,
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.06 },
+            "-=0.2",
+          )
           .to(trustRef.current, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
-          .to(statsRef.current, { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 }, "-=0.15");
+          .to(
+            statsRef.current,
+            { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 },
+            "-=0.15",
+          );
 
         ScrollTrigger.create({
           trigger: featureLabelRef.current,
@@ -677,7 +835,7 @@ export default function Home() {
             gsap.fromTo(
               featureLabelRef.current,
               { opacity: 0, y: 15 },
-              { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" }
+              { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
             );
           },
           once: true,
@@ -697,7 +855,7 @@ export default function Home() {
                 stagger: 0.12,
                 ease: "power2.out",
                 clearProps: "opacity",
-              }
+              },
             );
           },
           once: true,
@@ -718,7 +876,13 @@ export default function Home() {
               gsap.fromTo(
                 ref.current,
                 { opacity: 0, y: 30 },
-                { opacity: 1, y: 0, duration: 0.6, ease: "power2.out", clearProps: "opacity" }
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.6,
+                  ease: "power2.out",
+                  clearProps: "opacity",
+                },
               );
             },
             once: true,
@@ -734,7 +898,11 @@ export default function Home() {
             start: "top bottom",
             end: "bottom top",
             onUpdate: (self) => {
-              gsap.to(bgGlow1, { y: self.progress * 20, duration: 0.1, overwrite: true });
+              gsap.to(bgGlow1, {
+                y: self.progress * 20,
+                duration: 0.1,
+                overwrite: true,
+              });
             },
           });
         }
@@ -744,7 +912,11 @@ export default function Home() {
             start: "top bottom",
             end: "bottom top",
             onUpdate: (self) => {
-              gsap.to(bgGlow2, { y: -self.progress * 25, duration: 0.1, overwrite: true });
+              gsap.to(bgGlow2, {
+                y: -self.progress * 25,
+                duration: 0.1,
+                overwrite: true,
+              });
             },
           });
         }
@@ -754,7 +926,11 @@ export default function Home() {
             start: "top bottom",
             end: "bottom top",
             onUpdate: (self) => {
-              gsap.to(bgGrid, { y: self.progress * 10, duration: 0.1, overwrite: true });
+              gsap.to(bgGrid, {
+                y: self.progress * 10,
+                duration: 0.1,
+                overwrite: true,
+              });
             },
           });
         }
@@ -782,13 +958,13 @@ export default function Home() {
             pricingRef.current,
             faqRef.current,
           ],
-          { opacity: 1, y: 0, clearProps: "all" }
+          { opacity: 1, y: 0, clearProps: "all" },
         );
       });
 
       return () => mm.revert();
     },
-    { scope: containerRef, dependencies: [] }
+    { scope: containerRef, dependencies: [] },
   );
 
   const compactClasses = compact
@@ -824,7 +1000,10 @@ export default function Home() {
       };
 
   return (
-    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
+    <div
+      ref={containerRef}
+      className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
+    >
       {/* Background glows and dot grid — now theme-driven instead of
           the old hardcoded indigo rgba(99,102,241,...) literals. */}
       <div
@@ -839,7 +1018,8 @@ export default function Home() {
         ref={bgGridRef}
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -854,7 +1034,10 @@ export default function Home() {
       >
         <div className="w-full max-w-5xl text-center">
           {/* BRAND */}
-          <div ref={brandRef} className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}>
+          <div
+            ref={brandRef}
+            className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}
+          >
             <CodeVerityLogo />
             <div className="text-left">
               <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)] uppercase">
@@ -886,7 +1069,10 @@ export default function Home() {
           </h1>
 
           {/* TYPED SUBTITLE */}
-          <p ref={typedRef} className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}>
+          <p
+            ref={typedRef}
+            className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
+          >
             <TypedWord
               words={[
                 "Finds your bugs.",
@@ -902,12 +1088,16 @@ export default function Home() {
             ref={descriptionRef}
             className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
           >
-            Drop any public GitHub URL and get a complete AI-powered repository audit with architecture
-            analysis, security findings, bug detection, performance insights, and generated tests.
+            Drop any public GitHub URL and get a complete AI-powered repository
+            audit with architecture analysis, security findings, bug detection,
+            performance insights, and generated tests.
           </p>
 
           {/* CTA BUTTONS */}
-          <div ref={ctasRef} className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}>
+          <div
+            ref={ctasRef}
+            className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
+          >
             {token ? (
               <Link
                 to="/dashboard"
@@ -985,7 +1175,10 @@ export default function Home() {
 
           {/* FEATURE CARDS */}
           <div className={`grid ${compactClasses.featureGap} md:grid-cols-3`}>
-            <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
+            <div
+              ref={(el) => (featureCardsRef.current[0] = el)}
+              style={{ opacity: 0 }}
+            >
               <Feature
                 icon={<BugIcon />}
                 title="AI Bug Detection"
@@ -993,7 +1186,10 @@ export default function Home() {
                 delay="0.55s"
               />
             </div>
-            <div ref={(el) => (featureCardsRef.current[1] = el)} style={{ opacity: 0 }}>
+            <div
+              ref={(el) => (featureCardsRef.current[1] = el)}
+              style={{ opacity: 0 }}
+            >
               <Feature
                 icon={<ShieldIcon />}
                 title="Security Analysis"
@@ -1001,7 +1197,10 @@ export default function Home() {
                 delay="0.65s"
               />
             </div>
-            <div ref={(el) => (featureCardsRef.current[2] = el)} style={{ opacity: 0 }}>
+            <div
+              ref={(el) => (featureCardsRef.current[2] = el)}
+              style={{ opacity: 0 }}
+            >
               <Feature
                 icon={<FlaskIcon />}
                 title="Smart Test Generation"

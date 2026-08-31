@@ -273,3 +273,161 @@ export const listMembers = async (req, res) => {
     res.status(500).json({ error: "Failed to list members" });
   }
 };
+
+// ─── API Keys ──────────────────────────────────────────────────
+
+// Generate a secure API key
+function generateApiKey() {
+  return `cv_${crypto.randomBytes(32).toString('hex')}`;
+}
+
+// ─── Get API Keys ──────────────────────────────────────────────
+export const getApiKeys = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    res.json({ success: true, apiKeys: workspace.apiKeys || [] });
+  } catch (err) {
+    console.error("Get API keys error:", err);
+    res.status(500).json({ error: "Failed to fetch API keys" });
+  }
+};
+
+// ─── Create API Key ────────────────────────────────────────────
+export const createApiKey = async (req, res) => {
+  try {
+    const { name } = req.body;
+    if (!name || name.trim().length < 3) {
+      return res.status(400).json({ error: "API key name must be at least 3 characters." });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    // Check permission: only owner or admin can create API keys
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    const newKey = {
+      _id: new mongoose.Types.ObjectId(),
+      name: name.trim(),
+      key: generateApiKey(),
+      createdAt: new Date(),
+      lastUsed: null,
+    };
+
+    if (!workspace.apiKeys) workspace.apiKeys = [];
+    workspace.apiKeys.push(newKey);
+    await workspace.save();
+
+    res.json({ success: true, apiKey: newKey });
+  } catch (err) {
+    console.error("Create API key error:", err);
+    res.status(500).json({ error: "Failed to create API key" });
+  }
+};
+
+// ─── Delete API Key ────────────────────────────────────────────
+export const deleteApiKey = async (req, res) => {
+  try {
+    const { keyId } = req.params;
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    workspace.apiKeys = workspace.apiKeys.filter(k => k._id.toString() !== keyId);
+    await workspace.save();
+
+    res.json({ success: true, message: "API key deleted" });
+  } catch (err) {
+    console.error("Delete API key error:", err);
+    res.status(500).json({ error: "Failed to delete API key" });
+  }
+};
+
+// ─── Update Integrations ────────────────────────────────────────
+export const updateIntegrations = async (req, res) => {
+  try {
+    const { slack, jira } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    if (!workspace.settings) workspace.settings = {};
+    if (!workspace.settings.integrations) workspace.settings.integrations = {};
+
+    if (slack) workspace.settings.integrations.slack = slack;
+    if (jira) workspace.settings.integrations.jira = jira;
+
+    await workspace.save();
+
+    res.json({ success: true, integrations: workspace.settings.integrations });
+  } catch (err) {
+    console.error("Update integrations error:", err);
+    res.status(500).json({ error: "Failed to update integrations" });
+  }
+};
+
+// ─── Audit Log ──────────────────────────────────────────────────
+export const getAuditLogs = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const logs = workspace.auditLogs || [];
+
+    // Return only the most recent 50 logs
+    const recent = logs.slice(-50).reverse();
+    res.json({ success: true, logs: recent });
+  } catch (err) {
+    console.error("Get audit logs error:", err);
+    res.status(500).json({ error: "Failed to fetch audit logs" });
+  }
+};
+
+// ─── Helper: Add audit log ─────────────────────────────────────
+export const addAuditLog = async (workspaceId, userId, action, message, metadata = {}) => {
+  try {
+    const workspace = await WorkSpace.findById(workspaceId);
+    if (!workspace) return;
+
+    if (!workspace.auditLogs) workspace.auditLogs = [];
+    workspace.auditLogs.push({
+      userId,
+      action,
+      message,
+      metadata,
+      createdAt: new Date(),
+    });
+
+    // Limit to 1000 logs per workspace
+    if (workspace.auditLogs.length > 1000) {
+      workspace.auditLogs = workspace.auditLogs.slice(-1000);
+    }
+
+    await workspace.save();
+  } catch (err) {
+    console.error("Add audit log error:", err);
+  }
+};
