@@ -33,6 +33,6 @@ router.delete("/api-keys/:keyId", auth, deleteApiKey);
 router.put("/integrations", auth, updateIntegrations);
 router.get("/audit-logs", auth, getAuditLogs);
 router.get("/repositories", auth, getRepositories);
-router.get("/anaytics", auth, getWorkspaceAnalytics);
+router.get("/analytics", auth, getWorkspaceAnalytics);
 
 export default router;

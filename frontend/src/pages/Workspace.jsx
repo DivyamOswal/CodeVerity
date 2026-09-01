@@ -30,6 +30,7 @@ import {
   updateIntegrations,
   getAuditLogs,
   getRepositories,
+  getWorkspaceAnalytics,
 } from "../api/workspace";
 
 const TABS = [
