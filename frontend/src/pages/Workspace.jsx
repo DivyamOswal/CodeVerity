@@ -4,6 +4,16 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
 import { Copy, Check, RefreshCw, Trash2, Plus } from "lucide-react";
+import {
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  Tooltip,
+  Legend,
+  ResponsiveContainer,
+  CartesianGrid,
+} from "recharts";
 
 // ─── Import the workspace API functions ──────────────────────
 import {
@@ -22,7 +32,16 @@ import {
   getRepositories,
 } from "../api/workspace";
 
-const TABS = ["General", "Integrations", "API Keys", "Members", "Billing", "Audit Log", "Repositories"];
+const TABS = [
+  "General",
+  "Integrations",
+  "API Keys",
+  "Members",
+  "Billing",
+  "Audit Log",
+  "Repositories",
+  "Analytics",
+];
 
 export default function WorkspaceSettings() {
   const { token, user } = useAuth();
@@ -40,6 +59,8 @@ export default function WorkspaceSettings() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+  const [analytics, setAnalytics] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
   // ── General Settings ──
   const [workspaceName, setWorkspaceName] = useState("");
@@ -107,6 +128,25 @@ export default function WorkspaceSettings() {
       setReposLoading(false);
     }
   };
+
+  const fetchAnalytics = async () => {
+    try {
+      setAnalyticsLoading(true);
+      const res = await getWorkspaceAnalytics();
+      setAnalytics(res.data.analytics);
+    } catch (err) {
+      console.error("Failed to fetch analytics", err);
+      setError(err.response?.data?.error || "Failed to load analytics");
+    } finally {
+      setAnalyticsLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "Analytics") {
+      fetchAnalytics();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     if (activeTab === "Repositories") {
@@ -216,7 +256,7 @@ export default function WorkspaceSettings() {
         members.map((m) => {
           if (m.userId._id === userId) return { ...m, role };
           return m;
-        })
+        }),
       );
       setSuccess("Role updated");
       setTimeout(() => setSuccess(null), 3000);
@@ -227,7 +267,8 @@ export default function WorkspaceSettings() {
 
   // ── Leave Workspace ──
   const leaveWorkspaceHandler = async () => {
-    if (!window.confirm("Are you sure you want to leave this workspace?")) return;
+    if (!window.confirm("Are you sure you want to leave this workspace?"))
+      return;
     try {
       await leaveWorkspace();
       navigate("/dashboard");
@@ -275,14 +316,18 @@ export default function WorkspaceSettings() {
       <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)]">
         <div className="flex flex-col items-center gap-4">
           <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
-          <p className="text-xs text-[var(--text-muted)]">Loading workspace settings…</p>
+          <p className="text-xs text-[var(--text-muted)]">
+            Loading workspace settings…
+          </p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}>
+    <div
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}
+    >
       <div className={`mx-auto w-full max-w-6xl ${compactClasses.container}`}>
         <div className="space-y-5">
           {/* Header */}
@@ -293,10 +338,14 @@ export default function WorkspaceSettings() {
                 Workspace Settings
               </span>
             </div>
-            <h1 className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
+            <h1
+              className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+            >
               {workspace?.name || "Workspace"}
             </h1>
-            <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>
+            <p
+              className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}
+            >
               Manage workspace settings, members, integrations, and API keys.
             </p>
           </div>
@@ -334,12 +383,18 @@ export default function WorkspaceSettings() {
           <div className="space-y-4">
             {/* ===== GENERAL ===== */}
             {activeTab === "General" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">General Settings</h2>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
+                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
+                  General Settings
+                </h2>
 
                 {/* Workspace Name */}
                 <div className="mb-6">
-                  <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">Workspace Name</label>
+                  <label className="block text-xs font-medium text-[var(--text-muted)] mb-1.5">
+                    Workspace Name
+                  </label>
                   {editingName ? (
                     <div className="flex gap-2">
                       <input
@@ -369,7 +424,9 @@ export default function WorkspaceSettings() {
                     </div>
                   ) : (
                     <div className="flex items-center justify-between">
-                      <p className="text-sm text-[var(--text-secondary)]">{workspace?.name}</p>
+                      <p className="text-sm text-[var(--text-secondary)]">
+                        {workspace?.name}
+                      </p>
                       <button
                         onClick={() => setEditingName(true)}
                         className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)] ${compactClasses.buttonPadding}`}
@@ -383,26 +440,42 @@ export default function WorkspaceSettings() {
                 {/* Workspace Stats */}
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
                   <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center">
-                    <p className="text-2xl font-bold text-[var(--text-primary)]">{members.length}</p>
-                    <p className="text-[9px] text-[var(--text-muted)]">Members</p>
+                    <p className="text-2xl font-bold text-[var(--text-primary)]">
+                      {members.length}
+                    </p>
+                    <p className="text-[9px] text-[var(--text-muted)]">
+                      Members
+                    </p>
                   </div>
                   <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center">
-                    <p className="text-2xl font-bold text-[var(--text-primary)]">{workspace?.totalScans || 0}</p>
-                    <p className="text-[9px] text-[var(--text-muted)]">Total Scans</p>
+                    <p className="text-2xl font-bold text-[var(--text-primary)]">
+                      {workspace?.totalScans || 0}
+                    </p>
+                    <p className="text-[9px] text-[var(--text-muted)]">
+                      Total Scans
+                    </p>
                   </div>
                   <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center">
-                    <p className="text-2xl font-bold text-[var(--text-primary)]">{apiKeys.length}</p>
-                    <p className="text-[9px] text-[var(--text-muted)]">API Keys</p>
+                    <p className="text-2xl font-bold text-[var(--text-primary)]">
+                      {apiKeys.length}
+                    </p>
+                    <p className="text-[9px] text-[var(--text-muted)]">
+                      API Keys
+                    </p>
                   </div>
                   <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center">
-                    <p className="text-2xl font-bold text-[var(--text-primary)]">{workspace?.plan || "Starter"}</p>
+                    <p className="text-2xl font-bold text-[var(--text-primary)]">
+                      {workspace?.plan || "Starter"}
+                    </p>
                     <p className="text-[9px] text-[var(--text-muted)]">Plan</p>
                   </div>
                 </div>
 
                 {/* Danger Zone */}
                 <div className="mt-6 pt-6 border-t border-red-500/20">
-                  <h3 className="text-sm font-semibold text-red-400 mb-3">Danger Zone</h3>
+                  <h3 className="text-sm font-semibold text-red-400 mb-3">
+                    Danger Zone
+                  </h3>
                   <button
                     onClick={leaveWorkspaceHandler}
                     className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-400 transition hover:bg-red-500/20"
@@ -415,15 +488,23 @@ export default function WorkspaceSettings() {
 
             {/* ===== INTEGRATIONS ===== */}
             {activeTab === "Integrations" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Integrations</h2>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
+                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
+                  Integrations
+                </h2>
 
                 {/* Slack */}
                 <div className="mb-6 p-4 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="text-sm font-medium text-[var(--text-primary)]">Slack</h3>
-                      <p className="text-[10px] text-[var(--text-muted)]">Send scan notifications to Slack</p>
+                      <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                        Slack
+                      </h3>
+                      <p className="text-[10px] text-[var(--text-muted)]">
+                        Send scan notifications to Slack
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -432,7 +513,10 @@ export default function WorkspaceSettings() {
                         onChange={(e) =>
                           setIntegrations({
                             ...integrations,
-                            slack: { ...integrations.slack, enabled: e.target.checked },
+                            slack: {
+                              ...integrations.slack,
+                              enabled: e.target.checked,
+                            },
                           })
                         }
                         className="sr-only peer"
@@ -443,14 +527,19 @@ export default function WorkspaceSettings() {
                   {integrations.slack.enabled && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Webhook URL</label>
+                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                          Webhook URL
+                        </label>
                         <input
                           type="url"
                           value={integrations.slack.webhookUrl}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              slack: { ...integrations.slack, webhookUrl: e.target.value },
+                              slack: {
+                                ...integrations.slack,
+                                webhookUrl: e.target.value,
+                              },
                             })
                           }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
@@ -458,14 +547,19 @@ export default function WorkspaceSettings() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Channel (optional)</label>
+                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                          Channel (optional)
+                        </label>
                         <input
                           type="text"
                           value={integrations.slack.channel}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              slack: { ...integrations.slack, channel: e.target.value },
+                              slack: {
+                                ...integrations.slack,
+                                channel: e.target.value,
+                              },
                             })
                           }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
@@ -480,8 +574,12 @@ export default function WorkspaceSettings() {
                 <div className="mb-6 p-4 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]">
                   <div className="flex items-center justify-between mb-3">
                     <div>
-                      <h3 className="text-sm font-medium text-[var(--text-primary)]">Jira</h3>
-                      <p className="text-[10px] text-[var(--text-muted)]">Create tickets from scan findings</p>
+                      <h3 className="text-sm font-medium text-[var(--text-primary)]">
+                        Jira
+                      </h3>
+                      <p className="text-[10px] text-[var(--text-muted)]">
+                        Create tickets from scan findings
+                      </p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -490,7 +588,10 @@ export default function WorkspaceSettings() {
                         onChange={(e) =>
                           setIntegrations({
                             ...integrations,
-                            jira: { ...integrations.jira, enabled: e.target.checked },
+                            jira: {
+                              ...integrations.jira,
+                              enabled: e.target.checked,
+                            },
                           })
                         }
                         className="sr-only peer"
@@ -501,14 +602,19 @@ export default function WorkspaceSettings() {
                   {integrations.jira.enabled && (
                     <div className="space-y-3">
                       <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Jira URL</label>
+                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                          Jira URL
+                        </label>
                         <input
                           type="url"
                           value={integrations.jira.url}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              jira: { ...integrations.jira, url: e.target.value },
+                              jira: {
+                                ...integrations.jira,
+                                url: e.target.value,
+                              },
                             })
                           }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
@@ -516,14 +622,19 @@ export default function WorkspaceSettings() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Project Key</label>
+                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                          Project Key
+                        </label>
                         <input
                           type="text"
                           value={integrations.jira.projectKey}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              jira: { ...integrations.jira, projectKey: e.target.value },
+                              jira: {
+                                ...integrations.jira,
+                                projectKey: e.target.value,
+                              },
                             })
                           }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
@@ -531,14 +642,19 @@ export default function WorkspaceSettings() {
                         />
                       </div>
                       <div>
-                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">API Token</label>
+                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                          API Token
+                        </label>
                         <input
                           type="password"
                           value={integrations.jira.apiToken}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              jira: { ...integrations.jira, apiToken: e.target.value },
+                              jira: {
+                                ...integrations.jira,
+                                apiToken: e.target.value,
+                              },
                             })
                           }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
@@ -561,11 +677,17 @@ export default function WorkspaceSettings() {
 
             {/* ===== API KEYS ===== */}
             {activeTab === "API Keys" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">API Keys</h2>
-                    <p className="text-[10px] text-[var(--text-muted)]">Use these keys for CI/CD integration</p>
+                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                      API Keys
+                    </h2>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      Use these keys for CI/CD integration
+                    </p>
                   </div>
                   <button
                     onClick={() => setShowNewKey(true)}
@@ -578,7 +700,9 @@ export default function WorkspaceSettings() {
 
                 {newKeyValue && (
                   <div className="mb-4 p-3 rounded-lg border border-[var(--accent)]/30 bg-[var(--accent-soft)]">
-                    <p className="text-xs font-medium text-[var(--text-primary)]">Your new API key (copy it now):</p>
+                    <p className="text-xs font-medium text-[var(--text-primary)]">
+                      Your new API key (copy it now):
+                    </p>
                     <div className="flex items-center gap-2 mt-1">
                       <code className="flex-1 px-3 py-2 rounded bg-[var(--bg-primary)] text-[var(--accent)] text-xs font-mono break-all">
                         {newKeyValue}
@@ -590,7 +714,9 @@ export default function WorkspaceSettings() {
                         <Copy size={14} />
                       </button>
                     </div>
-                    <p className="mt-1 text-[9px] text-[var(--text-muted)]">This key will not be shown again. Store it securely.</p>
+                    <p className="mt-1 text-[9px] text-[var(--text-muted)]">
+                      This key will not be shown again. Store it securely.
+                    </p>
                   </div>
                 )}
 
@@ -602,15 +728,24 @@ export default function WorkspaceSettings() {
 
                 <div className="space-y-2">
                   {apiKeys.map((key) => (
-                    <div key={key._id} className="flex items-center justify-between p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]">
+                    <div
+                      key={key._id}
+                      className="flex items-center justify-between p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]"
+                    >
                       <div>
-                        <p className="text-sm font-medium text-[var(--text-primary)]">{key.name}</p>
+                        <p className="text-sm font-medium text-[var(--text-primary)]">
+                          {key.name}
+                        </p>
                         <div className="flex items-center gap-3 mt-0.5">
                           <span className="text-[9px] text-[var(--text-muted)]">
-                            Created: {new Date(key.createdAt).toLocaleDateString()}
+                            Created:{" "}
+                            {new Date(key.createdAt).toLocaleDateString()}
                           </span>
                           <span className="text-[9px] text-[var(--text-muted)]">
-                            Last used: {key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : "Never"}
+                            Last used:{" "}
+                            {key.lastUsed
+                              ? new Date(key.lastUsed).toLocaleDateString()
+                              : "Never"}
                           </span>
                         </div>
                       </div>
@@ -635,11 +770,19 @@ export default function WorkspaceSettings() {
                 {/* New Key Modal */}
                 {showNewKey && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className={`w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 ${compact ? "p-4" : "p-6"}`}>
-                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">Create API Key</h3>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-1">Name this key to identify it later.</p>
+                    <div
+                      className={`w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 ${compact ? "p-4" : "p-6"}`}
+                    >
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                        Create API Key
+                      </h3>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                        Name this key to identify it later.
+                      </p>
                       <div className="mt-4">
-                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Key Name</label>
+                        <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                          Key Name
+                        </label>
                         <input
                           type="text"
                           value={newKeyName}
@@ -675,11 +818,17 @@ export default function WorkspaceSettings() {
 
             {/* ===== MEMBERS ===== */}
             {activeTab === "Members" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">Members</h2>
-                    <p className="text-[10px] text-[var(--text-muted)]">{members.length} members in this workspace</p>
+                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                      Members
+                    </h2>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      {members.length} members in this workspace
+                    </p>
                   </div>
                   <button
                     onClick={() => setShowInvite(true)}
@@ -694,11 +843,31 @@ export default function WorkspaceSettings() {
                   <table className="w-full text-left">
                     <thead>
                       <tr className="border-b border-[var(--border-dark)]">
-                        <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>Name</th>
-                        <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>Email</th>
-                        <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>Role</th>
-                        <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>Joined</th>
-                        <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)] text-right`}>Actions</th>
+                        <th
+                          className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                        >
+                          Name
+                        </th>
+                        <th
+                          className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                        >
+                          Email
+                        </th>
+                        <th
+                          className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                        >
+                          Role
+                        </th>
+                        <th
+                          className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                        >
+                          Joined
+                        </th>
+                        <th
+                          className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)] text-right`}
+                        >
+                          Actions
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
@@ -708,15 +877,29 @@ export default function WorkspaceSettings() {
                         const canEdit = !isMe || (isMe && isOwner);
 
                         return (
-                          <tr key={member.userId._id} className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30">
-                            <td className={`${compactClasses.tableCell} font-medium text-[var(--text-primary)]`}>
+                          <tr
+                            key={member.userId._id}
+                            className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30"
+                          >
+                            <td
+                              className={`${compactClasses.tableCell} font-medium text-[var(--text-primary)]`}
+                            >
                               {member.userId.name || member.userId.email}
                             </td>
-                            <td className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}>{member.userId.email}</td>
+                            <td
+                              className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}
+                            >
+                              {member.userId.email}
+                            </td>
                             <td className={`${compactClasses.tableCell}`}>
                               <select
                                 value={member.role}
-                                onChange={(e) => updateRoleHandler(member.userId._id, e.target.value)}
+                                onChange={(e) =>
+                                  updateRoleHandler(
+                                    member.userId._id,
+                                    e.target.value,
+                                  )
+                                }
                                 disabled={!canEdit || isOwner}
                                 className={`rounded border border-[var(--border-light)] bg-[var(--bg-input)] px-2 py-1 text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] disabled:opacity-60 ${compact ? "text-[9px]" : "text-[10px]"}`}
                               >
@@ -726,13 +909,19 @@ export default function WorkspaceSettings() {
                                 <option value="viewer">Viewer</option>
                               </select>
                             </td>
-                            <td className={`${compactClasses.tableCell} text-[var(--text-muted)] text-[9px]`}>
+                            <td
+                              className={`${compactClasses.tableCell} text-[var(--text-muted)] text-[9px]`}
+                            >
                               {new Date(member.joinedAt).toLocaleDateString()}
                             </td>
-                            <td className={`${compactClasses.tableCell} text-right`}>
+                            <td
+                              className={`${compactClasses.tableCell} text-right`}
+                            >
                               {!isMe && (
                                 <button
-                                  onClick={() => removeMemberHandler(member.userId._id)}
+                                  onClick={() =>
+                                    removeMemberHandler(member.userId._id)
+                                  }
                                   className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[9px] text-red-400 transition hover:bg-red-500/20"
                                 >
                                   Remove
@@ -757,12 +946,20 @@ export default function WorkspaceSettings() {
                 {/* Invite Modal */}
                 {showInvite && (
                   <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                    <div className={`w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 ${compact ? "p-4" : "p-6"}`}>
-                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">Invite Member</h3>
-                      <p className="text-[10px] text-[var(--text-muted)] mt-1">Enter the email of the user you want to invite.</p>
+                    <div
+                      className={`w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 ${compact ? "p-4" : "p-6"}`}
+                    >
+                      <h3 className="text-sm font-semibold text-[var(--text-primary)]">
+                        Invite Member
+                      </h3>
+                      <p className="text-[10px] text-[var(--text-muted)] mt-1">
+                        Enter the email of the user you want to invite.
+                      </p>
                       <div className="mt-4 space-y-3">
                         <div>
-                          <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Email</label>
+                          <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                            Email
+                          </label>
                           <input
                             type="email"
                             value={inviteEmail}
@@ -772,7 +969,9 @@ export default function WorkspaceSettings() {
                           />
                         </div>
                         <div>
-                          <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">Role</label>
+                          <label className="block text-[10px] font-medium text-[var(--text-muted)] mb-1">
+                            Role
+                          </label>
                           <select
                             value={inviteRole}
                             onChange={(e) => setInviteRole(e.target.value)}
@@ -811,32 +1010,50 @@ export default function WorkspaceSettings() {
 
             {/* ===== BILLING ===== */}
             {activeTab === "Billing" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Billing & Subscription</h2>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
+                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
+                  Billing & Subscription
+                </h2>
                 <div className="space-y-4">
                   <div className="flex items-center justify-between p-4 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]">
                     <div>
-                      <p className="text-sm font-medium text-[var(--text-primary)]">Current Plan</p>
-                      <p className="text-xs text-[var(--text-muted)]">{workspace?.plan || "Starter"}</p>
+                      <p className="text-sm font-medium text-[var(--text-primary)]">
+                        Current Plan
+                      </p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        {workspace?.plan || "Starter"}
+                      </p>
                     </div>
                     <div className="text-right">
                       <p className="text-sm font-bold text-[var(--text-primary)]">
                         {workspace?.plan === "starter" ? "Free" : "Paid"}
                       </p>
                       <p className="text-[9px] text-[var(--text-muted)]">
-                        {workspace?.subscriptionStatus === "active" ? "✅ Active" : "❌ Inactive"}
+                        {workspace?.subscriptionStatus === "active"
+                          ? "✅ Active"
+                          : "❌ Inactive"}
                       </p>
                     </div>
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div className="p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-center">
-                      <p className="text-2xl font-bold text-[var(--text-primary)]">{workspace?.scansLimit || 5}</p>
-                      <p className="text-[9px] text-[var(--text-muted)]">Scans / month</p>
+                      <p className="text-2xl font-bold text-[var(--text-primary)]">
+                        {workspace?.scansLimit || 5}
+                      </p>
+                      <p className="text-[9px] text-[var(--text-muted)]">
+                        Scans / month
+                      </p>
                     </div>
                     <div className="p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-center">
-                      <p className="text-2xl font-bold text-[var(--text-primary)]">{workspace?.tokensLimit || 50000}</p>
-                      <p className="text-[9px] text-[var(--text-muted)]">Tokens / month</p>
+                      <p className="text-2xl font-bold text-[var(--text-primary)]">
+                        {workspace?.tokensLimit || 50000}
+                      </p>
+                      <p className="text-[9px] text-[var(--text-muted)]">
+                        Tokens / month
+                      </p>
                     </div>
                   </div>
 
@@ -844,7 +1061,9 @@ export default function WorkspaceSettings() {
                     onClick={() => navigate("/pricing")}
                     className="w-full rounded-lg bg-[var(--accent)] text-white font-semibold py-2.5 transition hover:bg-[var(--accent-hover)]"
                   >
-                    {workspace?.plan === "starter" ? "Upgrade Plan" : "Change Plan"}
+                    {workspace?.plan === "starter"
+                      ? "Upgrade Plan"
+                      : "Change Plan"}
                   </button>
                 </div>
               </div>
@@ -852,8 +1071,12 @@ export default function WorkspaceSettings() {
 
             {/* ===== AUDIT LOG ===== */}
             {activeTab === "Audit Log" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
-                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">Audit Log</h2>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
+                <h2 className="text-sm font-semibold text-[var(--text-primary)] mb-4">
+                  Audit Log
+                </h2>
                 {auditLogs.length === 0 && (
                   <div className="text-center py-8 text-[var(--text-muted)]">
                     <p className="text-sm">No audit logs available yet.</p>
@@ -861,26 +1084,32 @@ export default function WorkspaceSettings() {
                 )}
                 <div className="space-y-2">
                   {auditLogs.map((log) => (
-                    <div key={log._id} className="flex items-start gap-3 p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]">
+                    <div
+                      key={log._id}
+                      className="flex items-start gap-3 p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]"
+                    >
                       <div className="flex-shrink-0 mt-0.5">
                         <span
                           className={`inline-block px-2 py-0.5 text-[9px] rounded ${
                             log.action === "scan"
                               ? "bg-blue-500/10 text-blue-400"
                               : log.action === "invite"
-                              ? "bg-green-500/10 text-green-400"
-                              : log.action === "delete"
-                              ? "bg-red-500/10 text-red-400"
-                              : "bg-[var(--border-light)] text-[var(--text-muted)]"
+                                ? "bg-green-500/10 text-green-400"
+                                : log.action === "delete"
+                                  ? "bg-red-500/10 text-red-400"
+                                  : "bg-[var(--border-light)] text-[var(--text-muted)]"
                           }`}
                         >
                           {log.action}
                         </span>
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm text-[var(--text-secondary)]">{log.message}</p>
+                        <p className="text-sm text-[var(--text-secondary)]">
+                          {log.message}
+                        </p>
                         <p className="text-[9px] text-[var(--text-muted)] mt-0.5">
-                          {log.user?.name || "Unknown"} • {new Date(log.createdAt).toLocaleString()}
+                          {log.user?.name || "Unknown"} •{" "}
+                          {new Date(log.createdAt).toLocaleString()}
                         </p>
                       </div>
                     </div>
@@ -891,10 +1120,14 @@ export default function WorkspaceSettings() {
 
             {/* ===== REPOSITORIES ===== */}
             {activeTab === "Repositories" && (
-              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
                 <div className="flex items-center justify-between mb-4">
                   <div>
-                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">Repositories</h2>
+                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                      Repositories
+                    </h2>
                     <p className="text-[10px] text-[var(--text-muted)]">
                       All repositories scanned in this workspace
                     </p>
@@ -911,29 +1144,43 @@ export default function WorkspaceSettings() {
                 ) : repositories.length === 0 ? (
                   <div className="text-center py-8 text-[var(--text-muted)]">
                     <p className="text-sm">No repositories scanned yet.</p>
-                    <p className="text-[10px] mt-1">Scan a repository from the dashboard to see it here.</p>
+                    <p className="text-[10px] mt-1">
+                      Scan a repository from the dashboard to see it here.
+                    </p>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">
                     <table className="w-full text-left">
                       <thead>
                         <tr className="border-b border-[var(--border-dark)]">
-                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                          <th
+                            className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                          >
                             Repository
                           </th>
-                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                          <th
+                            className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                          >
                             Last Scan
                           </th>
-                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                          <th
+                            className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                          >
                             Grade
                           </th>
-                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                          <th
+                            className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                          >
                             Score
                           </th>
-                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                          <th
+                            className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}
+                          >
                             Scans
                           </th>
-                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)] text-right`}>
+                          <th
+                            className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)] text-right`}
+                          >
                             Action
                           </th>
                         </tr>
@@ -951,27 +1198,56 @@ export default function WorkspaceSettings() {
                             }[grade[0]] || "text-[var(--text-muted)]";
 
                           return (
-                            <tr key={repo.repoUrl} className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30">
-                              <td className={`${compactClasses.tableCell} font-medium text-[var(--text-primary)]`}>
-                                <span className="truncate max-w-[200px] inline-block" title={repo.repoUrl}>
-                                  {repo.repoUrl.replace("https://github.com/", "")}
+                            <tr
+                              key={repo.repoUrl}
+                              className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30"
+                            >
+                              <td
+                                className={`${compactClasses.tableCell} font-medium text-[var(--text-primary)]`}
+                              >
+                                <span
+                                  className="truncate max-w-[200px] inline-block"
+                                  title={repo.repoUrl}
+                                >
+                                  {repo.repoUrl.replace(
+                                    "https://github.com/",
+                                    "",
+                                  )}
                                 </span>
                               </td>
-                              <td className={`${compactClasses.tableCell} text-[var(--text-secondary)] text-[9px]`}>
-                                {repo.lastScannedAt ? new Date(repo.lastScannedAt).toLocaleDateString() : "Never"}
+                              <td
+                                className={`${compactClasses.tableCell} text-[var(--text-secondary)] text-[9px]`}
+                              >
+                                {repo.lastScannedAt
+                                  ? new Date(
+                                      repo.lastScannedAt,
+                                    ).toLocaleDateString()
+                                  : "Never"}
                               </td>
-                              <td className={`${compactClasses.tableCell} font-bold ${gradeColor}`}>
+                              <td
+                                className={`${compactClasses.tableCell} font-bold ${gradeColor}`}
+                              >
                                 {grade}
                               </td>
-                              <td className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}>
+                              <td
+                                className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}
+                              >
                                 {repo.overallAvg || 0}%
                               </td>
-                              <td className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}>
+                              <td
+                                className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}
+                              >
                                 {repo.totalScans}
                               </td>
-                              <td className={`${compactClasses.tableCell} text-right`}>
+                              <td
+                                className={`${compactClasses.tableCell} text-right`}
+                              >
                                 <button
-                                  onClick={() => navigate(`/dashboard?repo=${encodeURIComponent(repo.repoUrl)}`)}
+                                  onClick={() =>
+                                    navigate(
+                                      `/dashboard?repo=${encodeURIComponent(repo.repoUrl)}`,
+                                    )
+                                  }
                                   className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-2 py-1 text-[9px] text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                                 >
                                   Scan again
@@ -982,6 +1258,218 @@ export default function WorkspaceSettings() {
                         })}
                       </tbody>
                     </table>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* ===== ANALYTICS ===== */}
+            {activeTab === "Analytics" && (
+              <div
+                className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">
+                      Usage Analytics
+                    </h2>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      Token consumption and scan activity across your workspace
+                    </p>
+                  </div>
+                  {analytics?.lastUpdated && (
+                    <span className="text-[9px] text-[var(--text-muted)] bg-[var(--bg-primary)] px-2 py-1 rounded-full">
+                      Updated:{" "}
+                      {new Date(analytics.lastUpdated).toLocaleDateString()}
+                    </span>
+                  )}
+                </div>
+
+                {analyticsLoading ? (
+                  <div className="flex justify-center py-12">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+                  </div>
+                ) : analytics ? (
+                  <div className="space-y-6">
+                    {/* Summary Cards */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-center">
+                        <p className="text-2xl font-bold text-[var(--text-primary)]">
+                          {analytics.totalScans}
+                        </p>
+                        <p className="text-[9px] text-[var(--text-muted)]">
+                          Total Scans
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-center">
+                        <p className="text-2xl font-bold text-[var(--text-primary)]">
+                          {analytics.totalTokens.toLocaleString()}
+                        </p>
+                        <p className="text-[9px] text-[var(--text-muted)]">
+                          Total Tokens Used
+                        </p>
+                      </div>
+                      <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-center">
+                        <p className="text-2xl font-bold text-[var(--text-primary)]">
+                          {analytics.totalMembers}
+                        </p>
+                        <p className="text-[9px] text-[var(--text-muted)]">
+                          Active Members
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Charts */}
+                    {analytics.dailyUsage && analytics.dailyUsage.length > 0 ? (
+                      <>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                          {/* Scans per Day */}
+                          <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
+                            <h3 className="text-xs font-semibold text-[var(--text-primary)] mb-3">
+                              Scans per Day (Last 30 Days)
+                            </h3>
+                            <ResponsiveContainer width="100%" height={200}>
+                              <BarChart data={analytics.dailyUsage}>
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  stroke="var(--border-light)"
+                                />
+                                <XAxis
+                                  dataKey="_id"
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
+                                <YAxis
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
+                                <Tooltip
+                                  contentStyle={{
+                                    backgroundColor: "var(--bg-card)",
+                                    borderColor: "var(--border-light)",
+                                    color: "var(--text-primary)",
+                                  }}
+                                />
+                                <Bar
+                                  dataKey="scans"
+                                  fill="var(--accent)"
+                                  radius={[4, 4, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+
+                          {/* Tokens per Day */}
+                          <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
+                            <h3 className="text-xs font-semibold text-[var(--text-primary)] mb-3">
+                              Tokens Used per Day (Last 30 Days)
+                            </h3>
+                            <ResponsiveContainer width="100%" height={200}>
+                              <BarChart data={analytics.dailyUsage}>
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  stroke="var(--border-light)"
+                                />
+                                <XAxis
+                                  dataKey="_id"
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
+                                <YAxis
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
+                                <Tooltip
+                                  contentStyle={{
+                                    backgroundColor: "var(--bg-card)",
+                                    borderColor: "var(--border-light)",
+                                    color: "var(--text-primary)",
+                                  }}
+                                />
+                                <Bar
+                                  dataKey="tokens"
+                                  fill="var(--text-muted)"
+                                  radius={[4, 4, 0, 0]}
+                                />
+                              </BarChart>
+                            </ResponsiveContainer>
+                          </div>
+                        </div>
+
+                        {/* Member Breakdown Table */}
+                        <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
+                          <h3 className="text-xs font-semibold text-[var(--text-primary)] mb-3">
+                            Member Usage Breakdown
+                          </h3>
+                          {analytics.members && analytics.members.length > 0 ? (
+                            <div className="overflow-x-auto">
+                              <table className="w-full text-left">
+                                <thead>
+                                  <tr className="border-b border-[var(--border-dark)]">
+                                    <th className="px-3 py-2 text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+                                      Name
+                                    </th>
+                                    <th className="px-3 py-2 text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)]">
+                                      Email
+                                    </th>
+                                    <th className="px-3 py-2 text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)] text-center">
+                                      Scans
+                                    </th>
+                                    <th className="px-3 py-2 text-[9px] font-mono uppercase tracking-wider text-[var(--text-muted)] text-center">
+                                      Tokens Used
+                                    </th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {analytics.members.map((member) => (
+                                    <tr
+                                      key={member._id}
+                                      className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30"
+                                    >
+                                      <td className="px-3 py-2 text-xs text-[var(--text-primary)]">
+                                        {member.name}
+                                      </td>
+                                      <td className="px-3 py-2 text-xs text-[var(--text-secondary)]">
+                                        {member.email}
+                                      </td>
+                                      <td className="px-3 py-2 text-xs text-[var(--text-secondary)] text-center">
+                                        {member.totalScans}
+                                      </td>
+                                      <td className="px-3 py-2 text-xs text-[var(--text-secondary)] text-center">
+                                        {member.totalTokens.toLocaleString()}
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          ) : (
+                            <p className="text-xs text-[var(--text-muted)]">
+                              No member data available
+                            </p>
+                          )}
+                        </div>
+                      </>
+                    ) : (
+                      <div className="text-center py-8 text-[var(--text-muted)]">
+                        <p className="text-sm">No scan data available yet.</p>
+                        <p className="text-[10px] mt-1">
+                          Start scanning repositories to see usage analytics.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-[var(--text-muted)]">
+                    <p className="text-sm">Failed to load analytics.</p>
                   </div>
                 )}
               </div>

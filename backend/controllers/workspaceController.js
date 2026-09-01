@@ -603,3 +603,89 @@ export const getRepositories = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch repositories" });
   }
 };
+
+// ─── Get workspace analytics ──────────────────────────────────
+export const getWorkspaceAnalytics = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const workspaceId = workspace._id;
+
+    // 1. Get all member IDs
+    const memberIds = workspace.members.map((m) => m.userId);
+
+    // 2. Aggregate per‑member stats (scans & tokens)
+    const memberAggregation = await Report.aggregate([
+      { $match: { workspaceId: workspaceId } },
+      {
+        $group: {
+          _id: "$userId",
+          totalScans: { $sum: 1 },
+          totalTokens: { $sum: { $ifNull: ["$tokensUsed", 0] } },
+        },
+      },
+    ]);
+
+    // 3. Fetch user details
+    const users = await User.find({ _id: { $in: memberIds } }).select("name email");
+    const memberData = users.map((u) => {
+      const stats = memberAggregation.find(
+        (a) => a._id.toString() === u._id.toString()
+      );
+      return {
+        _id: u._id,
+        name: u.name,
+        email: u.email,
+        totalScans: stats ? stats.totalScans : 0,
+        totalTokens: stats ? stats.totalTokens : 0,
+      };
+    });
+
+    // 4. Daily usage (last 30 days)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    const dailyUsage = await Report.aggregate([
+      {
+        $match: {
+          workspaceId: workspaceId,
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          scans: { $sum: 1 },
+          tokens: { $sum: { $ifNull: ["$tokensUsed", 0] } },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // 5. Overall totals
+    const totalTokensAgg = await Report.aggregate([
+      { $match: { workspaceId: workspaceId } },
+      { $group: { _id: null, total: { $sum: { $ifNull: ["$tokensUsed", 0] } } } },
+    ]);
+
+    const totalTokens = totalTokensAgg.length > 0 ? totalTokensAgg[0].total : 0;
+    const totalScans = workspace.totalScans || 0;
+
+    res.json({
+      success: true,
+      analytics: {
+        totalScans,
+        totalTokens,
+        totalMembers: memberIds.length,
+        members: memberData,
+        dailyUsage,
+        lastUpdated: new Date(),
+      },
+    });
+  } catch (err) {
+    console.error("Analytics error:", err);
+    res.status(500).json({ error: "Failed to fetch analytics" });
+  }
+};

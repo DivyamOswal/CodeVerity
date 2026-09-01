@@ -14,6 +14,7 @@ import {
   updateIntegrations,
   getAuditLogs,
   getRepositories,
+  getWorkspaceAnalytics
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -32,5 +33,6 @@ router.delete("/api-keys/:keyId", auth, deleteApiKey);
 router.put("/integrations", auth, updateIntegrations);
 router.get("/audit-logs", auth, getAuditLogs);
 router.get("/repositories", auth, getRepositories);
+router.get("/anaytics", auth, getWorkspaceAnalytics);
 
 export default router;

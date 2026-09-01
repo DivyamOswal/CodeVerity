@@ -27,3 +27,5 @@ export const getAuditLogs = () => axios.get("/workspace/audit-logs");
 
 // ─── Repositories ──────────────────────────────────────────────
 export const getRepositories = () => axios.get("/workspace/repositories");
+
+export const getWorkspaceAnalytics = () => axios.get("/workspace/analytics");
