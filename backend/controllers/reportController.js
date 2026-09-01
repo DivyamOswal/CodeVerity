@@ -4,6 +4,7 @@ import { ChartJSNodeCanvas } from "chartjs-node-canvas";
 import Report from "../models/Report.js";
 import User from "../models/User.js";
 import WorkSpace from "../models/WorkSpace.js";
+import { addAuditLog } from "./workspaceController.js";
 
 // ── Base colors (not theme‑dependent) ─────────────────────────
 const BASE_COLORS = {
@@ -17,13 +18,6 @@ const BASE_COLORS = {
   textDark: "#1f2937",
   textLight: "#6b7280",
   border: "#e5e7eb",
-};
-
-const SEVERITY_COLORS = {
-  critical: "#ef4444",
-  high: "#f59e0b",
-  medium: "#facc15",
-  low: "#3b82f6",
 };
 
 // ── Helper: hex → RGB ─────────────────────────────────────────
@@ -64,6 +58,18 @@ async function ensureWorkspace(user) {
   user.role = "owner";
   await user.save();
   return newWorkspace;
+}
+
+// ─── Helper: Increment workspace scan counter ──────────────────
+async function incrementWorkspaceScans(workspaceId) {
+  try {
+    const workspace = await WorkSpace.findById(workspaceId);
+    if (!workspace) return;
+    workspace.totalScans = (workspace.totalScans || 0) + 1;
+    await workspace.save();
+  } catch (err) {
+    console.error("Failed to increment workspace scans:", err);
+  }
 }
 
 // ── PDF Helpers (theme‑aware) ─────────────────────────────────
@@ -127,6 +133,68 @@ function drawTable(doc, headers, rows, columnWidths) {
   doc.moveDown(0.5);
 }
 
+// ── CREATE REPORT (new) ────────────────────────────────────────
+export const createReport = async (req, res) => {
+  try {
+    const { repoUrl, analysis, sourceCode } = req.body;
+    if (!repoUrl || !analysis) {
+      return res.status(400).json({ error: "repoUrl and analysis are required" });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    // Build report document
+    const report = new Report({
+      userId: user._id,
+      workspaceId: workspace._id,
+      repoUrl,
+      summary: analysis.summary || "",
+      architecture: analysis.architecture || [],
+      bugs: analysis.bugs || [],
+      securityIssues: analysis.securityIssues || [],
+      futureRoadmap: analysis.futureRoadmap || [],
+      toolsAndPackages: analysis.toolsAndPackages || [],
+      scores: analysis.scores || {},
+      grade: analysis.grade || "N/A",
+      finalVerdict: analysis.finalVerdict || "",
+      _sourceCode: sourceCode || "",
+      // Optional enhanced fields if present
+      healthScore: analysis.healthScore || null,
+      securityVulnerabilities: analysis.securityVulnerabilities || [],
+      dependencyVulnerabilities: analysis.dependencyVulnerabilities || [],
+      secrets: analysis.secrets || [],
+      techDebt: analysis.techDebt || null,
+      architectureGraph: analysis.architectureGraph || null,
+    });
+
+    await report.save();
+
+    // ── Increment workspace scan counter ────────────────────
+    await incrementWorkspaceScans(workspace._id);
+
+    // ── Audit log ────────────────────────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "scan",
+      `Scanned repository: ${repoUrl}`,
+      { repoUrl, reportId: report._id }
+    );
+
+    res.status(201).json({
+      success: true,
+      reportId: report._id,
+      report,
+    });
+  } catch (err) {
+    console.error("Create report error:", err);
+    res.status(500).json({ error: "Failed to create report" });
+  }
+};
+
 // ── GET REPORTS (history) ────────────────────────────────────
 
 export const getReports = async (req, res) => {
@@ -161,6 +229,67 @@ export const getReports = async (req, res) => {
   } catch (err) {
     console.error("Get reports error:", err);
     res.status(500).json({ error: "Failed to fetch reports" });
+  }
+};
+
+// ── GET SINGLE REPORT ──────────────────────────────────────────
+export const getReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await Report.findById(id);
+    if (!report) return res.status(404).json({ error: "Report not found" });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    if (report.workspaceId?.toString() !== workspace._id.toString()) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    res.json({ success: true, report });
+  } catch (err) {
+    console.error("Get report error:", err);
+    res.status(500).json({ error: "Failed to fetch report" });
+  }
+};
+
+// ── DELETE REPORT ──────────────────────────────────────────────
+export const deleteReport = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const report = await Report.findById(id);
+    if (!report) return res.status(404).json({ error: "Report not found" });
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    if (report.workspaceId?.toString() !== workspace._id.toString()) {
+      return res.status(403).json({ error: "Access denied" });
+    }
+
+    await report.deleteOne();
+
+    // Decrement workspace scan count
+    if (workspace.totalScans > 0) {
+      workspace.totalScans -= 1;
+      await workspace.save();
+    }
+
+    // Audit log
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "report_delete",
+      `Deleted report for ${report.repoUrl}`,
+      { reportId: report._id }
+    );
+
+    res.json({ success: true, message: "Report deleted" });
+  } catch (err) {
+    console.error("Delete report error:", err);
+    res.status(500).json({ error: "Failed to delete report" });
   }
 };
 
@@ -427,6 +556,16 @@ export const downloadReportPDF = async (req, res) => {
     doc.fontSize(8).fillColor(COLORS.textLight).text("Generated by CodeVerity AI · Confidential", { align: "center" });
 
     doc.end();
+
+    // ── Audit log (PDF download) ────────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "report_download",
+      `Downloaded PDF report for ${report.repoUrl}`,
+      { reportId: report._id }
+    );
+
   } catch (err) {
     console.error("PDF generation error:", err);
     res.status(500).json({ error: "Failed to generate PDF" });

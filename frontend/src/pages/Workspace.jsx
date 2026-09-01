@@ -3,10 +3,26 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
-import axios from "../api/axios";
 import { Copy, Check, RefreshCw, Trash2, Plus } from "lucide-react";
 
-const TABS = ["General", "Integrations", "API Keys", "Members", "Billing", "Audit Log"];
+// ─── Import the workspace API functions ──────────────────────
+import {
+  getWorkspace,
+  updateWorkspace,
+  getMembers,
+  addMember,
+  removeMember,
+  updateMemberRole,
+  leaveWorkspace,
+  getApiKeys,
+  createApiKey,
+  deleteApiKey,
+  updateIntegrations,
+  getAuditLogs,
+  getRepositories,
+} from "../api/workspace";
+
+const TABS = ["General", "Integrations", "API Keys", "Members", "Billing", "Audit Log", "Repositories"];
 
 export default function WorkspaceSettings() {
   const { token, user } = useAuth();
@@ -17,6 +33,8 @@ export default function WorkspaceSettings() {
   const [members, setMembers] = useState([]);
   const [apiKeys, setApiKeys] = useState([]);
   const [auditLogs, setAuditLogs] = useState([]);
+  const [repositories, setRepositories] = useState([]);
+  const [reposLoading, setReposLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("General");
   const [error, setError] = useState(null);
@@ -56,10 +74,10 @@ export default function WorkspaceSettings() {
     try {
       setLoading(true);
       const [wsRes, membersRes, keysRes, logsRes] = await Promise.all([
-        axios.get("/workspace"),
-        axios.get("/workspace/members"),
-        axios.get("/workspace/api-keys"),
-        axios.get("/workspace/audit-logs"),
+        getWorkspace(),
+        getMembers(),
+        getApiKeys(),
+        getAuditLogs(),
       ]);
       setWorkspace(wsRes.data.workspace);
       setWorkspaceName(wsRes.data.workspace?.name || "");
@@ -77,12 +95,31 @@ export default function WorkspaceSettings() {
     }
   };
 
+  const fetchRepositories = async () => {
+    try {
+      setReposLoading(true);
+      const res = await getRepositories();
+      setRepositories(res.data.repositories || []);
+    } catch (err) {
+      console.error("Failed to fetch repositories", err);
+      setError(err.response?.data?.error || "Failed to load repositories");
+    } finally {
+      setReposLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "Repositories") {
+      fetchRepositories();
+    }
+  }, [activeTab]);
+
   // ── Update Workspace Name ──
   const updateWorkspaceName = async () => {
     if (!workspaceName.trim()) return;
     try {
       setSubmitting(true);
-      await axios.put("/workspace", { name: workspaceName.trim() });
+      await updateWorkspace({ name: workspaceName.trim() });
       setEditingName(false);
       setSuccess("Workspace name updated");
       setTimeout(() => setSuccess(null), 3000);
@@ -94,10 +131,10 @@ export default function WorkspaceSettings() {
   };
 
   // ── Update Integrations ──
-  const updateIntegrations = async () => {
+  const updateIntegrationsSettings = async () => {
     try {
       setSubmitting(true);
-      await axios.put("/workspace/integrations", integrations);
+      await updateIntegrations(integrations);
       setSuccess("Integrations saved");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -108,11 +145,11 @@ export default function WorkspaceSettings() {
   };
 
   // ── Create API Key ──
-  const createApiKey = async () => {
+  const createApiKeyHandler = async () => {
     if (!newKeyName.trim()) return;
     try {
       setSubmitting(true);
-      const res = await axios.post("/workspace/api-keys", { name: newKeyName.trim() });
+      const res = await createApiKey({ name: newKeyName.trim() });
       setApiKeys([...apiKeys, res.data.apiKey]);
       setNewKeyValue(res.data.apiKey.key);
       setNewKeyName("");
@@ -127,10 +164,10 @@ export default function WorkspaceSettings() {
   };
 
   // ── Delete API Key ──
-  const deleteApiKey = async (keyId) => {
+  const deleteApiKeyHandler = async (keyId) => {
     if (!window.confirm("Delete this API key? This cannot be undone.")) return;
     try {
-      await axios.delete(`/workspace/api-keys/${keyId}`);
+      await deleteApiKey(keyId);
       setApiKeys(apiKeys.filter((k) => k._id !== keyId));
       setSuccess("API key deleted");
       setTimeout(() => setSuccess(null), 3000);
@@ -140,12 +177,12 @@ export default function WorkspaceSettings() {
   };
 
   // ── Invite Member ──
-  const inviteMember = async () => {
+  const inviteMemberHandler = async () => {
     if (!inviteEmail.trim()) return;
     try {
       setSubmitting(true);
-      await axios.post("/workspace/members", { email: inviteEmail.trim(), role: inviteRole });
-      const membersRes = await axios.get("/workspace/members");
+      await addMember({ email: inviteEmail.trim(), role: inviteRole });
+      const membersRes = await getMembers();
       setMembers(membersRes.data.members || []);
       setShowInvite(false);
       setInviteEmail("");
@@ -159,11 +196,11 @@ export default function WorkspaceSettings() {
   };
 
   // ── Remove Member ──
-  const removeMember = async (userId) => {
+  const removeMemberHandler = async (userId) => {
     if (!window.confirm("Remove this member from the workspace?")) return;
     try {
-      await axios.delete(`/workspace/members/${userId}`);
-      setMembers(members.filter(m => m.userId._id !== userId));
+      await removeMember(userId);
+      setMembers(members.filter((m) => m.userId._id !== userId));
       setSuccess("Member removed");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -172,13 +209,15 @@ export default function WorkspaceSettings() {
   };
 
   // ── Update Member Role ──
-  const updateRole = async (userId, role) => {
+  const updateRoleHandler = async (userId, role) => {
     try {
-      await axios.put(`/workspace/members/${userId}/role`, { role });
-      setMembers(members.map(m => {
-        if (m.userId._id === userId) return { ...m, role };
-        return m;
-      }));
+      await updateMemberRole(userId, role);
+      setMembers(
+        members.map((m) => {
+          if (m.userId._id === userId) return { ...m, role };
+          return m;
+        })
+      );
       setSuccess("Role updated");
       setTimeout(() => setSuccess(null), 3000);
     } catch (err) {
@@ -187,10 +226,10 @@ export default function WorkspaceSettings() {
   };
 
   // ── Leave Workspace ──
-  const leaveWorkspace = async () => {
+  const leaveWorkspaceHandler = async () => {
     if (!window.confirm("Are you sure you want to leave this workspace?")) return;
     try {
-      await axios.post("/workspace/leave");
+      await leaveWorkspace();
       navigate("/dashboard");
     } catch (err) {
       setError(err.response?.data?.error || "Failed to leave workspace");
@@ -319,7 +358,10 @@ export default function WorkspaceSettings() {
                         Save
                       </button>
                       <button
-                        onClick={() => { setEditingName(false); setWorkspaceName(workspace?.name || ""); }}
+                        onClick={() => {
+                          setEditingName(false);
+                          setWorkspaceName(workspace?.name || "");
+                        }}
                         className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] ${compactClasses.buttonPadding}`}
                       >
                         Cancel
@@ -362,7 +404,7 @@ export default function WorkspaceSettings() {
                 <div className="mt-6 pt-6 border-t border-red-500/20">
                   <h3 className="text-sm font-semibold text-red-400 mb-3">Danger Zone</h3>
                   <button
-                    onClick={leaveWorkspace}
+                    onClick={leaveWorkspaceHandler}
                     className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-xs text-red-400 transition hover:bg-red-500/20"
                   >
                     Leave Workspace
@@ -387,10 +429,12 @@ export default function WorkspaceSettings() {
                       <input
                         type="checkbox"
                         checked={integrations.slack.enabled}
-                        onChange={(e) => setIntegrations({
-                          ...integrations,
-                          slack: { ...integrations.slack, enabled: e.target.checked }
-                        })}
+                        onChange={(e) =>
+                          setIntegrations({
+                            ...integrations,
+                            slack: { ...integrations.slack, enabled: e.target.checked },
+                          })
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-9 h-5 bg-[var(--border-light)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--accent)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all relative" />
@@ -403,10 +447,12 @@ export default function WorkspaceSettings() {
                         <input
                           type="url"
                           value={integrations.slack.webhookUrl}
-                          onChange={(e) => setIntegrations({
-                            ...integrations,
-                            slack: { ...integrations.slack, webhookUrl: e.target.value }
-                          })}
+                          onChange={(e) =>
+                            setIntegrations({
+                              ...integrations,
+                              slack: { ...integrations.slack, webhookUrl: e.target.value },
+                            })
+                          }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
                           placeholder="https://hooks.slack.com/services/..."
                         />
@@ -416,10 +462,12 @@ export default function WorkspaceSettings() {
                         <input
                           type="text"
                           value={integrations.slack.channel}
-                          onChange={(e) => setIntegrations({
-                            ...integrations,
-                            slack: { ...integrations.slack, channel: e.target.value }
-                          })}
+                          onChange={(e) =>
+                            setIntegrations({
+                              ...integrations,
+                              slack: { ...integrations.slack, channel: e.target.value },
+                            })
+                          }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
                           placeholder="#general"
                         />
@@ -439,10 +487,12 @@ export default function WorkspaceSettings() {
                       <input
                         type="checkbox"
                         checked={integrations.jira.enabled}
-                        onChange={(e) => setIntegrations({
-                          ...integrations,
-                          jira: { ...integrations.jira, enabled: e.target.checked }
-                        })}
+                        onChange={(e) =>
+                          setIntegrations({
+                            ...integrations,
+                            jira: { ...integrations.jira, enabled: e.target.checked },
+                          })
+                        }
                         className="sr-only peer"
                       />
                       <div className="w-9 h-5 bg-[var(--border-light)] peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-[var(--accent)] rounded-full peer peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:bg-[var(--accent)] after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all relative" />
@@ -455,10 +505,12 @@ export default function WorkspaceSettings() {
                         <input
                           type="url"
                           value={integrations.jira.url}
-                          onChange={(e) => setIntegrations({
-                            ...integrations,
-                            jira: { ...integrations.jira, url: e.target.value }
-                          })}
+                          onChange={(e) =>
+                            setIntegrations({
+                              ...integrations,
+                              jira: { ...integrations.jira, url: e.target.value },
+                            })
+                          }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
                           placeholder="https://your-domain.atlassian.net"
                         />
@@ -468,10 +520,12 @@ export default function WorkspaceSettings() {
                         <input
                           type="text"
                           value={integrations.jira.projectKey}
-                          onChange={(e) => setIntegrations({
-                            ...integrations,
-                            jira: { ...integrations.jira, projectKey: e.target.value }
-                          })}
+                          onChange={(e) =>
+                            setIntegrations({
+                              ...integrations,
+                              jira: { ...integrations.jira, projectKey: e.target.value },
+                            })
+                          }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
                           placeholder="PROJ"
                         />
@@ -481,10 +535,12 @@ export default function WorkspaceSettings() {
                         <input
                           type="password"
                           value={integrations.jira.apiToken}
-                          onChange={(e) => setIntegrations({
-                            ...integrations,
-                            jira: { ...integrations.jira, apiToken: e.target.value }
-                          })}
+                          onChange={(e) =>
+                            setIntegrations({
+                              ...integrations,
+                              jira: { ...integrations.jira, apiToken: e.target.value },
+                            })
+                          }
                           className={`w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.inputPadding}`}
                           placeholder="ATCTT..."
                         />
@@ -494,7 +550,7 @@ export default function WorkspaceSettings() {
                 </div>
 
                 <button
-                  onClick={updateIntegrations}
+                  onClick={updateIntegrationsSettings}
                   disabled={submitting}
                   className={`rounded-lg bg-[var(--accent)] text-white font-semibold transition hover:bg-[var(--accent-hover)] disabled:opacity-50 ${compactClasses.buttonPadding}`}
                 >
@@ -566,7 +622,7 @@ export default function WorkspaceSettings() {
                           <Copy size={14} />
                         </button>
                         <button
-                          onClick={() => deleteApiKey(key._id)}
+                          onClick={() => deleteApiKeyHandler(key._id)}
                           className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1.5 text-red-400 transition hover:bg-red-500/20"
                         >
                           <Trash2 size={14} />
@@ -595,14 +651,17 @@ export default function WorkspaceSettings() {
                       </div>
                       <div className="flex gap-3 mt-4 pt-2">
                         <button
-                          onClick={createApiKey}
+                          onClick={createApiKeyHandler}
                           disabled={submitting || !newKeyName.trim()}
                           className={`flex-1 rounded-lg bg-[var(--accent)] text-white font-semibold transition hover:bg-[var(--accent-hover)] disabled:opacity-50 ${compactClasses.buttonPadding}`}
                         >
                           {submitting ? "Creating…" : "Create"}
                         </button>
                         <button
-                          onClick={() => { setShowNewKey(false); setNewKeyName(""); }}
+                          onClick={() => {
+                            setShowNewKey(false);
+                            setNewKeyName("");
+                          }}
                           className={`flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] ${compactClasses.buttonPadding}`}
                         >
                           Cancel
@@ -657,7 +716,7 @@ export default function WorkspaceSettings() {
                             <td className={`${compactClasses.tableCell}`}>
                               <select
                                 value={member.role}
-                                onChange={(e) => updateRole(member.userId._id, e.target.value)}
+                                onChange={(e) => updateRoleHandler(member.userId._id, e.target.value)}
                                 disabled={!canEdit || isOwner}
                                 className={`rounded border border-[var(--border-light)] bg-[var(--bg-input)] px-2 py-1 text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] disabled:opacity-60 ${compact ? "text-[9px]" : "text-[10px]"}`}
                               >
@@ -673,7 +732,7 @@ export default function WorkspaceSettings() {
                             <td className={`${compactClasses.tableCell} text-right`}>
                               {!isMe && (
                                 <button
-                                  onClick={() => removeMember(member.userId._id)}
+                                  onClick={() => removeMemberHandler(member.userId._id)}
                                   className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[9px] text-red-400 transition hover:bg-red-500/20"
                                 >
                                   Remove
@@ -681,7 +740,7 @@ export default function WorkspaceSettings() {
                               )}
                               {isMe && (
                                 <button
-                                  onClick={leaveWorkspace}
+                                  onClick={leaveWorkspaceHandler}
                                   className="rounded-lg border border-red-500/30 bg-red-500/10 px-2 py-1 text-[9px] text-red-400 transition hover:bg-red-500/20"
                                 >
                                   Leave
@@ -728,14 +787,17 @@ export default function WorkspaceSettings() {
                       </div>
                       <div className="flex gap-3 mt-4 pt-2">
                         <button
-                          onClick={inviteMember}
+                          onClick={inviteMemberHandler}
                           disabled={submitting || !inviteEmail.trim()}
                           className={`flex-1 rounded-lg bg-[var(--accent)] text-white font-semibold transition hover:bg-[var(--accent-hover)] disabled:opacity-50 ${compactClasses.buttonPadding}`}
                         >
                           {submitting ? "Inviting…" : "Invite"}
                         </button>
                         <button
-                          onClick={() => { setShowInvite(false); setInviteEmail(""); }}
+                          onClick={() => {
+                            setShowInvite(false);
+                            setInviteEmail("");
+                          }}
                           className={`flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] ${compactClasses.buttonPadding}`}
                         >
                           Cancel
@@ -801,12 +863,17 @@ export default function WorkspaceSettings() {
                   {auditLogs.map((log) => (
                     <div key={log._id} className="flex items-start gap-3 p-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)]">
                       <div className="flex-shrink-0 mt-0.5">
-                        <span className={`inline-block px-2 py-0.5 text-[9px] rounded ${
-                          log.action === "scan" ? "bg-blue-500/10 text-blue-400" :
-                          log.action === "invite" ? "bg-green-500/10 text-green-400" :
-                          log.action === "delete" ? "bg-red-500/10 text-red-400" :
-                          "bg-[var(--border-light)] text-[var(--text-muted)]"
-                        }`}>
+                        <span
+                          className={`inline-block px-2 py-0.5 text-[9px] rounded ${
+                            log.action === "scan"
+                              ? "bg-blue-500/10 text-blue-400"
+                              : log.action === "invite"
+                              ? "bg-green-500/10 text-green-400"
+                              : log.action === "delete"
+                              ? "bg-red-500/10 text-red-400"
+                              : "bg-[var(--border-light)] text-[var(--text-muted)]"
+                          }`}
+                        >
                           {log.action}
                         </span>
                       </div>
@@ -819,6 +886,104 @@ export default function WorkspaceSettings() {
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* ===== REPOSITORIES ===== */}
+            {activeTab === "Repositories" && (
+              <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.cardPadding}`}>
+                <div className="flex items-center justify-between mb-4">
+                  <div>
+                    <h2 className="text-sm font-semibold text-[var(--text-primary)]">Repositories</h2>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      All repositories scanned in this workspace
+                    </p>
+                  </div>
+                  <span className="text-[10px] text-[var(--text-muted)] bg-[var(--bg-primary)] px-2 py-1 rounded-full">
+                    {repositories.length} repos
+                  </span>
+                </div>
+
+                {reposLoading ? (
+                  <div className="flex justify-center py-8">
+                    <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+                  </div>
+                ) : repositories.length === 0 ? (
+                  <div className="text-center py-8 text-[var(--text-muted)]">
+                    <p className="text-sm">No repositories scanned yet.</p>
+                    <p className="text-[10px] mt-1">Scan a repository from the dashboard to see it here.</p>
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                      <thead>
+                        <tr className="border-b border-[var(--border-dark)]">
+                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                            Repository
+                          </th>
+                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                            Last Scan
+                          </th>
+                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                            Grade
+                          </th>
+                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                            Score
+                          </th>
+                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]`}>
+                            Scans
+                          </th>
+                          <th className={`${compactClasses.tableCell} font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)] text-right`}>
+                            Action
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {repositories.map((repo) => {
+                          const grade = repo.latestGrade || "N/A";
+                          const gradeColor =
+                            {
+                              A: "text-[var(--color-success)]",
+                              B: "text-[var(--color-info)]",
+                              C: "text-[var(--color-warning)]",
+                              D: "text-[var(--color-caution)]",
+                              F: "text-[var(--color-danger)]",
+                            }[grade[0]] || "text-[var(--text-muted)]";
+
+                          return (
+                            <tr key={repo.repoUrl} className="border-b border-[var(--border-dark)] last:border-none hover:bg-[var(--bg-hover)]/30">
+                              <td className={`${compactClasses.tableCell} font-medium text-[var(--text-primary)]`}>
+                                <span className="truncate max-w-[200px] inline-block" title={repo.repoUrl}>
+                                  {repo.repoUrl.replace("https://github.com/", "")}
+                                </span>
+                              </td>
+                              <td className={`${compactClasses.tableCell} text-[var(--text-secondary)] text-[9px]`}>
+                                {repo.lastScannedAt ? new Date(repo.lastScannedAt).toLocaleDateString() : "Never"}
+                              </td>
+                              <td className={`${compactClasses.tableCell} font-bold ${gradeColor}`}>
+                                {grade}
+                              </td>
+                              <td className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}>
+                                {repo.overallAvg || 0}%
+                              </td>
+                              <td className={`${compactClasses.tableCell} text-[var(--text-secondary)]`}>
+                                {repo.totalScans}
+                              </td>
+                              <td className={`${compactClasses.tableCell} text-right`}>
+                                <button
+                                  onClick={() => navigate(`/dashboard?repo=${encodeURIComponent(repo.repoUrl)}`)}
+                                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-2 py-1 text-[9px] text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                                >
+                                  Scan again
+                                </button>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             )}
           </div>

@@ -1,13 +1,29 @@
 // frontend/src/api/workspace.js
 import axios from "./axios";
 
+// ─── Workspace ───────────────────────────────────────────────────
 export const getWorkspace = () => axios.get("/workspace");
 export const updateWorkspace = (data) => axios.put("/workspace", data);
+export const leaveWorkspace = () => axios.post("/workspace/leave");
+
+// ─── Members ────────────────────────────────────────────────────
 export const getMembers = () => axios.get("/workspace/members");
 export const addMember = (data) => axios.post("/workspace/members", data);
 export const removeMember = (userId) => axios.delete(`/workspace/members/${userId}`);
 export const updateMemberRole = (userId, role) =>
-  axios.put(`/workspace/members/${userId}`, { role });
+  axios.put(`/workspace/members/${userId}/role`, { role });
 
-// 👇 Add leaveWorkspace export
-export const leaveWorkspace = () => axios.post("/workspace/leave");
+// ─── API Keys ──────────────────────────────────────────────────
+export const getApiKeys = () => axios.get("/workspace/api-keys");
+export const createApiKey = (data) => axios.post("/workspace/api-keys", data);
+export const deleteApiKey = (keyId) => axios.delete(`/workspace/api-keys/${keyId}`);
+
+// ─── Integrations ──────────────────────────────────────────────
+export const updateIntegrations = (data) =>
+  axios.put("/workspace/integrations", data);
+
+// ─── Audit Log ──────────────────────────────────────────────────
+export const getAuditLogs = () => axios.get("/workspace/audit-logs");
+
+// ─── Repositories ──────────────────────────────────────────────
+export const getRepositories = () => axios.get("/workspace/repositories");

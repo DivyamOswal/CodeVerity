@@ -499,3 +499,106 @@ export const addAuditLog = async (workspaceId, userId, action, message, metadata
     console.error("Add audit log error:", err);
   }
 };
+
+// ─── Get repositories for workspace ────────────────────────────
+export const getRepositories = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    // Get all reports for this workspace
+    const reports = await Report.find({ workspaceId: workspace._id })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    // Group by repoUrl
+    const repoMap = new Map();
+
+    reports.forEach((report) => {
+      const url = report.repoUrl;
+      if (!repoMap.has(url)) {
+        repoMap.set(url, {
+          repoUrl: url,
+          scans: [],
+          totalScans: 0,
+          latestGrade: null,
+          latestScore: 0,
+          avgScore: 0,
+        });
+      }
+      const entry = repoMap.get(url);
+      entry.scans.push(report);
+      entry.totalScans += 1;
+    });
+
+    // Compute aggregated data
+    const repositories = Array.from(repoMap.values()).map((entry) => {
+      const sorted = entry.scans.sort((a, b) => b.createdAt - a.createdAt);
+      const latest = sorted[0];
+      const grades = sorted.map((r) => r.grade || "N/A");
+      // Most frequent grade
+      const gradeCounts = grades.reduce((acc, g) => {
+        acc[g] = (acc[g] || 0) + 1;
+        return acc;
+      }, {});
+      let mostFrequentGrade = "N/A";
+      let maxCount = 0;
+      for (const [g, count] of Object.entries(gradeCounts)) {
+        if (count > maxCount) {
+          maxCount = count;
+          mostFrequentGrade = g;
+        }
+      }
+
+      // Average scores
+      let totalQuality = 0,
+        totalSecurity = 0,
+        totalPerf = 0,
+        totalMaint = 0;
+      entry.scans.forEach((r) => {
+        const s = r.scores || {};
+        totalQuality += s.codeQuality || 0;
+        totalSecurity += s.security || 0;
+        totalPerf += s.performance || 0;
+        totalMaint += s.maintainability || 0;
+      });
+      const count = entry.totalScans;
+      const avgQuality = Math.round(totalQuality / count);
+      const avgSecurity = Math.round(totalSecurity / count);
+      const avgPerf = Math.round(totalPerf / count);
+      const avgMaint = Math.round(totalMaint / count);
+      const overallAvg = Math.round((avgQuality + avgSecurity + avgPerf + avgMaint) / 4);
+
+      return {
+        repoUrl: entry.repoUrl,
+        totalScans: entry.totalScans,
+        latestScan: latest,
+        latestGrade: latest?.grade || "N/A",
+        latestScore: latest?.scores ? Math.round(
+          (latest.scores.codeQuality + latest.scores.security + latest.scores.performance + latest.scores.maintainability) / 4
+        ) : 0,
+        avgQuality,
+        avgSecurity,
+        avgPerf,
+        avgMaint,
+        overallAvg,
+        mostFrequentGrade,
+        lastScannedAt: latest?.createdAt || null,
+      };
+    });
+
+    // Sort by last scanned (most recent first)
+    repositories.sort((a, b) => {
+      if (!a.lastScannedAt) return 1;
+      if (!b.lastScannedAt) return -1;
+      return new Date(b.lastScannedAt) - new Date(a.lastScannedAt);
+    });
+
+    res.json({ success: true, repositories });
+  } catch (err) {
+    console.error("Get repositories error:", err);
+    res.status(500).json({ error: "Failed to fetch repositories" });
+  }
+};
