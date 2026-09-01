@@ -8,6 +8,11 @@ import {
   removeMember,
   updateMemberRole,
   leaveWorkspace,
+  getApiKeys,
+  createApiKey,
+  deleteApiKey,
+  updateIntegrations,
+  getAuditLogs,
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 

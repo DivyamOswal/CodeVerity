@@ -1,6 +1,8 @@
 // backend/controllers/workspaceController.js
 import User from "../models/User.js";
 import WorkSpace from "../models/WorkSpace.js";
+import crypto from 'crypto';         
+import mongoose from 'mongoose';
 
 // ─── Helper: Ensure user has a workspace ──────────────────────
 async function ensureWorkspace(user) {
