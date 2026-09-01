@@ -7,7 +7,8 @@ import axios from "../api/axios";
 import { usePreferences } from "../context/PreferencesContext";
 
 /* =========================================================
-   CODEVERITY LOGO – flat indigo accent (matches other pages)
+   CODEVERITY LOGO — uses the theme's --accent token, so it
+   follows whatever palette is active without edits here.
 ========================================================= */
 
 function CodeVerityLogo() {
@@ -103,10 +104,10 @@ export default function Profile() {
   if (error) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-[var(--text-primary)]">
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10">
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)]">
           <span className="text-xl">!</span>
         </div>
-        <p className="text-sm text-red-400">{error}</p>
+        <p className="text-sm text-[var(--color-danger)]">{error}</p>
         <button
           onClick={load}
           className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
@@ -166,12 +167,8 @@ export default function Profile() {
       })
     : null;
 
-  // ============================================================
-  // COMPACT CLASSES – now includes top padding for navbar
-  // ============================================================
   const compactClasses = compact
     ? {
-        // Top padding to account for sticky navbar (h-14)
         topPadding: "pt-14",
         container: "px-3 py-4 sm:px-4",
         headerMargin: "mb-3",
@@ -208,7 +205,6 @@ export default function Profile() {
         settingsButton: "px-3 py-2 text-[10px]",
       }
     : {
-        // Top padding to account for sticky navbar (h-16)
         topPadding: "pt-16",
         container: "px-4 py-6 sm:px-6 lg:px-8",
         headerMargin: "mb-5",
@@ -249,10 +245,10 @@ export default function Profile() {
     <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}>
       <div className={`mx-auto w-full max-w-7xl ${compactClasses.container}`}>
         <div className={`space-y-5 ${compact ? "space-y-4" : "space-y-5"}`}>
-          {/* PAGE HEADER – matches Dashboard header style */}
+          {/* PAGE HEADER */}
           <div className={compactClasses.headerMargin}>
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
               <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Account
               </span>
@@ -273,10 +269,10 @@ export default function Profile() {
             <div className={`relative flex flex-col ${compactClasses.heroGap} ${compactClasses.heroPadding} sm:flex-row sm:items-center`}>
               {/* Avatar */}
               <div className="relative shrink-0">
-                <div className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold shadow-lg shadow-[var(--accent-soft-strong)] text-[var(--accent-contrast,#ffffff)] ${compactClasses.avatarSize}`}>
+                <div className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold shadow-lg shadow-[var(--accent-soft-strong)] text-[var(--accent-contrast)] ${compactClasses.avatarSize}`}>
                   {initials}
                 </div>
-                <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-emerald-400 ${compactClasses.avatarOnline}`}>
+                <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-[var(--color-success)] ${compactClasses.avatarOnline}`}>
                   <span className="h-1.5 w-1.5 rounded-full bg-white" />
                 </div>
               </div>
@@ -309,7 +305,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* STATS – 4-column grid matching Dashboard style */}
+          {/* STATS */}
           <div className={`grid grid-cols-2 ${compactClasses.statsGap} md:grid-cols-4`}>
             <StatCard
               icon="⌁"
@@ -349,7 +345,7 @@ export default function Profile() {
             />
           </div>
 
-          {/* GRADE BREAKDOWN – matches Dashboard recent reports styling */}
+          {/* GRADE BREAKDOWN */}
           {totalScans > 0 && (
             <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.gradeBreakdownPadding}`}>
               <div className={`flex items-center justify-between ${compactClasses.gradeBreakdownMargin}`}>
@@ -401,7 +397,7 @@ export default function Profile() {
             </div>
           )}
 
-          {/* RECENT ACTIVITY – matches Dashboard recent reports */}
+          {/* RECENT ACTIVITY */}
           {reports.length > 0 && (
             <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
               <div className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
@@ -481,7 +477,7 @@ export default function Profile() {
                 </p>
                 <button
                   onClick={() => navigate("/dashboard")}
-                  className={`mt-5 rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast,#ffffff)] shadow-lg shadow-[var(--accent-soft-strong)] transition hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95 ${compact ? "px-4 py-2 text-[10px]" : "px-5 py-2.5 text-xs"}`}
+                  className={`mt-5 rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95 ${compact ? "px-4 py-2 text-[10px]" : "px-5 py-2.5 text-xs"}`}
                 >
                   Start analyzing →
                 </button>
@@ -502,7 +498,7 @@ export default function Profile() {
 }
 
 /* =========================================================
-   PILL – flat indigo accent
+   PILL
 ========================================================= */
 
 function Pill({ icon, text, compact }) {
@@ -534,42 +530,44 @@ function StatCard({ icon, label, value, compact, padding, valueSize, iconSize })
 }
 
 /* =========================================================
-   GRADE STYLE – semantic status colors (unchanged)
+   GRADE STYLE — 5-tier severity scale, aligned with the same
+   tokens used in History.jsx and Dashboard.jsx's ReportRow
+   (success/info/warning/caution/danger).
 ========================================================= */
 
 function gradeStyle(letter) {
   const map = {
     A: {
-      badge: "bg-emerald-500/10 text-emerald-400",
-      text: "text-emerald-400",
-      bar: "bg-emerald-500",
+      badge: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+      text: "text-[var(--color-success)]",
+      bar: "bg-[var(--color-success)]",
     },
     B: {
-      badge: "bg-blue-500/10 text-blue-400",
-      text: "text-blue-400",
-      bar: "bg-blue-500",
+      badge: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
+      text: "text-[var(--color-info)]",
+      bar: "bg-[var(--color-info)]",
     },
     C: {
-      badge: "bg-yellow-500/10 text-yellow-400",
-      text: "text-yellow-400",
-      bar: "bg-yellow-500",
+      badge: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+      text: "text-[var(--color-warning)]",
+      bar: "bg-[var(--color-warning)]",
     },
     D: {
-      badge: "bg-orange-500/10 text-orange-400",
-      text: "text-orange-400",
-      bar: "bg-orange-500",
+      badge: "bg-[var(--color-caution-soft)] text-[var(--color-caution)]",
+      text: "text-[var(--color-caution)]",
+      bar: "bg-[var(--color-caution)]",
     },
     F: {
-      badge: "bg-red-500/10 text-red-400",
-      text: "text-red-400",
-      bar: "bg-red-500",
+      badge: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
+      text: "text-[var(--color-danger)]",
+      bar: "bg-[var(--color-danger)]",
     },
   };
   return (
     map[letter] ?? {
-      badge: "bg-gray-500/10 text-gray-400",
-      text: "text-gray-400",
-      bar: "bg-gray-500",
+      badge: "bg-[var(--bg-hover)] text-[var(--text-muted)]",
+      text: "text-[var(--text-muted)]",
+      bar: "bg-[var(--text-muted)]",
     }
   );
 }
