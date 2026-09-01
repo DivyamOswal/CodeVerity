@@ -26,12 +26,13 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Result from "./components/Result";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
-import Workspace from "./pages/Workspace"; // ✅ NEW
+import Workspace from "./pages/Workspace"; 
 import OAuthSuccess from "./pages/OAuthSuccess";
 import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
+import Privacy from "./pages/Privacy";
 
-// ✅ Import the PreferencesProvider
+
 import { PreferencesProvider } from "./context/PreferencesContext";
 
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
@@ -118,6 +119,7 @@ function Layout() {
           <Route path="/about" element={<About />} />
 
           <Route path="/contact" element={<Contact />} />
+          <Route path="/privacy" element={<Privacy />} />
 
           <Route
             path="/login"
@@ -184,7 +186,7 @@ function Layout() {
             }
           />
 
-          {/* ✅ NEW: Workspace route */}
+          {/* Workspace route */}
           <Route
             path="/workspace"
             element={
