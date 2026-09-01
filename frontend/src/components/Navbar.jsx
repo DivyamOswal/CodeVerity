@@ -5,31 +5,6 @@ import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
-// THEME — Indigo Slate — add these to your global CSS (e.g. index.css
-// / theme file) alongside your existing --bg-primary / --border-light
-// / --bg-card / --bg-hover / --text-primary / --text-secondary /
-// --text-muted variables (keep those, just point --accent* at indigo).
-// -----------------------------------------------------------------
-//
-// :root {
-//   --bg-primary: #0f1117;              /* page background */
-//   --bg-card: #161922;                 /* surface / card background */
-//   --bg-hover: #1e2230;                /* hover / elevated surface */
-//   --border-light: #2a2f3d;            /* thin, subtle dividers */
-//
-//   --text-primary: #e5e7eb;            /* high-contrast primary text */
-//   --text-secondary: #9ca3af;          /* secondary text */
-//   --text-muted: #6b7280;              /* muted / icon-default text */
-//
-//   --accent: #6366f1;                  /* indigo — primary brand accent */
-//   --accent-hover: #7477f5;            /* indigo, lighter — hover state */
-//   --accent-soft: rgba(99, 102, 241, 0.12);        /* tinted backgrounds */
-//   --accent-soft-strong: rgba(99, 102, 241, 0.22);
-//   --accent-contrast: #ffffff;          /* text/icon color ON TOP of solid accent */
-// }
-//
-// No gradients anywhere — every accent surface below is a flat color.
-//
 // DESIGN NOTE — this nav borrows its visual language from the rest of
 // the app (editor chrome, corner brackets, monospace paths) instead of
 // a generic pill nav, so it reads as part of the same product:
@@ -38,6 +13,11 @@ import { gsap, useGSAP } from "../lib/gsap";
 //   - avatar / logo = squircles (rounded-lg), matching the app's
 //     editor-card radii — not circular social-app avatars
 //   - nav labels set in monospace, echoing the code-editor identity
+//
+// All colors here are theme tokens from index.css (--accent, --bg-*,
+// --border-*, --color-*) — this file has no hardcoded palette values,
+// so it follows whatever theme is active without needing edits here.
+// -----------------------------------------------------------------
 
 // -----------------------------------------------------------------
 // Helper functions
@@ -179,14 +159,14 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
       onClick={onClick}
       className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors duration-150 ${
         danger
-          ? "text-red-400 hover:bg-red-500/10"
+          ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
           : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
       }`}
     >
       <span
         className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors duration-150 ${
           danger
-            ? "bg-red-500/5 text-red-400"
+            ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
             : "bg-[var(--bg-hover)] text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:bg-[var(--accent-soft)]"
         }`}
       >
@@ -227,7 +207,6 @@ export default function Navbar() {
   const initials = useMemo(() => getInitials(token), [token]);
   const userInfo = useMemo(() => getUserInfo(token), [token]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (dropRef.current && !dropRef.current.contains(event.target)) {
@@ -238,13 +217,11 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
-  // Close dropdowns on route change
   useEffect(() => {
     setDropOpen(false);
     setMenuOpen(false);
   }, [location.pathname]);
 
-  // Lock body scroll while mobile menu is open
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -252,9 +229,6 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  // -----------------------------------------------------------------
-  // GSAP Entrance Animation – without `scope` to avoid "Invalid scope"
-  // -----------------------------------------------------------------
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -264,7 +238,6 @@ export default function Navbar() {
           defaults: { ease: "power3.out" },
         });
 
-        // Animate nav container
         if (navRef.current) {
           timeline.from(navRef.current, {
             y: -18,
@@ -273,7 +246,6 @@ export default function Navbar() {
           });
         }
 
-        // Animate logo
         if (logoRef.current) {
           timeline.from(
             logoRef.current,
@@ -287,7 +259,6 @@ export default function Navbar() {
           );
         }
 
-        // Animate nav items – only if we have any
         if (navItemsRef.current && navItemsRef.current.length) {
           timeline.from(
             navItemsRef.current,
@@ -301,7 +272,6 @@ export default function Navbar() {
           );
         }
 
-        // Animate nav content
         if (navContentRef.current) {
           timeline.from(
             navContentRef.current,
@@ -319,27 +289,17 @@ export default function Navbar() {
         if (navRef.current) {
           gsap.set(navRef.current, { clearProps: "all" });
         }
-        // Optionally clear others – not strictly required
       });
 
       return () => mm.revert();
     },
-    // ❗ No `scope` option – we animate refs directly
   );
-
-  // -----------------------------------------------------------------
-  // Handlers
-  // -----------------------------------------------------------------
 
   const handleLogout = () => {
     setDropOpen(false);
     logout();
     navigate("/login");
   };
-
-  // -----------------------------------------------------------------
-  // Compact overrides (styling)
-  // -----------------------------------------------------------------
 
   const navbarHeight = compact ? "h-14" : "h-16";
   const logoSize = compact ? "h-8 w-8" : "h-9 w-9";
@@ -356,7 +316,6 @@ export default function Navbar() {
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
   const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
 
-  // NavigationItem — "editor tab" style
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
       to={to}
@@ -370,7 +329,6 @@ export default function Navbar() {
     >
       {({ isActive }) => (
         <>
-          {/* top bar — the "open tab" marker */}
           <span
             aria-hidden="true"
             className={`absolute left-1.5 right-1.5 top-0 h-[2px] rounded-full bg-[var(--accent)] transition-opacity duration-200 ${
@@ -383,10 +341,6 @@ export default function Navbar() {
       )}
     </NavLink>
   );
-
-  // -----------------------------------------------------------------
-  // Render
-  // -----------------------------------------------------------------
 
   return (
     <nav
@@ -453,15 +407,17 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={() => setDropOpen((prev) => !prev)}
+                aria-haspopup="true"
+                aria-expanded={dropOpen}
                 className={`flex items-center gap-2 rounded-lg px-1.5 transition-colors duration-150 ${
                   compact ? "h-9" : "h-10"
                 } ${dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"}`}
               >
                 <div
-                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast,#ffffff)] ${avatarSize} ${avatarFont}`}
+                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast)] ${avatarSize} ${avatarFont}`}
                 >
                   {initials}
-                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-emerald-400" />
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-[var(--color-success)]" />
                 </div>
 
                 <div className="hidden text-left lg:block">
@@ -494,7 +450,7 @@ export default function Navbar() {
               >
                 <div className="border-b border-[var(--border-light)] p-4">
                   <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono text-xs font-bold text-[var(--accent-contrast,#ffffff)]">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono text-xs font-bold text-[var(--accent-contrast)]">
                       {initials}
                     </div>
                     <div className="min-w-0">
@@ -551,7 +507,7 @@ export default function Navbar() {
               </NavLink>
               <NavLink
                 to="/register"
-                className={`whitespace-nowrap rounded-lg bg-[var(--accent)] font-semibold tracking-tight text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-95 ${buttonPadding}`}
+                className={`whitespace-nowrap rounded-lg bg-[var(--accent)] font-semibold tracking-tight text-[var(--accent-contrast)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:shadow-md active:scale-95 ${buttonPadding}`}
               >
                 Get started
               </NavLink>
@@ -708,7 +664,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-red-400 transition-colors duration-200 hover:bg-red-500/10 ${mobileMenuItemPadding}`}
+                className={`flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent text-left font-mono text-[var(--color-danger)] transition-colors duration-200 hover:bg-[var(--color-danger-soft)] ${mobileMenuItemPadding}`}
               >
                 <Icon name="logout" size={compact ? 14 : 16} />
                 sign out
@@ -724,7 +680,7 @@ export default function Navbar() {
               </NavLink>
               <NavLink
                 to="/register"
-                className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-center text-sm font-semibold tracking-tight text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)]"
+                className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-center text-sm font-semibold tracking-tight text-[var(--accent-contrast)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)]"
               >
                 Get started
               </NavLink>
