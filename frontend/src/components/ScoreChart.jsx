@@ -6,6 +6,7 @@ import {
   Radar,
   ResponsiveContainer,
 } from "recharts";
+
 export default function ScoreCharts({ scores }) {
   const data = [
     { subject: "Code Quality", value: scores.codeQuality || 0 },
@@ -30,8 +31,8 @@ export default function ScoreCharts({ scores }) {
           />
           <Radar
             dataKey="value"
-            stroke="#6366f1"
-            fill="#6366f1"
+            stroke="var(--accent)"
+            fill="var(--accent)"
             fillOpacity={0.18}
             strokeWidth={2}
           />
