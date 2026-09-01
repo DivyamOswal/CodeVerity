@@ -53,7 +53,7 @@ export default function AuthLayout({ title, terminalText, error, onOAuth, footer
   // GSAP is used ONLY for infinite/looping ambient animation here.
   // One-shot entrances (card, fields, footnote) run on plain CSS
   // (.animate-fadeUp) so they can never get stuck invisible if a
-  // JS effect fires late or twice — see chat note on the button bug.
+  // JS effect fires late or twice see chat note on the button bug.
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduceMotion) return;

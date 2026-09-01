@@ -188,7 +188,7 @@ export const generateTestCases = async (req, res) => {
         error: "Request body must contain a non-empty 'code' string.",
       });
     }
-    console.log(`📥 generateTestCases — received ${code.length} chars`);
+    console.log(`📥 generateTestCases received ${code.length} chars`);
     const result = await generateTests(code);
     return res.status(200).json(result);
   } catch (err) {

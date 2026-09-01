@@ -12,7 +12,7 @@ export const analyzeCode = async (req, res) => {
       });
     }
 
-    console.log(`📥 /api/analyze — received ${code.length} chars`);
+    console.log(`📥 /api/analyze received ${code.length} chars`);
 
     const result = await analyzeWithGroq(code);   // ✅ use the code the frontend already fetched
 
@@ -38,7 +38,7 @@ export const generateTestCases = async (req, res) => {
       });
     }
 
-    console.log(`📥 /api/generate-tests — received ${code.length} chars`);
+    console.log(`📥 /api/generate-tests received ${code.length} chars`);
 
     const result = await generateTests(code);
 

@@ -25,7 +25,7 @@ export function PreferencesProvider({ children }) {
   const [showScores, setShowScores] = useState(() => loadPref(PREF_SCORES, true));
 
   // Apply theme to document root
-  // src/context/PreferencesContext.jsx — updated
+  // src/context/PreferencesContext.jsx updated
 useEffect(() => {
   const root = document.documentElement;
   if (theme === "dark") {

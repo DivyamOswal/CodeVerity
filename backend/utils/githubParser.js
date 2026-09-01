@@ -95,7 +95,7 @@ async function fetchBlobContent(owner, repo, sha) {
 
 /**
  * Fetch and concatenate a GitHub repo's source for AI analysis.
- * Throws on any failure — callers must not catch-and-substitute placeholder text.
+ * Throws on any failure callers must not catch-and-substitute placeholder text.
  */
 export async function parseGithubRepo(repoUrl, { maxChars = MAX_CHARS_DEFAULT, branch } = {}) {
   const { owner, repo } = parseGitHubUrl(repoUrl);

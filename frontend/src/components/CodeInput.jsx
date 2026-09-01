@@ -34,7 +34,7 @@ function CodeVerityLogo() {
   );
 }
 
-// Single moving highlight bar across the button — flat-color sweep,
+// Single moving highlight bar across the button flat-color sweep,
 // reuses the global .animate-scanline utility from index.css instead
 // of redefining the same keyframe locally.
 function ScanLine() {
@@ -48,7 +48,7 @@ function ScanLine() {
   );
 }
 
-// Feature card accents — one accent color at three opacity levels,
+// Feature card accents one accent color at three opacity levels,
 // so the three cards read as a set rather than three separate hues.
 const colorMap = {
   strong: {
@@ -229,7 +229,7 @@ export default function CodeInput({ setResult, model }) {
 
         {/* ================= EDITOR CARD ================= */}
         <div className="animate-fadeUp relative" style={{ animationDelay: "100ms" }}>
-          {/* Corner brackets — now with a subtle CSS-only breathing pulse */}
+          {/* Corner brackets now with a subtle CSS-only breathing pulse */}
           <span className="cv-corner absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
           <span className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" style={{ animationDelay: "0.4s" }} />
           <span className="cv-corner absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" style={{ animationDelay: "0.8s" }} />
@@ -374,7 +374,7 @@ export default function CodeInput({ setResult, model }) {
         </div>
       </div>
 
-      {/* Corner-bracket breathing — small, self-contained, pure CSS.
+      {/* Corner-bracket breathing small, self-contained, pure CSS.
           Covered automatically by index.css's global
           prefers-reduced-motion rule. */}
       <style>{`

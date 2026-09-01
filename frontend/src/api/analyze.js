@@ -1,5 +1,5 @@
 // frontend/src/api/analyze.js
-// Browser-safe — plain fetch only, no Node modules.
+// Browser-safe plain fetch only, no Node modules.
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const GITHUB_API = "https://api.github.com";
@@ -30,7 +30,7 @@ function isCodeFile(filePath) {
 
 /**
  * Fetch all code files from a GitHub repo (public or private).
- * Runs entirely in the browser — no backend involvement.
+ * Runs entirely in the browser no backend involvement.
  *
  * @param {string} repoUrl
  * @param {string} [token]    GitHub PAT for private repos
@@ -73,7 +73,7 @@ export async function fetchRepoContents(repoUrl, token = "", maxChars = 28_000) 
     // Fall back: include ALL text files so at least something is analysed
     const fallback = blobs.filter((f) => !f.path.match(/\.(png|jpg|gif|ico|svg|woff|ttf|eot|bin|exe)$/i));
     if (fallback.length === 0) throw new Error("No readable files found in this repo.");
-    console.warn("⚠️ No recognised code files — falling back to all text files");
+    console.warn("⚠️ No recognised code files falling back to all text files");
     blobs = fallback;
   } else {
     blobs = codeFiles;
@@ -126,7 +126,7 @@ export async function fetchRepoContents(repoUrl, token = "", maxChars = 28_000) 
 export async function analyzeCode(code) {
   if (!code?.trim()) throw new Error("No source code provided.");
 
-  console.log(`🔍 POST /api/analyze — ${code.length} chars`);
+  console.log(`🔍 POST /api/analyze ${code.length} chars`);
 
   const res = await fetch(`${API_URL}/api/analyze`, {
     method:  "POST",
@@ -158,7 +158,7 @@ export async function analyzeCode(code) {
 export async function generateTests(code) {
   if (!code?.trim()) throw new Error("No source code provided for test generation.");
 
-  console.log(`🧪 POST /api/analyze/generate-tests — ${code.length} chars`);
+  console.log(`🧪 POST /api/analyze/generate-tests ${code.length} chars`);
 
   const res = await fetch(`${API_URL}/api/analyze/generate-tests`, {
     method:  "POST",

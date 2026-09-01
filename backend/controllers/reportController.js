@@ -263,7 +263,7 @@ export const downloadReportPDF = async (req, res) => {
       sectionTitle(doc, `Detected Secrets (${report.secrets.length})`, COLORS.red);
       report.secrets.forEach((s, i) => {
         doc.fontSize(10).fillColor(COLORS.textDark)
-          .text(`${i+1}. ${s.pattern || "Unknown"} — ${s.file || ""} (line ${s.line || "?"})`);
+          .text(`${i+1}. ${s.pattern || "Unknown"} ${s.file || ""} (line ${s.line || "?"})`);
         doc.fillColor(COLORS.textLight).text(`   Confidence: ${s.confidence || 0}%`);
         doc.moveDown(0.3);
       });
@@ -280,7 +280,7 @@ export const downloadReportPDF = async (req, res) => {
         doc.fontSize(11).fillColor(COLORS.textDark).text("Breakdown:");
         techDebt.issues.forEach((issue, i) => {
           doc.fontSize(10).fillColor(COLORS.textDark)
-            .text(`${i+1}. ${issue.description || "No description"} (${issue.severity || "low"}) — ${issue.effort || 0}h`);
+            .text(`${i+1}. ${issue.description || "No description"} (${issue.severity || "low"}) ${issue.effort || 0}h`);
           doc.fillColor(COLORS.textLight).text(`   File: ${issue.file || "unknown"}`);
           doc.moveDown(0.2);
         });

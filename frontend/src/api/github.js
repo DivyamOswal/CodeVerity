@@ -6,7 +6,7 @@ import axios from "./axios";
 export const analyzeGithub = (data) =>
   axios.post("/github/analyze", data);
 
-// Generate tests — sends source code to backend
+// Generate tests sends source code to backend
 // Result.jsx calls this via generateTestsFn prop
 export const generateTests = async (code) => {
   const res = await axios.post("/github/generate-tests", { code });

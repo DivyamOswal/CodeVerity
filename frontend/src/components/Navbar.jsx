@@ -5,17 +5,17 @@ import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
-// DESIGN NOTE — this nav borrows its visual language from the rest of
+// DESIGN NOTE this nav borrows its visual language from the rest of
 // the app (editor chrome, corner brackets, monospace paths) instead of
 // a generic pill nav, so it reads as part of the same product:
 //   - center nav = a small "tab strip", active tab marked with a top
 //     bar (like an open editor tab), not a floating pill
 //   - avatar / logo = squircles (rounded-lg), matching the app's
-//     editor-card radii — not circular social-app avatars
+//     editor-card radii not circular social-app avatars
 //   - nav labels set in monospace, echoing the code-editor identity
 //
 // All colors here are theme tokens from index.css (--accent, --bg-*,
-// --border-*, --color-*) — this file has no hardcoded palette values,
+// --border-*, --color-*) this file has no hardcoded palette values,
 // so it follows whatever theme is active without needing edits here.
 // -----------------------------------------------------------------
 

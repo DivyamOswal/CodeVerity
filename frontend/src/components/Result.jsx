@@ -137,7 +137,7 @@ export default function Result({
 
   return (
     <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${containerPadding}`}>
-      {/* Background effects — now theme-driven instead of the old
+      {/* Background effects now theme-driven instead of the old
           hardcoded indigo rgba(99,102,241,...) literals. */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"

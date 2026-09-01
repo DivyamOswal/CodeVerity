@@ -5,7 +5,7 @@
 // this (e.g. src/data/pricingPlans.js).
 // -----------------------------------------------------------------
 
-// Default currency is INR (₹) — pass "USD" explicitly to override.
+// Default currency is INR (₹) pass "USD" explicitly to override.
 export function formatPrice(amount, currency = "INR") {
   if (amount === 0) return currency === "INR" ? "₹0" : "$0";
   return new Intl.NumberFormat(currency === "INR" ? "en-IN" : "en-US", {
@@ -26,7 +26,7 @@ export function formatTokens(amount) {
 // Yearly prices are ~20% off (monthly × 12), pre-computed here so the
 // "Save 20%" badge on the pricing page always matches the real total.
 // tokensPerMonth is the AI-analysis token allowance included with the
-// plan — it resets monthly regardless of billing cycle.
+// plan it resets monthly regardless of billing cycle.
 export const PRICING_PLANS = [
   {
     id: "starter",
@@ -48,7 +48,7 @@ export const PRICING_PLANS = [
   {
     id: "pro",
     name: "Pro",
-    tagline: "For developers who ship — deeper insight, higher token limits",
+    tagline: "For developers who ship deeper insight, higher token limits",
     monthly: { INR: 999, USD: 12 },
     yearly: { INR: 9590, USD: 115 },
     tokensPerMonth: 150000,

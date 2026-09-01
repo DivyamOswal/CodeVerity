@@ -42,20 +42,20 @@ function extractJSON(raw) {
 
 const SYSTEM_PROMPT = `You are a PRINCIPAL SOFTWARE ARCHITECT performing a FORMAL CODE AUDIT.
 
-You MUST respond with ONLY a valid JSON object — no preamble, no explanation, no markdown fences, no trailing text.
+You MUST respond with ONLY a valid JSON object no preamble, no explanation, no markdown fences, no trailing text.
 Start your response with { and end with }.
 
 SCORE BANDS (apply to all four dimensions):
-  90-100  Excellent — production-grade, no significant issues
-  70-89   Good      — minor issues only, generally solid
-  50-69   Fair      — several clear problems affecting quality
-  30-49   Poor      — significant issues, needs rework
-  0-29    Critical  — severe problems, not production-ready
+  90-100  Excellent production-grade, no significant issues
+  70-89   Good      minor issues only, generally solid
+  50-69   Fair      several clear problems affecting quality
+  30-49   Poor      significant issues, needs rework
+  0-29    Critical  severe problems, not production-ready
 
-codeQuality — readability, DRY, naming, structure, error handling.
-security — exposed secrets, missing validation, unguarded routes, injection vectors, CORS misconfig.
-performance — O(n²) hot paths, N+1 queries, missing pagination, blocking ops, no caching.
-maintainability — tests, docs, coupling, mixed concerns, monolithic files, magic numbers.
+codeQuality readability, DRY, naming, structure, error handling.
+security exposed secrets, missing validation, unguarded routes, injection vectors, CORS misconfig.
+performance O(n²) hot paths, N+1 queries, missing pagination, blocking ops, no caching.
+maintainability tests, docs, coupling, mixed concerns, monolithic files, magic numbers.
 
 GRADE FORMULA (follow exactly):
   weightedAvg = (codeQuality×0.30) + (security×0.30) + (performance×0.20) + (maintainability×0.20)
@@ -76,16 +76,16 @@ OUTPUT STRUCTURE:
 }
 
 RULES:
-- Analyse ONLY what is present in the actual code provided — do not invent issues
-- Apply the scoring criteria strictly — do not be generous without evidence
-- Apply the grade formula exactly — do not override it with subjective judgment
+- Analyse ONLY what is present in the actual code provided do not invent issues
+- Apply the scoring criteria strictly do not be generous without evidence
+- Apply the grade formula exactly do not override it with subjective judgment
 - If a section has nothing to report, return an empty array []`;
 
 const TEST_GENERATOR_SYSTEM_PROMPT = `You are an EXPERT SOFTWARE TEST ENGINEER specialising in JavaScript/Node.js.
 
 Analyse source code and generate a test suite using Jest (or Vitest if detected).
 
-You MUST respond with ONLY a valid JSON object — no preamble, no explanation, no markdown fences, no trailing text.
+You MUST respond with ONLY a valid JSON object no preamble, no explanation, no markdown fences, no trailing text.
 Start your response with { and end with }.
 
 {
@@ -100,8 +100,8 @@ Start your response with { and end with }.
 }
 
 RULES:
-- Analyse ONLY the code provided — do not invent functions that don't exist
-- Generate REAL, RUNNABLE test code — not pseudo-code
+- Analyse ONLY the code provided do not invent functions that don't exist
+- Generate REAL, RUNNABLE test code not pseudo-code
 - Cover happy paths, error paths, boundary values, and null/undefined inputs
 - If no async functions exist, omit async/await
 - Prefer jest.fn() for mocks unless vitest is detected (then use vi.fn())
@@ -110,7 +110,7 @@ RULES:
 // ── Fallbacks ──────────────────────────────────────────────────
 
 const FALLBACK_RESULT = {
-  summary: "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
+  summary: "Analysis could not be completed the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
   architecture: [],
   bugs: [],
   securityIssues: [],
@@ -135,7 +135,7 @@ const FALLBACK_TEST_RESULT = {
   mocks: [],
   coverageSummary: {
     estimatedCoverage: 0,
-    uncoveredAreas: ["All areas — generation failed"],
+    uncoveredAreas: ["All areas generation failed"],
     recommendation: "Retry the test generation.",
   },
 };

@@ -1,7 +1,7 @@
 export default function ScoreBar({ label, score }) {
   const val = typeof score === "number" ? Math.min(Math.max(score, 0), 100) : 0;
 
-  // Severity coloring — mirrors the thresholds used across the rest
+  // Severity coloring mirrors the thresholds used across the rest
   // of the app (History.jsx, Result.jsx) so a low score reads as
   // "bad" via color, not just a shorter bar.
   const color =

@@ -4,7 +4,7 @@ import Reveal from "../components/Reveal";
 import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
-// Local mini components — same pattern as CodeInput/GithubAnalyzer
+// Local mini components same pattern as CodeInput/GithubAnalyzer
 // (each page keeps its own copy rather than sharing one file, matching
 // how this codebase is already structured).
 // -----------------------------------------------------------------
@@ -80,7 +80,7 @@ const values = [
   {
     icon: "spark",
     title: "AI you can verify",
-    desc: "Findings come with the reasoning behind them — file, line, and rationale — so you can check the AI's work instead of taking it on faith.",
+    desc: "Findings come with the reasoning behind them file, line, and rationale so you can check the AI's work instead of taking it on faith.",
   },
   {
     icon: "shield",
@@ -97,7 +97,7 @@ const stats = [
 
 // Counts the numeric part of a stat up from 0 the moment it scrolls
 // into view, keeping any prefix/suffix ("<", "%", "+") fixed. Runs
-// independently of the parent Reveal fade — Reveal handles the block
+// independently of the parent Reveal fade Reveal handles the block
 // entrance, this handles the number itself. Same
 // prefers-reduced-motion pattern as Reveal.jsx / Pricing's price
 // animation: skip straight to the static value if that's set.
@@ -159,7 +159,7 @@ function StatItem({ value, label }) {
 export default function About() {
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      {/* Ambient background — flat color + blur, dot grid, no gradients */}
+      {/* Ambient background flat color + blur, dot grid, no gradients */}
       <div className="pointer-events-none absolute left-1/2 top-[10%] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[var(--accent-soft)] opacity-60 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div
@@ -171,7 +171,7 @@ export default function About() {
       />
 
       <div className="relative z-10 mx-auto max-w-5xl px-6 py-20">
-        {/* HERO — was fadeDown (drops in from above) */}
+        {/* HERO was fadeDown (drops in from above) */}
         <Reveal className="text-center" from="up" delay={0} duration={0.6}>
           <div className="mb-5 flex items-center justify-center gap-3">
             <CodeVerityLogo />
@@ -185,13 +185,13 @@ export default function About() {
             <span className="text-[var(--accent)]">reading diffs alone.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
-            CodeVerity started as an internal tool for auditing repositories before a release — bugs,
+            CodeVerity started as an internal tool for auditing repositories before a release bugs,
             security gaps, and architectural drift, surfaced automatically instead of found in production.
             We opened it up because every team has the same problem.
           </p>
         </Reveal>
 
-        {/* STATS — was fadeUp, 0.1s delay. Numbers count up on scroll-in
+        {/* STATS was fadeUp, 0.1s delay. Numbers count up on scroll-in
             via StatItem, independent of this Reveal's fade/rise. */}
         <Reveal className="mt-14 grid grid-cols-3 gap-3 sm:gap-4" delay={0.1} duration={0.6}>
           {stats.map((s) => (
@@ -199,7 +199,7 @@ export default function About() {
           ))}
         </Reveal>
 
-        {/* MISSION — was fadeUp, 0.15s delay */}
+        {/* MISSION was fadeUp, 0.15s delay */}
         <Reveal
           className="relative mt-16 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-8 sm:p-10"
           delay={0.15}
@@ -212,17 +212,17 @@ export default function About() {
 
           <p className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--accent)]">our mission</p>
           <h2 className="mt-2 text-2xl font-bold tracking-tight sm:text-3xl">
-            Make code review something AI actually helps with — not something it just summarizes.
+            Make code review something AI actually helps with not something it just summarizes.
           </h2>
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
             Most AI code tools stop at a paragraph of vague praise. CodeVerity is built to go further: point
-            to the exact file and line, explain the risk in plain terms, and — where it can — generate the
+            to the exact file and line, explain the risk in plain terms, and where it can generate the
             test that would have caught it. We'd rather ship fewer features that developers actually trust
             than a long list of things that sound impressive in a demo.
           </p>
         </Reveal>
 
-        {/* VALUES — was fadeUp, 0.2s delay */}
+        {/* VALUES was fadeUp, 0.2s delay */}
         <Reveal className="mt-16" delay={0.2} duration={0.6}>
           <div className="mb-6 flex items-center gap-3">
             <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--border-light)]" />
@@ -248,7 +248,7 @@ export default function About() {
           </div>
         </Reveal>
 
-        {/* CTA — was fadeUp, 0.25s delay */}
+        {/* CTA was fadeUp, 0.25s delay */}
         <Reveal
           className="mt-16 flex flex-col items-center gap-4 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] px-6 py-10 text-center"
           delay={0.25}
@@ -256,7 +256,7 @@ export default function About() {
         >
           <h2 className="text-2xl font-bold tracking-tight">Ready to see it on your own repo?</h2>
           <p className="max-w-md text-sm text-[var(--text-secondary)]">
-            Drop in a public GitHub URL and get a full audit in under a minute — no card required.
+            Drop in a public GitHub URL and get a full audit in under a minute no card required.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             <Link

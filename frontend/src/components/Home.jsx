@@ -335,7 +335,7 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 // ============================================================
-//  COMPONENT: ScanLine (for button hover) — uses the global
+//  COMPONENT: ScanLine (for button hover) uses the global
 //  .animate-scanline utility from index.css instead of a
 //  locally-duplicated keyframe.
 // ============================================================
@@ -1004,7 +1004,7 @@ export default function Home() {
       ref={containerRef}
       className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
     >
-      {/* Background glows and dot grid — now theme-driven instead of
+      {/* Background glows and dot grid now theme-driven instead of
           the old hardcoded indigo rgba(99,102,241,...) literals. */}
       <div
         ref={bgGlow1Ref}
@@ -1049,7 +1049,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* BADGE — animate-pulse-glow now correctly follows the
+          {/* BADGE animate-pulse-glow now correctly follows the
               theme since the duplicate local override is gone. */}
           <div
             ref={badgeRef}

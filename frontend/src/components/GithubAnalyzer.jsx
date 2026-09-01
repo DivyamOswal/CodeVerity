@@ -35,7 +35,7 @@ function CodeVerityLogo() {
   );
 }
 
-// Flat-color sweep — reuses the global .animate-scanline utility.
+// Flat-color sweep reuses the global .animate-scanline utility.
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
@@ -172,7 +172,7 @@ export default function GithubAnalyzer({ setData }) {
 
       <div className="mx-auto max-w-3xl relative z-10">
         <div className="animate-fadeUp relative">
-          {/* Corner brackets — with a subtle CSS-only breathing pulse,
+          {/* Corner brackets with a subtle CSS-only breathing pulse,
               same treatment as CodeInput's editor card. */}
           <span className="cv-corner absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
           <span className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" style={{ animationDelay: "0.4s" }} />

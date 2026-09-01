@@ -3,7 +3,7 @@ import { useRef } from "react";
 import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
-// Usage — replaces this pattern seen throughout the app:
+// Usage replaces this pattern seen throughout the app:
 //   <div style={{ animation: "fadeUp 0.6s 0.1s ease both" }}>...</div>
 // with:
 //   <Reveal delay={0.1}>...</Reveal>
@@ -13,7 +13,7 @@ import { gsap, useGSAP } from "../lib/gsap";
 // already have on Home/Login/Register/CodeInput/etc, but now driven
 // by actual scroll position instead of a fixed mount-time delay.
 //
-// Respects prefers-reduced-motion — every other animation in this
+// Respects prefers-reduced-motion every other animation in this
 // app (globals.css, AuthLayout, Home) already skips motion for users
 // with that OS setting on; this does the same via gsap.matchMedia(),
 // GSAP's own recommended pattern for conditional animation.

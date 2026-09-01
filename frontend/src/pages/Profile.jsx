@@ -7,7 +7,7 @@ import axios from "../api/axios";
 import { usePreferences } from "../context/PreferencesContext";
 
 /* =========================================================
-   CODEVERITY LOGO — uses the theme's --accent token, so it
+   CODEVERITY LOGO uses the theme's --accent token, so it
    follows whatever palette is active without edits here.
 ========================================================= */
 
@@ -530,7 +530,7 @@ function StatCard({ icon, label, value, compact, padding, valueSize, iconSize })
 }
 
 /* =========================================================
-   GRADE STYLE — 5-tier severity scale, aligned with the same
+   GRADE STYLE 5-tier severity scale, aligned with the same
    tokens used in History.jsx and Dashboard.jsx's ReportRow
    (success/info/warning/caution/danger).
 ========================================================= */
