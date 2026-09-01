@@ -1,7 +1,6 @@
 // backend/controllers/statsController.js
 import Report from "../models/Report.js";
 console.log("✅ statsController loaded");
-import Report from "../models/Report.js";
 console.log("✅ Report model imported", !!Report);
 
 // export const getPublicStats = async (req, res) => {
