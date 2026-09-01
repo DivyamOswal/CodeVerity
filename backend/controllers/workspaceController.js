@@ -3,6 +3,7 @@ import User from "../models/User.js";
 import WorkSpace from "../models/WorkSpace.js";
 import crypto from 'crypto';         
 import mongoose from 'mongoose';
+import Report from "../models/Report.js";
 
 // ─── Helper: Ensure user has a workspace ──────────────────────
 async function ensureWorkspace(user) {

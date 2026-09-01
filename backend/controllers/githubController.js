@@ -44,13 +44,13 @@ export const analyzeGithubRepo = async (req, res) => {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // Check scan limit (monthly)
-    const canScan = await user.incrementScanUsage();
-    if (!canScan) {
-      return res.status(429).json({
-        error: `Monthly scan limit reached (${user.scansLimit} scans). Upgrade your plan or wait for next month.`,
-      });
-    }
+    // // Check scan limit (monthly)
+    // const canScan = await user.incrementScanUsage();
+    // if (!canScan) {
+    //   return res.status(429).json({
+    //     error: `Monthly scan limit reached (${user.scansLimit} scans). Upgrade your plan or wait for next month.`,
+    //   });
+    // }
 
     // 2. Clone and parse the repo
     const parsed = await cloneAndParseGithubRepo(repoUrl.trim());
