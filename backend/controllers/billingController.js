@@ -1,6 +1,7 @@
 // backend/controllers/billingController.js
 import Stripe from "stripe";
 import User from "../models/User.js";
+import { addAuditLog } from "./workspaceController.js";  // 👈 import audit log helper
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -89,7 +90,7 @@ export const createCheckoutSession = async (req, res) => {
 export const getSubscription = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
-      "plan stripeCustomerId stripeSubscriptionId subscriptionStatus subscriptionEndsAt tokensRemaining scansLimit",
+      "plan stripeCustomerId stripeSubscriptionId subscriptionStatus subscriptionEndsAt tokensRemaining"
     );
     res.json({ subscription: user });
   } catch (err) {
@@ -114,6 +115,16 @@ export const cancelSubscription = async (req, res) => {
 
     user.subscriptionStatus = "canceled";
     await user.save();
+
+    // ── Audit log: subscription canceled ─────────────────────
+    if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "plan_cancel",
+        `Canceled ${user.plan} subscription (will end at period)`
+      );
+    }
 
     res.json({
       success: true,
@@ -149,6 +160,7 @@ export const handleWebhook = async (req, res) => {
         const user = await User.findById(userId);
         if (!user) break;
 
+        const oldPlan = user.plan || "starter";
         user.plan = plan;
         user.stripeSubscriptionId = session.subscription;
         user.subscriptionStatus = "active";
@@ -156,6 +168,17 @@ export const handleWebhook = async (req, res) => {
           Date.now() + (cycle === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000,
         );
         await user.save();
+
+        // ── Audit log: subscription started / upgraded ──────
+        if (user.workspaceId) {
+          addAuditLog(
+            user.workspaceId,
+            user._id,
+            "plan_change",
+            `Subscription ${oldPlan !== plan ? `upgraded from ${oldPlan} to` : "started"} ${plan} (${cycle})`,
+            { oldPlan, newPlan: plan, cycle }
+          );
+        }
         break;
       }
 
@@ -173,6 +196,16 @@ export const handleWebhook = async (req, res) => {
             subscription.current_period_end * 1000,
           );
           await user.save();
+
+          // ── Audit log: successful renewal ──────────────────
+          if (user.workspaceId) {
+            addAuditLog(
+              user.workspaceId,
+              user._id,
+              "payment_success",
+              `Subscription renewed (${user.plan}) – payment succeeded`
+            );
+          }
         }
         break;
       }
@@ -185,6 +218,16 @@ export const handleWebhook = async (req, res) => {
         if (user) {
           user.subscriptionStatus = "past_due";
           await user.save();
+
+          // ── Audit log: payment failure ─────────────────────
+          if (user.workspaceId) {
+            addAuditLog(
+              user.workspaceId,
+              user._id,
+              "payment_failed",
+              `Payment failed for ${user.plan} subscription`
+            );
+          }
         }
         break;
       }
@@ -195,14 +238,25 @@ export const handleWebhook = async (req, res) => {
           stripeSubscriptionId: subscription.id,
         });
         if (user) {
+          const oldPlan = user.plan;
           user.plan = "starter";
           user.stripeSubscriptionId = null;
           user.subscriptionStatus = "canceled";
           user.subscriptionEndsAt = null;
           const config = User.getPlanConfig("starter");
           user.tokensRemaining = config.tokens;
-          user.scansLimit = config.scans;
+          // Remove scan limit reset if no longer using scans
           await user.save();
+
+          // ── Audit log: subscription ended ──────────────────
+          if (user.workspaceId) {
+            addAuditLog(
+              user.workspaceId,
+              user._id,
+              "plan_cancel",
+              `Subscription ${oldPlan} canceled – downgraded to Starter`
+            );
+          }
         }
         break;
       }

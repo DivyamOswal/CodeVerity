@@ -1,6 +1,7 @@
 // backend/controllers/analyzeController.js
 import { analyzeWithGroq, generateTests } from "../utils/groq.js";
 import User from "../models/User.js";
+import { addAuditLog } from "./workspaceController.js";   // 👈 import audit log helper
 
 // ─── Helper: estimate tokens if not returned ──────────────
 function estimateTokens(text) {
@@ -11,7 +12,8 @@ function estimateTokens(text) {
 // ─── POST /api/analyze ─────────────────────────────────────
 export const analyzeCode = async (req, res) => {
   try {
-    const { code } = req.body;
+    const { code, repoUrl } = req.body;   // 👈 capture repoUrl if provided
+
     if (!code || code.trim().length < 10) {
       return res.status(400).json({ error: "Invalid code input." });
     }
@@ -24,9 +26,30 @@ export const analyzeCode = async (req, res) => {
 
     const deducted = await user.deductTokens(tokensUsed);
     if (!deducted) {
+      // Log insufficient tokens event
+      if (user.workspaceId) {
+        addAuditLog(
+          user.workspaceId,
+          user._id,
+          "scan_failed",
+          `Insufficient tokens (needed ${tokensUsed}, have ${user.tokensRemaining})`,
+          { repoUrl: repoUrl || "unknown", tokensNeeded: tokensUsed }
+        );
+      }
       return res.status(402).json({
         error: `Insufficient tokens. You have ${user.tokensRemaining} tokens, need ${tokensUsed}.`,
       });
+    }
+
+    // ── Audit log: successful scan ────────────────────────
+    if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "scan",
+        `Analyzed code${repoUrl ? ` from ${repoUrl}` : ""}`,
+        { repoUrl: repoUrl || "unknown", tokensUsed, tokensRemaining: user.tokensRemaining }
+      );
     }
 
     return res.status(200).json({
@@ -37,6 +60,21 @@ export const analyzeCode = async (req, res) => {
     });
   } catch (err) {
     console.error("analyzeCode error:", err);
+
+    // ── Audit log: scan failure (optional) ────────────────
+    try {
+      const user = await User.findById(req.user.id);
+      if (user?.workspaceId) {
+        addAuditLog(
+          user.workspaceId,
+          user._id,
+          "scan_failed",
+          `Analysis failed: ${err.message}`,
+          { error: err.message }
+        );
+      }
+    } catch (_) { /* ignore audit failure */ }
+
     return res.status(500).json({ error: err.message });
   }
 };
@@ -44,7 +82,7 @@ export const analyzeCode = async (req, res) => {
 // ─── POST /api/analyze/generate-tests ──────────────────────
 export const generateTestCases = async (req, res) => {
   try {
-    const { code } = req.body;
+    const { code, repoUrl } = req.body;
 
     if (!code || typeof code !== "string" || code.trim().length < 10) {
       return res.status(400).json({
@@ -64,9 +102,30 @@ export const generateTestCases = async (req, res) => {
 
     const deducted = await user.deductTokens(tokensUsed);
     if (!deducted) {
+      // Log insufficient tokens
+      if (user.workspaceId) {
+        addAuditLog(
+          user.workspaceId,
+          user._id,
+          "test_failed",
+          `Insufficient tokens for test generation (needed ${tokensUsed}, have ${user.tokensRemaining})`,
+          { repoUrl: repoUrl || "unknown", tokensNeeded: tokensUsed }
+        );
+      }
       return res.status(402).json({
         error: `Insufficient tokens. You have ${user.tokensRemaining} tokens, need ${tokensUsed}.`,
       });
+    }
+
+    // ── Audit log: successful test generation ──────────────
+    if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "test_generate",
+        `Generated tests${repoUrl ? ` for ${repoUrl}` : ""}`,
+        { repoUrl: repoUrl || "unknown", tokensUsed, tokensRemaining: user.tokensRemaining }
+      );
     }
 
     return res.status(200).json({
@@ -77,6 +136,21 @@ export const generateTestCases = async (req, res) => {
 
   } catch (err) {
     console.error("❌ generateTestCases error:", err.message);
+
+    // ── Audit log: test generation failure ────────────────
+    try {
+      const user = await User.findById(req.user.id);
+      if (user?.workspaceId) {
+        addAuditLog(
+          user.workspaceId,
+          user._id,
+          "test_failed",
+          `Test generation failed: ${err.message}`,
+          { error: err.message }
+        );
+      }
+    } catch (_) { /* ignore audit failure */ }
+
     return res.status(500).json({ error: err.message ?? "Test generation failed." });
   }
 };

@@ -2,10 +2,11 @@
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import User from "../models/User.js"; 
+import User from "../models/User.js";
 import PDFDocument from "pdfkit";
 import Report from "../models/Report.js";
 import WorkSpace from "../models/WorkSpace.js";
+import { addAuditLog } from "./workspaceController.js";  // 👈 import audit log helper
 
 /* =========================================================
    HELPERS
@@ -102,6 +103,14 @@ export const register = async (req, res) => {
     // Create workspace for the user
     await createWorkspaceForUser(user);
 
+    // ── Audit log: User registered ──────────────────────────
+    addAuditLog(
+      user.workspaceId,
+      user._id,
+      "register",
+      `User ${user.email} registered`
+    );
+
     const token = generateToken(user);
     res.status(201).json({
       token,
@@ -152,6 +161,16 @@ export const login = async (req, res) => {
     const valid = await bcrypt.compare(password, user.password);
     if (!valid) {
       return res.status(401).json({ error: "Invalid credentials." });
+    }
+
+    // ── Audit log: User logged in ──────────────────────────
+    if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "login",
+        `User ${user.email} logged in`
+      );
     }
 
     const token = generateToken(user);
@@ -262,6 +281,23 @@ export const googleAuthCallback = async (req, res) => {
 
     if (isNew) {
       await createWorkspaceForUser(user);
+      // ── Audit log: New user via Google ─────────────────────
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "register",
+        `User ${user.email} registered via Google`
+      );
+    } else {
+      // ── Audit log: Existing user logged in via Google ────
+      if (user.workspaceId) {
+        addAuditLog(
+          user.workspaceId,
+          user._id,
+          "login",
+          `User ${user.email} logged in via Google`
+        );
+      }
     }
 
     const token = generateToken(user);
@@ -386,6 +422,23 @@ export const githubAuthCallback = async (req, res) => {
 
     if (isNew) {
       await createWorkspaceForUser(user);
+      // ── Audit log: New user via GitHub ────────────────────
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "register",
+        `User ${user.email} registered via GitHub`
+      );
+    } else {
+      // ── Audit log: Existing user logged in via GitHub ────
+      if (user.workspaceId) {
+        addAuditLog(
+          user.workspaceId,
+          user._id,
+          "login",
+          `User ${user.email} logged in via GitHub`
+        );
+      }
     }
 
     const token = generateToken(user);
@@ -397,7 +450,7 @@ export const githubAuthCallback = async (req, res) => {
 };
 
 /* =========================================================
-   DOWNLOAD REPORT (unchanged – kept as placeholder)
+   DOWNLOAD REPORT (placeholder – your existing code)
 ========================================================= */
 
 export const downloadReportPDF = async (req, res) => {

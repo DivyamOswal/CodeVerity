@@ -10,7 +10,6 @@ async function ensureWorkspace(user) {
     const existing = await WorkSpace.findById(user.workspaceId);
     if (existing) return existing;
   }
-  // Create a new workspace for the user
   const newWorkspace = await WorkSpace.create({
     name: `${user.name}'s Workspace`,
     ownerId: user._id,
@@ -108,6 +107,15 @@ export const addMember = async (req, res) => {
       await userToAdd.save();
     }
 
+    // ── Audit log: member invited ───────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "invite",
+      `Invited ${userToAdd.email} as ${role}`,
+      { invitedUserId: userToAdd._id, role }
+    );
+
     res.json({ success: true, member: { userId: userToAdd, role } });
   } catch (err) {
     console.error("Add member error:", err);
@@ -153,10 +161,22 @@ export const removeMember = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
+    // Get target user email for audit log
+    const targetUser = await User.findById(userId).select("email");
+
     workspace.members = workspace.members.filter(
       (m) => m.userId.toString() !== userId
     );
     await workspace.save();
+
+    // ── Audit log: member removed ───────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "remove",
+      `Removed ${targetUser?.email || userId} from workspace`,
+      { removedUserId: userId }
+    );
 
     res.json({ success: true, message: "Member removed." });
   } catch (err) {
@@ -204,6 +224,7 @@ export const updateMemberRole = async (req, res) => {
       }
     }
 
+    const oldRole = targetMember.role;
     targetMember.role = role;
     await workspace.save();
 
@@ -212,6 +233,15 @@ export const updateMemberRole = async (req, res) => {
       targetUser.role = role;
       await targetUser.save();
     }
+
+    // ── Audit log: role changed ─────────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "role_change",
+      `Changed ${targetUser?.email || userId}'s role from ${oldRole} to ${role}`,
+      { userId, oldRole, newRole: role }
+    );
 
     res.json({ success: true, member: { userId, role } });
   } catch (err) {
@@ -251,6 +281,14 @@ export const leaveWorkspace = async (req, res) => {
     user.role = "member";
     await user.save();
 
+    // ── Audit log: user left workspace ──────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "leave",
+      `User ${user.email} left the workspace`
+    );
+
     res.json({ success: true, message: "Left workspace." });
   } catch (err) {
     console.error("Leave workspace error:", err);
@@ -278,7 +316,6 @@ export const listMembers = async (req, res) => {
 
 // ─── API Keys ──────────────────────────────────────────────────
 
-// Generate a secure API key
 function generateApiKey() {
   return `cv_${crypto.randomBytes(32).toString('hex')}`;
 }
@@ -310,7 +347,6 @@ export const createApiKey = async (req, res) => {
 
     const workspace = await ensureWorkspace(user);
 
-    // Check permission: only owner or admin can create API keys
     const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -327,6 +363,15 @@ export const createApiKey = async (req, res) => {
     if (!workspace.apiKeys) workspace.apiKeys = [];
     workspace.apiKeys.push(newKey);
     await workspace.save();
+
+    // ── Audit log: API key created ──────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "api_key_create",
+      `Created API key: ${newKey.name}`,
+      { keyId: newKey._id }
+    );
 
     res.json({ success: true, apiKey: newKey });
   } catch (err) {
@@ -350,8 +395,21 @@ export const deleteApiKey = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
+    // Find key name before deletion
+    const keyToDelete = workspace.apiKeys.find(k => k._id.toString() === keyId);
+    const keyName = keyToDelete?.name || keyId;
+
     workspace.apiKeys = workspace.apiKeys.filter(k => k._id.toString() !== keyId);
     await workspace.save();
+
+    // ── Audit log: API key deleted ──────────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "api_key_delete",
+      `Deleted API key: ${keyName}`,
+      { keyId }
+    );
 
     res.json({ success: true, message: "API key deleted" });
   } catch (err) {
@@ -383,6 +441,14 @@ export const updateIntegrations = async (req, res) => {
 
     await workspace.save();
 
+    // ── Audit log: integrations updated ─────────────────────
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "integration_update",
+      `Updated integrations (Slack: ${!!slack}, Jira: ${!!jira})`
+    );
+
     res.json({ success: true, integrations: workspace.settings.integrations });
   } catch (err) {
     console.error("Update integrations error:", err);
@@ -397,9 +463,10 @@ export const getAuditLogs = async (req, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
+    // Populate user details for each log entry
+    await workspace.populate("auditLogs.userId", "name email");
     const logs = workspace.auditLogs || [];
 
-    // Return only the most recent 50 logs
     const recent = logs.slice(-50).reverse();
     res.json({ success: true, logs: recent });
   } catch (err) {
@@ -423,7 +490,6 @@ export const addAuditLog = async (workspaceId, userId, action, message, metadata
       createdAt: new Date(),
     });
 
-    // Limit to 1000 logs per workspace
     if (workspace.auditLogs.length > 1000) {
       workspace.auditLogs = workspace.auditLogs.slice(-1000);
     }

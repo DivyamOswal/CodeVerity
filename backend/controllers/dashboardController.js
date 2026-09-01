@@ -1,7 +1,7 @@
 // backend/controllers/dashboardController.js
 import Report from "../models/Report.js";
 import User from "../models/User.js";
-import WorkSpace from "../models/WorkSpace.js"; 
+import WorkSpace from "../models/WorkSpace.js";
 
 // Helper to ensure a user has a workspace
 async function ensureWorkspace(user) {
@@ -91,8 +91,9 @@ export const getDashboardData = async (req, res) => {
       return acc;
     }, {});
 
+    // ── Fetch user data – only tokens, no scan limits ──────
     const userData = await User.findById(userId)
-      .select("name email tokensRemaining totalTokensUsed scansUsedThisMonth scansLimit plan role")
+      .select("name email tokensRemaining totalTokensUsed plan role")
       .lean();
 
     res.json({
@@ -102,8 +103,6 @@ export const getDashboardData = async (req, res) => {
         email: userData?.email ?? req.user.email ?? "",
         tokensRemaining: userData?.tokensRemaining ?? 0,
         totalTokensUsed: userData?.totalTokensUsed ?? 0,
-        scansUsedThisMonth: userData?.scansUsedThisMonth ?? 0,
-        scansLimit: userData?.scansLimit ?? 0,
         plan: userData?.plan ?? "starter",
         role: userData?.role ?? "member",
       },
