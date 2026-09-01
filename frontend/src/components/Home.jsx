@@ -720,7 +720,7 @@ export default function Home() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch("/api/stats/public");
+        const res = await fetch(`${import.meta.env.VITE_API_URL}/stats/public`);
 
         console.log("Stats response:", {
           status: res.status,
