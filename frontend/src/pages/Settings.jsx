@@ -18,7 +18,6 @@ export default function Settings() {
   const [toast, setToast] = useState(null);
   const toastTimer = useRef(null);
 
-  /* form states */
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [oldPass, setOldPass] = useState("");
@@ -158,7 +157,6 @@ export default function Settings() {
     name.trim() !== (user?.name ?? "") ||
     email.trim() !== (user?.email ?? "");
 
-  // Compact overrides – now includes top padding for navbar
   const compactClasses = compact
     ? {
         container: "px-3 py-4 sm:px-4",
@@ -219,10 +217,10 @@ export default function Settings() {
     <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}>
       <div className={`mx-auto w-full max-w-7xl ${compactClasses.container}`}>
         <div className={`${compact ? "space-y-4" : "space-y-6"}`}>
-          {/* HEADER – matches Dashboard/Profile style */}
+          {/* HEADER */}
           <div className={compactClasses.headerMargin}>
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
               <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Preferences
               </span>
@@ -247,7 +245,7 @@ export default function Settings() {
                     ${tab === t
                       ? "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30"
                       : t === "Danger Zone"
-                      ? "text-red-400 hover:bg-red-500/10 hover:text-red-300"
+                      ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger)]"
                       : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                     }`}
                   aria-current={tab === t ? "page" : undefined}
@@ -263,7 +261,7 @@ export default function Settings() {
               {tab === "Account" && (
                 <Section title="Public Profile" compact={compact} padding={compactClasses.sectionPadding} gap={compactClasses.sectionGap}>
                   <div className={`flex items-center ${compact ? "gap-3 mb-3" : "gap-4 mb-5"}`}>
-                    <div className={`rounded-2xl bg-[var(--accent)] flex items-center justify-center font-bold text-[var(--accent-contrast,#ffffff)] shadow-lg shadow-[var(--accent-soft-strong)] ${compactClasses.avatarSize}`}>
+                    <div className={`rounded-2xl bg-[var(--accent)] flex items-center justify-center font-bold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ${compactClasses.avatarSize}`}>
                       {initials}
                     </div>
                     <div>
@@ -294,7 +292,7 @@ export default function Settings() {
                   </Field>
 
                   <div className="flex items-center justify-between">
-                    {profileDirty && <p className="text-xs text-amber-400">Unsaved changes</p>}
+                    {profileDirty && <p className="text-xs text-[var(--color-warning)]">Unsaved changes</p>}
                     <div className="ml-auto">
                       <SaveButton
                         onClick={saveProfile}
@@ -344,7 +342,7 @@ export default function Settings() {
                       padding={compactClasses.inputPadding}
                     />
                     {newPass && confPass && newPass !== confPass && (
-                      <p className="text-red-400 text-xs mt-1" role="alert">
+                      <p className="text-[var(--color-danger)] text-xs mt-1" role="alert">
                         Passwords don't match
                       </p>
                     )}
@@ -468,8 +466,8 @@ export default function Settings() {
             transition-all duration-300 z-50
             ${compactClasses.toastSize}
             ${toast.type === "error"
-              ? "bg-red-500/90 text-white border border-red-400/30"
-              : "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] border border-[var(--accent)]/30"
+              ? "bg-[var(--color-danger)]/90 text-white border border-[var(--color-danger)]/30"
+              : "bg-[var(--accent)] text-[var(--accent-contrast)] border border-[var(--accent)]/30"
             }`}
         >
           {toast.type === "error" ? "⚠️" : "✅"} {toast.msg}
@@ -479,15 +477,15 @@ export default function Settings() {
   );
 }
 
-/*  UI helpers – now use CSS variables  */
+/*  UI helpers  */
 
 function Section({ title, children, danger, compact, padding, gap }) {
   return (
     <div
       className={`bg-[var(--bg-card)] border rounded-2xl ${padding} ${gap}
-      ${danger ? "border-red-500/20" : "border-[var(--border-light)]"}`}
+      ${danger ? "border-[var(--color-danger)]/20" : "border-[var(--border-light)]"}`}
     >
-      <h2 className={`font-semibold ${danger ? "text-red-400" : "text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}>
+      <h2 className={`font-semibold ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}>
         {title}
       </h2>
       {children}
@@ -547,13 +545,16 @@ function SaveButton({ onClick, loading, label = "Save Changes", disabled = false
       onClick={onClick}
       disabled={loading || disabled}
       className={`rounded-xl font-semibold
-        bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)]
+        bg-[var(--accent)] text-[var(--accent-contrast)]
         hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed
         transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)] ${buttonClass}`}
     >
       {loading ? (
         <span className="flex items-center gap-2">
-          <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
+          <span
+            className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
+            style={{ borderColor: "var(--accent-contrast)", borderTopColor: "transparent", opacity: 0.85 }}
+          />
           Saving…
         </span>
       ) : (
@@ -565,9 +566,9 @@ function SaveButton({ onClick, loading, label = "Save Changes", disabled = false
 
 function DangerRow({ title, description, label, onClick, bold, compact, padding, titleClass, descClass, buttonClass }) {
   return (
-    <div className={`flex items-center justify-between gap-4 rounded-xl bg-red-500/5 border border-red-500/10 ${padding}`}>
+    <div className={`flex items-center justify-between gap-4 rounded-xl bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 ${padding}`}>
       <div>
-        <p className={`${bold ? "font-semibold text-red-300" : "text-[var(--text-secondary)]"} ${titleClass}`}>
+        <p className={`${bold ? "font-semibold text-[var(--color-danger)]" : "text-[var(--text-secondary)]"} ${titleClass}`}>
           {title}
         </p>
         <p className={`text-[var(--text-muted)] mt-0.5 ${descClass}`}>{description}</p>
@@ -575,7 +576,7 @@ function DangerRow({ title, description, label, onClick, bold, compact, padding,
       <button
         onClick={onClick}
         className={`shrink-0 rounded-lg font-medium
-          bg-red-500/20 text-red-400 hover:bg-red-500/40 transition ${buttonClass}`}
+          bg-[var(--color-danger-soft)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition ${buttonClass}`}
       >
         {label}
       </button>
@@ -583,6 +584,10 @@ function DangerRow({ title, description, label, onClick, bold, compact, padding,
   );
 }
 
+// 4-tier strength scale, aligned with the app's severity tokens
+// (Weak→danger, Fair→warning, Good→info, Strong→success) so this
+// matches the same red/amber/blue/green vocabulary used everywhere
+// else instead of running its own independent color scheme.
 function PasswordStrength({ password, compact }) {
   if (!password) return null;
 
@@ -595,8 +600,20 @@ function PasswordStrength({ password, compact }) {
 
   const score = Object.values(checks).filter(Boolean).length;
   const labels = ["", "Weak", "Fair", "Good", "Strong"];
-  const colors = ["", "bg-red-500", "bg-yellow-500", "bg-blue-500", "bg-green-500"];
-  const textColors = ["", "text-red-400", "text-yellow-400", "text-blue-400", "text-green-400"];
+  const colors = [
+    "",
+    "bg-[var(--color-danger)]",
+    "bg-[var(--color-warning)]",
+    "bg-[var(--color-info)]",
+    "bg-[var(--color-success)]",
+  ];
+  const textColors = [
+    "",
+    "text-[var(--color-danger)]",
+    "text-[var(--color-warning)]",
+    "text-[var(--color-info)]",
+    "text-[var(--color-success)]",
+  ];
 
   const barHeight = compact ? "h-1" : "h-1.5";
   const labelSize = compact ? "text-[10px]" : "text-xs";
@@ -626,7 +643,7 @@ function PasswordStrength({ password, compact }) {
             key={key}
             className={`${chipSize} rounded-full ${
               checks[key]
-                ? "bg-green-500/20 text-green-400"
+                ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
                 : "bg-[var(--border-light)] text-[var(--text-muted)]"
             }`}
           >
