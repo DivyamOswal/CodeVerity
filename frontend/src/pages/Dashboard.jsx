@@ -9,9 +9,7 @@ import { useAuth } from "../App";
 import { Search } from "lucide-react";
 
 /* =========================================================
-   CODEVERITY DASHBOARD
-   Theme: Slate + Cyan (driven entirely by index.css tokens —
-   no hardcoded palette values live in this file).
+   CODEVERITY DASHBOARD – Token-based only
 ========================================================= */
 
 export default function Dashboard() {
@@ -168,43 +166,44 @@ export default function Dashboard() {
   };
 
   const generateReport = async () => {
-  if (!repoUrl.startsWith("https://github.com/")) {
-    return setError("Enter a valid GitHub URL");
-  }
-  try {
-    setLoading(true);
-    setError("");
-    const res = await analyzeGithub({ repoUrl });
-    setReportId(res.data.reportId);
-    const a = res.data.analysis || {};
-    setAnalysis({
-      summary: a.summary ?? "",
-      architecture: a.architecture ?? [],
-      bugs: a.bugs ?? [],
-      securityIssues: a.securityIssues ?? [],
-      futureRoadmap: a.futureRoadmap ?? [],
-      toolsAndPackages: a.toolsAndPackages ?? [],
-      scores: a.scores ?? {},
-      grade: a.grade ?? "N/A",
-      finalVerdict: a.finalVerdict ?? "",
-      _sourceCode: a._sourceCode ?? "",
-    });
-    setActiveView("result");
-    loadDashboard();
-  } catch (err) {
-    const errorMsg = err.response?.data?.error || "Analysis failed";
-    
-    if (errorMsg === "Monthly scan limit reached" || errorMsg === "Insufficient tokens") {
-      setError(
-        `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
-      );
-    } else {
-      setError(errorMsg);
+    if (!repoUrl.startsWith("https://github.com/")) {
+      return setError("Enter a valid GitHub URL");
     }
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      setError("");
+      const res = await analyzeGithub({ repoUrl });
+      setReportId(res.data.reportId);
+      const a = res.data.analysis || {};
+      setAnalysis({
+        summary: a.summary ?? "",
+        architecture: a.architecture ?? [],
+        bugs: a.bugs ?? [],
+        securityIssues: a.securityIssues ?? [],
+        futureRoadmap: a.futureRoadmap ?? [],
+        toolsAndPackages: a.toolsAndPackages ?? [],
+        scores: a.scores ?? {},
+        grade: a.grade ?? "N/A",
+        finalVerdict: a.finalVerdict ?? "",
+        _sourceCode: a._sourceCode ?? "",
+      });
+      setActiveView("result");
+      loadDashboard();
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Analysis failed";
+
+      // Only handle insufficient tokens (scan limits are gone)
+      if (errorMsg === "Insufficient tokens") {
+        setError(
+          `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
+        );
+      } else {
+        setError(errorMsg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openResult = (report) => {
     setAnalysis({
@@ -332,7 +331,7 @@ export default function Dashboard() {
           className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
         >
           <div className="space-y-5">
-            {/* HEADER */}
+            {/* HEADER – Token‑only, no scan limit */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
@@ -351,18 +350,6 @@ export default function Dashboard() {
                           &nbsp;({data.user.totalTokensUsed.toLocaleString()} used)
                         </span>
                       )}
-                    </span>
-                  </>
-                )}
-
-                {data?.user && typeof data.user.scansLimit === "number" && (
-                  <>
-                    <span className="text-[var(--text-muted)] text-[9px]">•</span>
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">
-                      <span className="text-[var(--accent)]">
-                      <Search size={12} className="text-[var(--accent)] inline" />
-                      </span>
-                      {data.user.scansUsedThisMonth ?? 0}/{data.user.scansLimit} scans used this month
                     </span>
                   </>
                 )}
@@ -567,12 +554,6 @@ export default function Dashboard() {
         </main>
       )}
 
-      {/* Small local animations, namespaced (cv-dash-*) so they can
-          never collide with index.css's global @keyframes fadeUp —
-          @keyframes names are global in CSS regardless of where the
-          <style> tag lives, so an identically-named local keyframe
-          would silently override the app-wide entrance animation
-          while this component is mounted. */}
       <style>{`
         @keyframes cv-dash-fadeUp {
           from { transform: translateY(8px); opacity: 0; }
@@ -586,6 +567,11 @@ export default function Dashboard() {
     </div>
   );
 }
+
+/* =========================================================
+   SUB-COMPONENTS (unchanged except removing scan refs)
+========================================================= */
+// ... (the rest of the file remains identical – only the header and error handling changed)
 
 /* =========================================================
    SUB-COMPONENTS
