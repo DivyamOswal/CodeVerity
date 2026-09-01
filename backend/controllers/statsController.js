@@ -1,7 +1,7 @@
 // backend/controllers/statsController.js
-import Report from "../models/Report.js";
-console.log("✅ statsController loaded");
-console.log("✅ Report model imported", !!Report);
+// import Report from "../models/Report.js";
+// console.log("✅ statsController loaded");
+// console.log("✅ Report model imported", !!Report);
 
 // export const getPublicStats = async (req, res) => {
 //   try {
@@ -68,6 +68,7 @@ console.log("✅ Report model imported", !!Report);
 //   }
 // };
 
+// backend/controllers/statsController.js
 export const getPublicStats = async (req, res) => {
   res.json({ success: true, stats: { totalScans: 123, avgQuality: 85, avgTime: "1 min" } });
 };
