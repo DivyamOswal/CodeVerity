@@ -3,7 +3,7 @@ import express from "express";
 import {
   getWorkspace,
   updateWorkspace,
-  listMembers,      
+  listMembers,
   addMember,
   removeMember,
   updateMemberRole,
@@ -20,7 +20,8 @@ import {
   getQualityTrends,
   getSchedules,
   createSchedule,
-  deleteSchedule
+  deleteSchedule,
+  updateBranding,   // 👈 ADD THIS
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -28,7 +29,7 @@ const router = express.Router();
 
 router.get("/", auth, getWorkspace);
 router.put("/", auth, updateWorkspace);
-router.get("/members", auth, listMembers);  
+router.get("/members", auth, listMembers);
 router.post("/members", auth, addMember);
 router.delete("/members/:userId", auth, removeMember);
 router.put("/members/:userId", auth, updateMemberRole);
@@ -46,5 +47,8 @@ router.get("/trends", auth, getQualityTrends);
 router.get("/schedules", auth, getSchedules);
 router.post("/schedules", auth, createSchedule);
 router.delete("/schedules/:id", auth, deleteSchedule);
+
+// ─── Branding ──────────────────────────────────────────────────
+router.put("/branding", auth, updateBranding);   // 👈 ADD THIS
 
 export default router;
