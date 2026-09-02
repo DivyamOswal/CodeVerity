@@ -122,7 +122,7 @@ function Layout() {
 
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Privacy />} />
+          <Route path="/terms" element={<Terms />} />
           <Route path="/support" element={<Support />} />
 
           <Route
