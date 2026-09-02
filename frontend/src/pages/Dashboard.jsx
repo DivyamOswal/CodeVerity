@@ -7,6 +7,7 @@ import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 import { useAuth } from "../App";
 import { Search } from "lucide-react";
+import { getReport } from "../api/report";
 
 /* =========================================================
    CODEVERITY DASHBOARD – Token-based only
@@ -23,7 +24,7 @@ export default function Dashboard() {
   const [activeView, setActiveView] = useState("home");
   const [mounted, setMounted] = useState(false);
 
-  // 👇 Store the repo URL for the current report (for Auto‑Fix)
+
   const [currentRepoUrl, setCurrentRepoUrl] = useState("");
 
   const navigate = useNavigate();
@@ -209,24 +210,69 @@ export default function Dashboard() {
     }
   };
 
-  const openResult = (report) => {
+  const openResult = async (report) => {
+  try {
+    // If report already has enhanced fields, use it directly
+    if (report.healthScore || report.securityVulnerabilities?.length) {
+      setAnalysis({
+        summary: report.summary ?? "",
+        architecture: report.architecture ?? [],
+        bugs: report.bugs ?? [],
+        securityIssues: report.securityIssues ?? [],
+        futureRoadmap: report.futureRoadmap ?? [],
+        toolsAndPackages: report.toolsAndPackages ?? [],
+        scores: report.scores ?? {},
+        grade: report.grade ?? "N/A",
+        finalVerdict: report.finalVerdict ?? "",
+        _sourceCode: report._sourceCode ?? "",
+        repoUrl: report.repoUrl || "",
+        healthScore: report.healthScore,
+        securityVulnerabilities: report.securityVulnerabilities,
+        dependencyVulnerabilities: report.dependencyVulnerabilities,
+        secrets: report.secrets,
+        techDebt: report.techDebt,
+        architectureGraph: report.architectureGraph,
+        tokensUsed: report.tokensUsed,
+        tokensRemaining: report.tokensRemaining,
+      });
+      setReportId(report._id);
+      setCurrentRepoUrl(report.repoUrl || "");
+      setActiveView("result");
+      return;
+    }
+
+    // Otherwise fetch the full report
+    const res = await getReport(report._id);
+    const full = res.data.report;
     setAnalysis({
-      summary: report.summary ?? "",
-      architecture: report.architecture ?? [],
-      bugs: report.bugs ?? [],
-      securityIssues: report.securityIssues ?? [],
-      futureRoadmap: report.futureRoadmap ?? [],
-      toolsAndPackages: report.toolsAndPackages ?? [],
-      scores: report.scores ?? {},
-      grade: report.grade ?? "N/A",
-      finalVerdict: report.finalVerdict ?? "",
-      _sourceCode: report._sourceCode ?? "",
-      repoUrl: report.repoUrl || "", // 👈 include repoUrl
+      summary: full.summary ?? "",
+      architecture: full.architecture ?? [],
+      bugs: full.bugs ?? [],
+      securityIssues: full.securityIssues ?? [],
+      futureRoadmap: full.futureRoadmap ?? [],
+      toolsAndPackages: full.toolsAndPackages ?? [],
+      scores: full.scores ?? {},
+      grade: full.grade ?? "N/A",
+      finalVerdict: full.finalVerdict ?? "",
+      _sourceCode: full._sourceCode ?? "",
+      repoUrl: full.repoUrl || "",
+      healthScore: full.healthScore,
+      securityVulnerabilities: full.securityVulnerabilities,
+      dependencyVulnerabilities: full.dependencyVulnerabilities,
+      secrets: full.secrets,
+      techDebt: full.techDebt,
+      architectureGraph: full.architectureGraph,
+      tokensUsed: full.tokensUsed,
+      tokensRemaining: full.tokensRemaining,
     });
-    setReportId(report._id);
-    setCurrentRepoUrl(report.repoUrl || ""); // 👈 store for Auto‑Fix
+    setReportId(full._id);
+    setCurrentRepoUrl(full.repoUrl || "");
     setActiveView("result");
-  };
+  } catch (err) {
+    console.error("Failed to load full report:", err);
+    alert("Could not load report details.");
+  }
+};
 
   if (!data) {
     return <LoadingScreen />;
