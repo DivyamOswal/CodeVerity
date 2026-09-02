@@ -17,7 +17,10 @@ import {
   getWorkspaceAnalytics,
   updateWebhook,
   testWebhook,
-  getQualityTrends
+  getQualityTrends,
+  getSchedules,
+  createSchedule,
+  deleteSchedule
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -40,5 +43,8 @@ router.get("/analytics", auth, getWorkspaceAnalytics);
 router.put("/webhook", auth, updateWebhook);
 router.post("/webhook/test", auth, testWebhook);
 router.get("/trends", auth, getQualityTrends);
+router.get("/schedules", auth, getSchedules);
+router.post("/schedules", auth, createSchedule);
+router.delete("/schedules/:id", auth, deleteSchedule);
 
 export default router;

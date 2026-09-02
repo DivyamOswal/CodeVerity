@@ -888,3 +888,236 @@ export const getQualityTrends = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch trends" });
   }
 };
+
+// ─── BRANDING ──────────────────────────────────────────────────
+export const updateBranding = async (req, res) => {
+  try {
+    const { logo, primaryColor, secondaryColor, brandName } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    if (!workspace.branding) workspace.branding = {};
+
+    if (logo !== undefined) workspace.branding.logo = logo;
+    if (primaryColor) workspace.branding.primaryColor = primaryColor;
+    if (secondaryColor) workspace.branding.secondaryColor = secondaryColor;
+    if (brandName) workspace.branding.brandName = brandName;
+
+    await workspace.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "branding_update",
+      `Updated branding (${brandName || "CodeVerity"})`
+    );
+
+    res.json({ success: true, branding: workspace.branding });
+  } catch (err) {
+    console.error("Update branding error:", err);
+    res.status(500).json({ error: "Failed to update branding" });
+  }
+};
+
+// ─── SCHEDULES ──────────────────────────────────────────────────
+export const getSchedules = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    res.json({ success: true, schedules: workspace.schedules || [] });
+  } catch (err) {
+    console.error("Get schedules error:", err);
+    res.status(500).json({ error: "Failed to fetch schedules" });
+  }
+};
+
+export const createSchedule = async (req, res) => {
+  try {
+    const { repoUrl, frequency, time } = req.body;
+    if (!repoUrl || !frequency || !time) {
+      return res.status(400).json({ error: "repoUrl, frequency, and time are required." });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    if (!/^([01]\d|2[0-3]):([0-5]\d)$/.test(time)) {
+      return res.status(400).json({ error: "Time must be in HH:mm format (24h)." });
+    }
+
+    const existing = workspace.schedules?.find(s => s.repoUrl === repoUrl && s.enabled);
+    if (existing) {
+      return res.status(400).json({ error: "This repository already has an active schedule." });
+    }
+
+    const newSchedule = {
+      _id: new mongoose.Types.ObjectId(),
+      repoUrl,
+      frequency,
+      time,
+      enabled: true,
+      createdAt: new Date(),
+    };
+
+    if (!workspace.schedules) workspace.schedules = [];
+    workspace.schedules.push(newSchedule);
+    await workspace.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "schedule_create",
+      `Created schedule for ${repoUrl} (${frequency} at ${time})`
+    );
+
+    // Schedule the job if scheduler is available
+    try {
+      const { scheduleJob } = await import("../services/scheduler.js");
+      scheduleJob(workspace._id, newSchedule);
+    } catch (schedulerErr) {
+      console.warn("Scheduler not available:", schedulerErr.message);
+    }
+
+    res.status(201).json({ success: true, schedule: newSchedule });
+  } catch (err) {
+    console.error("Create schedule error:", err);
+    res.status(500).json({ error: "Failed to create schedule" });
+  }
+};
+
+export const deleteSchedule = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    const schedule = workspace.schedules.find(s => s._id.toString() === id);
+    if (!schedule) return res.status(404).json({ error: "Schedule not found." });
+
+    workspace.schedules = workspace.schedules.filter(s => s._id.toString() !== id);
+    await workspace.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "schedule_delete",
+      `Deleted schedule for ${schedule.repoUrl}`
+    );
+
+    // Cancel the cron job
+    try {
+      const { cancelJob } = await import("../services/scheduler.js");
+      cancelJob(workspace._id, id);
+    } catch (schedulerErr) {
+      console.warn("Scheduler not available:", schedulerErr.message);
+    }
+
+    res.json({ success: true, message: "Schedule deleted." });
+  } catch (err) {
+    console.error("Delete schedule error:", err);
+    res.status(500).json({ error: "Failed to delete schedule" });
+  }
+};
+
+// ─── WEBHOOKS ──────────────────────────────────────────────────
+export const updateWebhook = async (req, res) => {
+  try {
+    const { webhookUrl, webhookSecret } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    if (webhookUrl !== undefined) workspace.webhookUrl = webhookUrl.trim();
+    if (webhookSecret !== undefined) workspace.webhookSecret = webhookSecret.trim();
+
+    await workspace.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "webhook_update",
+      `Updated webhook URL: ${webhookUrl || "removed"}`
+    );
+
+    res.json({ success: true, webhookUrl: workspace.webhookUrl });
+  } catch (err) {
+    console.error("Update webhook error:", err);
+    res.status(500).json({ error: "Failed to update webhook" });
+  }
+};
+
+export const testWebhook = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    if (!workspace.webhookUrl) {
+      return res.status(400).json({ error: "No webhook URL configured." });
+    }
+
+    const payload = {
+      event: "test",
+      workspace: workspace.name,
+      timestamp: new Date().toISOString(),
+      message: "This is a test webhook from CodeVerity.",
+    };
+
+    const response = await fetch(workspace.webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(workspace.webhookSecret && { "X-Webhook-Secret": workspace.webhookSecret }),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const status = response.status;
+    const text = await response.text();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "webhook_test",
+      `Test webhook sent to ${workspace.webhookUrl} - status ${status}`
+    );
+
+    res.json({
+      success: status >= 200 && status < 300,
+      status,
+      response: text.substring(0, 500),
+    });
+  } catch (err) {
+    console.error("Test webhook error:", err);
+    res.status(500).json({ error: "Failed to test webhook" });
+  }
+};

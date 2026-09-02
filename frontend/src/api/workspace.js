@@ -28,9 +28,20 @@ export const getAuditLogs = () => axios.get("/workspace/audit-logs");
 // ─── Repositories ──────────────────────────────────────────────
 export const getRepositories = () => axios.get("/workspace/repositories");
 
+// ─── Analytics ──────────────────────────────────────────────────
 export const getWorkspaceAnalytics = () => axios.get("/workspace/analytics");
 
+// ─── Webhooks ──────────────────────────────────────────────────
 export const updateWebhook = (data) => axios.put("/workspace/webhook", data);
 export const testWebhook = () => axios.post("/workspace/webhook/test");
 
+// ─── Trends ─────────────────────────────────────────────────────
 export const getQualityTrends = () => axios.get("/workspace/trends");
+
+// ─── Branding ──────────────────────────────────────────────────
+export const updateBranding = (data) => axios.put("/workspace/branding", data);
+
+// ─── Schedules ──────────────────────────────────────────────────
+export const getSchedules = () => axios.get("/workspace/schedules");
+export const createSchedule = (data) => axios.post("/workspace/schedules", data);
+export const deleteSchedule = (id) => axios.delete(`/workspace/schedules/${id}`);
