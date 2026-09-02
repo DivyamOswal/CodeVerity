@@ -21,7 +21,7 @@ import {
   getSchedules,
   createSchedule,
   deleteSchedule,
-  updateBranding,   // 👈 ADD THIS
+  updateBranding,   
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -49,6 +49,6 @@ router.post("/schedules", auth, createSchedule);
 router.delete("/schedules/:id", auth, deleteSchedule);
 
 // ─── Branding ──────────────────────────────────────────────────
-router.put("/branding", auth, updateBranding);   // 👈 ADD THIS
+router.put("/branding", auth, updateBranding);  
 
 export default router;

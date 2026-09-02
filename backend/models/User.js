@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
   workspaceId: { type: mongoose.Schema.Types.ObjectId, ref: "Workspace" },
   role: { type: String, enum: ["owner","admin","member","viewer"], default: "member" },
   plan: { type: String, enum: ["starter","pro","team"], default: "starter" },
+  githubAccessToken: { type: String, default: null },
 
   // Billing / Stripe
   stripeCustomerId: String,

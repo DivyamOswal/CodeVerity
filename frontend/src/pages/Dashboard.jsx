@@ -15,13 +15,16 @@ import { Search } from "lucide-react";
 export default function Dashboard() {
   const [data, setData] = useState(null);
   const [statsKey, setStatsKey] = useState(0);
-  const [repoUrl, setRepoUrl] = useState("");
+  const [repoUrl, setRepoUrl] = useState(""); // input field value
   const [analysis, setAnalysis] = useState(null);
   const [reportId, setReportId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeView, setActiveView] = useState("home");
   const [mounted, setMounted] = useState(false);
+
+  // 👇 Store the repo URL for the current report (for Auto‑Fix)
+  const [currentRepoUrl, setCurrentRepoUrl] = useState("");
 
   const navigate = useNavigate();
   const { logout } = useAuth();
@@ -186,13 +189,14 @@ export default function Dashboard() {
         grade: a.grade ?? "N/A",
         finalVerdict: a.finalVerdict ?? "",
         _sourceCode: a._sourceCode ?? "",
+        repoUrl: repoUrl, // 👈 include repoUrl in analysis
       });
+      setCurrentRepoUrl(repoUrl); // 👈 store for Auto‑Fix
       setActiveView("result");
       loadDashboard();
     } catch (err) {
       const errorMsg = err.response?.data?.error || "Analysis failed";
 
-      // Only handle insufficient tokens (scan limits are gone)
       if (errorMsg === "Insufficient tokens") {
         setError(
           `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
@@ -217,8 +221,10 @@ export default function Dashboard() {
       grade: report.grade ?? "N/A",
       finalVerdict: report.finalVerdict ?? "",
       _sourceCode: report._sourceCode ?? "",
+      repoUrl: report.repoUrl || "", // 👈 include repoUrl
     });
     setReportId(report._id);
+    setCurrentRepoUrl(report.repoUrl || ""); // 👈 store for Auto‑Fix
     setActiveView("result");
   };
 
@@ -321,6 +327,7 @@ export default function Dashboard() {
             data={analysis}
             onDownload={downloadPDF}
             generateTestsFn={generateTests}
+            repoUrl={currentRepoUrl} // 👈 pass repoUrl for Auto‑Fix
           />
         </div>
       )}
@@ -569,13 +576,9 @@ export default function Dashboard() {
 }
 
 /* =========================================================
-   SUB-COMPONENTS (unchanged except removing scan refs)
+   SUB-COMPONENTS (unchanged)
 ========================================================= */
-// ... (the rest of the file remains identical – only the header and error handling changed)
 
-/* =========================================================
-   SUB-COMPONENTS
-========================================================= */
 function CodeVerityLogo() {
   return (
     <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
@@ -632,8 +635,6 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
   );
 }
 
-// Grade → color mapping, aligned with the same 5-tier scale used in
-// History.jsx and Result.jsx (success/info/warning/caution/danger).
 function ReportRow({ report, onView, compact }) {
   const grade = report.grade ?? "N/A";
   const gradeColor =

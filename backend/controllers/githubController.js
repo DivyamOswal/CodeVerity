@@ -3,6 +3,8 @@ import { analyzeWithGroq, generateTests } from "../utils/groq.js";
 import { cloneAndParseGithubRepo, parseGithubRepo, estimateTokens } from "../utils/githubParser.js";
 import Report from "../models/Report.js";
 import User from "../models/User.js";
+import { Octokit } from "@octokit/rest";
+import { analyzeWithGroq } from "../utils/groq.js";
 import {
   scanDependencies,
   scanSecrets,
@@ -195,5 +197,153 @@ export const generateTestCases = async (req, res) => {
     console.error("❌ generateTestCases error:", err.message);
     console.error("📌 Full stack:", err.stack);
     return res.status(500).json({ error: "Test generation failed. Please try again." });
+  }
+};
+
+export const autoFixIssue = async (req, res) => {
+  try {
+    const { repoUrl, issueId, filePath, lineNumber, description, currentCode, suggestedFix } = req.body;
+
+    if (!repoUrl || !filePath) {
+      return res.status(400).json({ error: "repoUrl and filePath are required." });
+    }
+
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    // 1. Check if user has a GitHub token (from OAuth)
+    const githubToken = user.githubAccessToken;
+    if (!githubToken) {
+      return res.status(403).json({
+        error: "Please connect your GitHub account to use Auto‑Fix.",
+        action: "connect_github",
+      });
+    }
+
+    // 2. Deduct tokens for the AI fix (estimation)
+    const estimatedTokens = 500; // rough estimate for code generation
+    const deducted = await user.deductTokens(estimatedTokens);
+    if (!deducted) {
+      return res.status(402).json({
+        error: `Insufficient tokens. You have ${user.tokensRemaining} tokens, need ~${estimatedTokens}.`,
+      });
+    }
+
+    // 3. Parse repoUrl to get owner and repo name
+    const urlParts = repoUrl.replace("https://github.com/", "").split("/");
+    if (urlParts.length < 2) {
+      return res.status(400).json({ error: "Invalid GitHub URL." });
+    }
+    const owner = urlParts[0];
+    const repo = urlParts[1];
+
+    // 4. Initialize Octokit
+    const octokit = new Octokit({ auth: githubToken });
+
+    // 5. Get the current file content and SHA
+    let fileContent, sha;
+    try {
+      const { data } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: filePath,
+      });
+      fileContent = Buffer.from(data.content, "base64").toString("utf-8");
+      sha = data.sha;
+    } catch (err) {
+      console.error("Error fetching file:", err);
+      return res.status(404).json({ error: "File not found in the repository." });
+    }
+
+    // 6. If we have a suggestedFix from the AI (from the report), use it. Otherwise generate one.
+    let fixedCode = suggestedFix;
+    if (!fixedCode) {
+      // Construct a prompt with the issue context
+      const prompt = `
+        You are an expert code fixer. Given the following code snippet and a bug description,
+        generate the corrected version of the code. Only output the fixed code, no explanation.
+
+        Bug description: ${description || "Fix the issue at line " + lineNumber}
+
+        Current code:
+        \`\`\`
+        ${fileContent}
+        \`\`\`
+
+        Output ONLY the fixed code, no extra text.
+      `;
+      // Use the same Groq utility
+      const response = await analyzeWithGroq(prompt);
+      fixedCode = response.result || "";
+      if (!fixedCode) {
+        return res.status(500).json({ error: "AI failed to generate a fix." });
+      }
+    }
+
+    // 7. Create a new branch name
+    const branchName = `auto-fix-${issueId || Date.now()}`;
+    const defaultBranch = "main"; // Could fetch from GitHub API
+
+    // 8. Get the latest commit SHA from default branch
+    const { data: refData } = await octokit.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${defaultBranch}`,
+    });
+    const baseSha = refData.object.sha;
+
+    // 9. Create a new branch
+    await octokit.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${branchName}`,
+      sha: baseSha,
+    });
+
+    // 10. Update the file content on the new branch
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: filePath,
+      message: `Fix: ${description || "Auto-fix issue"}`,
+      content: Buffer.from(fixedCode).toString("base64"),
+      sha,
+      branch: branchName,
+    });
+
+    // 11. Open a Pull Request
+    const { data: pr } = await octokit.pulls.create({
+      owner,
+      repo,
+      title: `Fix: ${description || "Auto-fix issue"}`,
+      body: `This PR automatically fixes the issue identified by CodeVerity.\n\n**Issue:** ${description}\n**File:** ${filePath}\n**Line:** ${lineNumber || "N/A"}`,
+      head: branchName,
+      base: defaultBranch,
+    });
+
+    // 12. Audit log
+    await addAuditLog(
+      user.workspaceId,
+      user._id,
+      "auto_fix",
+      `Created PR #${pr.number} for ${repoUrl}`,
+      { repoUrl, prUrl: pr.html_url, branch: branchName }
+    );
+
+    // 13. Return success with PR URL
+    res.json({
+      success: true,
+      prUrl: pr.html_url,
+      prNumber: pr.number,
+      branch: branchName,
+      tokensUsed: estimatedTokens,
+      tokensRemaining: user.tokensRemaining,
+    });
+
+  } catch (err) {
+    console.error("Auto‑fix error:", err);
+    // If tokens were deducted but the operation fails, we could optionally refund them
+    // but for simplicity we'll just log the error.
+    res.status(500).json({ error: "Failed to create auto‑fix PR. Please try again later." });
   }
 };
