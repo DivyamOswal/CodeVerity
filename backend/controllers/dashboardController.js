@@ -42,7 +42,13 @@ export const getDashboardData = async (req, res) => {
     const workspace = await ensureWorkspace(user);
     const workspaceId = workspace._id;
 
-    const reports = await Report.find({ workspaceId })
+    // ── Include reports without workspaceId as fallback ──
+    const reports = await Report.find({
+      $or: [
+        { workspaceId: workspaceId },
+        { userId: userId, workspaceId: { $exists: false } }
+      ]
+    })
       .sort({ createdAt: -1 })
       .lean();
 
@@ -83,6 +89,16 @@ export const getDashboardData = async (req, res) => {
       toolsAndPackages: r.toolsAndPackages,
       finalVerdict: r.finalVerdict,
       createdAt: r.createdAt,
+      // ── ENHANCED FIELDS ──
+      healthScore: r.healthScore,
+      securityVulnerabilities: r.securityVulnerabilities,
+      dependencyVulnerabilities: r.dependencyVulnerabilities,
+      secrets: r.secrets,
+      techDebt: r.techDebt,
+      architectureGraph: r.architectureGraph,
+      tokensUsed: r.tokensUsed,
+      tokensRemaining: r.tokensRemaining,
+      _sourceCode: r._sourceCode,
     }));
 
     const gradeDistribution = reports.reduce((acc, r) => {
@@ -91,7 +107,6 @@ export const getDashboardData = async (req, res) => {
       return acc;
     }, {});
 
-    // ── Fetch user data – only tokens, no scan limits ──────
     const userData = await User.findById(userId)
       .select("name email tokensRemaining totalTokensUsed plan role")
       .lean();
