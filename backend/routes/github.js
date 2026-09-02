@@ -5,6 +5,7 @@ import {
   generateTestCases,
 } from "../controllers/githubController.js";
 import protect from "../middleware/authMiddleware.js";
+import auth from "../middleware/authMiddleware.js";
 
 const router = express.Router();
 
