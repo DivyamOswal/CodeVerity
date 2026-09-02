@@ -4,7 +4,6 @@ import { cloneAndParseGithubRepo, parseGithubRepo, estimateTokens } from "../uti
 import Report from "../models/Report.js";
 import User from "../models/User.js";
 import { Octokit } from "@octokit/rest";
-import { analyzeWithGroq } from "../utils/groq.js";
 import {
   scanDependencies,
   scanSecrets,
