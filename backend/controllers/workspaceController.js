@@ -689,3 +689,202 @@ export const getWorkspaceAnalytics = async (req, res) => {
     res.status(500).json({ error: "Failed to fetch analytics" });
   }
 };
+
+// ─── Update Webhook ─────────────────────────────────────────────
+export const updateWebhook = async (req, res) => {
+  try {
+    const { webhookUrl, webhookSecret } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    if (webhookUrl !== undefined) workspace.webhookUrl = webhookUrl.trim();
+    if (webhookSecret !== undefined) workspace.webhookSecret = webhookSecret.trim();
+
+    await workspace.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "webhook_update",
+      `Updated webhook URL: ${webhookUrl || "removed"}`
+    );
+
+    res.json({ success: true, webhookUrl: workspace.webhookUrl });
+  } catch (err) {
+    console.error("Update webhook error:", err);
+    res.status(500).json({ error: "Failed to update webhook" });
+  }
+};
+
+// ─── Test Webhook ───────────────────────────────────────────────
+export const testWebhook = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    if (!workspace.webhookUrl) {
+      return res.status(400).json({ error: "No webhook URL configured." });
+    }
+
+    const payload = {
+      event: "test",
+      workspace: workspace.name,
+      timestamp: new Date().toISOString(),
+      message: "This is a test webhook from CodeVerity.",
+    };
+
+    const response = await fetch(workspace.webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(workspace.webhookSecret && { "X-Webhook-Secret": workspace.webhookSecret }),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    const status = response.status;
+    const text = await response.text();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "webhook_test",
+      `Test webhook sent to ${workspace.webhookUrl} - status ${status}`
+    );
+
+    res.json({
+      success: status >= 200 && status < 300,
+      status,
+      response: text.substring(0, 500),
+    });
+  } catch (err) {
+    console.error("Test webhook error:", err);
+    res.status(500).json({ error: "Failed to test webhook" });
+  }
+};
+
+// ─── Trigger Webhook (call this after a scan completes) ──────
+export const triggerWebhook = async (workspaceId, report, user) => {
+  try {
+    const workspace = await WorkSpace.findById(workspaceId);
+    if (!workspace || !workspace.webhookUrl) return;
+
+    const payload = {
+      event: "scan.completed",
+      workspace: workspace.name,
+      report: {
+        id: report._id,
+        repoUrl: report.repoUrl,
+        grade: report.grade,
+        scores: report.scores,
+        summary: report.summary,
+        totalIssues: (report.bugs?.length || 0) + (report.securityIssues?.length || 0),
+        createdAt: report.createdAt,
+      },
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+      },
+      timestamp: new Date().toISOString(),
+    };
+
+    const response = await fetch(workspace.webhookUrl, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        ...(workspace.webhookSecret && { "X-Webhook-Secret": workspace.webhookSecret }),
+      },
+      body: JSON.stringify(payload),
+    });
+
+    // Log webhook attempt (store in audit log with result)
+    await addAuditLog(
+      workspaceId,
+      user._id,
+      "webhook_trigger",
+      `Webhook triggered for ${report.repoUrl} - status ${response.status}`,
+      { repoUrl: report.repoUrl, status: response.status }
+    );
+
+    // Retry logic for failures (optional: queue with exponential backoff)
+    if (!response.ok) {
+      console.warn(`Webhook failed for ${workspace.webhookUrl}: ${response.status}`);
+    }
+  } catch (err) {
+    console.error("Trigger webhook error:", err);
+    await addAuditLog(
+      workspaceId,
+      user._id,
+      "webhook_failed",
+      `Webhook failed for ${report.repoUrl}: ${err.message}`
+    );
+  }
+};
+
+// ─── Get quality trends ─────────────────────────────────────────
+export const getQualityTrends = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const workspaceId = workspace._id;
+
+    // Group by week, last 3 months
+    const threeMonthsAgo = new Date();
+    threeMonthsAgo.setMonth(threeMonthsAgo.getMonth() - 3);
+
+    const trends = await Report.aggregate([
+      {
+        $match: {
+          workspaceId: workspaceId,
+          createdAt: { $gte: threeMonthsAgo },
+        },
+      },
+      {
+        $group: {
+          _id: {
+            week: { $isoWeek: "$createdAt" },
+            year: { $isoWeekYear: "$createdAt" },
+          },
+          codeQuality: { $avg: "$scores.codeQuality" },
+          security: { $avg: "$scores.security" },
+          performance: { $avg: "$scores.performance" },
+          maintainability: { $avg: "$scores.maintainability" },
+          scans: { $sum: 1 },
+        },
+      },
+      { $sort: { "_id.year": 1, "_id.week": 1 } },
+    ]);
+
+    // Format for frontend charts
+    const formatted = trends.map((t) => ({
+      period: `Week ${t._id.week}, ${t._id.year}`,
+      week: t._id.week,
+      year: t._id.year,
+      codeQuality: Math.round(t.codeQuality || 0),
+      security: Math.round(t.security || 0),
+      performance: Math.round(t.performance || 0),
+      maintainability: Math.round(t.maintainability || 0),
+      scans: t.scans,
+    }));
+
+    res.json({
+      success: true,
+      trends: formatted,
+      period: "weekly",
+    });
+  } catch (err) {
+    console.error("Get quality trends error:", err);
+    res.status(500).json({ error: "Failed to fetch trends" });
+  }
+};

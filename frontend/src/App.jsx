@@ -31,6 +31,8 @@ import OAuthSuccess from "./pages/OAuthSuccess";
 import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
 import Privacy from "./pages/Privacy";
+import Support from "./pages/Support";
+import Terms from "./pages/Terms";
 
 
 import { PreferencesProvider } from "./context/PreferencesContext";
@@ -120,6 +122,8 @@ function Layout() {
 
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<Privacy />} />
+          <Route path="/terms" element={<Privacy />} />
+          <Route path="/support" element={<Support />} />
 
           <Route
             path="/login"

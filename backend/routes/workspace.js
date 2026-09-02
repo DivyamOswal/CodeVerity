@@ -14,7 +14,10 @@ import {
   updateIntegrations,
   getAuditLogs,
   getRepositories,
-  getWorkspaceAnalytics
+  getWorkspaceAnalytics,
+  updateWebhook,
+  testWebhook,
+  getQualityTrends
 } from "../controllers/workspaceController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -34,5 +37,8 @@ router.put("/integrations", auth, updateIntegrations);
 router.get("/audit-logs", auth, getAuditLogs);
 router.get("/repositories", auth, getRepositories);
 router.get("/analytics", auth, getWorkspaceAnalytics);
+router.put("/webhook", auth, updateWebhook);
+router.post("/webhook/test", auth, testWebhook);
+router.get("/trends", auth, getQualityTrends);
 
 export default router;

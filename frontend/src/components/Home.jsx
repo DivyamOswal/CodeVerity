@@ -686,12 +686,12 @@ function Footer() {
           >
             Terms
           </Link>
-          <a
-            href="mailto:support@codeverity.dev"
+          <Link
+            to="/support"
             className="hover:text-[var(--text-primary)] transition-colors"
           >
             Support
-          </a>
+          </Link>
         </div>
         <div className="flex items-center gap-3">
           <span>Built with ❤️ for developers</span>

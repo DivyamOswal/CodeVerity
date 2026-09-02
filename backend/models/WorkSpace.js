@@ -184,6 +184,8 @@ const workspaceSchema = new mongoose.Schema(
         enum: ["active", "past_due", "canceled", "incomplete"],
         default: "active",
       },
+      webhookUrl: { type: String, default: "" },
+      webhookSecret: { type: String, default: "" },
     },
   },
   {
@@ -213,10 +215,7 @@ workspaceSchema.pre("save", async function () {
 // Instance methods
 // ─────────────────────────────────────────────
 
-workspaceSchema.methods.addMember = async function (
-  userId,
-  role = "member",
-) {
+workspaceSchema.methods.addMember = async function (userId, role = "member") {
   const existing = this.members.find(
     (m) => m.userId.toString() === userId.toString(),
   );
@@ -245,10 +244,7 @@ workspaceSchema.methods.removeMember = async function (userId) {
   return this;
 };
 
-workspaceSchema.methods.hasRole = function (
-  userId,
-  roles = [],
-) {
+workspaceSchema.methods.hasRole = function (userId, roles = []) {
   const member = this.members.find(
     (m) => m.userId.toString() === userId.toString(),
   );

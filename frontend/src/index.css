@@ -1,12 +1,12 @@
 /* =====================================================
-   FONTS loaded via Google Fonts.
+   FONTS — loaded via Google Fonts.
    Space Grotesk for headings (h1–h3, applied automatically below),
    Inter for body/UI text, JetBrains Mono for code/editor-chrome
    text (tabs, labels, terminal-style copy). This is a content-based
    system: font is chosen by HTML tag / existing class, not manually
    per component, so it cascades the same way the color tokens do.
    Consider self-hosting or a <link rel="preconnect"> in index.html
-   instead of @import for production @import blocks slightly longer.
+   instead of @import for production — @import blocks slightly longer.
 ======================================================== */
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -19,7 +19,7 @@
 }
 
 /* =====================================================
-   THEME SLATE + CYAN
+   THEME — SLATE + CYAN
    Cyan as primary accent (pairs with the shield/checkmark brand
    mark's "scan" imagery, and with the ScanLine sweep already used
    on buttons); indigo as a secondary accent for chart series and
@@ -47,11 +47,11 @@
   --accent-hover: #67e8f9;
   --accent-soft: rgba(34, 211, 238, 0.14);
   --accent-soft-strong: rgba(34, 211, 238, 0.26);
-  /* Cyan is high-luminance white text on it fails contrast, so
+  /* Cyan is high-luminance — white text on it fails contrast, so
      accent-contrast is dark navy here rather than white. */
   --accent-contrast: #052730;
 
-  /* Secondary accent (indigo) chart series, secondary badges,
+  /* Secondary accent (indigo) — chart series, secondary badges,
      and --color-info below. Not used for primary UI chrome. */
   --accent-secondary: #818cf8;
   --accent-secondary-hover: #a5b4fc;
@@ -103,7 +103,7 @@
   --border-dark: #94a3b8;
 
   /* Darker teal-cyan than the dark theme's, so it keeps AA text
-     contrast against a white background bright cyan wouldn't. */
+     contrast against a white background — bright cyan wouldn't. */
   --accent: #0891b2;
   --accent-hover: #0e7490;
   --accent-soft: rgba(8, 145, 178, 0.1);
@@ -291,7 +291,7 @@ a:hover {
 }
 
 /* Lets an element scroll (if content genuinely overflows) without
-   ever showing a visible scrollbar used on AuthLayout's form
+   ever showing a visible scrollbar — used on AuthLayout's form
    panel so a short viewport degrades to silent scroll. */
 .no-scrollbar::-webkit-scrollbar {
   display: none;

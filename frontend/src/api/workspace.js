@@ -29,3 +29,8 @@ export const getAuditLogs = () => axios.get("/workspace/audit-logs");
 export const getRepositories = () => axios.get("/workspace/repositories");
 
 export const getWorkspaceAnalytics = () => axios.get("/workspace/analytics");
+
+export const updateWebhook = (data) => axios.put("/workspace/webhook", data);
+export const testWebhook = () => axios.post("/workspace/webhook/test");
+
+export const getQualityTrends = () => axios.get("/workspace/trends");
