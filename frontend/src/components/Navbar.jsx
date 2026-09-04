@@ -661,6 +661,21 @@ export default function Navbar() {
             <Icon name="contact" size={compact ? 14 : 16} />
             contact
           </NavLink>
+          {user?.isGlobalAdmin && (
+            <NavLink
+              to="/admin"
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                  isActive
+                    ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                    : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                }`
+              }
+            >
+              <Icon name="shield" size={compact ? 14 : 16} />
+              admin
+            </NavLink>
+          )}
 
           {isAuth ? (
             <>

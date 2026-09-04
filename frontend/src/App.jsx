@@ -1,4 +1,4 @@
-// frontend/src/App.jsx
+import axios from "./api/axios";
 import {
   BrowserRouter,
   Routes,
@@ -26,56 +26,87 @@ import ProtectedRoute from "./components/ProtectedRoute";
 import Result from "./components/Result";
 import Profile from "./pages/Profile";
 import Settings from "./pages/Settings";
-import Workspace from "./pages/Workspace"; 
+import Workspace from "./pages/Workspace";
 import OAuthSuccess from "./pages/OAuthSuccess";
 import Pricing from "./pages/Pricing";
 import Checkout from "./pages/Checkout";
 import Privacy from "./pages/Privacy";
 import Support from "./pages/Support";
 import Terms from "./pages/Terms";
-
+import AdminDashboard from "./pages/AdminDashboard";
 
 import { PreferencesProvider } from "./context/PreferencesContext";
 
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
 import { ScrollSmoother, ScrollTrigger } from "gsap/all";
 
-//  Auth Context single source of truth
+// ─── Auth Context ──────────────────────────────────────────────
 export const AuthContext = createContext(null);
 
 export function useAuth() {
   return useContext(AuthContext);
 }
 
+// ─── Auth Provider ──────────────────────────────────────────────
 function AuthProvider({ children }) {
   const [token, setToken] = useState(() => localStorage.getItem("token"));
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-  const login = useCallback((newToken) => {
+  // Fetch user when token changes
+  useEffect(() => {
+    if (token) {
+      setLoading(true);
+      axios
+        .get("/auth/me", {
+          headers: { Authorization: `Bearer ${token}` },
+        })
+        .then((res) => {
+          setUser(res.data.user);
+        })
+        .catch(() => {
+          // Invalid token – logout
+          localStorage.removeItem("token");
+          setToken(null);
+          setUser(null);
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setUser(null);
+      setLoading(false);
+    }
+  }, [token]);
+
+  const login = useCallback((newToken, userData) => {
     localStorage.setItem("token", newToken);
     setToken(newToken);
+    if (userData) setUser(userData);
   }, []);
 
   const logout = useCallback(() => {
     localStorage.removeItem("token");
     setToken(null);
+    setUser(null);
   }, []);
 
-  const isAuth = !!token;
+  const isAuth = !!token && !!user;
 
   return (
-    <AuthContext.Provider value={{ token, isAuth, login, logout }}>
+    <AuthContext.Provider
+      value={{ token, user, isAuth, loading, login, logout, setUser }}
+    >
       {children}
     </AuthContext.Provider>
   );
 }
 
-//  /analyze page (unchanged, keep your existing code)
+// ─── AnalyzePage (keep your existing code) ──────────────────
 function AnalyzePage() {
   // ... your existing AnalyzePage code ...
-  // (I'm not repeating it here for brevity, but you should keep your existing code)
+  // (I've omitted it for brevity, but you should keep your existing code)
 }
 
-//  Layout
+// ─── Layout ─────────────────────────────────────────────────────
 function Layout() {
   const location = useLocation();
   const { isAuth } = useAuth();
@@ -84,71 +115,46 @@ function Layout() {
   const showNav = !hideNavbar.includes(location.pathname);
 
   useEffect(() => {
-    // Wait until the new route has rendered.
     const frame = requestAnimationFrame(() => {
       const smoother = ScrollSmoother.get();
-
       if (smoother) {
-        // Reset the virtual scroll position used by ScrollSmoother.
         smoother.scrollTo(0, false);
       } else {
-        // Mobile / reduced-motion fallback.
-        window.scrollTo({
-          top: 0,
-          left: 0,
-          behavior: "auto",
-        });
+        window.scrollTo({ top: 0, left: 0, behavior: "auto" });
       }
-
-      // Give the new page a chance to render before measuring
-      // ScrollTrigger positions.
       requestAnimationFrame(() => {
         ScrollTrigger.refresh();
       });
     });
-
     return () => cancelAnimationFrame(frame);
   }, [location.pathname]);
 
   return (
     <>
       {showNav && <Navbar />}
-
       <SmoothScroll>
         <Routes>
           <Route path="/" element={<Home />} />
-
           <Route path="/about" element={<About />} />
-
           <Route path="/contact" element={<Contact />} />
           <Route path="/privacy" element={<Privacy />} />
           <Route path="/terms" element={<Terms />} />
           <Route path="/support" element={<Support />} />
-
           <Route
             path="/login"
-            element={
-              isAuth ? <Navigate to="/dashboard" replace /> : <Login />
-            }
+            element={isAuth ? <Navigate to="/dashboard" replace /> : <Login />}
           />
-
           <Route
             path="/register"
             element={
               isAuth ? <Navigate to="/dashboard" replace /> : <Register />
             }
           />
-
-          <Route
-            path="/oauth-success"
-            element={<OAuthSuccess />}
-          />
-
+          <Route path="/oauth-success" element={<OAuthSuccess />} />
           <Route
             path="/oauth-error"
             element={<Navigate to="/login" replace />}
           />
-
           <Route
             path="/history"
             element={
@@ -157,12 +163,7 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
-          <Route
-            path="/analyze"
-            element={<AnalyzePage />}
-          />
-
+          <Route path="/analyze" element={<AnalyzePage />} />
           <Route
             path="/profile"
             element={
@@ -171,7 +172,6 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/settings"
             element={
@@ -180,7 +180,6 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
           <Route
             path="/dashboard"
             element={
@@ -189,8 +188,14 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
-          {/* Workspace route */}
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute requireAdmin>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
           <Route
             path="/workspace"
             element={
@@ -199,12 +204,7 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
-          <Route
-            path="/pricing"
-            element={<Pricing />}
-          />
-
+          <Route path="/pricing" element={<Pricing />} />
           <Route
             path="/checkout"
             element={
@@ -213,24 +213,19 @@ function Layout() {
               </ProtectedRoute>
             }
           />
-
-          <Route
-            path="*"
-            element={<Navigate to="/" replace />}
-          />
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </SmoothScroll>
     </>
   );
 }
 
+// ─── App ────────────────────────────────────────────────────────
 export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
         <PreferencesProvider>
-          {" "}
-          {/* ✅ Wrap Layout with PreferencesProvider */}
           <Layout />
         </PreferencesProvider>
       </AuthProvider>
