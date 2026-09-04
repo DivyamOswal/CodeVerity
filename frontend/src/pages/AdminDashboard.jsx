@@ -1,0 +1,299 @@
+import { useEffect, useState } from "react";
+import { useAuth } from "../App";
+import { useNavigate } from "react-router-dom";
+import { Users, Briefcase, FileText, DollarSign, TrendingUp } from "lucide-react";
+import axios from "../api/axios";
+
+function StatCard({ label, value, icon: Icon, color }) {
+  return (
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5">
+      <div className="flex items-center justify-between">
+        <div>
+          <p className="text-sm text-[var(--text-muted)]">{label}</p>
+          <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">{value}</p>
+        </div>
+        <div className={`rounded-full p-3 ${color}`}>
+          <Icon className="h-5 w-5" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export default function AdminDashboard() {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState("overview");
+
+  useEffect(() => {
+    if (!user?.isGlobalAdmin) {
+      navigate("/dashboard");
+      return;
+    }
+    fetchStats();
+  }, [user]);
+
+  const fetchStats = async () => {
+    try {
+      const res = await axios.get("/admin/stats");
+      setStats(res.data);
+    } catch (err) {
+      console.error("Failed to fetch stats:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-[var(--bg-primary)] p-6 pt-20">
+      <div className="mx-auto max-w-7xl">
+        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Admin Dashboard</h1>
+        <p className="mt-1 text-sm text-[var(--text-muted)]">Manage users, workspaces, and system settings.</p>
+
+        {/* Stats Grid */}
+        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <StatCard label="Total Users" value={stats?.totalUsers || 0} icon={Users} color="bg-blue-500/10 text-blue-400" />
+          <StatCard label="Workspaces" value={stats?.totalWorkspaces || 0} icon={Briefcase} color="bg-purple-500/10 text-purple-400" />
+          <StatCard label="Reports" value={stats?.totalReports || 0} icon={FileText} color="bg-green-500/10 text-green-400" />
+          <StatCard label="Revenue" value={`₹${(stats?.totalRevenue || 0).toLocaleString()}`} icon={DollarSign} color="bg-yellow-500/10 text-yellow-400" />
+        </div>
+
+        {/* Tab Navigation */}
+        <div className="mt-8 border-b border-[var(--border-dark)]">
+          <div className="flex gap-4 overflow-x-auto">
+            {["overview", "users", "workspaces", "reports"].map((tab) => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                className={`px-4 py-2 text-sm font-medium capitalize transition ${
+                  activeTab === tab
+                    ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
+                }`}
+              >
+                {tab}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Tab Content */}
+        <div className="mt-6">
+          {activeTab === "overview" && (
+            <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+              <p className="text-sm text-[var(--text-secondary)]">
+                Welcome to the admin panel. Use the tabs above to manage users, workspaces, and reports.
+              </p>
+            </div>
+          )}
+          {activeTab === "users" && <UserManagement />}
+          {activeTab === "workspaces" && <WorkspaceManagement />}
+          {activeTab === "reports" && <ReportManagement />}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Sub‑components ── (place them in the same file or separate files)
+
+function UserManagement() {
+  const [users, setUsers] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
+
+  const fetchUsers = async () => {
+    try {
+      const res = await axios.get(`/admin/users?search=${search}`);
+      setUsers(res.data.users);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, [search]);
+
+  const toggleAdmin = async (userId) => {
+    if (!window.confirm("Toggle admin status for this user?")) return;
+    try {
+      await axios.put(`/admin/users/${userId}/toggle-admin`);
+      fetchUsers();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to toggle admin");
+    }
+  };
+
+  if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading users...</div>;
+
+  return (
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+      <div className="mb-4 flex items-center gap-4">
+        <input
+          type="text"
+          placeholder="Search users..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none focus:border-[var(--accent)]"
+        />
+      </div>
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-[var(--bg-hover)]">
+            <tr>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Name</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Email</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Admin</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--border-dark)]">
+            {users.map((u) => (
+              <tr key={u._id}>
+                <td className="px-4 py-2 text-[var(--text-primary)]">{u.name}</td>
+                <td className="px-4 py-2 text-[var(--text-secondary)]">{u.email}</td>
+                <td className="px-4 py-2">
+                  <span className={u.isGlobalAdmin ? "text-[var(--accent)]" : "text-[var(--text-muted)]"}>
+                    {u.isGlobalAdmin ? "✅" : "❌"}
+                  </span>
+                </td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => toggleAdmin(u._id)}
+                    className="rounded-lg border border-[var(--border-light)] px-3 py-1 text-xs text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  >
+                    Toggle Admin
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function WorkspaceManagement() {
+  const [workspaces, setWorkspaces] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchWorkspaces = async () => {
+    try {
+      const res = await axios.get("/admin/workspaces");
+      setWorkspaces(res.data.workspaces);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchWorkspaces(); }, []);
+
+  const deleteWorkspace = async (id) => {
+    if (!window.confirm("Delete this workspace and all its data?")) return;
+    try {
+      await axios.delete(`/admin/workspaces/${id}`);
+      fetchWorkspaces();
+    } catch (err) {
+      alert(err.response?.data?.error || "Failed to delete workspace");
+    }
+  };
+
+  if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading workspaces...</div>;
+
+  return (
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-[var(--bg-hover)]">
+            <tr>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Workspace</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Owner</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Members</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--border-dark)]">
+            {workspaces.map((ws) => (
+              <tr key={ws._id}>
+                <td className="px-4 py-2 text-[var(--text-primary)]">{ws.name}</td>
+                <td className="px-4 py-2 text-[var(--text-secondary)]">{ws.ownerId?.email || "N/A"}</td>
+                <td className="px-4 py-2 text-[var(--text-secondary)]">{ws.members?.length || 0}</td>
+                <td className="px-4 py-2">
+                  <button
+                    onClick={() => deleteWorkspace(ws._id)}
+                    className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:bg-red-500/20"
+                  >
+                    Delete
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ReportManagement() {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchReports = async () => {
+    try {
+      const res = await axios.get("/admin/reports");
+      setReports(res.data.reports);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchReports(); }, []);
+
+  if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading reports...</div>;
+
+  return (
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+      <div className="overflow-x-auto">
+        <table className="w-full text-left text-sm">
+          <thead className="bg-[var(--bg-hover)]">
+            <tr>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Repo</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">User</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Workspace</th>
+              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Date</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-[var(--border-dark)]">
+            {reports.map((r) => (
+              <tr key={r._id}>
+                <td className="px-4 py-2 text-[var(--text-primary)]">{r.repoUrl}</td>
+                <td className="px-4 py-2 text-[var(--text-secondary)]">{r.userId?.email || "Unknown"}</td>
+                <td className="px-4 py-2 text-[var(--text-secondary)]">{r.workspaceId?.name || "N/A"}</td>
+                <td className="px-4 py-2 text-[var(--text-secondary)]">{new Date(r.createdAt).toLocaleDateString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}

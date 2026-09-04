@@ -78,11 +78,11 @@ function Icon({ name, size = 16, className = "" }) {
       </>
     ),
     users: (
-  <>
-    <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" />
-    <path d="M4 22v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" />
-  </>
-),
+      <>
+        <path d="M12 12a5 5 0 1 0 0-10 5 5 0 0 0 0 10z" />
+        <path d="M4 22v-2a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v2" />
+      </>
+    ),
     profile: (
       <>
         <circle cx="12" cy="8" r="3.5" />
@@ -184,7 +184,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { isAuth, token, logout } = useAuth();
+  const { isAuth, token, logout, user } = useAuth();
   const { compact } = usePreferences();
 
   const [dropOpen, setDropOpen] = useState(false);
@@ -229,71 +229,69 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
+  useGSAP(() => {
+    const mm = gsap.matchMedia();
 
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const timeline = gsap.timeline({
-          defaults: { ease: "power3.out" },
+    mm.add("(prefers-reduced-motion: no-preference)", () => {
+      const timeline = gsap.timeline({
+        defaults: { ease: "power3.out" },
+      });
+
+      if (navRef.current) {
+        timeline.from(navRef.current, {
+          y: -18,
+          autoAlpha: 0,
+          duration: 0.55,
         });
+      }
 
-        if (navRef.current) {
-          timeline.from(navRef.current, {
-            y: -18,
+      if (logoRef.current) {
+        timeline.from(
+          logoRef.current,
+          {
+            scale: 0.85,
             autoAlpha: 0,
-            duration: 0.55,
-          });
-        }
+            duration: 0.4,
+            ease: "back.out(1.5)",
+          },
+          "-=0.3",
+        );
+      }
 
-        if (logoRef.current) {
-          timeline.from(
-            logoRef.current,
-            {
-              scale: 0.85,
-              autoAlpha: 0,
-              duration: 0.4,
-              ease: "back.out(1.5)",
-            },
-            "-=0.3"
-          );
-        }
+      if (navItemsRef.current && navItemsRef.current.length) {
+        timeline.from(
+          navItemsRef.current,
+          {
+            y: -8,
+            autoAlpha: 0,
+            duration: 0.35,
+            stagger: 0.055,
+          },
+          "-=0.25",
+        );
+      }
 
-        if (navItemsRef.current && navItemsRef.current.length) {
-          timeline.from(
-            navItemsRef.current,
-            {
-              y: -8,
-              autoAlpha: 0,
-              duration: 0.35,
-              stagger: 0.055,
-            },
-            "-=0.25"
-          );
-        }
+      if (navContentRef.current) {
+        timeline.from(
+          navContentRef.current,
+          {
+            x: 8,
+            autoAlpha: 0,
+            duration: 0.35,
+          },
+          "-=0.25",
+        );
+      }
+    });
 
-        if (navContentRef.current) {
-          timeline.from(
-            navContentRef.current,
-            {
-              x: 8,
-              autoAlpha: 0,
-              duration: 0.35,
-            },
-            "-=0.25"
-          );
-        }
-      });
+    mm.add("(prefers-reduced-motion: reduce)", () => {
+      if (navRef.current) {
+        gsap.set(navRef.current, { clearProps: "all" });
+      }
+    });
 
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        if (navRef.current) {
-          gsap.set(navRef.current, { clearProps: "all" });
-        }
-      });
-
-      return () => mm.revert();
-    },
-  );
+    return () => mm.revert();
+  });
 
   const handleLogout = () => {
     setDropOpen(false);
@@ -312,9 +310,13 @@ export default function Navbar() {
   const avatarFont = compact ? "text-[9px]" : "text-[10px]";
   const userInfoNameSize = compact ? "text-[10px]" : "text-[11px]";
   const userInfoRoleSize = compact ? "text-[7px]" : "text-[8px]";
-  const buttonPadding = compact ? "px-3 py-1.5 text-[11px]" : "px-3.5 py-2 text-[12px]";
+  const buttonPadding = compact
+    ? "px-3 py-1.5 text-[11px]"
+    : "px-3.5 py-2 text-[12px]";
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
-  const mobileMenuItemPadding = compact ? "px-3 py-2.5 text-sm" : "px-4 py-3 text-sm";
+  const mobileMenuItemPadding = compact
+    ? "px-3 py-2.5 text-sm"
+    : "px-4 py-3 text-sm";
 
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
@@ -335,7 +337,11 @@ export default function Navbar() {
               isActive ? "opacity-100" : "opacity-0"
             }`}
           />
-          <Icon name={icon} size={compact ? 12 : 13} className={isActive ? "text-[var(--accent)]" : ""} />
+          <Icon
+            name={icon}
+            size={compact ? 12 : 13}
+            className={isActive ? "text-[var(--accent)]" : ""}
+          />
           <span>{label}</span>
         </>
       )}
@@ -363,9 +369,15 @@ export default function Navbar() {
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
-              <Icon name="shield" size={iconSize} className="text-[var(--accent)]" />
+              <Icon
+                name="shield"
+                size={iconSize}
+                className="text-[var(--accent)]"
+              />
               <span className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
-                <span className="font-mono text-[5px] font-bold text-[var(--accent)]">{"</>"}</span>
+                <span className="font-mono text-[5px] font-bold text-[var(--accent)]">
+                  {"</>"}
+                </span>
               </span>
               <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)]">
                 <span className="absolute inset-0 animate-ping rounded-full bg-[var(--accent)] opacity-75" />
@@ -373,7 +385,9 @@ export default function Navbar() {
             </div>
 
             <div className="hidden sm:block">
-              <div className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}>
+              <div
+                className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}
+              >
                 <span className="text-[var(--text-primary)]">Code</span>
                 <span className="text-[var(--accent)]">Verity</span>
               </div>
@@ -390,7 +404,11 @@ export default function Navbar() {
         <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
           {isAuth && (
             <>
-              <NavigationItem to="/dashboard" label="Dashboard" icon="dashboard" />
+              <NavigationItem
+                to="/dashboard"
+                label="Dashboard"
+                icon="dashboard"
+              />
               <NavigationItem to="/workspace" label="Workspace" icon="users" />
               <NavigationItem to="/history" label="History" icon="history" />
             </>
@@ -426,7 +444,9 @@ export default function Navbar() {
                   >
                     {userInfo.name || initials}
                   </p>
-                  <p className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}>
+                  <p
+                    className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}
+                  >
                     {userInfo.role || "developer"}
                   </p>
                 </div>
@@ -485,6 +505,13 @@ export default function Navbar() {
                     label="Dashboard"
                     onClick={() => navigate("/dashboard")}
                   />
+                  {user?.isGlobalAdmin && (
+                    <DropdownItem
+                      icon={<Icon name="shield" size={15} />}
+                      label="Admin"
+                      onClick={() => navigate("/admin")}
+                    />
+                  )}
                 </div>
 
                 <div className="border-t border-[var(--border-light)] py-2">
@@ -546,7 +573,9 @@ export default function Navbar() {
       {/* Mobile Navigation */}
       <div
         className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
-          menuOpen ? "max-h-[36rem] opacity-100" : "max-h-0 border-t-0 opacity-0"
+          menuOpen
+            ? "max-h-[36rem] opacity-100"
+            : "max-h-0 border-t-0 opacity-0"
         }`}
       >
         <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
@@ -565,19 +594,19 @@ export default function Navbar() {
                 <Icon name="dashboard" size={compact ? 14 : 16} />
                 dashboard
               </NavLink>
-               <NavLink
-      to="/workspace"
-      className={({ isActive }) =>
-        `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
-          isActive
-            ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
-            : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
-        }`
-      }
-    >
-      <Icon name="users" size={compact ? 14 : 16} />
-      workspace
-    </NavLink>
+              <NavLink
+                to="/workspace"
+                className={({ isActive }) =>
+                  `flex items-center gap-3 rounded-lg border-l-2 font-mono transition-colors duration-200 ${mobileMenuItemPadding} ${
+                    isActive
+                      ? "border-[var(--accent)] bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]"
+                  }`
+                }
+              >
+                <Icon name="users" size={compact ? 14 : 16} />
+                workspace
+              </NavLink>
               <NavLink
                 to="/history"
                 className={({ isActive }) =>
