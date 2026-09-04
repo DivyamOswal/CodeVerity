@@ -155,7 +155,7 @@ function TypedWord({ words }) {
   return (
     <span className="text-[var(--accent)]">
       {display}
-      <span className="inline-block w-[2px] h-[1em] bg-[var(--accent)] ml-0.5 animate-pulse" />
+      <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[var(--accent)]" />
     </span>
   );
 }
@@ -181,32 +181,33 @@ function CodeVerityLogo() {
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <path d="m9 12 2 2 4-4" />
       </svg>
-      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-primary)] border border-[var(--border-light)]">
+      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
         <span className="text-[6px] font-bold text-[var(--accent)]">
           &lt;/&gt;
         </span>
       </div>
-      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
+      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
     </div>
   );
 }
 
 // ============================================================
-//  COMPONENT: Feature
+//  COMPONENT: Feature  left-aligned, accent rail instead of the
+//  identical centered icon-in-circle "SaaS card kit" treatment.
 // ============================================================
-function Feature({ icon, title, desc, delay }) {
+function Feature({ icon, title, desc, index }) {
   return (
-    <div
-      className="group rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 text-center transition-all hover:border-[var(--accent)]/50 hover:-translate-y-1 hover:shadow-[0_0_30px_var(--accent-soft)]"
-      style={{ animationDelay: delay }}
-    >
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-        {icon}
+    <div className="group relative border-t border-[var(--border-light)] pt-5 transition-colors duration-200 hover:border-[var(--accent)]/50">
+      <div className="flex items-center justify-between">
+        <span className="text-[var(--accent)]">{icon}</span>
+        <span className="font-mono text-[10px] text-[var(--text-muted)]">
+          {String(index + 1).padStart(2, "0")}
+        </span>
       </div>
-      <h3 className="mb-1.5 text-sm font-semibold text-[var(--text-primary)]">
+      <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="text-xs leading-relaxed text-[var(--text-secondary)]">
+      <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
         {desc}
       </p>
     </div>
@@ -219,12 +220,12 @@ function Feature({ icon, title, desc, delay }) {
 function BugIcon() {
   return (
     <svg
-      width="24"
-      height="24"
+      width="22"
+      height="22"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -240,12 +241,12 @@ function BugIcon() {
 function ShieldIcon() {
   return (
     <svg
-      width="24"
-      height="24"
+      width="22"
+      height="22"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -257,12 +258,12 @@ function ShieldIcon() {
 function FlaskIcon() {
   return (
     <svg
-      width="24"
-      height="24"
+      width="22"
+      height="22"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
-      strokeWidth="2"
+      strokeWidth="1.75"
       strokeLinecap="round"
       strokeLinejoin="round"
     >
@@ -273,7 +274,7 @@ function FlaskIcon() {
 }
 
 // ============================================================
-//  COMPONENT: StatPill (animated count)
+//  COMPONENT: StatPill (animated count)  logic untouched
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -323,11 +324,11 @@ function StatPill({ value, label, delayMs = 0 }) {
   }, [value, hasStarted]);
 
   return (
-    <div className="flex flex-col items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-5 py-3 min-w-[110px]">
-      <span className="text-xl font-bold text-[var(--text-primary)]">
+    <div className="flex min-w-[110px] flex-col items-center gap-0.5 border-l border-[var(--border-light)] px-5 first:border-l-0">
+      <span className="text-xl font-bold tabular-nums text-[var(--text-primary)]">
         {display}
       </span>
-      <span className="text-[9px] text-[var(--text-muted)] uppercase tracking-wider">
+      <span className="text-[9px] tracking-wide text-[var(--text-muted)]">
         {label}
       </span>
     </div>
@@ -335,9 +336,7 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 // ============================================================
-//  COMPONENT: ScanLine (for button hover) uses the global
-//  .animate-scanline utility from index.css instead of a
-//  locally-duplicated keyframe.
+//  COMPONENT: ScanLine (for button hover)
 // ============================================================
 function ScanLine() {
   return (
@@ -348,38 +347,24 @@ function ScanLine() {
 }
 
 // ============================================================
-//  SECTION: How It Works, Testimonials, Pricing, FAQ, Footer
+//  SECTION: How It Works, Testimonials, Pricing, FAQ
 // ============================================================
 
 function HowItWorks() {
   const steps = [
     {
       icon: (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
       ),
       title: "Paste your GitHub URL",
-      desc: "Enter any public repository link – CodeVerity immediately analyses the codebase structure.",
+      desc: "Enter any public repository link. CodeVerity immediately reads the codebase structure.",
     },
     {
       icon: (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
           <circle cx="12" cy="12" r="10" />
           <path d="M12 6v6l4 2" />
         </svg>
@@ -389,14 +374,7 @@ function HowItWorks() {
     },
     {
       icon: (
-        <svg
-          width="24"
-          height="24"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-        >
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
@@ -407,32 +385,38 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="py-16 px-4 sm:px-6 border-t border-[var(--border-light)]">
-      <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
-          How CodeVerity works
-        </h2>
-        <p className="text-[var(--text-secondary)] text-sm mb-10 max-w-xl mx-auto">
-          From repository to report – three simple steps to code confidence.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <section className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+            How it works
+          </h2>
+          <p className="text-sm text-[var(--text-secondary)]">
+            Repository in, report out  three steps.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
           {steps.map((step, idx) => (
             <div
               key={idx}
-              className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 text-center transition-all hover:border-[var(--accent)]/40 hover:-translate-y-1"
+              className={`relative px-0 py-6 sm:px-6 sm:py-0 ${
+                idx !== 0 ? "sm:border-l sm:border-[var(--border-light)]" : ""
+              }`}
             >
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                {step.icon}
+              <div className="flex items-center gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+                  {step.icon}
+                </span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">
+                  0{idx + 1}
+                </span>
               </div>
-              <h3 className="font-semibold text-[var(--text-primary)] mb-1">
+              <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">
                 {step.title}
               </h3>
-              <p className="text-xs text-[var(--text-secondary)]">
+              <p className="mt-1.5 max-w-[26ch] text-xs leading-relaxed text-[var(--text-secondary)]">
                 {step.desc}
               </p>
-              <span className="mt-4 inline-block text-[9px] font-mono text-[var(--text-muted)] bg-[var(--bg-primary)] px-2 py-0.5 rounded-full">
-                {`0${idx + 1}`}
-              </span>
             </div>
           ))}
         </div>
@@ -451,9 +435,9 @@ function Testimonials() {
     },
     {
       quote:
-        "I use it before every PR. The bug detection is surprisingly accurate – it's like having a senior reviewer.",
+        "I use it before every PR. The bug detection is surprisingly accurate  it's like having a senior reviewer.",
       author: "Marcus Rivera",
-      role: "Full‑stack Developer, OpenSource Collective",
+      role: "Full-stack Developer, OpenSource Collective",
     },
     {
       quote:
@@ -464,41 +448,39 @@ function Testimonials() {
   ];
 
   return (
-    <section className="py-16 px-4 sm:px-6 border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30">
-      <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
-          Loved by developers
+    <section className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <h2 className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+          Trusted by developers already shipping with it
         </h2>
-        <p className="text-[var(--text-secondary)] text-sm mb-10 max-w-xl mx-auto">
-          Join hundreds of engineers who ship with confidence.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 text-left transition-all hover:border-[var(--accent)]/30"
+              className="flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 transition-colors duration-200 hover:border-[var(--accent)]/30"
             >
-              <div className="mb-3 flex items-center gap-1 text-[var(--accent)]">
-                {[...Array(5)].map((_, s) => (
-                  <svg
-                    key={s}
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                  >
-                    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
-                  </svg>
-                ))}
-              </div>
-              <p className="text-sm text-[var(--text-primary)] leading-relaxed mb-3">
-                "{t.quote}"
+              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">
+                "
+              </span>
+              <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">
+                {t.quote}
               </p>
-              <div>
-                <p className="text-xs font-semibold text-[var(--text-primary)]">
-                  {t.author}
-                </p>
-                <p className="text-[10px] text-[var(--text-muted)]">{t.role}</p>
+              <div className="mt-5 flex items-center gap-2.5 border-t border-[var(--border-light)] pt-4">
+                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
+                  {t.author
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)}
+                </span>
+                <div>
+                  <p className="text-xs font-semibold text-[var(--text-primary)]">
+                    {t.author}
+                  </p>
+                  <p className="text-[10px] text-[var(--text-muted)]">
+                    {t.role}
+                  </p>
+                </div>
               </div>
             </div>
           ))}
@@ -512,15 +494,17 @@ function Pricing() {
   const plans = PRICING_PLANS;
 
   return (
-    <section className="py-16 px-4 sm:px-6 border-t border-[var(--border-light)]">
-      <div className="max-w-5xl mx-auto text-center">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] mb-2">
-          Simple, transparent pricing
-        </h2>
-        <p className="text-[var(--text-secondary)] text-sm mb-10 max-w-xl mx-auto">
-          Start for free, upgrade as you grow.
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+    <section className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-5xl">
+        <div className="mb-10 text-center">
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+            Simple, transparent pricing
+          </h2>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-[var(--text-secondary)]">
+            Start for free, upgrade as you grow.
+          </p>
+        </div>
+        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {plans.map((plan) => {
             const price = plan.monthly.INR;
             const isFree = price === 0;
@@ -529,16 +513,26 @@ function Pricing() {
             return (
               <div
                 key={plan.id}
-                className={`rounded-xl border p-6 text-left transition-all ${
+                className={`relative overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 text-left transition-all duration-200 ${
                   plan.highlight
-                    ? "border-[var(--accent)] bg-[var(--accent-soft)]/20 shadow-lg shadow-[var(--accent)]/5"
-                    : "border-[var(--border-light)] bg-[var(--bg-card)]"
-                } hover:scale-[1.02]`}
+                    ? "border-[var(--accent)]"
+                    : "border-[var(--border-light)] hover:border-[var(--accent)]/30"
+                }`}
               >
-                <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                  {plan.name}
-                </h3>
-                <div className="mt-2 flex items-baseline">
+                {plan.highlight && (
+                  <span className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
+                )}
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
+                    {plan.name}
+                  </h3>
+                  {plan.highlight && (
+                    <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
+                      Most popular
+                    </span>
+                  )}
+                </div>
+                <div className="mt-3 flex items-baseline">
                   <span className="text-3xl font-extrabold text-[var(--text-primary)]">
                     {displayPrice}
                   </span>
@@ -548,16 +542,16 @@ function Pricing() {
                     </span>
                   )}
                 </div>
-                <div className="mt-2 flex flex-wrap items-center gap-2">
+                <div className="mt-3">
                   <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[10px] text-[var(--accent)]">
                     {formatTokens(plan.tokensPerMonth)} tokens / mo
                   </span>
                 </div>
-                <ul className="mt-4 space-y-2 text-xs text-[var(--text-secondary)]">
+                <ul className="mt-5 space-y-2.5 text-xs text-[var(--text-secondary)]">
                   {plan.features.map((f, fi) => (
                     <li key={fi} className="flex items-start gap-2">
                       <svg
-                        className="mt-0.5 w-3 h-3 text-[var(--accent)]"
+                        className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]"
                         viewBox="0 0 24 24"
                         fill="none"
                         stroke="currentColor"
@@ -575,10 +569,10 @@ function Pricing() {
                       ? "/register"
                       : `/checkout?plan=${plan.id}&cycle=monthly&currency=INR`
                   }
-                  className={`mt-6 block w-full rounded-lg px-4 py-2 text-center text-sm font-semibold transition-all ${
+                  className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200 ${
                     plan.highlight
                       ? "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
-                      : "border border-[var(--border-light)] bg-[var(--bg-card)]/75 text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
+                      : "border border-[var(--border-light)] text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
                   }`}
                 >
                   {plan.cta}
@@ -587,9 +581,8 @@ function Pricing() {
             );
           })}
         </div>
-        <p className="mt-6 text-[10px] text-[var(--text-muted)]">
-          * All prices in INR. Yearly plans offer 20% off – see full pricing
-          page.
+        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">
+          All prices in INR. Yearly plans offer 20% off  see full pricing page.
         </p>
       </div>
     </section>
@@ -614,40 +607,38 @@ function FAQ() {
     },
     {
       q: "How accurate is the AI bug detection?",
-      a: "Our models are trained on millions of open‑source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement.",
+      a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement.",
     },
   ];
 
   const toggle = (idx) => setOpenIndex(openIndex === idx ? null : idx);
 
   return (
-    <section className="py-16 px-4 sm:px-6 border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30">
-      <div className="max-w-3xl mx-auto">
-        <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text-primary)] text-center mb-2">
+    <section className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-3xl">
+        <h2 className="mb-10 text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Frequently asked questions
         </h2>
-        <p className="text-[var(--text-secondary)] text-sm text-center mb-10">
-          Everything you need to know about CodeVerity.
-        </p>
-        <div className="space-y-3">
+        <div className="divide-y divide-[var(--border-light)] rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           {faqs.map((faq, idx) => (
-            <div
-              key={idx}
-              className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] overflow-hidden"
-            >
+            <div key={idx}>
               <button
                 onClick={() => toggle(idx)}
-                className="w-full px-5 py-4 text-left flex items-center justify-between hover:bg-[var(--bg-hover)]/50 transition-colors"
+                className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50"
               >
                 <span className="text-sm font-medium text-[var(--text-primary)]">
                   {faq.q}
                 </span>
-                <span className="text-[var(--accent)] text-lg font-mono">
-                  {openIndex === idx ? "−" : "+"}
+                <span
+                  className={`ml-4 shrink-0 font-mono text-lg text-[var(--accent)] transition-transform duration-200 ${
+                    openIndex === idx ? "rotate-45" : ""
+                  }`}
+                >
+                  +
                 </span>
               </button>
               {openIndex === idx && (
-                <div className="px-5 pb-4 text-xs text-[var(--text-secondary)] leading-relaxed border-t border-[var(--border-light)] pt-3">
+                <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
                   {faq.a}
                 </div>
               )}
@@ -659,42 +650,149 @@ function FAQ() {
   );
 }
 
+// ============================================================
+//  FOOTER (large wordmark + centered logo badge)
+// ============================================================
 function Footer() {
   return (
-    <footer className="border-t border-[var(--border-light)] py-8 px-4 sm:px-6 text-[var(--text-muted)]">
-      <div className="max-w-5xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-        <div className="flex items-center gap-3">
+    <footer className="relative overflow-hidden border-t border-[var(--border-light)] bg-[var(--accent)] px-4 pt-16 pb-8 sm:px-6">
+      <div className="relative z-10 mx-auto max-w-6xl">
+        <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
+          {/* Brand / tagline */}
+          <div className="col-span-2 sm:col-span-1">
+            <h3 className="text-2xl font-extrabold leading-tight text-[var(--accent-contrast)] sm:text-3xl">
+              AI-powered code
+              <br />
+              intelligence.
+            </h3>
+            <p className="mt-3 max-w-[220px] text-[12px] leading-relaxed text-[var(--accent-contrast)]/70">
+              One repo. Every insight. Built by developers who care about
+              quality.
+            </p>
+          </div>
+
+          {/* Product Column */}
+          <div>
+            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
+              Product
+            </h4>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/dashboard" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Dashboard
+                </Link>
+              </li>
+              <li>
+                <Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Pricing
+                </Link>
+              </li>
+              <li>
+                <Link to="/workspace" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Workspace
+                </Link>
+              </li>
+              <li>
+                <Link to="/history" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  History
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Resources Column */}
+          <div>
+            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
+              Resources
+            </h4>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Support
+                </Link>
+              </li>
+              <li>
+                <Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Terms
+                </Link>
+              </li>
+            </ul>
+          </div>
+
+          {/* Company Column */}
+          <div>
+            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
+              Company
+            </h4>
+            <ul className="space-y-2">
+              <li>
+                <a href="mailto:support@codeverity.dev" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  Contact
+                </a>
+              </li>
+              <li>
+                <Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <span className="text-[12px] text-[var(--accent-contrast)]/60">
+                  © {new Date().getFullYear()}
+                </span>
+              </li>
+            </ul>
+          </div>
+        </div>
+
+        {/* Bottom bar */}
+        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--accent-contrast)]/15 pt-6 sm:flex-row">
+          <p className="text-[10px] text-[var(--accent-contrast)]/60">
+            Built with ❤️ for developers everywhere.
+          </p>
+          <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
+            <Link to="/privacy" className="transition hover:text-[var(--accent-contrast)]">
+              Privacy
+            </Link>
+            <Link to="/terms" className="transition hover:text-[var(--accent-contrast)]">
+              Terms
+            </Link>
+            <Link to="/support" className="transition hover:text-[var(--accent-contrast)]">
+              Support
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      {/* Brand lockup: logo mark sits above the wordmark, not on top of it */}
+      <div className="relative z-10 mt-16 flex select-none flex-col items-center gap-4">
+        <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20">
           <CodeVerityLogo />
-          <span className="font-mono text-[10px]">CodeVerity © 2026</span>
         </div>
-        <div className="flex items-center gap-4">
-          <Link
-            to="/about"
-            className="hover:text-[var(--text-primary)] transition-colors"
+        <div
+          className="pointer-events-none w-full overflow-hidden text-center"
+          style={{
+            maskImage:
+              "linear-gradient(to bottom, black 60%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 60%, transparent 100%)",
+          }}
+        >
+          <span
+            className="block whitespace-nowrap font-extrabold leading-none tracking-tight text-[var(--accent-contrast)]/10"
+            style={{ fontSize: "clamp(3.5rem, 15vw, 10rem)" }}
           >
-            About
-          </Link>
-          <Link
-            to="/privacy"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            Privacy
-          </Link>
-          <Link
-            to="/terms"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            Terms
-          </Link>
-          <Link
-            to="/support"
-            className="hover:text-[var(--text-primary)] transition-colors"
-          >
-            Support
-          </Link>
-        </div>
-        <div className="flex items-center gap-3">
-          <span>Built with ❤️ for developers</span>
+            CodeVerity
+          </span>
         </div>
       </div>
     </footer>
@@ -970,33 +1068,25 @@ export default function Home() {
   const compactClasses = compact
     ? {
         container: "py-8",
-        heading: "text-4xl sm:text-5xl md:text-[3.8rem]",
+        heading: "text-4xl sm:text-5xl md:text-[3.6rem]",
         subheading: "text-lg sm:text-xl",
         description: "text-xs sm:text-sm",
         brandMargin: "mb-5",
         badgeMargin: "mb-4",
         ctaMargin: "mb-6",
         statsMargin: "mb-8",
-        featureGap: "gap-2",
-        footerMargin: "mt-6",
-        statPill: "px-4 py-2 min-w-[90px]",
-        statValue: "text-lg",
-        statLabel: "text-[8px]",
+        featureGap: "gap-x-6 gap-y-8",
       }
     : {
         container: "py-16",
-        heading: "text-5xl sm:text-6xl md:text-[4.4rem]",
+        heading: "text-5xl sm:text-6xl md:text-[4.2rem]",
         subheading: "text-xl sm:text-2xl",
         description: "text-sm sm:text-[15px]",
         brandMargin: "mb-7",
         badgeMargin: "mb-6",
         ctaMargin: "mb-9",
         statsMargin: "mb-12",
-        featureGap: "gap-3",
-        footerMargin: "mt-8",
-        statPill: "px-5 py-3 min-w-[110px]",
-        statValue: "text-xl",
-        statLabel: "text-[9px]",
+        featureGap: "gap-x-8 gap-y-10",
       };
 
   return (
@@ -1004,8 +1094,7 @@ export default function Home() {
       ref={containerRef}
       className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
     >
-      {/* Background glows and dot grid now theme-driven instead of
-          the old hardcoded indigo rgba(99,102,241,...) literals. */}
+      {/* Background glows and dot grid  theme-driven */}
       <div
         ref={bgGlow1Ref}
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl"
@@ -1040,7 +1129,7 @@ export default function Home() {
           >
             <CodeVerityLogo />
             <div className="text-left">
-              <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)] uppercase">
+              <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)]">
                 CodeVerity
               </p>
               <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">
@@ -1049,11 +1138,10 @@ export default function Home() {
             </div>
           </div>
 
-          {/* BADGE animate-pulse-glow now correctly follows the
-              theme since the duplicate local override is gone. */}
+          {/* BADGE */}
           <div
             ref={badgeRef}
-            className={`mb-6 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/80 px-3.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] backdrop-blur-xl animate-pulse-glow ${compactClasses.badgeMargin}`}
+            className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}
           >
             <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
             AI-powered GitHub code analysis
@@ -1089,7 +1177,7 @@ export default function Home() {
             className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
           >
             Drop any public GitHub URL and get a complete AI-powered repository
-            audit with architecture analysis, security findings, bug detection,
+            audit  architecture analysis, security findings, bug detection,
             performance insights, and generated tests.
           </p>
 
@@ -1101,7 +1189,7 @@ export default function Home() {
             {token ? (
               <Link
                 to="/dashboard"
-                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
+                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
                 style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
               >
                 <ScanLine />
@@ -1111,15 +1199,17 @@ export default function Home() {
               <>
                 <Link
                   to="/login"
-                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.03] active:scale-95"
-                  style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
+                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+                  style={{
+                    boxShadow: "0 8px 24px -6px var(--accent-soft-strong)",
+                  }}
                 >
                   <ScanLine />
                   <span className="relative z-10">Sign In</span>
                 </Link>
                 <Link
                   to="/register"
-                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)]/85 backdrop-blur-sm transition-all duration-200 hover:scale-[1.03] active:scale-95 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] active:scale-[0.98]"
                 >
                   Get Started Free →
                 </Link>
@@ -1141,7 +1231,7 @@ export default function Home() {
           {/* STATS */}
           <div
             ref={statsRef}
-            className={`flex flex-wrap justify-center gap-2.5 ${compactClasses.statsMargin}`}
+            className={`mx-auto flex w-fit justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2 py-3 backdrop-blur-sm ${compactClasses.statsMargin}`}
           >
             <StatPill
               value={statsLoading ? "..." : `${stats.totalScans}+`}
@@ -1163,49 +1253,38 @@ export default function Home() {
           {/* FEATURE LABEL */}
           <div
             ref={featureLabelRef}
-            className="mb-4 flex items-center gap-3"
+            className="mb-6 text-left"
             style={{ opacity: 0 }}
           >
-            <div className="h-px flex-1 bg-gradient-to-r from-transparent to-[var(--border-light)]" />
-            <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <p className="text-sm font-semibold text-[var(--text-primary)]">
               What CodeVerity checks
-            </span>
-            <div className="h-px flex-1 bg-gradient-to-l from-transparent to-[var(--border-light)]" />
+            </p>
           </div>
 
           {/* FEATURE CARDS */}
-          <div className={`grid ${compactClasses.featureGap} md:grid-cols-3`}>
-            <div
-              ref={(el) => (featureCardsRef.current[0] = el)}
-              style={{ opacity: 0 }}
-            >
+          <div className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}>
+            <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
               <Feature
                 icon={<BugIcon />}
                 title="AI Bug Detection"
                 desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
-                delay="0.55s"
+                index={0}
               />
             </div>
-            <div
-              ref={(el) => (featureCardsRef.current[1] = el)}
-              style={{ opacity: 0 }}
-            >
+            <div ref={(el) => (featureCardsRef.current[1] = el)} style={{ opacity: 0 }}>
               <Feature
                 icon={<ShieldIcon />}
                 title="Security Analysis"
                 desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
-                delay="0.65s"
+                index={1}
               />
             </div>
-            <div
-              ref={(el) => (featureCardsRef.current[2] = el)}
-              style={{ opacity: 0 }}
-            >
+            <div ref={(el) => (featureCardsRef.current[2] = el)} style={{ opacity: 0 }}>
               <Feature
                 icon={<FlaskIcon />}
                 title="Smart Test Generation"
                 desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
-                delay="0.75s"
+                index={2}
               />
             </div>
           </div>
@@ -1213,7 +1292,7 @@ export default function Home() {
       </div>
 
       {/* NEW SECTIONS */}
-      <div className="relative z-10 max-w-7xl mx-auto">
+      <div className="relative z-10 mx-auto max-w-7xl">
         <div ref={howRef} style={{ opacity: 0 }}>
           <HowItWorks />
         </div>

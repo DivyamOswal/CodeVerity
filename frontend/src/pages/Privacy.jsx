@@ -100,7 +100,7 @@ export default function Privacy() {
 
         {/* LAYOUT */}
         <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
-          {/* SIDEBAR NAV — sticky, with scroll-spy active state */}
+          {/* SIDEBAR NAV sticky, with scroll-spy active state */}
           <nav
             className={`${compactClasses.sidebarWidth} shrink-0`}
             aria-label="Privacy policy sections"

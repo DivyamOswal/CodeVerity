@@ -4,10 +4,7 @@ import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 
-// -----------------------------------------------------------------
-// Helper functions (unchanged)
-// -----------------------------------------------------------------
-
+// ─── Helper functions (unchanged) ──────────────────────────────
 function getInitials(token) {
   if (!token) return "U";
   try {
@@ -41,10 +38,7 @@ function getUserInfo(token) {
   }
 }
 
-// -----------------------------------------------------------------
-// Icons (unchanged)
-// -----------------------------------------------------------------
-
+// ─── Icons (unchanged) ───────────────────────────────────────────
 function Icon({ name, size = 16, className = "" }) {
   const icons = {
     dashboard: (
@@ -133,10 +127,7 @@ function Icon({ name, size = 16, className = "" }) {
   );
 }
 
-// -----------------------------------------------------------------
-// DropdownItem (unchanged)
-// -----------------------------------------------------------------
-
+// ─── DropdownItem ─────────────────────────────────────────────────
 function DropdownItem({ icon, label, onClick, danger = false }) {
   return (
     <button
@@ -162,10 +153,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
   );
 }
 
-// -----------------------------------------------------------------
-// Main Navbar
-// -----------------------------------------------------------------
-
+// ─── Main Navbar ─────────────────────────────────────────────────
 export default function Navbar() {
   const navigate = useNavigate();
   const location = useLocation();
@@ -181,8 +169,6 @@ export default function Navbar() {
   const logoRef = useRef(null);
   const navItemsRef = useRef([]);
   const dropRef = useRef(null);
-  const mobileMenuRef = useRef(null);
-  const activeIndicatorRef = useRef(null);
 
   const addNavItemRef = (element) => {
     if (element && !navItemsRef.current.includes(element)) {
@@ -227,13 +213,27 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  // ─── GSAP entrance animation (unchanged) ────────────────────
+  // ─── GSAP entrance animation ──────────────────────────────────
   useGSAP(() => {
     const mm = gsap.matchMedia();
 
     mm.add("(prefers-reduced-motion: no-preference)", () => {
       const timeline = gsap.timeline({
         defaults: { ease: "power3.out" },
+        onComplete: () => {
+          // Guarantee nothing stays stuck at opacity:0 / visibility:hidden
+          // if the timeline gets interrupted by a route change (e.g. Sign in -> back).
+          [
+            navRef.current,
+            logoRef.current,
+            ...navItemsRef.current,
+            navContentRef.current,
+          ].forEach(
+            (el) =>
+              el &&
+              gsap.set(el, { clearProps: "opacity,visibility,transform" }),
+          );
+        },
       });
 
       if (navRef.current) {
@@ -253,7 +253,20 @@ export default function Navbar() {
             duration: 0.4,
             ease: "back.out(1.5)",
           },
-          "-=0.3"
+          "-=0.3",
+        );
+      }
+
+      if (logoRef.current) {
+        timeline.from(
+          logoRef.current,
+          {
+            scale: 0.85,
+            autoAlpha: 0,
+            duration: 0.4,
+            ease: "back.out(1.5)",
+          },
+          "-=0.3",
         );
       }
 
@@ -266,7 +279,7 @@ export default function Navbar() {
             duration: 0.35,
             stagger: 0.055,
           },
-          "-=0.25"
+          "-=0.25",
         );
       }
 
@@ -278,7 +291,7 @@ export default function Navbar() {
             autoAlpha: 0,
             duration: 0.35,
           },
-          "-=0.25"
+          "-=0.25",
         );
       }
     });
@@ -289,7 +302,13 @@ export default function Navbar() {
       }
     });
 
-    return () => mm.revert();
+    return () => {
+      mm.revert();
+      // Belt-and-braces: if unmounted mid-animation, make sure the logo
+      // and nav don't get left invisible.
+      if (logoRef.current) gsap.set(logoRef.current, { clearProps: "all" });
+      if (navRef.current) gsap.set(navRef.current, { clearProps: "all" });
+    };
   });
 
   const handleLogout = () => {
@@ -298,7 +317,7 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  // ─── Sizing classes (dynamic based on compact & scroll) ──
+  // ─── Dynamic sizing based on scroll & compact ──────────────
   const baseHeight = compact ? "h-14" : "h-16";
   const shrunkHeight = compact ? "h-12" : "h-13";
   const navbarHeight = isScrolled ? shrunkHeight : baseHeight;
@@ -308,88 +327,82 @@ export default function Navbar() {
       ? "h-7 w-7"
       : "h-8 w-8"
     : compact
-    ? "h-8 w-8"
-    : "h-9 w-9";
+      ? "h-8 w-8"
+      : "h-9 w-9";
 
-  const iconSize = isScrolled
-    ? compact
-      ? 13
-      : 15
-    : compact
-    ? 15
-    : 17;
+  const iconSize = isScrolled ? (compact ? 13 : 15) : compact ? 15 : 17;
 
   const brandTextSize = isScrolled
     ? compact
       ? "text-[11px]"
       : "text-[13px]"
     : compact
-    ? "text-[13px]"
-    : "text-[15px]";
+      ? "text-[13px]"
+      : "text-[15px]";
 
   const brandSubSize = isScrolled
     ? compact
       ? "text-[6px]"
       : "text-[7px]"
     : compact
-    ? "text-[7px]"
-    : "text-[8px]";
+      ? "text-[7px]"
+      : "text-[8px]";
 
   const navItemHeight = isScrolled
     ? compact
       ? "h-6"
       : "h-7"
     : compact
-    ? "h-7"
-    : "h-8";
+      ? "h-7"
+      : "h-8";
 
   const navItemFont = isScrolled
     ? compact
       ? "text-[9.5px]"
       : "text-[10.5px]"
     : compact
-    ? "text-[10.5px]"
-    : "text-[11.5px]";
+      ? "text-[10.5px]"
+      : "text-[11.5px]";
 
   const avatarSize = isScrolled
     ? compact
       ? "h-6 w-6"
       : "h-7 w-7"
     : compact
-    ? "h-7 w-7"
-    : "h-8 w-8";
+      ? "h-7 w-7"
+      : "h-8 w-8";
 
   const avatarFont = isScrolled
     ? compact
       ? "text-[8px]"
       : "text-[9px]"
     : compact
-    ? "text-[9px]"
-    : "text-[10px]";
+      ? "text-[9px]"
+      : "text-[10px]";
 
   const userInfoNameSize = isScrolled
     ? compact
       ? "text-[9px]"
       : "text-[10px]"
     : compact
-    ? "text-[10px]"
-    : "text-[11px]";
+      ? "text-[10px]"
+      : "text-[11px]";
 
   const userInfoRoleSize = isScrolled
     ? compact
       ? "text-[6px]"
       : "text-[7px]"
     : compact
-    ? "text-[7px]"
-    : "text-[8px]";
+      ? "text-[7px]"
+      : "text-[8px]";
 
   const buttonPadding = isScrolled
     ? compact
       ? "px-2.5 py-1 text-[10px]"
       : "px-3 py-1.5 text-[11px]"
     : compact
-    ? "px-3 py-1.5 text-[11px]"
-    : "px-3.5 py-2 text-[12px]";
+      ? "px-3 py-1.5 text-[11px]"
+      : "px-3.5 py-2 text-[12px]";
 
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
   const mobileMenuItemPadding = compact
@@ -397,10 +410,12 @@ export default function Navbar() {
     : "px-4 py-3 text-sm";
 
   // ─── Background & shadow ─────────────────────────────────────
+  // ─── Background & shadow ─────────────────────────────────────
   const bgClass = isScrolled
-    ? "bg-[var(--bg-primary)]/95 shadow-lg shadow-black/10"
-    : "bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70";
+    ? "bg-[var(--bg-primary)] shadow-lg shadow-black/10"
+    : "bg-[var(--bg-primary)]";
 
+  // ─── Navigation Item ──────────────────────────────────────────
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
       to={to}
@@ -434,7 +449,7 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className={`sticky top-0 z-50 border-b border-[var(--border-light)] transition-all duration-200 ease-out ${bgClass} ${navbarHeight}`}
+      className={`fixed top-0 left-0 right-0 z-50 border-b border-[var(--border-light)] transition-all duration-200 ease-out ${bgClass} ${navbarHeight}`}
     >
       <div
         ref={navContentRef}
@@ -442,13 +457,14 @@ export default function Navbar() {
           compact ? "px-3 sm:px-4" : ""
         }`}
       >
-        {/* LEFT – Logo */}
+        {/* ─── LEFT: Logo & Brand (always visible) ───────────── */}
         <div className="flex min-w-0 items-center">
           <NavLink
             ref={logoRef}
             to="/"
             className="group flex items-center gap-2.5 transition-all duration-200"
           >
+            {/* Icon */}
             <div
               className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
@@ -467,7 +483,8 @@ export default function Navbar() {
               </span>
             </div>
 
-            <div className="hidden sm:block">
+            {/* Brand Name – always visible */}
+            <div className="flex flex-col">
               <div
                 className={`flex items-center font-bold leading-none tracking-tight transition-all duration-200 ${brandTextSize}`}
               >
@@ -475,7 +492,7 @@ export default function Navbar() {
                 <span className="text-[var(--accent)]">Verity</span>
               </div>
               <p
-                className={`mt-1 font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] transition-all duration-200 ${brandSubSize}`}
+                className={`font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] transition-all duration-200 ${brandSubSize}`}
               >
                 AI Code Intelligence
               </p>
@@ -483,7 +500,7 @@ export default function Navbar() {
           </NavLink>
         </div>
 
-        {/* CENTER – Navigation */}
+        {/* ─── CENTER: Navigation tabs ────────────────────────── */}
         <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
           {isAuth && (
             <>
@@ -501,7 +518,7 @@ export default function Navbar() {
           <NavigationItem to="/contact" label="Contact" icon="contact" />
         </div>
 
-        {/* RIGHT – User */}
+        {/* ─── RIGHT: User & actions ──────────────────────────── */}
         <div className="flex items-center gap-1">
           {isAuth ? (
             <div ref={dropRef} className="relative">
@@ -516,8 +533,8 @@ export default function Navbar() {
                       ? "h-8"
                       : "h-9"
                     : compact
-                    ? "h-9"
-                    : "h-10"
+                      ? "h-9"
+                      : "h-10"
                 } ${dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"}`}
               >
                 <div
@@ -545,11 +562,14 @@ export default function Navbar() {
                     dropOpen ? "rotate-180" : ""
                   }`}
                 >
-                  <Icon name="chevron" size={isScrolled ? (compact ? 9 : 10) : compact ? 10 : 12} />
+                  <Icon
+                    name="chevron"
+                    size={isScrolled ? (compact ? 9 : 10) : compact ? 10 : 12}
+                  />
                 </span>
               </button>
 
-              {/* Dropdown (unchanged) */}
+              {/* Dropdown */}
               <div
                 className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
                   dropOpen
@@ -630,6 +650,7 @@ export default function Navbar() {
             </div>
           )}
 
+          {/* Mobile hamburger */}
           <button
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
@@ -640,8 +661,8 @@ export default function Navbar() {
                   ? "h-8 w-8"
                   : "h-9 w-9"
                 : compact
-                ? "h-9 w-9"
-                : "h-10 w-10"
+                  ? "h-9 w-9"
+                  : "h-10 w-10"
             }`}
           >
             <span className="relative flex h-3.5 w-4 flex-col justify-between">
@@ -665,7 +686,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation (unchanged) */}
+      {/* ─── Mobile Menu ────────────────────────────────────────── */}
       <div
         className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
           menuOpen

@@ -34,7 +34,7 @@ const FAQS = [
   {
     category: "Analysis",
     q: "Can I download my report?",
-    a: "Yes — every report can be exported as a PDF from the report view or from your History page, and raw JSON is also available for programmatic use.",
+    a: "Yes every report can be exported as a PDF from the report view or from your History page, and raw JSON is also available for programmatic use.",
   },
   {
     category: "Billing",
@@ -49,7 +49,7 @@ const FAQS = [
   {
     category: "Billing",
     q: "How do I cancel my subscription?",
-    a: "Go to Settings, and from there you can downgrade or cancel your plan. Cancellation takes effect at the end of your current billing period — you keep access until then.",
+    a: "Go to Settings, and from there you can downgrade or cancel your plan. Cancellation takes effect at the end of your current billing period you keep access until then.",
   },
   {
     category: "Billing",
@@ -74,7 +74,7 @@ const FAQS = [
   {
     category: "Privacy & Security",
     q: "Does CodeVerity store my source code?",
-    a: "No. Your source code is processed in memory during analysis and is not retained afterward. What is stored is the output of the analysis — your report, scores, and summary — tied to your account.",
+    a: "No. Your source code is processed in memory during analysis and is not retained afterward. What is stored is the output of the analysis your report, scores, and summary tied to your account.",
   },
   {
     category: "Privacy & Security",
@@ -180,7 +180,7 @@ export default function Support() {
                 aria-label="Search help articles"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Search for answers — e.g. &quot;private repo&quot;, &quot;refund&quot;, &quot;delete account&quot;"
+                placeholder="Search for answers e.g. &quot;private repo&quot;, &quot;refund&quot;, &quot;delete account&quot;"
                 className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] pl-11 pr-4 text-sm text-[var(--text-primary)] outline-none transition placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 ${compactClasses.searchHeight}`}
               />
             </div>
