@@ -82,18 +82,39 @@ export const getAllReports = async (req, res) => {
     const query = {};
     if (workspaceId) query.workspaceId = workspaceId;
     if (userId) query.userId = userId;
+
+    // If workspaceId is provided, we filter; otherwise, we fetch all reports
+    // (including those without workspaceId, for old reports)
+    // We'll just use the query as is; if workspaceId is undefined, it will match all.
+
     const reports = await Report.find(query)
-      .populate("userId", "name email")
-      .populate("workspaceId", "name")
+      .populate({
+        path: "userId",
+        select: "name email",
+        // If userId reference is missing, it will be null, so we handle later
+      })
+      .populate({
+        path: "workspaceId",
+        select: "name",
+      })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit))
       .lean();
+
+    // Transform reports to safely access populated fields
+    const transformed = reports.map((r) => ({
+      ...r,
+      userId: r.userId || { email: "Unknown User" },
+      workspaceId: r.workspaceId || { name: "N/A" },
+    }));
+
     const total = await Report.countDocuments(query);
-    res.json({ reports, total, page, limit });
+
+    res.json({ reports: transformed, total, page, limit });
   } catch (err) {
     console.error("Get reports error:", err);
-    res.status(500).json({ error: "Failed to fetch reports" });
+    res.status(500).json({ error: "Failed to fetch reports: " + err.message });
   }
 };
 

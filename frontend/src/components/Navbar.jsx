@@ -5,22 +5,7 @@ import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 
 // -----------------------------------------------------------------
-// DESIGN NOTE this nav borrows its visual language from the rest of
-// the app (editor chrome, corner brackets, monospace paths) instead of
-// a generic pill nav, so it reads as part of the same product:
-//   - center nav = a small "tab strip", active tab marked with a top
-//     bar (like an open editor tab), not a floating pill
-//   - avatar / logo = squircles (rounded-lg), matching the app's
-//     editor-card radii not circular social-app avatars
-//   - nav labels set in monospace, echoing the code-editor identity
-//
-// All colors here are theme tokens from index.css (--accent, --bg-*,
-// --border-*, --color-*) this file has no hardcoded palette values,
-// so it follows whatever theme is active without needing edits here.
-// -----------------------------------------------------------------
-
-// -----------------------------------------------------------------
-// Helper functions
+// Helper functions (unchanged)
 // -----------------------------------------------------------------
 
 function getInitials(token) {
@@ -57,7 +42,7 @@ function getUserInfo(token) {
 }
 
 // -----------------------------------------------------------------
-// Icons
+// Icons (unchanged)
 // -----------------------------------------------------------------
 
 function Icon({ name, size = 16, className = "" }) {
@@ -149,7 +134,7 @@ function Icon({ name, size = 16, className = "" }) {
 }
 
 // -----------------------------------------------------------------
-// DropdownItem
+// DropdownItem (unchanged)
 // -----------------------------------------------------------------
 
 function DropdownItem({ icon, label, onClick, danger = false }) {
@@ -189,6 +174,7 @@ export default function Navbar() {
 
   const [dropOpen, setDropOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [isScrolled, setIsScrolled] = useState(false);
 
   const navRef = useRef(null);
   const navContentRef = useRef(null);
@@ -207,6 +193,16 @@ export default function Navbar() {
   const initials = useMemo(() => getInitials(token), [token]);
   const userInfo = useMemo(() => getUserInfo(token), [token]);
 
+  // ─── Scroll handler ──────────────────────────────────────────
+  useEffect(() => {
+    const handleScroll = () => {
+      setIsScrolled(window.scrollY > 50);
+    };
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
+  }, []);
+
+  // ─── Outside click for dropdown ─────────────────────────────
   useEffect(() => {
     const handleOutsideClick = (event) => {
       if (dropRef.current && !dropRef.current.contains(event.target)) {
@@ -217,11 +213,13 @@ export default function Navbar() {
     return () => document.removeEventListener("mousedown", handleOutsideClick);
   }, []);
 
+  // ─── Close dropdown / mobile menu on route change ──────────
   useEffect(() => {
     setDropOpen(false);
     setMenuOpen(false);
   }, [location.pathname]);
 
+  // ─── Prevent body scroll when mobile menu is open ──────────
   useEffect(() => {
     document.body.style.overflow = menuOpen ? "hidden" : "";
     return () => {
@@ -229,6 +227,7 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
+  // ─── GSAP entrance animation (unchanged) ────────────────────
   useGSAP(() => {
     const mm = gsap.matchMedia();
 
@@ -254,7 +253,7 @@ export default function Navbar() {
             duration: 0.4,
             ease: "back.out(1.5)",
           },
-          "-=0.3",
+          "-=0.3"
         );
       }
 
@@ -267,7 +266,7 @@ export default function Navbar() {
             duration: 0.35,
             stagger: 0.055,
           },
-          "-=0.25",
+          "-=0.25"
         );
       }
 
@@ -279,7 +278,7 @@ export default function Navbar() {
             autoAlpha: 0,
             duration: 0.35,
           },
-          "-=0.25",
+          "-=0.25"
         );
       }
     });
@@ -299,24 +298,108 @@ export default function Navbar() {
     navigate("/login");
   };
 
-  const navbarHeight = compact ? "h-14" : "h-16";
-  const logoSize = compact ? "h-8 w-8" : "h-9 w-9";
-  const iconSize = compact ? 15 : 17;
-  const brandTextSize = compact ? "text-[13px]" : "text-[15px]";
-  const brandSubSize = compact ? "text-[7px]" : "text-[8px]";
-  const navItemHeight = compact ? "h-7" : "h-8";
-  const navItemFont = compact ? "text-[10.5px]" : "text-[11.5px]";
-  const avatarSize = compact ? "h-7 w-7" : "h-8 w-8";
-  const avatarFont = compact ? "text-[9px]" : "text-[10px]";
-  const userInfoNameSize = compact ? "text-[10px]" : "text-[11px]";
-  const userInfoRoleSize = compact ? "text-[7px]" : "text-[8px]";
-  const buttonPadding = compact
+  // ─── Sizing classes (dynamic based on compact & scroll) ──
+  const baseHeight = compact ? "h-14" : "h-16";
+  const shrunkHeight = compact ? "h-12" : "h-13";
+  const navbarHeight = isScrolled ? shrunkHeight : baseHeight;
+
+  const logoSize = isScrolled
+    ? compact
+      ? "h-7 w-7"
+      : "h-8 w-8"
+    : compact
+    ? "h-8 w-8"
+    : "h-9 w-9";
+
+  const iconSize = isScrolled
+    ? compact
+      ? 13
+      : 15
+    : compact
+    ? 15
+    : 17;
+
+  const brandTextSize = isScrolled
+    ? compact
+      ? "text-[11px]"
+      : "text-[13px]"
+    : compact
+    ? "text-[13px]"
+    : "text-[15px]";
+
+  const brandSubSize = isScrolled
+    ? compact
+      ? "text-[6px]"
+      : "text-[7px]"
+    : compact
+    ? "text-[7px]"
+    : "text-[8px]";
+
+  const navItemHeight = isScrolled
+    ? compact
+      ? "h-6"
+      : "h-7"
+    : compact
+    ? "h-7"
+    : "h-8";
+
+  const navItemFont = isScrolled
+    ? compact
+      ? "text-[9.5px]"
+      : "text-[10.5px]"
+    : compact
+    ? "text-[10.5px]"
+    : "text-[11.5px]";
+
+  const avatarSize = isScrolled
+    ? compact
+      ? "h-6 w-6"
+      : "h-7 w-7"
+    : compact
+    ? "h-7 w-7"
+    : "h-8 w-8";
+
+  const avatarFont = isScrolled
+    ? compact
+      ? "text-[8px]"
+      : "text-[9px]"
+    : compact
+    ? "text-[9px]"
+    : "text-[10px]";
+
+  const userInfoNameSize = isScrolled
+    ? compact
+      ? "text-[9px]"
+      : "text-[10px]"
+    : compact
+    ? "text-[10px]"
+    : "text-[11px]";
+
+  const userInfoRoleSize = isScrolled
+    ? compact
+      ? "text-[6px]"
+      : "text-[7px]"
+    : compact
+    ? "text-[7px]"
+    : "text-[8px]";
+
+  const buttonPadding = isScrolled
+    ? compact
+      ? "px-2.5 py-1 text-[10px]"
+      : "px-3 py-1.5 text-[11px]"
+    : compact
     ? "px-3 py-1.5 text-[11px]"
     : "px-3.5 py-2 text-[12px]";
+
   const mobileMenuPadding = compact ? "py-2 px-3" : "py-3 px-4";
   const mobileMenuItemPadding = compact
     ? "px-3 py-2.5 text-sm"
     : "px-4 py-3 text-sm";
+
+  // ─── Background & shadow ─────────────────────────────────────
+  const bgClass = isScrolled
+    ? "bg-[var(--bg-primary)]/95 shadow-lg shadow-black/10"
+    : "bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70";
 
   const NavigationItem = ({ to, label, icon }) => (
     <NavLink
@@ -339,7 +422,7 @@ export default function Navbar() {
           />
           <Icon
             name={icon}
-            size={compact ? 12 : 13}
+            size={isScrolled ? (compact ? 10 : 11) : compact ? 12 : 13}
             className={isActive ? "text-[var(--accent)]" : ""}
           />
           <span>{label}</span>
@@ -351,7 +434,7 @@ export default function Navbar() {
   return (
     <nav
       ref={navRef}
-      className={`sticky top-0 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md supports-[backdrop-filter]:bg-[var(--bg-primary)]/70 ${navbarHeight}`}
+      className={`sticky top-0 z-50 border-b border-[var(--border-light)] transition-all duration-200 ease-out ${bgClass} ${navbarHeight}`}
     >
       <div
         ref={navContentRef}
@@ -364,10 +447,10 @@ export default function Navbar() {
           <NavLink
             ref={logoRef}
             to="/"
-            className="group flex items-center gap-2.5"
+            className="group flex items-center gap-2.5 transition-all duration-200"
           >
             <div
-              className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-300 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
+              className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${logoSize}`}
             >
               <Icon
                 name="shield"
@@ -386,13 +469,13 @@ export default function Navbar() {
 
             <div className="hidden sm:block">
               <div
-                className={`flex items-center font-bold leading-none tracking-tight ${brandTextSize}`}
+                className={`flex items-center font-bold leading-none tracking-tight transition-all duration-200 ${brandTextSize}`}
               >
                 <span className="text-[var(--text-primary)]">Code</span>
                 <span className="text-[var(--accent)]">Verity</span>
               </div>
               <p
-                className={`mt-1 font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] ${brandSubSize}`}
+                className={`mt-1 font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] transition-all duration-200 ${brandSubSize}`}
               >
                 AI Code Intelligence
               </p>
@@ -400,7 +483,7 @@ export default function Navbar() {
           </NavLink>
         </div>
 
-        {/* CENTER – Navigation, styled as a small tab strip */}
+        {/* CENTER – Navigation */}
         <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm md:flex">
           {isAuth && (
             <>
@@ -428,11 +511,17 @@ export default function Navbar() {
                 aria-haspopup="true"
                 aria-expanded={dropOpen}
                 className={`flex items-center gap-2 rounded-lg px-1.5 transition-colors duration-150 ${
-                  compact ? "h-9" : "h-10"
+                  isScrolled
+                    ? compact
+                      ? "h-8"
+                      : "h-9"
+                    : compact
+                    ? "h-9"
+                    : "h-10"
                 } ${dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"}`}
               >
                 <div
-                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast)] ${avatarSize} ${avatarFont}`}
+                  className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] font-mono font-bold text-[var(--accent-contrast)] transition-all duration-200 ${avatarSize} ${avatarFont}`}
                 >
                   {initials}
                   <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-[var(--bg-primary)] bg-[var(--color-success)]" />
@@ -440,12 +529,12 @@ export default function Navbar() {
 
                 <div className="hidden text-left lg:block">
                   <p
-                    className={`max-w-[100px] truncate font-semibold leading-3 text-[var(--text-primary)] ${userInfoNameSize}`}
+                    className={`max-w-[100px] truncate font-semibold leading-3 text-[var(--text-primary)] transition-all duration-200 ${userInfoNameSize}`}
                   >
                     {userInfo.name || initials}
                   </p>
                   <p
-                    className={`mt-1 font-mono leading-3 text-[var(--text-muted)] ${userInfoRoleSize}`}
+                    className={`mt-1 font-mono leading-3 text-[var(--text-muted)] transition-all duration-200 ${userInfoRoleSize}`}
                   >
                     {userInfo.role || "developer"}
                   </p>
@@ -456,11 +545,11 @@ export default function Navbar() {
                     dropOpen ? "rotate-180" : ""
                   }`}
                 >
-                  <Icon name="chevron" size={compact ? 10 : 12} />
+                  <Icon name="chevron" size={isScrolled ? (compact ? 9 : 10) : compact ? 10 : 12} />
                 </span>
               </button>
 
-              {/* Dropdown */}
+              {/* Dropdown (unchanged) */}
               <div
                 className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
                   dropOpen
@@ -546,7 +635,13 @@ export default function Navbar() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
             className={`relative ml-1 flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
-              compact ? "h-9 w-9" : "h-10 w-10"
+              isScrolled
+                ? compact
+                  ? "h-8 w-8"
+                  : "h-9 w-9"
+                : compact
+                ? "h-9 w-9"
+                : "h-10 w-10"
             }`}
           >
             <span className="relative flex h-3.5 w-4 flex-col justify-between">
@@ -570,7 +665,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* Mobile Navigation */}
+      {/* Mobile Navigation (unchanged) */}
       <div
         className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
           menuOpen

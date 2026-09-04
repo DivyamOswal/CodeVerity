@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../App";
 import { useNavigate } from "react-router-dom";
-import { Users, Briefcase, FileText, DollarSign, TrendingUp } from "lucide-react";
+import { Users, Briefcase, FileText, DollarSign, TrendingUp, Activity, Clock, Zap } from "lucide-react";
 import axios from "../api/axios";
+import ConfirmationDialog from "../components/ConfirmationDialog";
 
 function StatCard({ label, value, icon: Icon, color }) {
   return (
@@ -26,6 +27,15 @@ export default function AdminDashboard() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [dialog, setDialog] = useState({
+    isOpen: false,
+    title: "",
+    message: "",
+    confirmText: "Confirm",
+    cancelText: "Cancel",
+    confirmVariant: "danger",
+    onConfirm: () => {},
+  });
 
   useEffect(() => {
     if (!user?.isGlobalAdmin) {
@@ -44,6 +54,18 @@ export default function AdminDashboard() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const openDialog = ({ title, message, confirmText, cancelText, confirmVariant, onConfirm }) => {
+    setDialog({
+      isOpen: true,
+      title,
+      message,
+      confirmText: confirmText || "Confirm",
+      cancelText: cancelText || "Cancel",
+      confirmVariant: confirmVariant || "danger",
+      onConfirm,
+    });
   };
 
   if (loading) {
@@ -89,25 +111,123 @@ export default function AdminDashboard() {
 
         {/* Tab Content */}
         <div className="mt-6">
-          {activeTab === "overview" && (
-            <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
-              <p className="text-sm text-[var(--text-secondary)]">
-                Welcome to the admin panel. Use the tabs above to manage users, workspaces, and reports.
-              </p>
-            </div>
-          )}
-          {activeTab === "users" && <UserManagement />}
-          {activeTab === "workspaces" && <WorkspaceManagement />}
+          {activeTab === "overview" && <Overview stats={stats} />}
+          {activeTab === "users" && <UserManagement openDialog={openDialog} />}
+          {activeTab === "workspaces" && <WorkspaceManagement openDialog={openDialog} />}
           {activeTab === "reports" && <ReportManagement />}
+        </div>
+
+        {/* Confirmation Dialog */}
+        <ConfirmationDialog
+          isOpen={dialog.isOpen}
+          onClose={() => setDialog({ ...dialog, isOpen: false })}
+          onConfirm={dialog.onConfirm}
+          title={dialog.title}
+          message={dialog.message}
+          confirmText={dialog.confirmText}
+          cancelText={dialog.cancelText}
+          confirmVariant={dialog.confirmVariant}
+        />
+      </div>
+    </div>
+  );
+}
+
+// ─── Overview Tab ──────────────────────────────────────────────
+function Overview({ stats }) {
+  const currentTime = new Date().toLocaleString();
+  const systemUptime = "2d 4h 32m"; // Placeholder – you can compute from server start time if needed
+
+  return (
+    <div className="space-y-6">
+      <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+        <h2 className="text-lg font-semibold text-[var(--text-primary)]">System Overview</h2>
+        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
+            <Activity className="h-5 w-5 text-[var(--accent)]" />
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">System Status</p>
+              <p className="text-sm font-medium text-[var(--color-success)]">● Online</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
+            <Clock className="h-5 w-5 text-[var(--accent)]" />
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">Uptime</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{systemUptime}</p>
+            </div>
+          </div>
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
+            <Zap className="h-5 w-5 text-[var(--accent)]" />
+            <div>
+              <p className="text-xs text-[var(--text-muted)]">Last Updated</p>
+              <p className="text-sm font-medium text-[var(--text-primary)]">{currentTime}</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Quick Stats Breakdown */}
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+        <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">User Activity</h3>
+          <div className="mt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Total Users</span>
+              <span className="font-medium text-[var(--text-primary)]">{stats?.totalUsers || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Workspaces</span>
+              <span className="font-medium text-[var(--text-primary)]">{stats?.totalWorkspaces || 0}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Reports Generated</span>
+              <span className="font-medium text-[var(--text-primary)]">{stats?.totalReports || 0}</span>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+          <h3 className="text-sm font-semibold text-[var(--text-primary)]">Financial Summary</h3>
+          <div className="mt-3 space-y-2">
+            <div className="flex justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Total Revenue</span>
+              <span className="font-medium text-[var(--text-primary)]">₹{(stats?.totalRevenue || 0).toLocaleString()}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Average Revenue / User</span>
+              <span className="font-medium text-[var(--text-primary)]">
+                ₹{stats?.totalUsers ? Math.round((stats.totalRevenue || 0) / stats.totalUsers).toLocaleString() : 0}
+              </span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-[var(--text-muted)]">Paid Users</span>
+              <span className="font-medium text-[var(--text-primary)]">0</span> {/* You can add a field if you track paid users */}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+        <h3 className="text-sm font-semibold text-[var(--text-primary)]">Quick Actions</h3>
+        <div className="mt-3 flex flex-wrap gap-3">
+          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
+            View All Users
+          </button>
+          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
+            Export Reports
+          </button>
+          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
+            System Logs
+          </button>
         </div>
       </div>
     </div>
   );
 }
 
-// ── Sub‑components ── (place them in the same file or separate files)
-
-function UserManagement() {
+// ─── UserManagement ─────────────────────────────────────────────
+function UserManagement({ openDialog }) {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -127,14 +247,21 @@ function UserManagement() {
     fetchUsers();
   }, [search]);
 
-  const toggleAdmin = async (userId) => {
-    if (!window.confirm("Toggle admin status for this user?")) return;
-    try {
-      await axios.put(`/admin/users/${userId}/toggle-admin`);
-      fetchUsers();
-    } catch (err) {
-      alert(err.response?.data?.error || "Failed to toggle admin");
-    }
+  const toggleAdmin = (userId) => {
+    openDialog({
+      title: "Toggle Admin Status",
+      message: "Are you sure you want to change this user's admin status?",
+      confirmText: "Toggle",
+      confirmVariant: "primary",
+      onConfirm: async () => {
+        try {
+          await axios.put(`/admin/users/${userId}/toggle-admin`);
+          fetchUsers();
+        } catch (err) {
+          alert(err.response?.data?.error || "Failed to toggle admin");
+        }
+      },
+    });
   };
 
   if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading users...</div>;
@@ -187,7 +314,8 @@ function UserManagement() {
   );
 }
 
-function WorkspaceManagement() {
+// ─── WorkspaceManagement ────────────────────────────────────────
+function WorkspaceManagement({ openDialog }) {
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -204,14 +332,21 @@ function WorkspaceManagement() {
 
   useEffect(() => { fetchWorkspaces(); }, []);
 
-  const deleteWorkspace = async (id) => {
-    if (!window.confirm("Delete this workspace and all its data?")) return;
-    try {
-      await axios.delete(`/admin/workspaces/${id}`);
-      fetchWorkspaces();
-    } catch (err) {
-      alert(err.response?.data?.error || "Failed to delete workspace");
-    }
+  const deleteWorkspace = (id) => {
+    openDialog({
+      title: "Delete Workspace",
+      message: "Delete this workspace and all its data? This action cannot be undone.",
+      confirmText: "Delete",
+      confirmVariant: "danger",
+      onConfirm: async () => {
+        try {
+          await axios.delete(`/admin/workspaces/${id}`);
+          fetchWorkspaces();
+        } catch (err) {
+          alert(err.response?.data?.error || "Failed to delete workspace");
+        }
+      },
+    });
   };
 
   if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading workspaces...</div>;
@@ -251,6 +386,7 @@ function WorkspaceManagement() {
   );
 }
 
+// ─── ReportManagement ───────────────────────────────────────────
 function ReportManagement() {
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
