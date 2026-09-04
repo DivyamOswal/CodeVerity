@@ -50,29 +50,6 @@ function TokenIcon({ className = "" }) {
   );
 }
 
-function ScanIcon({ className = "" }) {
-  return (
-    <svg
-      width="12"
-      height="12"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-      aria-hidden="true"
-    >
-      <path d="M3 7V4h3" />
-      <path d="M21 7V4h-3" />
-      <path d="M3 17v3h3" />
-      <path d="M21 17v3h-3" />
-      <path d="M3 12h18" />
-    </svg>
-  );
-}
-
 function Toggle({ options, value, onChange }) {
   return (
     <div className="inline-flex items-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] p-1 font-mono text-[12px]">
@@ -155,8 +132,9 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
           <span className="text-sm text-[var(--text-muted)]">/{cycle === "monthly" ? "mo" : "yr"}</span>
         )}
       </div>
-      {currency === "INR" && !isFree && (
-        <p className="mt-1 text-[11px] text-[var(--text-muted)]">+ GST as applicable</p>
+
+      {!isFree && (
+        <p className="mt-1 text-[11px] text-[var(--text-muted)]">incl. 18% GST</p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -164,10 +142,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
           <TokenIcon />
           {formatTokens(plan.tokensPerMonth)} tokens / mo
         </div>
-        <div className="inline-flex w-fit items-center gap-1.5 rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-mono text-[11px] text-[var(--accent)]">
-          <ScanIcon />
-          {plan.scansPerMonth} scans / mo
-        </div>
+        {/* ❌ removed "scans per month" badge */}
       </div>
 
       <ul className="mt-6 flex-1 space-y-3">
