@@ -165,7 +165,7 @@ export default function Contact() {
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
             contact us
           </div>
-          <h1 className="mt-5 text-4xl font-bold tracking-tight sm:text-5xl">
+          <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
             Questions, bugs, or feedback {" "}
             <span className="text-[var(--accent)]">we read everything.</span>
           </h1>
@@ -178,7 +178,7 @@ export default function Contact() {
         {/* CONTENT */}
         <div className="mt-14 grid gap-6 lg:grid-cols-[1fr_320px]" style={{ animation: "fadeUp 0.6s 0.1s ease both" }}>
           {/* FORM */}
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_20px_45px_-25px_var(--accent-soft-strong)] sm:p-8">
             <span className="absolute -top-px -left-px h-4 w-4 rounded-tl-2xl border-l-2 border-t-2 border-[var(--accent)]/50" />
             <span className="absolute -top-px -right-px h-4 w-4 rounded-tr-2xl border-r-2 border-t-2 border-[var(--accent)]/50" />
             <span className="absolute -bottom-px -left-px h-4 w-4 rounded-bl-2xl border-b-2 border-l-2 border-[var(--accent)]/50" />
@@ -197,7 +197,7 @@ export default function Contact() {
                 </p>
                 <button
                   onClick={resetForm}
-                  className="mt-6 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                  className="mt-6 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98]"
                 >
                   Send another message
                 </button>
@@ -253,7 +253,7 @@ export default function Contact() {
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:px-8"
+                  className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:w-auto sm:px-8"
                 >
                   {submitting ? "Sending..." : "Send message"}
                 </button>
@@ -269,8 +269,8 @@ export default function Contact() {
                 <Wrapper
                   key={c.label}
                   {...(c.href ? { href: c.href, target: c.href.startsWith("http") ? "_blank" : undefined, rel: "noreferrer" } : {})}
-                  className={`flex items-start gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 transition-colors ${
-                    c.href ? "hover:border-[var(--accent)]/40" : ""
+                  className={`flex items-start gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 transition-all duration-200 ${
+                    c.href ? "hover:-translate-y-1 hover:border-[var(--accent)]/40" : ""
                   }`}
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
