@@ -39,6 +39,7 @@ import { PreferencesProvider } from "./context/PreferencesContext";
 
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
 import { ScrollSmoother, ScrollTrigger } from "gsap/all";
+import { Toaster } from "react-hot-toast";
 
 // ─── Auth Context ──────────────────────────────────────────────
 export const AuthContext = createContext(null);
@@ -224,6 +225,7 @@ function Layout() {
 export default function App() {
   return (
     <BrowserRouter>
+    <Toaster/>
       <AuthProvider>
         <PreferencesProvider>
           <Layout />

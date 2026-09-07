@@ -1317,18 +1317,18 @@ export const permanentDeleteWorkspace = async (workspaceId) => {
   console.log(`✅ Permanently deleted workspace ${workspace.name} (${workspace._id})`);
 };
 
-// In workspaceController.js
-export const hasPermission = (workspace, userId, permission) => {
-  const member = workspace.members.find(m => m.userId.toString() === userId.toString());
-  if (!member) return false;
-  const permissions = ROLE_PERMISSIONS[member.role] || [];
-  return permissions.includes(permission);
-};
+// // In workspaceController.js
+// export const hasPermission = (workspace, userId, permission) => {
+//   const member = workspace.members.find(m => m.userId.toString() === userId.toString());
+//   if (!member) return false;
+//   const permissions = ROLE_PERMISSIONS[member.role] || [];
+//   return permissions.includes(permission);
+// };
 
-// Usage in any controller:
-if (!hasPermission(workspace, req.user.id, PERMISSIONS.MANAGE_API_KEYS)) {
-  return res.status(403).json({ error: "Permission denied." });
-}
+// // Usage in any controller:
+// if (!hasPermission(WorkSpace, req.user.id, PERMISSIONS.MANAGE_API_KEYS)) {
+//   return res.status(403).json({ error: "Permission denied." });
+// }
 
 // ─── Get Member Activity Dashboard ─────────────────────────────
 export const getMemberActivity = async (req, res) => {
