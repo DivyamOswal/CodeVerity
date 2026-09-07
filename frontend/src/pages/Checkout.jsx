@@ -23,6 +23,47 @@ function ArrowLeftIcon() {
   );
 }
 
+function LockIcon({ className = "" }) {
+  return (
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <rect x="4" y="10.5" width="16" height="10" rx="2" />
+      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" />
+    </svg>
+  );
+}
+
+function AlertIcon({ className = "" }) {
+  return (
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
+      <path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0Z" />
+      <path d="M12 9v4" />
+      <path d="M12 17h.01" />
+    </svg>
+  );
+}
+
 export default function Checkout() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
@@ -62,7 +103,7 @@ export default function Checkout() {
       <div>
         <Link
           to="/pricing"
-          className="inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--text-muted)] transition-colors hover:text-[var(--text-primary)]"
+          className="inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text-primary)]"
         >
           <ArrowLeftIcon /> back to pricing
         </Link>
@@ -72,7 +113,7 @@ export default function Checkout() {
           You're subscribing to the {plan.name} plan, billed {cycle}.
         </p>
 
-        <div className="mt-8 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+        <div className="mt-8 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_25px_55px_-35px_var(--accent-soft-strong)]">
           <div className="space-y-4">
             <div className="flex items-center justify-between border-b border-[var(--border-dark)] pb-4">
               <div>
@@ -103,28 +144,30 @@ export default function Checkout() {
             </div>
 
             {error && (
-              <div className="rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
-                ⚠️ {error}
+              <div className="flex items-start gap-2 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-xs text-red-400">
+                <AlertIcon className="mt-0.5 shrink-0" />
+                {error}
               </div>
             )}
 
             <button
               onClick={handleCheckout}
               disabled={loading}
-              className="w-full rounded-lg bg-[var(--accent)] py-3 text-center text-[14px] font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-60"
+              className="w-full rounded-lg bg-[var(--accent)] py-3 text-center text-[14px] font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100"
             >
               {loading ? "Redirecting…" : "Proceed to Payment"}
             </button>
 
-            <p className="text-center text-[11px] text-[var(--text-muted)]">
-              🔒 Secured by Stripe. Your payment details are encrypted.
+            <p className="flex items-center justify-center gap-1.5 text-center text-[11px] text-[var(--text-muted)]">
+              <LockIcon className="text-[var(--text-muted)]" />
+              Secured by Stripe. Your payment details are encrypted.
             </p>
           </div>
         </div>
       </div>
 
       {/* RIGHT – Order Summary Card */}
-      <aside className="h-fit rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+      <aside className="h-fit rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_20px_45px_-30px_var(--accent-soft-strong)]">
         <h2 className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)]">
           Order Summary
         </h2>
