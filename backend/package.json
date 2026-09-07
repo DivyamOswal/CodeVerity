@@ -17,6 +17,7 @@
     "chartjs-node-canvas": "^5.0.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.4",
+    "eslint": "^10.10.0",
     "eslint-plugin-security": "^4.0.1",
     "express": "^5.2.1",
     "groq-sdk": "^0.37.0",

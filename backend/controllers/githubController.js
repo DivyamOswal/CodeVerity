@@ -12,6 +12,13 @@ import {
   generateArchitectureGraph,
   computeHealthScore,
 } from "../utils/scanners.js";
+// ─── NEW IMPORTS ──────────────────────────────────────────────
+import { getComplexity } from "../utils/complexity.js";
+import { checkCVEs } from "../utils/cve.js";
+import { scoreReadme } from "../utils/readmeQuality.js";
+import { addAuditLog } from "./workspaceController.js"; // for Auto‑Fix
+// ──────────────────────────────────────────────────────────────
+
 import fs from "fs/promises";
 
 const GITHUB_URL_PATTERN = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/;
@@ -39,19 +46,10 @@ export const analyzeGithubRepo = async (req, res) => {
   let code = null;
 
   try {
-    // 1. Get user and check token balance / scan limits
     const user = await User.findById(userId);
     if (!user) {
       return res.status(401).json({ error: "User not found" });
     }
-
-    // // Check scan limit (monthly)
-    // const canScan = await user.incrementScanUsage();
-    // if (!canScan) {
-    //   return res.status(429).json({
-    //     error: `Monthly scan limit reached (${user.scansLimit} scans). Upgrade your plan or wait for next month.`,
-    //   });
-    // }
 
     // 2. Clone and parse the repo
     const parsed = await cloneAndParseGithubRepo(repoUrl.trim());
@@ -68,16 +66,13 @@ export const analyzeGithubRepo = async (req, res) => {
     const usage = aiResponse.usage || { total_tokens: 0 };
     const tokensUsed = usage.total_tokens || 0;
 
-    // Deduct tokens
     const deducted = await user.deductTokens(tokensUsed);
     if (!deducted) {
       return res.status(429).json({
         error: `Insufficient tokens. You have ${user.tokensRemaining} tokens remaining.`,
       });
     }
-    // user.tokensRemaining is updated by deductTokens
 
-    // Build AI analysis object
     const aiAnalysis = {
       summary: ai.summary ?? "No summary provided.",
       architecture: Array.isArray(ai.architecture) ? ai.architecture : [],
@@ -90,7 +85,7 @@ export const analyzeGithubRepo = async (req, res) => {
       finalVerdict: ai.finalVerdict ?? "",
     };
 
-    // 4. Run local scanners – with individual try/catch to prevent total failure
+    // 4. Run local scanners (existing)
     let depVulns = [],
         secrets = [],
         secVulns = [],
@@ -131,7 +126,6 @@ export const analyzeGithubRepo = async (req, res) => {
       techDebt = calculateTechDebt(allIssues);
     }
 
-    // 5. Compute Health Score
     const healthScore = computeHealthScore(
       aiAnalysis.scores,
       depVulns,
@@ -139,7 +133,33 @@ export const analyzeGithubRepo = async (req, res) => {
       techDebt
     );
 
-    // 6. Build final analysis object
+    // ─── NEW: Run enhanced scanners ──────────────────────────
+    let complexity = { maxComplexity: 0, averageComplexity: 0, maintainability: 0, functions: [] };
+    let cveList = [];
+    let readmeScore = { score: 0, details: {} };
+
+    if (repoPath) {
+      try {
+        complexity = await getComplexity(repoPath);
+        console.log(`✅ Complexity scan: max=${complexity.maxComplexity}, avg=${complexity.averageComplexity}`);
+      } catch (err) {
+        console.warn("⚠️ Complexity scan failed:", err.message);
+      }
+      try {
+        cveList = await checkCVEs(repoPath);
+        console.log(`✅ CVE scan found ${cveList.length} vulnerabilities`);
+      } catch (err) {
+        console.warn("⚠️ CVE scan failed:", err.message);
+      }
+      try {
+        readmeScore = scoreReadme(repoPath);
+        console.log(`✅ README score: ${readmeScore.score}%`);
+      } catch (err) {
+        console.warn("⚠️ README score failed:", err.message);
+      }
+    }
+
+    // 6. Build final analysis object (merged with new fields)
     const analysis = {
       ...aiAnalysis,
       healthScore,
@@ -151,17 +171,20 @@ export const analyzeGithubRepo = async (req, res) => {
       _sourceCode: code,
       tokensUsed,
       tokensRemaining: user.tokensRemaining,
+      // ─── NEW FIELDS ──────────────────────────────────────────
+      complexity,
+      cveList,
+      readmeScore,
     };
 
     // 7. Save report with workspaceId
     const report = await Report.create({
       userId: req.user.id,
-      workspaceId: user.workspaceId, // ← NEW
+      workspaceId: user.workspaceId,
       repoUrl: repoUrl.trim(),
       ...analysis,
     });
 
-    // 8. Clean up cloned repo
     if (repoPath) {
       await fs.rm(repoPath, { recursive: true, force: true });
     }
@@ -180,7 +203,7 @@ export const analyzeGithubRepo = async (req, res) => {
   }
 };
 
-// POST /api/github/generate-tests (unchanged)
+// POST /api/github/generate-tests
 export const generateTestCases = async (req, res) => {
   try {
     const { code } = req.body;
@@ -199,6 +222,7 @@ export const generateTestCases = async (req, res) => {
   }
 };
 
+// POST /api/github/auto-fix (unchanged, but now uses addAuditLog)
 export const autoFixIssue = async (req, res) => {
   try {
     const { repoUrl, issueId, filePath, lineNumber, description, currentCode, suggestedFix } = req.body;
@@ -210,7 +234,6 @@ export const autoFixIssue = async (req, res) => {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
 
-    // 1. Check if user has a GitHub token (from OAuth)
     const githubToken = user.githubAccessToken;
     if (!githubToken) {
       return res.status(403).json({
@@ -219,8 +242,7 @@ export const autoFixIssue = async (req, res) => {
       });
     }
 
-    // 2. Deduct tokens for the AI fix (estimation)
-    const estimatedTokens = 500; // rough estimate for code generation
+    const estimatedTokens = 500;
     const deducted = await user.deductTokens(estimatedTokens);
     if (!deducted) {
       return res.status(402).json({
@@ -228,7 +250,6 @@ export const autoFixIssue = async (req, res) => {
       });
     }
 
-    // 3. Parse repoUrl to get owner and repo name
     const urlParts = repoUrl.replace("https://github.com/", "").split("/");
     if (urlParts.length < 2) {
       return res.status(400).json({ error: "Invalid GitHub URL." });
@@ -236,10 +257,8 @@ export const autoFixIssue = async (req, res) => {
     const owner = urlParts[0];
     const repo = urlParts[1];
 
-    // 4. Initialize Octokit
     const octokit = new Octokit({ auth: githubToken });
 
-    // 5. Get the current file content and SHA
     let fileContent, sha;
     try {
       const { data } = await octokit.repos.getContent({
@@ -254,10 +273,8 @@ export const autoFixIssue = async (req, res) => {
       return res.status(404).json({ error: "File not found in the repository." });
     }
 
-    // 6. If we have a suggestedFix from the AI (from the report), use it. Otherwise generate one.
     let fixedCode = suggestedFix;
     if (!fixedCode) {
-      // Construct a prompt with the issue context
       const prompt = `
         You are an expert code fixer. Given the following code snippet and a bug description,
         generate the corrected version of the code. Only output the fixed code, no explanation.
@@ -271,7 +288,6 @@ export const autoFixIssue = async (req, res) => {
 
         Output ONLY the fixed code, no extra text.
       `;
-      // Use the same Groq utility
       const response = await analyzeWithGroq(prompt);
       fixedCode = response.result || "";
       if (!fixedCode) {
@@ -279,11 +295,9 @@ export const autoFixIssue = async (req, res) => {
       }
     }
 
-    // 7. Create a new branch name
     const branchName = `auto-fix-${issueId || Date.now()}`;
-    const defaultBranch = "main"; // Could fetch from GitHub API
+    const defaultBranch = "main";
 
-    // 8. Get the latest commit SHA from default branch
     const { data: refData } = await octokit.git.getRef({
       owner,
       repo,
@@ -291,7 +305,6 @@ export const autoFixIssue = async (req, res) => {
     });
     const baseSha = refData.object.sha;
 
-    // 9. Create a new branch
     await octokit.git.createRef({
       owner,
       repo,
@@ -299,7 +312,6 @@ export const autoFixIssue = async (req, res) => {
       sha: baseSha,
     });
 
-    // 10. Update the file content on the new branch
     await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
@@ -310,7 +322,6 @@ export const autoFixIssue = async (req, res) => {
       branch: branchName,
     });
 
-    // 11. Open a Pull Request
     const { data: pr } = await octokit.pulls.create({
       owner,
       repo,
@@ -320,7 +331,6 @@ export const autoFixIssue = async (req, res) => {
       base: defaultBranch,
     });
 
-    // 12. Audit log
     await addAuditLog(
       user.workspaceId,
       user._id,
@@ -329,7 +339,6 @@ export const autoFixIssue = async (req, res) => {
       { repoUrl, prUrl: pr.html_url, branch: branchName }
     );
 
-    // 13. Return success with PR URL
     res.json({
       success: true,
       prUrl: pr.html_url,
@@ -341,8 +350,6 @@ export const autoFixIssue = async (req, res) => {
 
   } catch (err) {
     console.error("Auto‑fix error:", err);
-    // If tokens were deducted but the operation fails, we could optionally refund them
-    // but for simplicity we'll just log the error.
     res.status(500).json({ error: "Failed to create auto‑fix PR. Please try again later." });
   }
 };
