@@ -636,7 +636,7 @@ export default function WorkspaceSettings() {
                         <input
                           type="text"
                           value={integrations.slack.channel}
-                          onChange={(e) => setIntegrations({ ...integrations, slack: { ...integrations.slack, channel: e.target.value })}
+                          onChange={(e) => setIntegrations({ ...integrations, slack: { ...integrations.slack, channel: e.target.value }})}
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="#general"
                         />
