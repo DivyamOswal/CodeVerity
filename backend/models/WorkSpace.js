@@ -254,4 +254,4 @@ workspaceSchema.methods.hasRole = function (userId, roles = []) {
   return roles.includes(member.role);
 };
 
-export default mongoose.model("WorkSpace", workspaceSchema);
+export default mongoose.model("Workspace", workspaceSchema);
