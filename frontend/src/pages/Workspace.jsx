@@ -17,6 +17,12 @@ import {
   Line,
 } from "recharts";
 
+import InviteMemberModal from "../components/Workspace/InviteMemberModal";
+import PendingInvites from "../components/Workspace/PendingInvites";
+import TransferOwnership from "../components/Workspace/TransferOwnership";
+import DeleteWorkspace from "../components/Workspace/DeleteWorkspace";
+import MemberActivity from "../components/Workspace/MemberActivity";
+
 import {
   getWorkspace,
   updateWorkspace,
@@ -41,6 +47,7 @@ import {
   testWebhook,
 } from "../api/workspace";
 
+// ─── Tabs (added "Activity") ──────────────────────────────────
 const TABS = [
   { id: "General", label: "General", icon: Settings },
   { id: "Integrations", label: "Integrations", icon: Webhook },
@@ -54,6 +61,7 @@ const TABS = [
   { id: "Schedules", label: "Schedules", icon: Clock },
   { id: "Webhooks", label: "Webhooks", icon: Webhook },
   { id: "Trends", label: "Trends", icon: TrendingUp },
+  { id: "Activity", label: "Activity", icon: TrendingUp }, // 👈 new
 ];
 
 export default function WorkspaceSettings() {
@@ -73,6 +81,9 @@ export default function WorkspaceSettings() {
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
+  // ── Invite modal state ──
+  const [showInviteModal, setShowInviteModal] = useState(false);
 
   // ── Analytics ──
   const [analytics, setAnalytics] = useState(null);
@@ -122,10 +133,10 @@ export default function WorkspaceSettings() {
   const [showNewKey, setShowNewKey] = useState(false);
   const [newKeyValue, setNewKeyValue] = useState(null);
 
-  // ── Members ──
-  const [inviteEmail, setInviteEmail] = useState("");
-  const [inviteRole, setInviteRole] = useState("member");
-  const [showInvite, setShowInvite] = useState(false);
+  // ── Members ── (old invite state replaced by showInviteModal)
+  // const [inviteEmail, setInviteEmail] = useState(""); // no longer needed
+  // const [inviteRole, setInviteRole] = useState("member");
+  // const [showInvite, setShowInvite] = useState(false);
 
   // ── Load data ──
   useEffect(() => {
@@ -295,24 +306,8 @@ export default function WorkspaceSettings() {
     }
   };
 
-  // Members
-  const inviteMemberHandler = async () => {
-    if (!inviteEmail.trim()) return;
-    try {
-      setSubmitting(true);
-      await addMember({ email: inviteEmail.trim(), role: inviteRole });
-      const membersRes = await getMembers();
-      setMembers(membersRes.data.members || []);
-      setShowInvite(false);
-      setInviteEmail("");
-      setSuccess("Member invited");
-      setTimeout(() => setSuccess(null), 3000);
-    } catch (err) {
-      setError(err.response?.data?.error || "Failed to invite member");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  // Members – we now use the new InviteMemberModal, so remove old handlers
+  // The old inviteMemberHandler and removeMemberHandler, updateRoleHandler, leaveWorkspaceHandler remain
 
   const removeMemberHandler = async (userId) => {
     if (!window.confirm("Remove this member from the workspace?")) return;
@@ -641,7 +636,7 @@ export default function WorkspaceSettings() {
                         <input
                           type="text"
                           value={integrations.slack.channel}
-                          onChange={(e) => setIntegrations({ ...integrations, slack: { ...integrations.slack, channel: e.target.value } })}
+                          onChange={(e) => setIntegrations({ ...integrations, slack: { ...integrations.slack, channel: e.target.value })}
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="#general"
                         />
@@ -830,10 +825,10 @@ export default function WorkspaceSettings() {
                   <p className="text-sm text-[var(--text-muted)]">{members.length} members in this workspace</p>
                 </div>
                 <button
-                  onClick={() => setShowInvite(true)}
+                  onClick={() => setShowInviteModal(true)}
                   className="flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]"
                 >
-                  <Plus className="h-4 w-4" /> Invite
+                  <Plus className="h-4 w-4" /> Invite Member
                 </button>
               </div>
 
@@ -898,55 +893,10 @@ export default function WorkspaceSettings() {
                 </table>
               </div>
 
-              {/* Invite Modal */}
-              {showInvite && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-                  <div className="w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-xl">
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Invite Member</h3>
-                    <p className="mt-1 text-sm text-[var(--text-muted)]">Enter the email of the user you want to invite.</p>
-                    <div className="mt-4 space-y-3">
-                      <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">Email</label>
-                        <input
-                          type="email"
-                          value={inviteEmail}
-                          onChange={(e) => setInviteEmail(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                          placeholder="colleague@example.com"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">Role</label>
-                        <select
-                          value={inviteRole}
-                          onChange={(e) => setInviteRole(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                        >
-                          <option value="member">Member</option>
-                          <option value="viewer">Viewer</option>
-                          <option value="admin">Admin</option>
-                          <option value="owner">Owner</option>
-                        </select>
-                      </div>
-                    </div>
-                    <div className="mt-6 flex gap-3">
-                      <button
-                        onClick={inviteMemberHandler}
-                        disabled={submitting || !inviteEmail.trim()}
-                        className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] disabled:opacity-50"
-                      >
-                        {submitting ? "Inviting…" : "Invite"}
-                      </button>
-                      <button
-                        onClick={() => { setShowInvite(false); setInviteEmail(""); }}
-                        className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)]"
-                      >
-                        Cancel
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              )}
+              {/* ─── New Components ──────────────────────────── */}
+              <PendingInvites />
+              <TransferOwnership members={members} currentUserId={user?.id} />
+              <DeleteWorkspace />
             </div>
           )}
 
@@ -1519,19 +1469,13 @@ export default function WorkspaceSettings() {
                 </div>
 
                 {webhookTestResult && (
-                  <div className={`rounded-xl border p-4 text-sm ${
-                    webhookTestResult.success
-                      ? "border-green-500/20 bg-green-500/10 text-green-400"
-                      : "border-red-500/20 bg-red-500/10 text-red-400"
-                  }`}>
+                  <div className={`rounded-xl border p-4 text-sm ${webhookTestResult.success ? "border-green-500/20 bg-green-500/10 text-green-400" : "border-red-500/20 bg-red-500/10 text-red-400"}`}>
                     <div className="flex items-center gap-2">
                       <span>{webhookTestResult.success ? "✅" : "❌"}</span>
                       <span>Status: {webhookTestResult.status}</span>
                     </div>
                     {webhookTestResult.response && (
-                      <div className="mt-1 break-all text-xs text-[var(--text-muted)]">
-                        Response: {webhookTestResult.response}
-                      </div>
+                      <div className="mt-1 break-all text-xs text-[var(--text-muted)]">Response: {webhookTestResult.response}</div>
                     )}
                   </div>
                 )}
@@ -1628,8 +1572,27 @@ export default function WorkspaceSettings() {
               )}
             </div>
           )}
+
+          {/* ===== ACTIVITY ===== */}
+          {activeTab === "Activity" && (
+            <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-sm">
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Member Activity</h2>
+              <p className="text-sm text-[var(--text-muted)]">Recent actions by workspace members (last 30 days)</p>
+              <div className="mt-4">
+                <MemberActivity />
+              </div>
+            </div>
+          )}
         </div>
       </div>
+
+      {/* ─── Invite Modal ────────────────────────────────────── */}
+      {showInviteModal && (
+        <InviteMemberModal
+          onClose={() => setShowInviteModal(false)}
+          onSuccess={loadWorkspaceData}
+        />
+      )}
     </div>
   );
 }

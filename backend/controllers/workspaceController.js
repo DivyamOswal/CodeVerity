@@ -4,6 +4,8 @@ import WorkSpace from "../models/WorkSpace.js";
 import crypto from 'crypto';         
 import mongoose from 'mongoose';
 import Report from "../models/Report.js";
+import { PERMISSIONS, ROLE_PERMISSIONS } from "../utils/permissions.js";
+import { sendInviteEmail } from "../utils/email.js";
 
 // ─── Helper: Ensure user has a workspace ──────────────────────
 async function ensureWorkspace(user) {
@@ -1038,5 +1040,343 @@ export const testWebhook = async (req, res) => {
   } catch (err) {
     console.error("Test webhook error:", err);
     res.status(500).json({ error: "Failed to test webhook" });
+  }
+};
+
+// ─── Create Invitation ─────────────────────────────────────────
+export const createInvitation = async (req, res) => {
+  try {
+    const { email, role = "member" } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    // Check if user already exists and is a member
+    const existingUser = await User.findOne({ email });
+    if (existingUser && workspace.members.some(m => m.userId.toString() === existingUser._id.toString())) {
+      return res.status(400).json({ error: "User is already a member of this workspace." });
+    }
+
+    // Create invitation token
+    const token = crypto.randomBytes(32).toString('hex');
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+
+    if (!workspace.invitations) workspace.invitations = [];
+    workspace.invitations.push({
+      email,
+      role,
+      token,
+      expiresAt,
+      createdAt: new Date(),
+      status: "pending",
+    });
+    await workspace.save();
+
+    // Send email (you'll need a nodemailer or SendGrid setup)
+    // ── Send invite email ──────────────────────────────────────
+    const inviteLink = `${process.env.FRONTEND_URL}/invite?token=${token}`;
+    await sendInviteEmail(email, workspace.name, inviteLink, role);
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "invite_sent",
+      `Sent invite to ${email} as ${role}`
+    );
+
+    res.json({ success: true, message: `Invite sent to ${email}` });
+  } catch (err) {
+    console.error("Create invitation error:", err);
+    res.status(500).json({ error: "Failed to create invitation" });
+  }
+};
+
+// ─── Accept Invitation ─────────────────────────────────────────
+export const acceptInvitation = async (req, res) => {
+  try {
+    const { token } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    // Find workspace with this invitation
+    const workspace = await WorkSpace.findOne({
+      "invitations.token": token,
+      "invitations.status": "pending",
+      "invitations.expiresAt": { $gt: new Date() },
+    });
+
+    if (!workspace) {
+      return res.status(404).json({ error: "Invalid or expired invitation." });
+    }
+
+    const invitation = workspace.invitations.find(i => i.token === token);
+    if (!invitation) return res.status(404).json({ error: "Invitation not found." });
+
+    // Check if user is already a member
+    if (workspace.members.some(m => m.userId.toString() === user._id.toString())) {
+      return res.status(400).json({ error: "You are already a member of this workspace." });
+    }
+
+    // Add member
+    workspace.members.push({ userId: user._id, role: invitation.role });
+    invitation.status = "accepted";
+    await workspace.save();
+
+    // Update user
+    if (!user.workspaceId) {
+      user.workspaceId = workspace._id;
+      user.role = invitation.role;
+      await user.save();
+    }
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "invite_accepted",
+      `Accepted invite to workspace as ${invitation.role}`
+    );
+
+    res.json({ success: true, message: "Invitation accepted!", workspace });
+  } catch (err) {
+    console.error("Accept invitation error:", err);
+    res.status(500).json({ error: "Failed to accept invitation" });
+  }
+};
+
+// ─── Get Pending Invites ──────────────────────────────────────
+export const getPendingInvites = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const pending = (workspace.invitations || []).filter(i => i.status === "pending");
+
+    res.json({ success: true, invitations: pending });
+  } catch (err) {
+    console.error("Get pending invites error:", err);
+    res.status(500).json({ error: "Failed to fetch invitations" });
+  }
+};
+
+// ─── Cancel Invitation ─────────────────────────────────────────
+export const cancelInvitation = async (req, res) => {
+  try {
+    const { token } = req.params;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    workspace.invitations = workspace.invitations.filter(i => i.token !== token);
+    await workspace.save();
+
+    res.json({ success: true, message: "Invitation cancelled." });
+  } catch (err) {
+    console.error("Cancel invitation error:", err);
+    res.status(500).json({ error: "Failed to cancel invitation" });
+  }
+};
+
+// ─── Transfer Ownership ────────────────────────────────────────
+export const transferOwnership = async (req, res) => {
+  try {
+    const { userId } = req.body;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const currentMember = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!currentMember || currentMember.role !== "owner") {
+      return res.status(403).json({ error: "Only the owner can transfer ownership." });
+    }
+
+    const targetMember = workspace.members.find(m => m.userId.toString() === userId);
+    if (!targetMember) {
+      return res.status(404).json({ error: "Target user is not a member." });
+    }
+    if (targetMember.role !== "admin") {
+      return res.status(400).json({ error: "Only admins can become owners." });
+    }
+
+    // Transfer ownership
+    currentMember.role = "admin";
+    targetMember.role = "owner";
+    workspace.ownerId = userId;
+    await workspace.save();
+
+    // Update user roles
+    const targetUser = await User.findById(userId);
+    if (targetUser) {
+      targetUser.role = "owner";
+      await targetUser.save();
+    }
+    user.role = "admin";
+    await user.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "ownership_transfer",
+      `Transferred ownership to ${targetUser?.email || userId}`
+    );
+
+    res.json({ success: true, message: "Ownership transferred successfully." });
+  } catch (err) {
+    console.error("Transfer ownership error:", err);
+    res.status(500).json({ error: "Failed to transfer ownership" });
+  }
+};
+
+// ─── Delete Workspace (Soft Delete) ────────────────────────────
+export const deleteWorkspace = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const member = workspace.members.find(m => m.userId.toString() === user._id.toString());
+    if (!member || member.role !== "owner") {
+      return res.status(403).json({ error: "Only the owner can delete the workspace." });
+    }
+
+    // Soft delete – mark as deleted and set deletion date
+    workspace.deletedAt = new Date();
+    workspace.isDeleted = true;
+    await workspace.save();
+
+    // Remove all members' workspace association
+    const memberIds = workspace.members.map(m => m.userId);
+    await User.updateMany(
+      { _id: { $in: memberIds }, workspaceId: workspace._id },
+      { workspaceId: null, role: "member" }
+    );
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "workspace_deleted",
+      `Deleted workspace (will be permanently removed in 30 days)`
+    );
+
+    res.json({ success: true, message: "Workspace deleted. It will be permanently removed in 30 days." });
+  } catch (err) {
+    console.error("Delete workspace error:", err);
+    res.status(500).json({ error: "Failed to delete workspace" });
+  }
+};
+
+// ─── Restore Workspace ──────────────────────────────────────────
+export const restoreWorkspace = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await WorkSpace.findOne({ _id: req.params.workspaceId, isDeleted: true });
+    if (!workspace) return res.status(404).json({ error: "Workspace not found or not deleted." });
+
+    // Check if user is the owner
+    if (workspace.ownerId.toString() !== user._id.toString()) {
+      return res.status(403).json({ error: "Only the owner can restore the workspace." });
+    }
+
+    workspace.isDeleted = false;
+    workspace.deletedAt = null;
+    await workspace.save();
+
+    res.json({ success: true, message: "Workspace restored." });
+  } catch (err) {
+    console.error("Restore workspace error:", err);
+    res.status(500).json({ error: "Failed to restore workspace" });
+  }
+};
+
+// ─── Permanent Delete (Admin/Cron job) ─────────────────────────
+// Run this as a cron job to permanently delete workspaces that were soft-deleted > 30 days
+export const permanentDeleteWorkspace = async (workspaceId) => {
+  const workspace = await WorkSpace.findOne({ _id: workspaceId, isDeleted: true });
+  if (!workspace) return;
+
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+  if (workspace.deletedAt > thirtyDaysAgo) return;
+
+  // Delete all associated data
+  await Report.deleteMany({ workspaceId: workspace._id });
+  await workspace.deleteOne();
+
+  console.log(`✅ Permanently deleted workspace ${workspace.name} (${workspace._id})`);
+};
+
+// In workspaceController.js
+export const hasPermission = (workspace, userId, permission) => {
+  const member = workspace.members.find(m => m.userId.toString() === userId.toString());
+  if (!member) return false;
+  const permissions = ROLE_PERMISSIONS[member.role] || [];
+  return permissions.includes(permission);
+};
+
+// Usage in any controller:
+if (!hasPermission(workspace, req.user.id, PERMISSIONS.MANAGE_API_KEYS)) {
+  return res.status(403).json({ error: "Permission denied." });
+}
+
+// ─── Get Member Activity Dashboard ─────────────────────────────
+export const getMemberActivity = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const workspace = await ensureWorkspace(user);
+    const workspaceId = workspace._id;
+
+    // Get last 30 days of activity per member
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+    // Aggregate activity from audit logs
+    const activity = await WorkSpace.aggregate([
+      { $match: { _id: workspaceId } },
+      { $unwind: "$auditLogs" },
+      { $match: { "auditLogs.createdAt": { $gte: thirtyDaysAgo } } },
+      {
+        $group: {
+          _id: "$auditLogs.userId",
+          actions: { $push: { action: "$auditLogs.action", createdAt: "$auditLogs.createdAt", message: "$auditLogs.message" } },
+          totalActions: { $sum: 1 },
+          lastActive: { $max: "$auditLogs.createdAt" },
+        },
+      },
+    ]);
+
+    // Get user details
+    const userIds = activity.map(a => a._id);
+    const users = await User.find({ _id: { $in: userIds } }).select("name email");
+
+    const result = activity.map(a => {
+      const userInfo = users.find(u => u._id.toString() === a._id.toString());
+      return {
+        userId: a._id,
+        name: userInfo?.name || "Unknown",
+        email: userInfo?.email || "",
+        totalActions: a.totalActions,
+        lastActive: a.lastActive,
+        actions: a.actions.slice(0, 20), // recent actions
+      };
+    });
+
+    res.json({ success: true, activity: result });
+  } catch (err) {
+    console.error("Get member activity error:", err);
+    res.status(500).json({ error: "Failed to fetch activity" });
   }
 };

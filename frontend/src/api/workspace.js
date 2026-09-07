@@ -45,3 +45,18 @@ export const updateBranding = (data) => axios.put("/workspace/branding", data);
 export const getSchedules = () => axios.get("/workspace/schedules");
 export const createSchedule = (data) => axios.post("/workspace/schedules", data);
 export const deleteSchedule = (id) => axios.delete(`/workspace/schedules/${id}`);
+
+// ─── Invitations ──────────────────────────────────────────────
+export const createInvitation = (data) => axios.post("/workspace/invitations", data);
+export const acceptInvitation = (data) => axios.post("/workspace/invitations/accept", data);
+export const getPendingInvites = () => axios.get("/workspace/invitations");
+export const cancelInvitation = (token) => axios.delete(`/workspace/invitations/${token}`);
+
+// ─── Ownership ──────────────────────────────────────────────────
+export const transferOwnership = (userId) => axios.post("/workspace/transfer-ownership", { userId });
+
+// ─── Workspace Delete ──────────────────────────────────────────
+export const deleteWorkspace = () => axios.delete("/workspace");
+
+// ─── Activity ──────────────────────────────────────────────────
+export const getMemberActivity = () => axios.get("/workspace/activity");
