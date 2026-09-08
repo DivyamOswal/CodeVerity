@@ -1595,12 +1595,12 @@ export default function Result({
         )}
 
         {/* ─── Quick Fix Editor ─────────────────────────── */}
-        {analysis && analysis.repoUrl && reportId && (
+        {data && data.repoUrl && reportId && (
           <div className="mt-6">
             <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
               Quick Fix Editor
             </h3>
-            <RepoEditor repoUrl={analysis.repoUrl} reportId={reportId} />
+            <RepoEditor repoUrl={data.repoUrl} reportId={reportId} />
           </div>
         )}
       </div>
