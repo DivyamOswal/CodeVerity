@@ -20,6 +20,8 @@ import { addAuditLog } from "./workspaceController.js"; // for Auto‑Fix
 // ──────────────────────────────────────────────────────────────
 
 import fs from "fs/promises";
+import { promisify } from "util";
+import { exec } from 'child_process';
 
 const GITHUB_URL_PATTERN = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/;
 
