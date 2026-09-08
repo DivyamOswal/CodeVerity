@@ -1062,6 +1062,11 @@ export const createInvitation = async (req, res) => {
       return res.status(400).json({ error: "User is already a member of this workspace." });
     }
 
+    // Check for pending invite
+    if (workspace.invitations?.some(i => i.email === email && i.status === "pending")) {
+      return res.status(400).json({ error: "An invitation is already pending for this email." });
+    }
+
     // Create invitation token
     const token = crypto.randomBytes(32).toString('hex');
     const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
@@ -1077,10 +1082,15 @@ export const createInvitation = async (req, res) => {
     });
     await workspace.save();
 
-    // Send email (you'll need a nodemailer or SendGrid setup)
-    // ── Send invite email ──────────────────────────────────────
-    const inviteLink = `${process.env.FRONTEND_URL}/invite?token=${token}`;
-    await sendInviteEmail(email, workspace.name, inviteLink, role);
+    // ── Send email (but don't break if it fails) ──
+    try {
+      const inviteLink = `${process.env.FRONTEND_URL}/invite?token=${token}`;
+      await sendInviteEmail(email, workspace.name, inviteLink, role);
+    } catch (emailErr) {
+      console.error("Email sending failed:", emailErr.message);
+      // Continue – the invitation is already saved.
+      // You might want to mark it as "email_failed" or retry later.
+    }
 
     await addAuditLog(
       workspace._id,
@@ -1092,7 +1102,8 @@ export const createInvitation = async (req, res) => {
     res.json({ success: true, message: `Invite sent to ${email}` });
   } catch (err) {
     console.error("Create invitation error:", err);
-    res.status(500).json({ error: "Failed to create invitation" });
+    // Return the actual error message instead of a generic one
+    res.status(500).json({ error: err.message || "Failed to create invitation" });
   }
 };
 

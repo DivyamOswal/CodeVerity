@@ -386,6 +386,7 @@ export default function Dashboard() {
             onDownload={downloadPDF}
             generateTestsFn={generateTests}
             repoUrl={currentRepoUrl} // 👈 pass repoUrl for Auto‑Fix
+            reportId={reportId}
           />
         </div>
       )}

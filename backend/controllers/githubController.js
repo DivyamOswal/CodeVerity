@@ -23,6 +23,8 @@ import fs from "fs/promises";
 
 const GITHUB_URL_PATTERN = /^https:\/\/github\.com\/[\w.-]+\/[\w.-]+\/?$/;
 
+const execAsync = promisify(exec);
+
 function statusForError(err) {
   const msg = err.message || "";
   if (/rate limit/i.test(msg)) return 429;
@@ -351,5 +353,129 @@ export const autoFixIssue = async (req, res) => {
   } catch (err) {
     console.error("Auto‑fix error:", err);
     res.status(500).json({ error: "Failed to create auto‑fix PR. Please try again later." });
+  }
+};
+
+// ─── Get repo file tree ──────────────────────────────────────
+export const getRepoContents = async (req, res) => {
+  try {
+    const { repoUrl, path = '' } = req.query;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const githubToken = user.githubAccessToken;
+    if (!githubToken) {
+      return res.status(403).json({ error: "GitHub token required. Please connect your account." });
+    }
+
+    // Parse owner/repo from URL
+    const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    if (!match) throw new Error('Invalid GitHub URL');
+    const [owner, repo] = match[1].split('/');
+
+    const octokit = new Octokit({ auth: githubToken });
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: path || '',
+    });
+
+    const files = data.map(item => ({
+      name: item.name,
+      path: item.path,
+      type: item.type,
+      size: item.size,
+      sha: item.sha,
+      download_url: item.download_url,
+    }));
+
+    res.json({ success: true, files });
+  } catch (err) {
+    console.error('Get repo contents error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ─── Get file content ────────────────────────────────────────
+export const getFileContent = async (req, res) => {
+  try {
+    const { repoUrl, filePath } = req.query;
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const githubToken = user.githubAccessToken;
+    if (!githubToken) {
+      return res.status(403).json({ error: "GitHub token required." });
+    }
+
+    const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    if (!match) throw new Error('Invalid GitHub URL');
+    const [owner, repo] = match[1].split('/');
+
+    const octokit = new Octokit({ auth: githubToken });
+    const { data } = await octokit.repos.getContent({
+      owner,
+      repo,
+      path: filePath,
+    });
+
+    const content = Buffer.from(data.content, 'base64').toString('utf-8');
+    res.json({ success: true, content, sha: data.sha });
+  } catch (err) {
+    console.error('Get file content error:', err);
+    res.status(500).json({ error: err.message });
+  }
+};
+
+// ─── AI Fix ──────────────────────────────────────────────────
+export const applyAIFix = async (req, res) => {
+  try {
+    const { repoUrl, filePath, code, error, line } = req.body;
+    const token = req.headers.authorization?.split(' ')[1];
+
+    // 1. Use AI to generate a fix
+    const fixPrompt = `
+      The following code has an error:
+      
+      File: ${filePath}
+      Error: ${error} at line ~${line}
+      
+      Code:
+      ${code}
+      
+      Please provide the fixed code only (no explanation).
+    `;
+
+    const aiResponse = await analyzeCode(fixPrompt);
+    const fixedCode = aiResponse.fixedCode || aiResponse.response || code;
+
+    // 2. Get the current file SHA
+    const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    const repoPath = match[1];
+
+    const url = `https://api.github.com/repos/${repoPath}/contents/${filePath}`;
+    const fileInfo = await axios.get(url, {
+      headers: { Authorization: `token ${token}` },
+    });
+
+    // 3. Commit the fix to GitHub
+    const commitRes = await axios.put(url, {
+      message: `AI fix: ${error.substring(0, 50)}`,
+      content: Buffer.from(fixedCode).toString('base64'),
+      sha: fileInfo.data.sha,
+      branch: 'main',
+    }, {
+      headers: { Authorization: `token ${token}` },
+    });
+
+    res.json({
+      success: true,
+      fixedCode,
+      commit: commitRes.data,
+      message: 'Fix applied successfully',
+    });
+  } catch (err) {
+    console.error('Apply AI fix error:', err);
+    res.status(500).json({ error: err.message });
   }
 };
