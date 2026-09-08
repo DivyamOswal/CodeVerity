@@ -7,7 +7,8 @@ import {
   googleAuthCallback,
   githubAuth,
   githubAuthCallback,
-  getMe,                    
+  getMe, 
+  disconnectGitHub                   
 } from "../controllers/authController.js";
 import auth from "../middleware/authMiddleware.js";  
 const router = express.Router();
@@ -23,6 +24,7 @@ router.get("/google/callback", googleAuthCallback);
 // GitHub OAuth
 router.get("/github", githubAuth);
 router.get("/github/callback", githubAuthCallback);
+router.get("/github",auth, disconnectGitHub);
 
 // ─── Get current user (protected) ──────────────────────────
 router.get("/me", auth, getMe);   

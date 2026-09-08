@@ -178,4 +178,9 @@ const ReportSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
+// ─── Indexes ──────────────────────────────────────
+ReportSchema.index({ userId: 1, createdAt: -1 });
+ReportSchema.index({ workspaceId: 1, createdAt: -1 });
+ReportSchema.index({ userId: 1, repoUrl: 1 });
+
 export default mongoose.model("Report", ReportSchema);

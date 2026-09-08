@@ -14,8 +14,11 @@ import billingRoutes from "./routes/billing.js";
 import workspaceRoutes from "./routes/workspace.js";
 import statsRoutes from "./routes/stats.js";
 import adminRoutes from "./routes/admin.js";
+import { startCleanupCron } from './services/cleanupService.js';
 
 connectDB();
+// ─── Start cleanup cron ──────────────────────────
+startCleanupCron();
 
 const app = express();
 const allowedOrigins = [

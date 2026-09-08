@@ -307,4 +307,10 @@ workspaceSchema.methods.hasPermission = function (userId, permission) {
   return rolePerms.includes(permission);
 };
 
+// ─── Indexes ──────────────────────────────────────
+WorkSpaceSchema.index({ 'members.userId': 1 });
+WorkSpaceSchema.index({ ownerId: 1 });
+WorkSpaceSchema.index({ isDeleted: 1, deletedAt: 1 });
+
+
 export default mongoose.model("Workspace", workspaceSchema);

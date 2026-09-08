@@ -1069,7 +1069,7 @@ export const createInvitation = async (req, res) => {
 
     // Create invitation token
     const token = crypto.randomBytes(32).toString('hex');
-    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 days
+    const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
 
     if (!workspace.invitations) workspace.invitations = [];
     workspace.invitations.push({
@@ -1082,14 +1082,14 @@ export const createInvitation = async (req, res) => {
     });
     await workspace.save();
 
-    // ── Send email (but don't break if it fails) ──
+    // ── Send email (wrap in try/catch) ────────────
     try {
       const inviteLink = `${process.env.FRONTEND_URL}/invite?token=${token}`;
       await sendInviteEmail(email, workspace.name, inviteLink, role);
+      console.log(`✅ Invite email sent to ${email}`);
     } catch (emailErr) {
-      console.error("Email sending failed:", emailErr.message);
-      // Continue – the invitation is already saved.
-      // You might want to mark it as "email_failed" or retry later.
+      console.error(`❌ Failed to send invite email to ${email}:`, emailErr.message);
+      // Invite is already saved – continue
     }
 
     await addAuditLog(
@@ -1102,7 +1102,6 @@ export const createInvitation = async (req, res) => {
     res.json({ success: true, message: `Invite sent to ${email}` });
   } catch (err) {
     console.error("Create invitation error:", err);
-    // Return the actual error message instead of a generic one
     res.status(500).json({ error: err.message || "Failed to create invitation" });
   }
 };

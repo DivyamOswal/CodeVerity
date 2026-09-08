@@ -315,13 +315,33 @@ export const googleAuthCallback = async (req, res) => {
 export const githubAuth = async (req, res) => {
   try {
     const state = crypto.randomBytes(32).toString("hex");
-    setOAuthStateCookie(res, state);
+    const isConnect = req.query.connect === 'true';
+    // if connect, we need user ID from token
+    let userId = null;
+    if (isConnect) {
+      // verify JWT from Authorization header or cookie
+      const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
+      if (token) {
+        try {
+          const decoded = jwt.verify(token, process.env.JWT_SECRET);
+          userId = decoded.id;
+        } catch (e) {}
+      }
+      if (!userId) {
+        // not logged in, but we can redirect with error
+        return res.status(401).json({ error: "You must be logged in to connect GitHub." });
+      }
+    }
+    // store state with additional data
+    const stateData = { state, connect: isConnect, userId };
+    const stateEncoded = Buffer.from(JSON.stringify(stateData)).toString('base64');
+    setOAuthStateCookie(res, stateEncoded);
 
     const params = new URLSearchParams({
       client_id: process.env.GITHUB_CLIENT_ID,
       redirect_uri: process.env.GITHUB_CALLBACK_URL,
-      scope: "read:user user:email",
-      state,
+      scope: "repo user:email",
+      state: stateEncoded,
     });
 
     res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
@@ -333,116 +353,101 @@ export const githubAuth = async (req, res) => {
 
 export const githubAuthCallback = async (req, res) => {
   try {
-    const { code, state } = req.query;
+    const { code, state: stateParam } = req.query;
     const savedState = getCookie(req, "oauth_state");
-
-    if (!code) {
-      return redirectWithError(res, "Authorization code missing from GitHub");
-    }
-    if (!state || !savedState || state !== savedState) {
-      return redirectWithError(res, "Invalid OAuth state (possible CSRF)");
-    }
+    if (!code) return redirectWithError(res, "Authorization code missing");
+    if (!stateParam || !savedState || stateParam !== savedState) return redirectWithError(res, "Invalid state");
 
     clearOAuthStateCookie(res);
 
-    // Exchange code for access token
-    const tokenResponse = await fetch(
-      "https://github.com/login/oauth/access_token",
-      {
-        method: "POST",
-        headers: {
-          Accept: "application/json",
-          "Content-Type": "application/x-www-form-urlencoded",
-        },
-        body: new URLSearchParams({
-          client_id: process.env.GITHUB_CLIENT_ID,
-          client_secret: process.env.GITHUB_CLIENT_SECRET,
-          code,
-          redirect_uri: process.env.GITHUB_CALLBACK_URL,
-        }),
-      }
-    );
+    // Decode state data
+    let stateData = {};
+    try {
+      stateData = JSON.parse(Buffer.from(stateParam, 'base64').toString('utf-8'));
+    } catch (e) {
+      stateData = { state: stateParam };
+    }
 
+    const isConnect = stateData.connect || false;
+    const userId = stateData.userId || null;
+
+    // Exchange code for token (same as before)
+    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
+      method: "POST",
+      headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        client_id: process.env.GITHUB_CLIENT_ID,
+        client_secret: process.env.GITHUB_CLIENT_SECRET,
+        code,
+        redirect_uri: process.env.GITHUB_CALLBACK_URL,
+      }),
+    });
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok || !tokenData.access_token) {
       console.error("GitHub token error:", tokenData);
       return redirectWithError(res, "Failed to authenticate with GitHub");
     }
+    const accessToken = tokenData.access_token;
 
-    // Get GitHub user
-    const githubUserResponse = await fetch(
-      "https://api.github.com/user",
-      {
-        headers: {
-          Authorization: `Bearer ${tokenData.access_token}`,
-          Accept: "application/vnd.github+json",
-          "User-Agent": "CodeVerity",
-        },
-      }
-    );
+    // Get user info (same as before)
+    const githubUserResponse = await fetch("https://api.github.com/user", {
+      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json", "User-Agent": "CodeVerity" },
+    });
     const githubUser = await githubUserResponse.json();
-    if (!githubUserResponse.ok) {
-      console.error("GitHub user error:", githubUser);
-      return redirectWithError(res, "Failed to fetch GitHub user profile");
-    }
+    if (!githubUserResponse.ok) return redirectWithError(res, "Failed to fetch GitHub user profile");
 
-    // Get email (primary verified)
+    // Get email (same as before)
     let email = githubUser.email;
     if (!email) {
-      const emailResponse = await fetch(
-        "https://api.github.com/user/emails",
-        {
-          headers: {
-            Authorization: `Bearer ${tokenData.access_token}`,
-            Accept: "application/vnd.github+json",
-            "User-Agent": "CodeVerity",
-          },
-        }
-      );
+      const emailResponse = await fetch("https://api.github.com/user/emails", {
+        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json", "User-Agent": "CodeVerity" },
+      });
       const emails = await emailResponse.json();
       if (emailResponse.ok && Array.isArray(emails)) {
-        const primary = emails.find((e) => e.primary && e.verified);
-        email = primary?.email || emails.find((e) => e.verified)?.email;
+        const primary = emails.find(e => e.primary && e.verified);
+        email = primary?.email || emails.find(e => e.verified)?.email;
       }
     }
-
-    if (!email) {
-      return redirectWithError(res, "No verified email found on GitHub account");
-    }
+    if (!email) return redirectWithError(res, "No verified email found");
 
     const name = githubUser.name || githubUser.login || "GitHub User";
 
-    let user = await User.findOne({ email });
-    let isNew = false;
-    if (!user) {
-      const password = await getOAuthUserPassword();
-      user = await User.create({ name, email, password });
-      isNew = true;
-    }
-
-    if (isNew) {
-      await createWorkspaceForUser(user);
-      // ── Audit log: New user via GitHub ────────────────────
-      addAuditLog(
-        user.workspaceId,
-        user._id,
-        "register",
-        `User ${user.email} registered via GitHub`
-      );
+    if (isConnect) {
+      // Connect to existing account
+      if (!userId) return redirectWithError(res, "User not identified");
+      const user = await User.findById(userId);
+      if (!user) return redirectWithError(res, "User not found");
+      user.githubAccessToken = accessToken;
+      user.githubId = githubUser.id;
+      await user.save();
+      // Redirect back to settings with success
+      return res.redirect(`${FRONTEND_URL}/settings?github=connected`);
     } else {
-      // ── Audit log: Existing user logged in via GitHub ────
-      if (user.workspaceId) {
-        addAuditLog(
-          user.workspaceId,
-          user._id,
-          "login",
-          `User ${user.email} logged in via GitHub`
-        );
+      // Login flow: find or create user
+      let user = await User.findOne({ email });
+      let isNew = false;
+      if (!user) {
+        const password = await getOAuthUserPassword();
+        user = await User.create({ name, email, password });
+        isNew = true;
       }
+      if (isNew) {
+        await createWorkspaceForUser(user);
+        addAuditLog(user.workspaceId, user._id, "register", `User ${user.email} registered via GitHub`);
+      } else {
+        if (user.workspaceId) {
+          addAuditLog(user.workspaceId, user._id, "login", `User ${user.email} logged in via GitHub`);
+        }
+      }
+      // Also update token if not present
+      if (!user.githubAccessToken) {
+        user.githubAccessToken = accessToken;
+        user.githubId = githubUser.id;
+        await user.save();
+      }
+      const jwtToken = generateToken(user);
+      res.redirect(`${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(jwtToken)}`);
     }
-
-    const token = generateToken(user);
-    res.redirect(`${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(token)}`);
   } catch (error) {
     console.error("GitHub callback error:", error);
     redirectWithError(res, "GitHub authentication failed");
@@ -455,4 +460,18 @@ export const githubAuthCallback = async (req, res) => {
 
 export const downloadReportPDF = async (req, res) => {
   // ... (your existing code)
+};
+
+export const disconnectGitHub = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
+    user.githubAccessToken = null;
+    user.githubId = null;
+    await user.save();
+    res.json({ success: true, message: "GitHub account disconnected." });
+  } catch (err) {
+    console.error("Disconnect GitHub error:", err);
+    res.status(500).json({ error: "Failed to disconnect GitHub." });
+  }
 };

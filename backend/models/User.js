@@ -3,8 +3,8 @@ import mongoose from "mongoose";
 
 const PLAN_CONFIG = {
   starter: { tokens: 5000, label: "Starter" },
-  pro:     { tokens: 150000, label: "Pro" },
-  team:    { tokens: 400000, label: "Team" },
+  pro: { tokens: 150000, label: "Pro" },
+  team: { tokens: 400000, label: "Team" },
 };
 
 const userSchema = new mongoose.Schema({
@@ -12,10 +12,15 @@ const userSchema = new mongoose.Schema({
   email: { type: String, unique: true, required: true },
   password: { type: String, required: true },
   workspaceId: { type: mongoose.Schema.Types.ObjectId, ref: "Workspace" },
-  role: { type: String, enum: ["owner","admin","member","viewer"], default: "member" },
-  plan: { type: String, enum: ["starter","pro","team"], default: "starter" },
-  isGlobalAdmin: {type: Boolean, default: false},
-  githubAccessToken: { type: String, default: null },
+  role: {
+    type: String,
+    enum: ["owner", "admin", "member", "viewer"],
+    default: "member",
+  },
+  plan: { type: String, enum: ["starter", "pro", "team"], default: "starter" },
+  isGlobalAdmin: { type: Boolean, default: false },
+  githubId: { type: String, unique: true, sparse: true },
+  githubAccessToken: { type: String, select: false }, // select: false hides it in queries
 
   // Billing / Stripe
   stripeCustomerId: String,
@@ -48,5 +53,9 @@ userSchema.methods.deductTokens = async function (amount) {
 userSchema.statics.getPlanConfig = function (plan) {
   return PLAN_CONFIG[plan] || PLAN_CONFIG.starter;
 };
+
+// ─── Indexes ──────────────────────────────────────
+UserSchema.index({ email: 1 }, { unique: true });
+UserSchema.index({ workspaceId: 1 });
 
 export default mongoose.model("User", userSchema);
