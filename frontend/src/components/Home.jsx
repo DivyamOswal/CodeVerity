@@ -12,8 +12,8 @@ import {
 //  Reads the current --accent token and converts it to an "r,g,b"
 //  string for use in canvas fillStyle/strokeStyle, which can't
 //  consume CSS custom properties directly. Read once at mount, so
-//  the particle field follows the active theme's accent color
-//  instead of a hardcoded literal.
+//  the background animation follows the active theme's accent
+//  color instead of a hardcoded literal.
 // ============================================================
 function getAccentRGB() {
   if (typeof window === "undefined") return "34,211,238";
@@ -27,75 +27,134 @@ function getAccentRGB() {
 }
 
 // ============================================================
-//  COMPONENT: ParticleField (canvas particles)
+//  COMPONENT: BackgroundAnimation (canvas dependency-graph mesh)
+//  A sparse node/edge graph with pulses traveling along edges —
+//  evokes "data flowing through your codebase" rather than
+//  ambient decoration. Single accent color, no gradients.
+//  Respects prefers-reduced-motion (renders a static frame).
 // ============================================================
-function ParticleField() {
+function BackgroundAnimation() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const accentRGB = getAccentRGB();
-    let width,
-      height,
-      particles = [];
-    const count = 80;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+
+    let width, height;
+    let nodes = [];
+    let edges = [];
+    let pulses = [];
     let animationFrame;
+
+    function buildGraph() {
+      nodes = [];
+      edges = [];
+      const spacing = 150;
+      const cols = Math.ceil(width / spacing) + 1;
+      const rows = Math.ceil(height / spacing) + 1;
+      const grid = [];
+
+      for (let r = 0; r < rows; r++) {
+        grid[r] = [];
+        for (let c = 0; c < cols; c++) {
+          const jitterX = (Math.random() - 0.5) * spacing * 0.5;
+          const jitterY = (Math.random() - 0.5) * spacing * 0.5;
+          grid[r][c] = nodes.length;
+          nodes.push({
+            x: c * spacing + jitterX,
+            y: r * spacing + jitterY,
+            r: Math.random() * 1.2 + 1,
+          });
+        }
+      }
+
+      // Sparse connections — a circuit/dependency-graph feel, not a full mesh
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const idx = grid[r][c];
+          if (c + 1 < cols && Math.random() > 0.35) {
+            edges.push([idx, grid[r][c + 1]]);
+          }
+          if (r + 1 < rows && Math.random() > 0.35) {
+            edges.push([idx, grid[r + 1][c]]);
+          }
+        }
+      }
+
+      pulses = [];
+      if (!edges.length) return;
+      const pulseCount = Math.min(14, Math.max(6, Math.floor(edges.length / 12)));
+      for (let i = 0; i < pulseCount; i++) {
+        pulses.push({
+          edge: edges[Math.floor(Math.random() * edges.length)],
+          t: Math.random(),
+          speed: 0.0035 + Math.random() * 0.004,
+        });
+      }
+    }
 
     const resize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
+      buildGraph();
     };
     window.addEventListener("resize", resize);
     resize();
 
-    class Particle {
-      constructor() {
-        this.x = Math.random() * width;
-        this.y = Math.random() * height;
-        this.vx = (Math.random() - 0.5) * 0.5;
-        this.vy = (Math.random() - 0.5) * 0.5;
-        this.radius = Math.random() * 1.5 + 0.5;
-      }
-      update() {
-        this.x += this.vx;
-        this.y += this.vy;
-        if (this.x < 0 || this.x > width) this.vx *= -1;
-        if (this.y < 0 || this.y > height) this.vy *= -1;
-      }
-      draw() {
+    const drawStatic = () => {
+      ctx.clearRect(0, 0, width, height);
+      edges.forEach(([a, b]) => {
+        const na = nodes[a],
+          nb = nodes[b];
         ctx.beginPath();
-        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${accentRGB},0.25)`;
+        ctx.moveTo(na.x, na.y);
+        ctx.lineTo(nb.x, nb.y);
+        ctx.strokeStyle = `rgba(${accentRGB},0.07)`;
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+      nodes.forEach((n) => {
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${accentRGB},0.18)`;
         ctx.fill();
-      }
-    }
+      });
+    };
 
-    for (let i = 0; i < count; i++) {
-      particles.push(new Particle());
+    if (reduceMotion) {
+      drawStatic();
+      return () => window.removeEventListener("resize", resize);
     }
 
     const animate = () => {
-      ctx.clearRect(0, 0, width, height);
-      particles.forEach((p) => {
-        p.update();
-        p.draw();
-      });
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(${accentRGB},${0.08 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.6;
-            ctx.stroke();
-          }
+      drawStatic();
+
+      pulses.forEach((p) => {
+        p.t += p.speed;
+        if (p.t >= 1) {
+          p.t = 0;
+          p.edge = edges[Math.floor(Math.random() * edges.length)];
         }
-      }
+        const [a, b] = p.edge;
+        const na = nodes[a],
+          nb = nodes[b];
+        if (!na || !nb) return;
+        const x = na.x + (nb.x - na.x) * p.t;
+        const y = na.y + (nb.y - na.y) * p.t;
+
+        ctx.beginPath();
+        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${accentRGB},0.9)`;
+        ctx.shadowColor = `rgba(${accentRGB},0.8)`;
+        ctx.shadowBlur = 8;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      });
+
       animationFrame = requestAnimationFrame(animate);
     };
     animate();
@@ -1113,7 +1172,7 @@ export default function Home() {
         }}
       />
 
-      <ParticleField />
+      <BackgroundAnimation />
 
       {/* MAIN CONTENT */}
       <div

@@ -153,11 +153,13 @@ export default function Settings() {
     }
   };
 
-  const connectGitHub = () => {
-    // Redirect to GitHub OAuth
-    const returnTo = window.location.pathname;
-    window.location.href = `/api/auth/github?returnTo=${returnTo}`;
-  };
+ const connectGitHub = () => {
+  const backendUrl = import.meta.env.VITE_API_URL || 'https://codeverity.onrender.com/api';
+  // Remove trailing '/api' if present (VITE_API_URL already includes /api)
+  // We'll strip it to build the full URL
+  const base = backendUrl.replace(/\/api$/, '');
+  window.location.href = `${base}/api/auth/github?returnTo=/settings`;
+};
 
   const disconnectGitHub = async () => {
     if (!window.confirm("Disconnect GitHub? Auto‑Fix will no longer work."))
