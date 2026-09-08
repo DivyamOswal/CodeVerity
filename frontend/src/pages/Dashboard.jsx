@@ -170,45 +170,57 @@ export default function Dashboard() {
   };
 
   const generateReport = async () => {
-    if (!repoUrl.startsWith("https://github.com/")) {
-      return setError("Enter a valid GitHub URL");
-    }
-    try {
-      setLoading(true);
-      setError("");
-      const res = await analyzeGithub({ repoUrl });
-      setReportId(res.data.reportId);
-      const a = res.data.analysis || {};
-      setAnalysis({
-        summary: a.summary ?? "",
-        architecture: a.architecture ?? [],
-        bugs: a.bugs ?? [],
-        securityIssues: a.securityIssues ?? [],
-        futureRoadmap: a.futureRoadmap ?? [],
-        toolsAndPackages: a.toolsAndPackages ?? [],
-        scores: a.scores ?? {},
-        grade: a.grade ?? "N/A",
-        finalVerdict: a.finalVerdict ?? "",
-        _sourceCode: a._sourceCode ?? "",
-        repoUrl: repoUrl, // 👈 include repoUrl in analysis
-      });
-      setCurrentRepoUrl(repoUrl); // 👈 store for Auto‑Fix
-      setActiveView("result");
-      loadDashboard();
-    } catch (err) {
-      const errorMsg = err.response?.data?.error || "Analysis failed";
+  if (!repoUrl.startsWith("https://github.com/")) {
+    return setError("Enter a valid GitHub URL");
+  }
+  try {
+    setLoading(true);
+    setError("");
+    const res = await analyzeGithub({ repoUrl });
+    setReportId(res.data.reportId);
+    const a = res.data.analysis || {};
 
-      if (errorMsg === "Insufficient tokens") {
-        setError(
-          `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
-        );
-      } else {
-        setError(errorMsg);
-      }
-    } finally {
-      setLoading(false);
+    // ── Map ALL fields (mirrors the logic in openResult) ──
+    setAnalysis({
+      summary: a.summary ?? "",
+      architecture: a.architecture ?? [],
+      bugs: a.bugs ?? [],
+      securityIssues: a.securityIssues ?? [],
+      futureRoadmap: a.futureRoadmap ?? [],
+      toolsAndPackages: a.toolsAndPackages ?? [],
+      scores: a.scores ?? {},
+      grade: a.grade ?? "N/A",
+      finalVerdict: a.finalVerdict ?? "",
+      _sourceCode: a._sourceCode ?? "",
+      repoUrl: repoUrl,
+      // ── Detailed fields (now included) ──
+      healthScore: a.healthScore,
+      securityVulnerabilities: a.securityVulnerabilities,
+      dependencyVulnerabilities: a.dependencyVulnerabilities,
+      secrets: a.secrets,
+      techDebt: a.techDebt,
+      architectureGraph: a.architectureGraph,
+      tokensUsed: a.tokensUsed,
+      tokensRemaining: a.tokensRemaining,
+    });
+
+    setCurrentRepoUrl(repoUrl);
+    setActiveView("result");
+    loadDashboard();
+  } catch (err) {
+    const errorMsg = err.response?.data?.error || "Analysis failed";
+
+    if (errorMsg === "Insufficient tokens") {
+      setError(
+        `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
+      );
+    } else {
+      setError(errorMsg);
     }
-  };
+  } finally {
+    setLoading(false);
+  }
+};
 
   const openResult = async (report) => {
   try {
