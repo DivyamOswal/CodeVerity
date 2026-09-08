@@ -55,7 +55,7 @@ userSchema.statics.getPlanConfig = function (plan) {
 };
 
 // ─── Indexes ──────────────────────────────────────
-UserSchema.index({ email: 1 }, { unique: true });
-UserSchema.index({ workspaceId: 1 });
+userSchema.index({ email: 1 }, { unique: true });
+userSchema.index({ workspaceId: 1 });
 
 export default mongoose.model("User", userSchema);
