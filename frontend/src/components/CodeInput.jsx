@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { analyzeCode } from "../api/analyze";
 import { usePreferences } from "../context/PreferencesContext";
+import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
 // Reusable mini components (same style as Home & other pages)
@@ -111,7 +112,7 @@ function Feature({ icon, title, desc, intensity }) {
 export default function CodeInput({ setResult, model }) {
   const [code, setCode] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { success, error } = useToast();
 
   // Get preferences for compact mode
   const { compact } = usePreferences();
@@ -119,13 +120,13 @@ export default function CodeInput({ setResult, model }) {
   const runAnalysis = async () => {
     if (!code.trim()) return;
     setLoading(true);
-    setError("");
     try {
       const res = await analyzeCode(code, model);
       setResult(res.data.analysis);
+      success("Analysis completed successfully!");
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || err.response?.data?.error || "Analysis failed. Please try again.");
+      error(err.response?.data?.message || err.response?.data?.error || "Analysis failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -215,17 +216,6 @@ export default function CodeInput({ setResult, model }) {
             </div>
           </div>
         </div>
-
-        {/* ================= ERROR BANNER ================= */}
-        {error && (
-          <div
-            role="alert"
-            aria-live="assertive"
-            className="animate-fadeUp mb-4 font-mono text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/25 rounded-xl px-4 py-3"
-          >
-            error: {error}
-          </div>
-        )}
 
         {/* ================= EDITOR CARD ================= */}
         <div className="animate-fadeUp relative" style={{ animationDelay: "100ms" }}>
