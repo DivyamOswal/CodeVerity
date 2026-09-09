@@ -1,9 +1,10 @@
 // frontend/src/pages/Settings.jsx
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
+import { useToast } from "../hooks/useToast";
 
 const TABS = [
   "Account",
@@ -18,12 +19,12 @@ export default function Settings() {
   const { isAuth, logout } = useAuth();
   const { theme, setTheme, compact, setCompact, showScores, setShowScores } =
     usePreferences();
+  const { success, error: toastError } = useToast();
+
   const [tab, setTab] = useState("Account");
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [toast, setToast] = useState(null);
-  const toastTimer = useRef(null);
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -44,12 +45,12 @@ export default function Settings() {
         logout();
         navigate("/login");
       } else {
-        showToast("Failed to load settings.", "error");
+        toastError("Failed to load settings.");
       }
     } finally {
       setLoading(false);
     }
-  }, [navigate, logout]);
+  }, [navigate, logout, toastError]);
 
   useEffect(() => {
     if (!isAuth) {
@@ -59,20 +60,20 @@ export default function Settings() {
     fetchUser();
   }, [isAuth, fetchUser, navigate]);
 
-  useEffect(() => () => clearTimeout(toastTimer.current), []);
-
-  const showToast = (msg, type = "success") => {
-    clearTimeout(toastTimer.current);
-    setToast({ msg, type });
-    toastTimer.current = setTimeout(() => setToast(null), 3500);
-  };
-
   const saveProfile = async () => {
-    if (!name.trim()) return showToast("Name cannot be empty.", "error");
-    if (!email.trim()) return showToast("Email cannot be empty.", "error");
+    if (!name.trim()) {
+      toastError("Name cannot be empty.");
+      return;
+    }
+    if (!email.trim()) {
+      toastError("Email cannot be empty.");
+      return;
+    }
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email))
-      return showToast("Enter a valid email address.", "error");
+    if (!emailRegex.test(email)) {
+      toastError("Enter a valid email address.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -82,23 +83,31 @@ export default function Settings() {
       });
       const updated = res.data.user ?? res.data;
       setUser(updated);
-      showToast("Profile updated successfully.");
+      success("Profile updated successfully.");
     } catch (err) {
-      showToast(err.response?.data?.error ?? "Update failed.", "error");
+      toastError(err.response?.data?.error ?? "Update failed.");
     } finally {
       setSaving(false);
     }
   };
 
   const changePassword = async () => {
-    if (!oldPass || !newPass || !confPass)
-      return showToast("Fill in all password fields.", "error");
-    if (newPass !== confPass)
-      return showToast("New passwords do not match.", "error");
-    if (newPass.length < 6)
-      return showToast("Password must be at least 6 characters.", "error");
-    if (oldPass === newPass)
-      return showToast("New password must differ from current.", "error");
+    if (!oldPass || !newPass || !confPass) {
+      toastError("Fill in all password fields.");
+      return;
+    }
+    if (newPass !== confPass) {
+      toastError("New passwords do not match.");
+      return;
+    }
+    if (newPass.length < 6) {
+      toastError("Password must be at least 6 characters.");
+      return;
+    }
+    if (oldPass === newPass) {
+      toastError("New password must differ from current.");
+      return;
+    }
 
     setSaving(true);
     try {
@@ -109,38 +118,32 @@ export default function Settings() {
       setOldPass("");
       setNewPass("");
       setConfPass("");
-      showToast("Password changed successfully.");
+      success("Password changed successfully.");
     } catch (err) {
-      showToast(
-        err.response?.data?.error ?? "Password change failed.",
-        "error",
-      );
+      toastError(err.response?.data?.error ?? "Password change failed.");
     } finally {
       setSaving(false);
     }
   };
 
   const saveAppearance = () => {
-    showToast("Preferences saved.");
+    success("Preferences saved.");
   };
 
   const clearHistory = async () => {
     if (!window.confirm("Delete all reports? This cannot be undone.")) return;
     try {
       await axios.delete("/report/all");
-      showToast("All reports deleted.");
+      success("All reports deleted.");
     } catch (err) {
-      showToast(
-        err.response?.data?.error ?? "Failed to clear history.",
-        "error",
-      );
+      toastError(err.response?.data?.error ?? "Failed to clear history.");
     }
   };
 
   const deleteAccount = async () => {
     if (
       !window.confirm(
-        "This will permanently delete your account and all reports. Are you sure?",
+        "This will permanently delete your account and all reports. Are you sure?"
       )
     )
       return;
@@ -149,17 +152,16 @@ export default function Settings() {
       logout();
       navigate("/register");
     } catch (err) {
-      showToast(err.response?.data?.error ?? "Delete failed.", "error");
+      toastError(err.response?.data?.error ?? "Delete failed.");
     }
   };
 
- const connectGitHub = () => {
-  const backendUrl = import.meta.env.VITE_API_URL || 'https://codeverity.onrender.com/api';
-  // Remove trailing '/api' if present (VITE_API_URL already includes /api)
-  // We'll strip it to build the full URL
-  const base = backendUrl.replace(/\/api$/, '');
-  window.location.href = `${base}/api/auth/github?returnTo=/settings`;
-};
+  const connectGitHub = () => {
+    const backendUrl =
+      import.meta.env.VITE_API_URL || "https://codeverity.onrender.com/api";
+    const base = backendUrl.replace(/\/api$/, "");
+    window.location.href = `${base}/api/auth/github?returnTo=/settings`;
+  };
 
   const disconnectGitHub = async () => {
     if (!window.confirm("Disconnect GitHub? Auto‑Fix will no longer work."))
@@ -167,9 +169,9 @@ export default function Settings() {
     try {
       await axios.delete("/auth/github");
       setUser((prev) => ({ ...prev, githubAccessToken: null }));
-      showToast("GitHub account disconnected.");
+      success("GitHub account disconnected.");
     } catch (err) {
-      showToast("Failed to disconnect.", "error");
+      toastError("Failed to disconnect.");
     }
   };
 
@@ -219,7 +221,6 @@ export default function Settings() {
         footerMargin: "mt-4",
         footerText: "text-[7px]",
         themeButton: "py-2 text-xs",
-        toastSize: "text-xs px-4 py-2",
       }
     : {
         container: "px-4 py-6 sm:px-6 lg:px-8",
@@ -246,7 +247,6 @@ export default function Settings() {
         footerMargin: "mt-6",
         footerText: "text-[9px]",
         themeButton: "py-2.5 text-sm",
-        toastSize: "text-sm px-5 py-3",
       };
 
   return (
@@ -663,25 +663,6 @@ export default function Settings() {
           </div>
         </div>
       </div>
-
-      {/* TOAST */}
-      {toast && (
-        <div
-          role="alert"
-          aria-live="polite"
-          className={`fixed bottom-6 right-6 flex items-center gap-2 rounded-xl shadow-2xl font-medium
-            transition-all duration-300 z-50
-            ${compactClasses.toastSize}
-            ${
-              toast.type === "error"
-                ? "bg-[var(--color-danger)]/90 text-white border border-[var(--color-danger)]/30"
-                : "bg-[var(--accent)] text-[var(--accent-contrast)] border border-[var(--accent)]/30"
-            }`}
-        >
-          <span>{toast.type === "error" ? "⚠️" : "✅"}</span>
-          <span>{toast.msg}</span>
-        </div>
-      )}
     </div>
   );
 }
