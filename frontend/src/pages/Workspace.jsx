@@ -47,6 +47,8 @@ import {
   testWebhook,
 } from "../api/workspace";
 
+import { useToast } from "../hooks/useToast";
+
 // ─── Tabs (added "Activity") ──────────────────────────────────
 const TABS = [
   { id: "General", label: "General", icon: Settings },
@@ -61,13 +63,14 @@ const TABS = [
   { id: "Schedules", label: "Schedules", icon: Clock },
   { id: "Webhooks", label: "Webhooks", icon: Webhook },
   { id: "Trends", label: "Trends", icon: TrendingUp },
-  { id: "Activity", label: "Activity", icon: TrendingUp }, // 👈 new
+  { id: "Activity", label: "Activity", icon: TrendingUp },
 ];
 
 export default function WorkspaceSettings() {
   const { token, user } = useAuth();
   const navigate = useNavigate();
   const { compact } = usePreferences();
+  const { success, error: toastError } = useToast();
 
   // ── Core data ──
   const [workspace, setWorkspace] = useState(null);
@@ -78,8 +81,6 @@ export default function WorkspaceSettings() {
   const [reposLoading, setReposLoading] = useState(false);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("General");
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   // ── Invite modal state ──
@@ -133,11 +134,6 @@ export default function WorkspaceSettings() {
   const [showNewKey, setShowNewKey] = useState(false);
   const [newKeyValue, setNewKeyValue] = useState(null);
 
-  // ── Members ── (old invite state replaced by showInviteModal)
-  // const [inviteEmail, setInviteEmail] = useState(""); // no longer needed
-  // const [inviteRole, setInviteRole] = useState("member");
-  // const [showInvite, setShowInvite] = useState(false);
-
   // ── Load data ──
   useEffect(() => {
     if (!token) {
@@ -173,9 +169,8 @@ export default function WorkspaceSettings() {
       if (wsRes.data.workspace?.webhookSecret) {
         setWebhookSecret(wsRes.data.workspace.webhookSecret);
       }
-      setError(null);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to load workspace");
+      toastError(err.response?.data?.error || "Failed to load workspace");
     } finally {
       setLoading(false);
     }
@@ -189,7 +184,7 @@ export default function WorkspaceSettings() {
       setRepositories(res.data.repositories || []);
     } catch (err) {
       console.error("Failed to fetch repositories", err);
-      setError(err.response?.data?.error || "Failed to load repositories");
+      toastError(err.response?.data?.error || "Failed to load repositories");
     } finally {
       setReposLoading(false);
     }
@@ -203,7 +198,7 @@ export default function WorkspaceSettings() {
       setAnalytics(res.data.analytics);
     } catch (err) {
       console.error("Failed to fetch analytics", err);
-      setError(err.response?.data?.error || "Failed to load analytics");
+      toastError(err.response?.data?.error || "Failed to load analytics");
     } finally {
       setAnalyticsLoading(false);
     }
@@ -216,7 +211,7 @@ export default function WorkspaceSettings() {
       const res = await getSchedules();
       setSchedules(res.data.schedules || []);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to load schedules");
+      toastError(err.response?.data?.error || "Failed to load schedules");
     } finally {
       setSchedulesLoading(false);
     }
@@ -229,7 +224,7 @@ export default function WorkspaceSettings() {
       const res = await getQualityTrends();
       setTrends(res.data.trends || []);
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to load trends");
+      toastError(err.response?.data?.error || "Failed to load trends");
     } finally {
       setTrendsLoading(false);
     }
@@ -252,10 +247,9 @@ export default function WorkspaceSettings() {
       setSubmitting(true);
       await updateWorkspace({ name: workspaceName.trim() });
       setEditingName(false);
-      setSuccess("Workspace name updated");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Workspace name updated");
     } catch (err) {
-      setError(err.response?.data?.error || "Update failed");
+      toastError(err.response?.data?.error || "Update failed");
     } finally {
       setSubmitting(false);
     }
@@ -266,10 +260,9 @@ export default function WorkspaceSettings() {
     try {
       setSubmitting(true);
       await updateIntegrations(integrations);
-      setSuccess("Integrations saved");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Integrations saved");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to save integrations");
+      toastError(err.response?.data?.error || "Failed to save integrations");
     } finally {
       setSubmitting(false);
     }
@@ -285,10 +278,9 @@ export default function WorkspaceSettings() {
       setNewKeyValue(res.data.apiKey.key);
       setNewKeyName("");
       setShowNewKey(false);
-      setSuccess("API key created");
-      setTimeout(() => setSuccess(null), 3000);
+      success("API key created");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create API key");
+      toastError(err.response?.data?.error || "Failed to create API key");
     } finally {
       setSubmitting(false);
     }
@@ -299,25 +291,20 @@ export default function WorkspaceSettings() {
     try {
       await deleteApiKey(keyId);
       setApiKeys(apiKeys.filter((k) => k._id !== keyId));
-      setSuccess("API key deleted");
-      setTimeout(() => setSuccess(null), 3000);
+      success("API key deleted");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to delete API key");
+      toastError(err.response?.data?.error || "Failed to delete API key");
     }
   };
-
-  // Members – we now use the new InviteMemberModal, so remove old handlers
-  // The old inviteMemberHandler and removeMemberHandler, updateRoleHandler, leaveWorkspaceHandler remain
 
   const removeMemberHandler = async (userId) => {
     if (!window.confirm("Remove this member from the workspace?")) return;
     try {
       await removeMember(userId);
       setMembers(members.filter((m) => m.userId._id !== userId));
-      setSuccess("Member removed");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Member removed");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to remove member");
+      toastError(err.response?.data?.error || "Failed to remove member");
     }
   };
 
@@ -330,10 +317,9 @@ export default function WorkspaceSettings() {
           return m;
         })
       );
-      setSuccess("Role updated");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Role updated");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to update role");
+      toastError(err.response?.data?.error || "Failed to update role");
     }
   };
 
@@ -343,14 +329,13 @@ export default function WorkspaceSettings() {
       await leaveWorkspace();
       navigate("/dashboard");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to leave workspace");
+      toastError(err.response?.data?.error || "Failed to leave workspace");
     }
   };
 
   const copyToClipboard = (text) => {
     navigator.clipboard.writeText(text);
-    setSuccess("Copied to clipboard");
-    setTimeout(() => setSuccess(null), 2000);
+    success("Copied to clipboard");
   };
 
   // ── Branding Handlers ──
@@ -368,10 +353,9 @@ export default function WorkspaceSettings() {
     try {
       setBrandingSubmitting(true);
       await updateBranding(branding);
-      setSuccess("Branding updated");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Branding updated");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to update branding");
+      toastError(err.response?.data?.error || "Failed to update branding");
     } finally {
       setBrandingSubmitting(false);
     }
@@ -385,10 +369,9 @@ export default function WorkspaceSettings() {
       setShowScheduleForm(false);
       setNewSchedule({ repoUrl: "", frequency: "daily", time: "09:00" });
       await fetchSchedules();
-      setSuccess("Schedule created");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Schedule created");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to create schedule");
+      toastError(err.response?.data?.error || "Failed to create schedule");
     } finally {
       setSubmitting(false);
     }
@@ -399,10 +382,9 @@ export default function WorkspaceSettings() {
     try {
       await deleteSchedule(id);
       await fetchSchedules();
-      setSuccess("Schedule deleted");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Schedule deleted");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to delete schedule");
+      toastError(err.response?.data?.error || "Failed to delete schedule");
     }
   };
 
@@ -411,10 +393,9 @@ export default function WorkspaceSettings() {
     try {
       setSubmitting(true);
       await updateWebhook({ webhookUrl, webhookSecret });
-      setSuccess("Webhook updated");
-      setTimeout(() => setSuccess(null), 3000);
+      success("Webhook updated");
     } catch (err) {
-      setError(err.response?.data?.error || "Failed to update webhook");
+      toastError(err.response?.data?.error || "Failed to update webhook");
     } finally {
       setSubmitting(false);
     }
@@ -491,18 +472,6 @@ export default function WorkspaceSettings() {
             <span>Last updated: {new Date().toLocaleDateString()}</span>
           </div>
         </div>
-
-        {/* ─── Error / Success ─── */}
-        {error && (
-          <div className="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400 backdrop-blur-sm">
-            ⚠️ {error}
-          </div>
-        )}
-        {success && (
-          <div className="mb-6 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-3 text-sm text-[var(--accent)] backdrop-blur-sm">
-            ✅ {success}
-          </div>
-        )}
 
         {/* ─── Tabs ─── */}
         <div className="mb-8 overflow-x-auto border-b border-[var(--border-dark)] pb-px">
@@ -636,7 +605,7 @@ export default function WorkspaceSettings() {
                         <input
                           type="text"
                           value={integrations.slack.channel}
-                          onChange={(e) => setIntegrations({ ...integrations, slack: { ...integrations.slack, channel: e.target.value }})}
+                          onChange={(e) => setIntegrations({ ...integrations, slack: { ...integrations.slack, channel: e.target.value } })}
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="#general"
                         />
