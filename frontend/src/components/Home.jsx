@@ -1,1380 +1,635 @@
-import { Link } from "react-router-dom";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useMemo } from "react";
+import axios from "axios";
+import { generateTests } from "../api/github";
+import Result from "./Result";
 import { usePreferences } from "../context/PreferencesContext";
-import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
-import {
-  PRICING_PLANS,
-  formatPrice,
-  formatTokens,
-} from "../components/PricingPlans";
+import { useToast } from "../hooks/useToast";
 
-// ============================================================
-//  Reads the current --accent token and converts it to an "r,g,b"
-//  string for use in canvas fillStyle/strokeStyle, which can't
-//  consume CSS custom properties directly. Read once at mount, so
-//  the background animation follows the active theme's accent
-//  color instead of a hardcoded literal.
-// ============================================================
-function getAccentRGB() {
-  if (typeof window === "undefined") return "34,211,238";
-  const hex = getComputedStyle(document.documentElement)
-    .getPropertyValue("--accent")
-    .trim();
-  const clean = hex.replace("#", "");
-  const bigint = parseInt(clean, 16);
-  if (isNaN(bigint)) return "34,211,238";
-  return `${(bigint >> 16) & 255},${(bigint >> 8) & 255},${bigint & 255}`;
-}
+const API = import.meta.env.VITE_API_URL;
 
-// ============================================================
-//  COMPONENT: BoxBoardBackground (canvas scanning grid-of-boxes)
-//  A board of square cells, faintly outlined, where cells randomly
-//  ignite and fade — plus a horizontal scan band that sweeps down
-//  the board igniting cells beneath it. Reads as "the AI scanning
-//  your repository box by box." Single accent color, no gradients.
-//  Respects prefers-reduced-motion (renders a static frame).
-// ============================================================
-function BoxBoardBackground() {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const accentRGB = getAccentRGB();
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
-
-    const cellSize = 64;
-    let width, height, cols, rows;
-    let cells = [];
-    let scanY = 0;
-    let frame = 0;
-    let animationFrame;
-
-    function buildGrid() {
-      cols = Math.ceil(width / cellSize) + 1;
-      rows = Math.ceil(height / cellSize) + 1;
-      cells = new Array(cols * rows).fill(null).map(() => ({
-        opacity: 0,
-        target: 0,
-      }));
-    }
-
-    const resize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-      buildGrid();
-    };
-    window.addEventListener("resize", resize);
-    resize();
-
-    function drawGrid(highlightRow) {
-      ctx.clearRect(0, 0, width, height);
-
-      // faint board lines
-      ctx.strokeStyle = `rgba(${accentRGB},0.06)`;
-      ctx.lineWidth = 1;
-      for (let c = 0; c <= cols; c++) {
-        ctx.beginPath();
-        ctx.moveTo(c * cellSize, 0);
-        ctx.lineTo(c * cellSize, height);
-        ctx.stroke();
-      }
-      for (let r = 0; r <= rows; r++) {
-        ctx.beginPath();
-        ctx.moveTo(0, r * cellSize);
-        ctx.lineTo(width, r * cellSize);
-        ctx.stroke();
-      }
-
-      // ignited / fading cells
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const cell = cells[r * cols + c];
-          if (cell.opacity > 0.002) {
-            const x = c * cellSize;
-            const y = r * cellSize;
-            ctx.fillStyle = `rgba(${accentRGB},${cell.opacity * 0.14})`;
-            ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-            ctx.strokeStyle = `rgba(${accentRGB},${cell.opacity * 0.5})`;
-            ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
-          }
-        }
-      }
-
-      // scan band sweeping the board
-      if (highlightRow != null) {
-        const y = highlightRow * cellSize;
-        ctx.fillStyle = `rgba(${accentRGB},0.05)`;
-        ctx.fillRect(0, y, width, cellSize);
-        ctx.strokeStyle = `rgba(${accentRGB},0.35)`;
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.moveTo(0, y);
-        ctx.lineTo(width, y);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, y + cellSize);
-        ctx.lineTo(width, y + cellSize);
-        ctx.stroke();
-      }
-    }
-
-    if (reduceMotion) {
-      const litCount = Math.floor(cells.length * 0.04);
-      for (let i = 0; i < litCount; i++) {
-        cells[Math.floor(Math.random() * cells.length)].opacity = 0.6;
-      }
-      drawGrid(null);
-      return () => window.removeEventListener("resize", resize);
-    }
-
-    const animate = () => {
-      frame++;
-
-      // randomly ignite a couple of idle cells each tick
-      if (frame % 6 === 0) {
-        for (let i = 0; i < 2; i++) {
-          const idx = Math.floor(Math.random() * cells.length);
-          if (cells[idx].opacity < 0.05) cells[idx].target = 1;
-        }
-      }
-
-      cells.forEach((cell) => {
-        if (cell.target > cell.opacity) {
-          cell.opacity += 0.04;
-          if (cell.opacity >= 1) {
-            cell.opacity = 1;
-            cell.target = 0;
-          }
-        } else if (cell.opacity > 0) {
-          cell.opacity -= 0.012;
-          if (cell.opacity < 0) cell.opacity = 0;
-        }
-      });
-
-      scanY += 0.055;
-      if (scanY >= rows) scanY = 0;
-      const highlightRow = Math.floor(scanY) % rows;
-
-      for (let c = 0; c < cols; c++) {
-        const cell = cells[highlightRow * cols + c];
-        if (Math.random() > 0.9) cell.target = 1;
-      }
-
-      drawGrid(highlightRow);
-      animationFrame = requestAnimationFrame(animate);
-    };
-    animate();
-
-    return () => {
-      cancelAnimationFrame(animationFrame);
-      window.removeEventListener("resize", resize);
-    };
-  }, []);
-
-  return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0"
-      style={{ width: "100%", height: "100%" }}
-    />
-  );
-}
-
-// ============================================================
-//  COMPONENT: TypedWord (cycle through words)
-// ============================================================
-function TypedWord({ words }) {
-  const [index, setIndex] = useState(0);
-  const [charIndex, setCharIndex] = useState(0);
-  const [display, setDisplay] = useState("");
-  const [isDeleting, setIsDeleting] = useState(false);
-
-  useEffect(() => {
-    const currentWord = words[index];
-    const timeout = setTimeout(
-      () => {
-        if (!isDeleting) {
-          if (charIndex < currentWord.length) {
-            setDisplay((prev) => prev + currentWord[charIndex]);
-            setCharIndex(charIndex + 1);
-          } else {
-            setIsDeleting(true);
-            setTimeout(() => {}, 1500);
-          }
-        } else {
-          if (charIndex > 0) {
-            setDisplay((prev) => prev.slice(0, -1));
-            setCharIndex(charIndex - 1);
-          } else {
-            setIsDeleting(false);
-            setIndex((i) => (i + 1) % words.length);
-          }
-        }
-      },
-      isDeleting ? 30 : 80,
-    );
-
-    return () => clearTimeout(timeout);
-  }, [charIndex, isDeleting, index, words]);
-
-  return (
-    <span className="text-[var(--accent)]">
-      {display}
-      <span className="ml-0.5 inline-block h-[1em] w-[2px] animate-pulse bg-[var(--accent)]" />
-    </span>
-  );
-}
-
-// ============================================================
-//  COMPONENT: CodeVerityLogo
-// ============================================================
-function CodeVerityLogo() {
-  return (
-    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
-      <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="relative text-[var(--accent)]"
-      >
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
-        <span className="text-[6px] font-bold text-[var(--accent)]">
-          &lt;/&gt;
-        </span>
-      </div>
-      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
-    </div>
-  );
-}
-
-// ============================================================
-//  COMPONENT: Feature  left-aligned, accent rail instead of the
-//  identical centered icon-in-circle "SaaS card kit" treatment.
-// ============================================================
-function Feature({ icon, title, desc, index }) {
-  return (
-    <div className="group relative border-t border-[var(--border-light)] pt-5 transition-colors duration-200 hover:border-[var(--accent)]/50">
-      <div className="flex items-center justify-between">
-        <span className="text-[var(--accent)]">{icon}</span>
-        <span className="font-mono text-[10px] text-[var(--text-muted)]">
-          {String(index + 1).padStart(2, "0")}
-        </span>
-      </div>
-      <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">
-        {title}
-      </h3>
-      <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
-        {desc}
-      </p>
-    </div>
-  );
-}
-
-// ============================================================
-//  ICON COMPONENTS
-// ============================================================
-function BugIcon() {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-      <path d="M18 13h-2" />
-      <path d="M8 13H6" />
-      <path d="M10 4 8 2" />
-      <path d="M14 4 16 2" />
-      <path d="M12 22v-4" />
-    </svg>
-  );
-}
-function ShieldIcon() {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-function FlaskIcon() {
-  return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
-      <path d="M8 2h8" />
-    </svg>
-  );
-}
-
-// ============================================================
-//  COMPONENT: StatPill (animated count)  logic untouched
-// ============================================================
-function StatPill({ value, label, delayMs = 0 }) {
-  const [display, setDisplay] = useState(0);
-  const [hasStarted, setHasStarted] = useState(false);
-  const rafRef = useRef(null);
-
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      setHasStarted(true);
-    }, delayMs);
-    return () => clearTimeout(timer);
-  }, [delayMs]);
-
-  useEffect(() => {
-    if (!hasStarted) return;
-    setDisplay(0);
-    const num = parseFloat(String(value).replace(/[^0-9.]/g, ""));
-    if (isNaN(num)) return;
-    const isPct = String(value).includes("%");
-    const isPlus = String(value).includes("+");
-    const isLt = String(value).includes("<");
-    const duration = 800;
-    const start = performance.now();
-    const tick = (now) => {
-      const elapsed = now - start;
-      const progress = Math.min(elapsed / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      const current = Math.round(num * eased);
-      let output = isPct
-        ? `${current}%`
-        : isPlus
-          ? `${current}+`
-          : isLt
-            ? `<${current}s`
-            : String(current);
-      setDisplay(output);
-      if (progress < 1) {
-        rafRef.current = requestAnimationFrame(tick);
-      }
-    };
-    rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) {
-        cancelAnimationFrame(rafRef.current);
-      }
-    };
-  }, [value, hasStarted]);
-
-  return (
-    <div className="flex min-w-[110px] flex-col items-center gap-0.5 border-l border-[var(--border-light)] px-5 first:border-l-0">
-      <span className="text-xl font-bold tabular-nums text-[var(--text-primary)]">
-        {display}
-      </span>
-      <span className="text-[9px] tracking-wide text-[var(--text-muted)]">
-        {label}
-      </span>
-    </div>
-  );
-}
-
-// ============================================================
-//  COMPONENT: ScanLine (for button hover)
-// ============================================================
+// -----------------------------------------------------------------
+// ScanLine – reuses the global .animate-scanline utility from
+// index.css instead of redefining the keyframe locally.
+// -----------------------------------------------------------------
 function ScanLine() {
   return (
-    <span className="absolute inset-0 z-0 overflow-hidden">
-      <span className="animate-scanline absolute left-0 top-0 h-[2px] w-full bg-gradient-to-r from-transparent via-[var(--accent-contrast)] to-transparent opacity-40" />
-    </span>
+    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
+      <div
+        className="animate-scanline absolute left-0 right-0 h-px bg-[var(--accent-contrast)]"
+        style={{ opacity: 0.35 }}
+      />
+    </div>
   );
 }
 
-// ============================================================
-//  SECTION: How It Works, Testimonials, Pricing, FAQ
-// ============================================================
+// -----------------------------------------------------------------
+// Main History Component
+// -----------------------------------------------------------------
+export default function History() {
+  const [reports, setReports] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
+  const [search, setSearch] = useState("");
+  const [sortBy, setSortBy] = useState("date");
+  const [filterGrade, setFilterGrade] = useState("all");
 
-function HowItWorks() {
-  const steps = [
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-      ),
-      title: "Paste your GitHub URL",
-      desc: "Enter any public repository link. CodeVerity immediately reads the codebase structure.",
-    },
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
-      ),
-      title: "AI scans every file",
-      desc: "Our engine examines architecture, dependencies, security, and potential bugs in seconds.",
-    },
-    {
-      icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
-      title: "Get actionable insights",
-      desc: "Receive a clear report with test suggestions, vulnerability fixes, and performance tips.",
-    },
-  ];
+  const { compact, showScores } = usePreferences();
+  const { success, error } = useToast();
 
-  return (
-    <section className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-            How it works
-          </h2>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Repository in, report out  three steps.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
-          {steps.map((step, idx) => (
-            <div
-              key={idx}
-              className={`relative px-0 py-6 sm:px-6 sm:py-0 ${
-                idx !== 0 ? "sm:border-l sm:border-[var(--border-light)]" : ""
-              }`}
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      setLoading(false);
+      return;
+    }
+    axios
+      .get(`${API}/report`, {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+      .then((res) => setReports(res.data.reports || []))
+      .catch(() => error("Failed to load history"))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const downloadPDF = async (id, e) => {
+    e?.stopPropagation();
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`${API}/report/${id}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("Failed to download PDF");
+      const blob = await res.blob();
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "CodeVerity-Audit.pdf";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      success("PDF downloaded successfully");
+    } catch {
+      error("Download failed");
+    }
+  };
+
+  const filtered = useMemo(() => {
+    let list = [...reports]
+    if (search.trim()) {
+      const q = search.toLowerCase();
+      list = list.filter(
+        (r) =>
+          r.repoUrl?.toLowerCase().includes(q) ||
+          r.summary?.toLowerCase().includes(q)
+      );
+    }
+    if (filterGrade !== "all") {
+      list = list.filter((r) => (r.grade ?? "N/A")[0] === filterGrade);
+    }
+    list.sort((a, b) => {
+      if (sortBy === "grade") return (a.grade ?? "Z").localeCompare(b.grade ?? "Z");
+      if (sortBy === "score") {
+        const avg = (r) =>
+          r.scores
+            ? (Number(r.scores.codeQuality || 0) +
+                Number(r.scores.security || 0) +
+                Number(r.scores.performance || 0) +
+                Number(r.scores.maintainability || 0)) /
+              4
+            : 0;
+        return avg(b) - avg(a);
+      }
+      return new Date(b.createdAt) - new Date(a.createdAt);
+    });
+    return list;
+  }, [reports, search, sortBy, filterGrade]);
+
+  // ---- Full Report View ----
+  if (selected) {
+    return (
+      <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden">
+        <div className="sticky top-16 z-50 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/80 backdrop-blur">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-4">
+            <button
+              onClick={() => setSelected(null)}
+              className="group flex items-center gap-2 rounded-lg px-3 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
             >
-              <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
-                  {step.icon}
-                </span>
-                <span className="font-mono text-xs text-[var(--text-muted)]">
-                  0{idx + 1}
-                </span>
-              </div>
-              <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">
-                {step.title}
-              </h3>
-              <p className="mt-1.5 max-w-[26ch] text-xs leading-relaxed text-[var(--text-secondary)]">
-                {step.desc}
-              </p>
+              <span className="transition-transform group-hover:-translate-x-1">←</span>
+              Back to History
+            </button>
+            <div className="h-5 w-px bg-[var(--border-light)]" />
+            <div className="flex min-w-0 items-center gap-2">
+              <svg
+                width="15"
+                height="15"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                className="shrink-0 text-[var(--text-muted)]"
+              >
+                <path d="M14.5 17.5 21 12l-6.5-5.5" />
+                <path d="M9.5 6.5 3 12l6.5 5.5" />
+              </svg>
+              <span className="truncate font-mono text-[11px] text-[var(--text-muted)]">{selected.repoUrl}</span>
             </div>
-          ))}
+          </div>
+        </div>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-5">
+          <Result
+            data={selected}
+            onDownload={(e) => downloadPDF(selected._id, e)}
+            generateTestsFn={generateTests}
+          />
         </div>
       </div>
-    </section>
-  );
-}
+    );
+  }
 
-function Testimonials() {
-  const testimonials = [
-    {
-      quote:
-        "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
-      author: "Sarah Chen",
-      role: "Lead Engineer, Finlytics",
-    },
-    {
-      quote:
-        "I use it before every PR. The bug detection is surprisingly accurate  it's like having a senior reviewer.",
-      author: "Marcus Rivera",
-      role: "Full-stack Developer, OpenSource Collective",
-    },
-    {
-      quote:
-        "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
-      author: "Dr. Aisha Patel",
-      role: "CTO, DevSafe",
-    },
-  ];
+  // ---- Main History View with compact overrides ----
+  const containerPadding = compact ? "py-3" : "py-5";
+  const topPadding = compact ? "pt-14" : "pt-16"; // Account for sticky navbar
+  const headerMargin = compact ? "mb-3" : "mb-5";
+  const toolbarPadding = compact ? "p-1.5" : "p-2";
+  const gradeGap = compact ? "gap-1.5" : "gap-2";
+  const reportGridGap = compact ? "gap-2" : "gap-3";
 
   return (
-    <section className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <h2 className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-          Trusted by developers already shipping with it
-        </h2>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {testimonials.map((t, i) => (
-            <div
-              key={i}
-              className="flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 transition-colors duration-200 hover:border-[var(--accent)]/30"
-            >
-              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">
-                "
-              </span>
-              <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">
-                {t.quote}
-              </p>
-              <div className="mt-5 flex items-center gap-2.5 border-t border-[var(--border-light)] pt-4">
-                <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
-                  {t.author
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)}
-                </span>
-                <div>
-                  <p className="text-xs font-semibold text-[var(--text-primary)]">
-                    {t.author}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-muted)]">
-                    {t.role}
-                  </p>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function Pricing() {
-  const plans = PRICING_PLANS;
-
-  return (
-    <section className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-5xl">
-        <div className="mb-10 text-center">
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-            Simple, transparent pricing
-          </h2>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-[var(--text-secondary)]">
-            Start for free, upgrade as you grow.
-          </p>
-        </div>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {plans.map((plan) => {
-            const price = plan.monthly.INR;
-            const isFree = price === 0;
-            const displayPrice = formatPrice(price, "INR");
-
-            return (
-              <div
-                key={plan.id}
-                className={`relative overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 text-left transition-all duration-200 ${
-                  plan.highlight
-                    ? "border-[var(--accent)]"
-                    : "border-[var(--border-light)] hover:border-[var(--accent)]/30"
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] overflow-x-hidden">
+      <div className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${containerPadding} ${topPadding}`}>
+        {/* HEADER */}
+        <div className={headerMargin}>
+          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
+            <div>
+              <h1
+                className={`font-bold leading-[1.05] tracking-tight text-[var(--text-primary)] ${
+                  compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
                 }`}
               >
-                {plan.highlight && (
-                  <span className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
-                )}
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                    {plan.name}
-                  </h3>
-                  {plan.highlight && (
-                    <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
-                      Most popular
-                    </span>
-                  )}
-                </div>
-                <div className="mt-3 flex items-baseline">
-                  <span className="text-3xl font-extrabold text-[var(--text-primary)]">
-                    {displayPrice}
-                  </span>
-                  {!isFree && (
-                    <span className="ml-1 text-sm text-[var(--text-muted)]">
-                      /mo
-                    </span>
-                  )}
-                </div>
-                <div className="mt-3">
-                  <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[10px] text-[var(--accent)]">
-                    {formatTokens(plan.tokensPerMonth)} tokens / mo
-                  </span>
-                </div>
-                <ul className="mt-5 space-y-2.5 text-xs text-[var(--text-secondary)]">
-                  {plan.features.map((f, fi) => (
-                    <li key={fi} className="flex items-start gap-2">
-                      <svg
-                        className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link
-                  to={
-                    isFree
-                      ? "/register"
-                      : `/checkout?plan=${plan.id}&cycle=monthly&currency=INR`
-                  }
-                  className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200 ${
-                    plan.highlight
-                      ? "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
-                      : "border border-[var(--border-light)] text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
-                  }`}
-                >
-                  {plan.cta}
-                </Link>
-              </div>
-            );
-          })}
-        </div>
-        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">
-          All prices in INR. Yearly plans offer 20% off  see full pricing page.
-        </p>
-      </div>
-    </section>
-  );
-}
-
-function FAQ() {
-  const [openIndex, setOpenIndex] = useState(null);
-
-  const faqs = [
-    {
-      q: "What types of repositories does CodeVerity support?",
-      a: "Currently we support public GitHub repositories written in JavaScript, TypeScript, Python, and Java. More languages coming soon.",
-    },
-    {
-      q: "Is my code stored or shared?",
-      a: "No. CodeVerity processes your repository in memory and never stores any source code. All analysis is temporary and encrypted.",
-    },
-    {
-      q: "Can I use CodeVerity for private repositories?",
-      a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security.",
-    },
-    {
-      q: "How accurate is the AI bug detection?",
-      a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement.",
-    },
-  ];
-
-  const toggle = (idx) => setOpenIndex(openIndex === idx ? null : idx);
-
-  return (
-    <section className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
-      <div className="mx-auto max-w-3xl">
-        <h2 className="mb-10 text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-          Frequently asked questions
-        </h2>
-        <div className="divide-y divide-[var(--border-light)] rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-          {faqs.map((faq, idx) => (
-            <div key={idx}>
-              <button
-                onClick={() => toggle(idx)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50"
-              >
-                <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {faq.q}
-                </span>
-                <span
-                  className={`ml-4 shrink-0 font-mono text-lg text-[var(--accent)] transition-transform duration-200 ${
-                    openIndex === idx ? "rotate-45" : ""
-                  }`}
-                >
-                  +
-                </span>
-              </button>
-              {openIndex === idx && (
-                <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
-                  {faq.a}
-                </div>
-              )}
+                Review <span className="text-[var(--accent)]">History</span>
+              </h1>
+              <p className={`mt-2 max-w-xl text-[13px] leading-5 text-[var(--text-secondary)] ${compact ? "text-xs" : ""}`}>
+                Browse, compare and revisit your previous GitHub repository audits.
+              </p>
             </div>
-          ))}
-        </div>
-      </div>
-    </section>
-  );
-}
 
-// ============================================================
-//  FOOTER (large wordmark + centered logo badge)
-// ============================================================
-function Footer() {
-  return (
-    <footer className="relative overflow-hidden border-t border-[var(--border-light)] bg-[var(--accent)] px-4 pt-16 pb-8 sm:px-6">
-      <div className="relative z-10 mx-auto max-w-6xl">
-        <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-          {/* Brand / tagline */}
-          <div className="col-span-2 sm:col-span-1">
-            <h3 className="text-2xl font-extrabold leading-tight text-[var(--accent-contrast)] sm:text-3xl">
-              AI-powered code
-              <br />
-              intelligence.
-            </h3>
-            <p className="mt-3 max-w-[220px] text-[12px] leading-relaxed text-[var(--accent-contrast)]/70">
-              One repo. Every insight. Built by developers who care about
-              quality.
-            </p>
-          </div>
-
-          {/* Product Column */}
-          <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Product
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/dashboard" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link to="/workspace" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Workspace
-                </Link>
-              </li>
-              <li>
-                <Link to="/history" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  History
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Resources Column */}
-          <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Resources
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Support
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Terms
-                </Link>
-              </li>
-            </ul>
-          </div>
-
-          {/* Company Column */}
-          <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Company
-            </h4>
-            <ul className="space-y-2">
-              <li>
-                <a href="mailto:support@codeverity.dev" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Contact
-                </a>
-              </li>
-              <li>
-                <Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <span className="text-[12px] text-[var(--accent-contrast)]/60">
-                  © {new Date().getFullYear()}
-                </span>
-              </li>
-            </ul>
+            {/* Total Reviews Badge */}
+            <div className="flex w-fit items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_10px_25px_-18px_var(--accent-soft-strong)]">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8" />
+                  <path d="M8 17h5" />
+                </svg>
+              </div>
+              <div>
+                <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Total Reviews</p>
+                <p className="font-mono text-base font-semibold text-[var(--text-primary)]">{reports.length}</p>
+              </div>
+            </div>
           </div>
         </div>
 
-        {/* Bottom bar */}
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--accent-contrast)]/15 pt-6 sm:flex-row">
-          <p className="text-[10px] text-[var(--accent-contrast)]/60">
-            Built with ❤️ for developers everywhere.
-          </p>
-          <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
-            <Link to="/privacy" className="transition hover:text-[var(--accent-contrast)]">
-              Privacy
-            </Link>
-            <Link to="/terms" className="transition hover:text-[var(--accent-contrast)]">
-              Terms
-            </Link>
-            <Link to="/support" className="transition hover:text-[var(--accent-contrast)]">
-              Support
-            </Link>
-          </div>
-        </div>
-      </div>
-
-      {/* Brand lockup: logo mark sits above the wordmark, not on top of it */}
-      <div className="relative z-10 mt-16 flex select-none flex-col items-center gap-4">
-        <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20">
-          <CodeVerityLogo />
-        </div>
-        <div
-          className="pointer-events-none w-full overflow-hidden text-center"
-          style={{
-            maskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
-          }}
-        >
-          <span
-            className="block whitespace-nowrap font-extrabold leading-none tracking-tight text-[var(--accent-contrast)]/10"
-            style={{ fontSize: "clamp(3.5rem, 15vw, 10rem)" }}
-          >
-            CodeVerity
-          </span>
-        </div>
-      </div>
-    </footer>
-  );
-}
-
-// ============================================================
-//  MAIN HOME COMPONENT
-// ============================================================
-
-export default function Home() {
-  const token = localStorage.getItem("token");
-  const [show, setShow] = useState(false);
-  const { compact } = usePreferences();
-
-  const [stats, setStats] = useState({
-    totalScans: 0,
-    avgQuality: 0,
-    avgTime: "0s",
-  });
-  const [statsLoading, setStatsLoading] = useState(true);
-
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const res = await fetch(`${import.meta.env.VITE_API_URL}/stats/public`);
-
-        console.log("Stats response:", {
-          status: res.status,
-          statusText: res.statusText,
-          contentType: res.headers.get("content-type"),
-        });
-
-        const text = await res.text();
-
-        console.log("Stats raw response:", text);
-
-        if (!res.ok) {
-          throw new Error(`Stats API failed: ${res.status} ${res.statusText}`);
-        }
-
-        if (!text.trim()) {
-          throw new Error("Stats API returned an empty response");
-        }
-
-        const data = JSON.parse(text);
-
-        if (data.success) {
-          setStats({
-            totalScans: data.stats.totalScans ?? 0,
-            avgQuality: data.stats.avgQuality ?? 0,
-            avgTime: data.stats.avgTime || "< 2 min",
-          });
-        }
-      } catch (err) {
-        console.error("Failed to fetch stats:", err);
-      } finally {
-        setStatsLoading(false);
-      }
-    };
-
-    fetchStats();
-  }, []);
-
-  const containerRef = useRef(null);
-  const brandRef = useRef(null);
-  const badgeRef = useRef(null);
-  const headingRef = useRef(null);
-  const typedRef = useRef(null);
-  const descriptionRef = useRef(null);
-  const ctasRef = useRef(null);
-  const trustRef = useRef(null);
-  const statsRef = useRef(null);
-  const featureLabelRef = useRef(null);
-  const featureCardsRef = useRef([]);
-  const bgGlow1Ref = useRef(null);
-  const bgGlow2Ref = useRef(null);
-  const bgGridRef = useRef(null);
-
-  const howRef = useRef(null);
-  const testimonialRef = useRef(null);
-  const pricingRef = useRef(null);
-  const faqRef = useRef(null);
-
-  useEffect(() => {
-    const t = setTimeout(() => setShow(true), 80);
-    return () => clearTimeout(t);
-  }, []);
-
-  useGSAP(
-    () => {
-      const mm = gsap.matchMedia();
-
-      mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const tl = gsap.timeline({
-          defaults: { ease: "power3.out", duration: 0.6 },
-        });
-
-        gsap.set(
-          [
-            brandRef.current,
-            badgeRef.current,
-            headingRef.current,
-            typedRef.current,
-            descriptionRef.current,
-            ctasRef.current,
-            trustRef.current,
-            statsRef.current,
-          ],
-          { opacity: 0, y: 20 },
-        );
-
-        tl.to(brandRef.current, { opacity: 1, y: 0, duration: 0.5 })
-          .to(badgeRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
-          .to(headingRef.current, { opacity: 1, y: 0, duration: 0.5 }, "-=0.2")
-          .to(typedRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
-          .to(
-            descriptionRef.current,
-            { opacity: 1, y: 0, duration: 0.4 },
-            "-=0.2",
-          )
-          .to(
-            ctasRef.current,
-            { opacity: 1, y: 0, duration: 0.4, stagger: 0.06 },
-            "-=0.2",
-          )
-          .to(trustRef.current, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
-          .to(
-            statsRef.current,
-            { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 },
-            "-=0.15",
-          );
-
-        ScrollTrigger.create({
-          trigger: featureLabelRef.current,
-          start: "top 85%",
-          onEnter: () => {
-            gsap.fromTo(
-              featureLabelRef.current,
-              { opacity: 0, y: 15 },
-              { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
-            );
-          },
-          once: true,
-        });
-
-        ScrollTrigger.create({
-          trigger: featureCardsRef.current,
-          start: "top 80%",
-          onEnter: () => {
-            gsap.fromTo(
-              featureCardsRef.current,
-              { opacity: 0, y: 20 },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.5,
-                stagger: 0.12,
-                ease: "power2.out",
-                clearProps: "opacity",
-              },
-            );
-          },
-          once: true,
-        });
-
-        const sections = [
-          { ref: howRef, start: "top 80%" },
-          { ref: testimonialRef, start: "top 80%" },
-          { ref: pricingRef, start: "top 80%" },
-          { ref: faqRef, start: "top 80%" },
-        ];
-        sections.forEach(({ ref, start }) => {
-          if (!ref.current) return;
-          ScrollTrigger.create({
-            trigger: ref.current,
-            start,
-            onEnter: () => {
-              gsap.fromTo(
-                ref.current,
-                { opacity: 0, y: 30 },
-                {
-                  opacity: 1,
-                  y: 0,
-                  duration: 0.6,
-                  ease: "power2.out",
-                  clearProps: "opacity",
-                },
+        {/* GRADE SUMMARY */}
+        {reports.length > 0 && (
+          <div className={`mb-4 grid grid-cols-2 ${gradeGap} sm:grid-cols-5`}>
+            {["A", "B", "C", "D", "F"].map((g) => {
+              const count = reports.filter((r) => (r.grade ?? "N/A")[0] === g).length;
+              const style = gradeStyle(g);
+              const label = g === "A" ? "Excellent" : g === "B" ? "Good" : g === "C" ? "Average" : g === "D" ? "Needs work" : "Critical";
+              return (
+                <button
+                  key={g}
+                  onClick={() => setFilterGrade(filterGrade === g ? "all" : g)}
+                  className={`group rounded-xl border p-3 text-left transition-all duration-200 active:scale-[0.98] ${
+                    filterGrade === g
+                      ? `${style.border} ${style.background} shadow-[0_10px_25px_-18px_var(--accent-soft-strong)]`
+                      : "border-[var(--border-light)] bg-[var(--bg-card)] hover:-translate-y-0.5 hover:border-[var(--border-medium)]"
+                  } ${compact ? "p-2" : "p-3"}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <span className={`flex h-7 w-7 items-center justify-center rounded-lg font-mono text-[11px] font-bold ${style.badge}`}>
+                      {g}
+                    </span>
+                    <span className="text-[9px] text-[var(--text-muted)]">
+                      {filterGrade === g ? "Selected" : "Filter"}
+                    </span>
+                  </div>
+                  <p className={`mt-2 font-mono text-lg font-semibold text-[var(--text-primary)] ${compact ? "text-base" : ""}`}>{count}</p>
+                  <p className="text-[9px] text-[var(--text-muted)]">{label}</p>
+                </button>
               );
-            },
-            once: true,
-          });
-        });
+            })}
+          </div>
+        )}
 
-        const bgGlow1 = bgGlow1Ref.current;
-        const bgGlow2 = bgGlow2Ref.current;
-        const bgGrid = bgGridRef.current;
-        if (bgGlow1) {
-          ScrollTrigger.create({
-            trigger: containerRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            onUpdate: (self) => {
-              gsap.to(bgGlow1, {
-                y: self.progress * 20,
-                duration: 0.1,
-                overwrite: true,
-              });
-            },
-          });
-        }
-        if (bgGlow2) {
-          ScrollTrigger.create({
-            trigger: containerRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            onUpdate: (self) => {
-              gsap.to(bgGlow2, {
-                y: -self.progress * 25,
-                duration: 0.1,
-                overwrite: true,
-              });
-            },
-          });
-        }
-        if (bgGrid) {
-          ScrollTrigger.create({
-            trigger: containerRef.current,
-            start: "top bottom",
-            end: "bottom top",
-            onUpdate: (self) => {
-              gsap.to(bgGrid, {
-                y: self.progress * 10,
-                duration: 0.1,
-                overwrite: true,
-              });
-            },
-          });
-        }
+        {/* TOOLBAR */}
+        {reports.length > 0 && (
+          <div className={`mb-4 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${toolbarPadding}`}>
+            <div className="flex flex-col gap-2 lg:flex-row">
+              <div className="relative flex-1">
+                <svg
+                  className="absolute left-3.5 top-1/2 -translate-y-1/2 text-[var(--text-muted)]"
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" />
+                </svg>
+                <input
+                  aria-label="Search reports"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search repositories or summaries..."
+                  className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-[13px] text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                />
+              </div>
+              <div className="flex gap-2">
+                <select
+                  aria-label="Filter by grade"
+                  value={filterGrade}
+                  onChange={(e) => setFilterGrade(e.target.value)}
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                >
+                  <option value="all">All grades</option>
+                  {["A", "B", "C", "D", "F"].map((g) => (
+                    <option key={g} value={g}>
+                      Grade {g}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  aria-label="Sort reports"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                >
+                  <option value="date">Newest</option>
+                  <option value="score">Highest Score</option>
+                  <option value="grade">Grade</option>
+                </select>
+              </div>
+            </div>
+            {(search || filterGrade !== "all") && (
+              <div className="mt-2 flex items-center justify-between border-t border-[var(--border-dark)] pt-2">
+                <p className="text-[9px] text-[var(--text-muted)]">
+                  Showing <span className="font-mono font-medium text-[var(--text-secondary)]">{filtered.length}</span> of{" "}
+                  <span className="font-mono font-medium text-[var(--text-secondary)]">{reports.length}</span> reports
+                </p>
+                <button
+                  onClick={() => {
+                    setSearch("");
+                    setFilterGrade("all");
+                  }}
+                  className="text-[11px] text-[var(--accent)] transition-colors duration-150 hover:text-[var(--accent-hover)] active:scale-[0.97]"
+                >
+                  Clear filters
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
-        return () => {
-          ScrollTrigger.getAll().forEach((st) => st.kill());
-        };
-      });
+        {/* LOADING */}
+        {loading && (
+          <div className="flex min-h-[360px] flex-col items-center justify-center">
+            <div className="relative">
+              <div className="h-10 w-10 rounded-full border-2 border-[var(--border-light)]" />
+              <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-[var(--accent)]" />
+            </div>
+            <p className="mt-4 text-sm font-medium text-[var(--text-secondary)]">Loading your reviews</p>
+            <p className="mt-1 text-[10px] text-[var(--text-muted)]">Fetching your CodeVerity audit history...</p>
+          </div>
+        )}
 
-      mm.add("(prefers-reduced-motion: reduce)", () => {
-        gsap.set(
-          [
-            brandRef.current,
-            badgeRef.current,
-            headingRef.current,
-            typedRef.current,
-            descriptionRef.current,
-            ctasRef.current,
-            trustRef.current,
-            statsRef.current,
-            featureLabelRef.current,
-            featureCardsRef.current,
-            howRef.current,
-            testimonialRef.current,
-            pricingRef.current,
-            faqRef.current,
-          ],
-          { opacity: 1, y: 0, clearProps: "all" },
-        );
-      });
+        {/* EMPTY STATE */}
+        {!loading && reports.length === 0 && (
+          <div className="flex min-h-[420px] items-center justify-center">
+            <div className="max-w-md text-center">
+              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  className="text-[var(--text-muted)]"
+                >
+                  <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8Z" />
+                  <path d="M14 2v6h6" />
+                  <path d="M8 13h8" />
+                  <path d="M8 17h5" />
+                </svg>
+              </div>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">No reviews yet</h2>
+              <p className="mt-2 text-[13px] leading-5 text-[var(--text-muted)]">
+                Analyze a GitHub repository and your AI-powered code audit will appear here.
+              </p>
+            </div>
+          </div>
+        )}
 
-      return () => mm.revert();
-    },
-    { scope: containerRef, dependencies: [] },
+        {/* NO FILTER RESULTS */}
+        {!loading && reports.length > 0 && filtered.length === 0 && (
+          <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] py-12 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[var(--text-muted)]">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-4-4" />
+              </svg>
+            </div>
+            <p className="text-sm font-medium text-[var(--text-primary)]">No matching reports</p>
+            <p className="mt-1 text-[10px] text-[var(--text-muted)]">Try changing your search or filters.</p>
+            <button
+              onClick={() => {
+                setSearch("");
+                setFilterGrade("all");
+              }}
+              className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft-strong)] active:scale-[0.97]"
+            >
+              Clear filters
+            </button>
+          </div>
+        )}
+
+        {/* REPORT GRID */}
+        {!loading && filtered.length > 0 && (
+          <div className={`grid grid-cols-1 ${reportGridGap} md:grid-cols-2 xl:grid-cols-3`}>
+            {filtered.map((r) => (
+              <ReportCard
+                key={r._id}
+                report={r}
+                onView={() =>
+                  setSelected({
+                    ...r,
+                    _sourceCode: r._sourceCode ?? "",
+                  })
+                }
+                onDownload={(e) => downloadPDF(r._id, e)}
+                compact={compact}
+                showScores={showScores}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* FOOTER */}
+        {!loading && reports.length > 0 && (
+          <div className={`mt-6 flex items-center justify-center gap-2 text-[10px] text-[var(--text-muted)] ${compact ? "mt-4" : ""}`}>
+            <span>CodeVerity</span>
+            <span>•</span>
+            <span>AI Repository Intelligence</span>
+          </div>
+        )}
+      </div>
+    </div>
   );
+}
 
-  const compactClasses = compact
-    ? {
-        container: "py-8",
-        heading: "text-4xl sm:text-5xl md:text-[3.6rem]",
-        subheading: "text-lg sm:text-xl",
-        description: "text-xs sm:text-sm",
-        brandMargin: "mb-5",
-        badgeMargin: "mb-4",
-        ctaMargin: "mb-6",
-        statsMargin: "mb-8",
-        featureGap: "gap-x-6 gap-y-8",
-      }
-    : {
-        container: "py-16",
-        heading: "text-5xl sm:text-6xl md:text-[4.2rem]",
-        subheading: "text-xl sm:text-2xl",
-        description: "text-sm sm:text-[15px]",
-        brandMargin: "mb-7",
-        badgeMargin: "mb-6",
-        ctaMargin: "mb-9",
-        statsMargin: "mb-12",
-        featureGap: "gap-x-8 gap-y-10",
-      };
+// -----------------------------------------------------------------
+// Report Card – consistent sizing and styles
+// -----------------------------------------------------------------
+function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
+  const grade = r.grade ?? "N/A";
+  const styles = gradeStyle(grade[0]);
+
+  const avg = r.scores
+    ? Math.round(
+        (Number(r.scores.codeQuality || 0) +
+          Number(r.scores.security || 0) +
+          Number(r.scores.performance || 0) +
+          Number(r.scores.maintainability || 0)) /
+          4
+      )
+    : 0;
+
+  const repoName = r.repoUrl?.replace("https://github.com/", "") ?? "Unknown";
+  const date = r.createdAt
+    ? new Date(r.createdAt).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
+
+  const cardPadding = compact ? "p-3" : "p-4";
+  const headerPadding = compact ? "p-3" : "p-4";
+  const titleSize = "text-sm";
+  const scoreSize = compact ? "text-xl" : "text-2xl";
+  const gap = compact ? "gap-2" : "gap-2.5";
 
   return (
     <div
-      ref={containerRef}
-      className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
+      onClick={onView}
+      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-2xl hover:shadow-[var(--accent)]/10`}
     >
-      {/* Background glows and dot grid  theme-driven */}
-      <div
-        ref={bgGlow1Ref}
-        className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl"
-      />
-      <div
-        ref={bgGlow2Ref}
-        className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl"
-      />
-      <div
-        ref={bgGridRef}
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "radial-gradient(var(--accent) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
-
-      <BoxBoardBackground />
-
-      {/* MAIN CONTENT */}
-      <div
-        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container} transition-all duration-700 ease-out ${
-          show ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-        }`}
-      >
-        <div className="w-full max-w-5xl text-center">
-          {/* BRAND */}
-          <div
-            ref={brandRef}
-            className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}
-          >
-            <CodeVerityLogo />
-            <div className="text-left">
-              <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)]">
-                CodeVerity
-              </p>
-              <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">
-                AI-powered repository intelligence
-              </p>
+      <div className={`border-b border-[var(--border-dark)] ${headerPadding}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-primary)] text-[var(--text-muted)] transition-colors duration-150 group-hover:text-[var(--accent)]">
+              <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M12 .5C5.73.5.75 5.48.75 11.75c0 4.97 3.22 9.19 7.68 10.68.56.1.77-.24.77-.54v-1.89c-3.12.68-3.78-1.33-3.78-1.33-.51-1.3-1.25-1.65-1.25-1.65-1.02-.7.08-.69.08-.69 1.13.08 1.73 1.16 1.73 1.16 1 1.72 2.62 1.22 3.26.93.1-.73.39-1.22.71-1.5-2.49-.28-5.11-1.25-5.11-5.56 0-1.23.44-2.23 1.16-3.02-.12-.28-.5-1.43.11-2.98 0 0 .95-.3 3.1 1.15a10.7 10.7 0 0 1 5.64 0c2.15-1.45 3.1-1.15 3.1-1.15.61 1.55.23 2.7.11 2.98.72.79 1.16 1.79 1.16 3.02 0 4.32-2.63 5.27-5.13 5.55.4.35.76 1.05.76 2.12v3.15c0 .3.2.65.78.54a11.27 11.27 0 0 0 7.67-10.68C23.25 5.48 18.27.5 12 .5Z" />
+              </svg>
+            </div>
+            <div className="min-w-0">
+              <p className="mb-0.5 font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Repository</p>
+              <h2 className={`truncate font-mono font-semibold text-[var(--text-primary)] ${titleSize}`}>{repoName}</h2>
             </div>
           </div>
-
-          {/* BADGE */}
-          <div
-            ref={badgeRef}
-            className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}
-          >
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
-            AI-powered GitHub code analysis
-          </div>
-
-          {/* HEADING */}
-          <h1
-            ref={headingRef}
-            className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
-          >
-            <span className="text-[var(--text-primary)]">Code</span>
-            <span className="text-[var(--accent)]">Verity</span>
-          </h1>
-
-          {/* TYPED SUBTITLE */}
-          <p
-            ref={typedRef}
-            className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
-          >
-            <TypedWord
-              words={[
-                "Finds your bugs.",
-                "Flags vulnerabilities.",
-                "Generates tests.",
-                "Ships confidence.",
-              ]}
-            />
-          </p>
-
-          {/* DESCRIPTION */}
-          <p
-            ref={descriptionRef}
-            className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
-          >
-            Drop any public GitHub URL and get a complete AI-powered repository
-            audit  architecture analysis, security findings, bug detection,
-            performance insights, and generated tests.
-          </p>
-
-          {/* CTA BUTTONS */}
-          <div
-            ref={ctasRef}
-            className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
-          >
-            {token ? (
-              <Link
-                to="/dashboard"
-                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-                style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
-              >
-                <ScanLine />
-                <span className="relative z-10">Open Dashboard →</span>
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-                  style={{
-                    boxShadow: "0 8px 24px -6px var(--accent-soft-strong)",
-                  }}
-                >
-                  <ScanLine />
-                  <span className="relative z-10">Sign In</span>
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] active:scale-[0.98]"
-                >
-                  Get Started Free →
-                </Link>
-              </>
-            )}
-          </div>
-
-          {/* TRUST LINE */}
-          <div
-            ref={trustRef}
-            className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            No credit card required
-            <span>•</span>
-            Works with public GitHub repositories
-          </div>
-
-          {/* STATS */}
-          <div
-            ref={statsRef}
-            className={`mx-auto flex w-fit justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2 py-3 backdrop-blur-sm ${compactClasses.statsMargin}`}
-          >
-            <StatPill
-              value={statsLoading ? "..." : `${stats.totalScans}+`}
-              label="Repos Scanned"
-              delayMs={500}
-            />
-            <StatPill
-              value={statsLoading ? "..." : `${stats.avgQuality}%`}
-              label="Issue Accuracy"
-              delayMs={600}
-            />
-            <StatPill
-              value={statsLoading ? "..." : stats.avgTime}
-              label="Avg Audit Time"
-              delayMs={700}
-            />
-          </div>
-
-          {/* FEATURE LABEL */}
-          <div
-            ref={featureLabelRef}
-            className="mb-6 text-left"
-            style={{ opacity: 0 }}
-          >
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              What CodeVerity checks
-            </p>
-          </div>
-
-          {/* FEATURE CARDS */}
-          <div className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}>
-            <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
-              <Feature
-                icon={<BugIcon />}
-                title="AI Bug Detection"
-                desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
-                index={0}
-              />
-            </div>
-            <div ref={(el) => (featureCardsRef.current[1] = el)} style={{ opacity: 0 }}>
-              <Feature
-                icon={<ShieldIcon />}
-                title="Security Analysis"
-                desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
-                index={1}
-              />
-            </div>
-            <div ref={(el) => (featureCardsRef.current[2] = el)} style={{ opacity: 0 }}>
-              <Feature
-                icon={<FlaskIcon />}
-                title="Smart Test Generation"
-                desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
-                index={2}
-              />
-            </div>
+          <div className="flex shrink-0 flex-col items-end gap-1">
+            <span className={`rounded-md border px-2 py-0.5 font-mono text-[11px] font-bold ${styles.badge} ${styles.border}`}>
+              {grade}
+            </span>
+            <span className="font-mono text-[9px] text-[var(--text-muted)]">{date}</span>
           </div>
         </div>
+        <p className="mt-3 line-clamp-2 text-[13px] leading-5 text-[var(--text-secondary)]">
+          {r.summary || "No summary available"}
+        </p>
       </div>
 
-      {/* NEW SECTIONS */}
-      <div className="relative z-10 mx-auto max-w-7xl">
-        <div ref={howRef} style={{ opacity: 0 }}>
-          <HowItWorks />
+      <div className={cardPadding}>
+        <div className="flex items-center justify-between">
+          <div>
+            <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Overall Score</p>
+            <div className="mt-0.5 flex items-baseline gap-1">
+              <span className={`font-mono font-bold ${scoreSize} ${styles.text}`}>{avg}</span>
+              <span className="font-mono text-[10px] text-[var(--text-muted)]">/ 100</span>
+            </div>
+          </div>
+          <div className="relative h-10 w-10">
+            <svg viewBox="0 0 36 36" className="-rotate-90">
+              <path
+                d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                className="text-[var(--border-light)]"
+              />
+              <path
+                d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="3"
+                strokeDasharray={`${avg}, 100`}
+                className={styles.text}
+              />
+            </svg>
+          </div>
         </div>
-        <div ref={testimonialRef} style={{ opacity: 0 }}>
-          <Testimonials />
+
+        {showScores && (
+          <div className={`mt-3.5 space-y-2.5 ${compact ? "mt-2.5 space-y-2" : ""}`}>
+            {[
+              ["Code Quality", r.scores?.codeQuality],
+              ["Security", r.scores?.security],
+              ["Performance", r.scores?.performance],
+              ["Maintainability", r.scores?.maintainability],
+            ].map(([label, val]) => (
+              <ScoreBar key={label} label={label} value={val} compact={compact} />
+            ))}
+          </div>
+        )}
+
+        {r.toolsAndPackages?.length > 0 && (
+          <div className={`mt-4 border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
+            <div className="mb-2 flex items-center justify-between">
+              <span className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Technologies</span>
+              <span className="font-mono text-[9px] text-[var(--text-muted)]">{r.toolsAndPackages.length} detected</span>
+            </div>
+            <div className="flex flex-wrap gap-1.5">
+              {r.toolsAndPackages.slice(0, 4).map((t, i) => (
+                <span
+                  key={i}
+                  className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-secondary)] transition-colors duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                >
+                  {t}
+                </span>
+              ))}
+              {r.toolsAndPackages.length > 4 && (
+                <span className="rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[10px] text-[var(--text-muted)]">
+                  +{r.toolsAndPackages.length - 4}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
+        <div className={`mt-4 flex items-center justify-between border-t border-[var(--border-dark)] pt-3 ${compact ? "mt-3 pt-2" : ""}`}>
+          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+            Analysis complete
+          </span>
+          <div className="flex gap-1.5">
+            <button
+              onClick={onDownload}
+              className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-[11px] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] active:scale-[0.96] ${compact ? "px-2 py-1" : ""}`}
+            >
+              ↓ PDF
+            </button>
+            <button
+              onClick={onView}
+              className={`group relative overflow-hidden rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent-contrast)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.96] ${compact ? "px-2 py-1" : ""}`}
+            >
+              <ScanLine />
+              <span className="relative z-10 flex items-center gap-1">
+                View Report
+                <span className="transition-transform group-hover:translate-x-0.5">→</span>
+              </span>
+            </button>
+          </div>
         </div>
-        <div ref={pricingRef} style={{ opacity: 0 }}>
-          <Pricing />
-        </div>
-        <div ref={faqRef} style={{ opacity: 0 }}>
-          <FAQ />
-        </div>
-        <Footer />
       </div>
     </div>
+  );
+}
+
+// -----------------------------------------------------------------
+// ScoreBar – flat fill, now using semantic status tokens
+// -----------------------------------------------------------------
+function ScoreBar({ label, value, compact }) {
+  const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
+  const color =
+    val >= 75
+      ? "bg-[var(--color-success)]"
+      : val >= 50
+      ? "bg-[var(--color-warning)]"
+      : "bg-[var(--color-danger)]";
+
+  const labelSize = "text-[9px]";
+  const valueSize = "text-[9px]";
+  const barHeight = compact ? "h-0.5" : "h-1";
+
+  return (
+    <div>
+      <div className="mb-1 flex items-center justify-between">
+        <span className={`${labelSize} text-[var(--text-muted)]`}>{label}</span>
+        <span className={`${valueSize} font-mono font-medium text-[var(--text-secondary)]`}>
+          {typeof value === "number" ? `${val}%` : "N/A"}
+        </span>
+      </div>
+      <div className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${barHeight}`}>
+        <div
+          className={`h-full rounded-full ${color} transition-all duration-700`}
+          style={{ width: `${val}%` }}
+        />
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------
+// Grade Styles – now sourced from index.css semantic tokens instead
+// of hardcoded Tailwind colors. A→success, B→info, C→warning,
+// D→caution, F→danger. --color-info and --color-caution are new
+// additions to index.css (see chat note above).
+// -----------------------------------------------------------------
+function gradeStyle(letter) {
+  const map = {
+    A: {
+      badge: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+      text: "text-[var(--color-success)]",
+      border: "border-[var(--color-success)]/20",
+      background: "bg-[var(--color-success-soft)]",
+    },
+    B: {
+      badge: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
+      text: "text-[var(--color-info)]",
+      border: "border-[var(--color-info)]/20",
+      background: "bg-[var(--color-info-soft)]",
+    },
+    C: {
+      badge: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+      text: "text-[var(--color-warning)]",
+      border: "border-[var(--color-warning)]/20",
+      background: "bg-[var(--color-warning-soft)]",
+    },
+    D: {
+      badge: "bg-[var(--color-caution-soft)] text-[var(--color-caution)]",
+      text: "text-[var(--color-caution)]",
+      border: "border-[var(--color-caution)]/20",
+      background: "bg-[var(--color-caution-soft)]",
+    },
+    F: {
+      badge: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
+      text: "text-[var(--color-danger)]",
+      border: "border-[var(--color-danger)]/20",
+      background: "bg-[var(--color-danger-soft)]",
+    },
+  };
+  return (
+    map[letter] ?? {
+      badge: "bg-[var(--bg-hover)] text-[var(--text-muted)]",
+      text: "text-[var(--text-muted)]",
+      border: "border-[var(--border-light)]",
+      background: "bg-[var(--bg-hover)]",
+    }
   );
 }
