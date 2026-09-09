@@ -4,6 +4,7 @@ import { useNavigate, NavLink } from "react-router-dom";
 import axios from "../../api/axios";
 import { useAuth } from "../../App";
 import AuthLayout from "./AuthLayout";
+import { useToast } from "../../hooks/useToast";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -28,29 +29,32 @@ function LockIcon({ className }) {
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const { success, error } = useToast();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!email || !password) return setError("Please fill in all fields.");
+    if (!email || !password) {
+      error("Please fill in all fields.");
+      return;
+    }
     setLoading(true);
-    setError("");
     try {
       const res = await axios.post("/auth/login", { email, password });
       const token = res.data?.token ?? res.data?.accessToken;
       if (!token) {
         console.error("Login response had no token field:", res.data);
-        setError("Login succeeded but no token was returned. Check the API response shape.");
+        error("Login succeeded but no token was returned. Check the API response.");
         return;
       }
       login(token);
-      navigate("/dashboard");
+      success("Welcome back! Redirecting...");
+      setTimeout(() => navigate("/dashboard"), 800);
     } catch (err) {
       console.error("Login request failed:", err);
-      setError(err.response?.data?.error ?? "Login failed. Please try again.");
+      error(err.response?.data?.error ?? "Login failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -62,13 +66,12 @@ export default function Login() {
 
   const inputBase =
     "w-full rounded-xl border bg-[var(--bg-input)] py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-all duration-200 hover:border-[var(--border-medium)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40";
-  const inputBorder = error ? "border-[var(--color-danger)]/50 focus:border-[var(--color-danger)]" : "border-[var(--border-light)] focus:border-[var(--accent)]";
+  const inputBorder = "border-[var(--border-light)] focus:border-[var(--accent)]";
 
   return (
     <AuthLayout
       title="Sign in to verify your repos"
       terminalText="awaiting credentials"
-      error={error}
       onOAuth={handleOAuth}
       footer={{
         question: "Don't have an account?",
