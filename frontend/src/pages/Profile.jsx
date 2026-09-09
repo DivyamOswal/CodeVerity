@@ -38,6 +38,39 @@ function CodeVerityLogo() {
 }
 
 /* =========================================================
+   SECTION KICKER  small uppercase label + accent dot, used
+   to give each card a consistent heading treatment instead
+   of a plain <h2>, matching the page header's "Account" tag.
+========================================================= */
+
+function SectionKicker({ icon, title, subtitle, compact, right }) {
+  return (
+    <div className={`flex items-start justify-between ${compact ? "mb-3" : "mb-5"}`}>
+      <div className="flex items-start gap-2.5">
+        {icon && (
+          <span
+            className={`mt-0.5 flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] ${
+              compact ? "h-6 w-6 text-[11px]" : "h-7 w-7 text-xs"
+            }`}
+          >
+            {icon}
+          </span>
+        )}
+        <div>
+          <h2 className={`font-semibold leading-tight text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>
+            {title}
+          </h2>
+          {subtitle && (
+            <p className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>{subtitle}</p>
+          )}
+        </div>
+      </div>
+      {right}
+    </div>
+  );
+}
+
+/* =========================================================
    PROFILE
 ========================================================= */
 
@@ -110,7 +143,7 @@ export default function Profile() {
         <p className="text-sm text-[var(--color-danger)]">{error}</p>
         <button
           onClick={load}
-          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition hover:border-[var(--border-medium)] hover:text-[var(--text-primary)]"
+          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] active:scale-[0.98]"
         >
           Retry
         </button>
@@ -261,15 +294,18 @@ export default function Profile() {
             </p>
           </div>
 
-          {/* HERO – User Profile Card */}
+          {/* HERO  User Profile Card */}
           <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+            <span className="absolute inset-x-0 top-0 h-[2px] bg-[var(--accent)]" />
             <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
             <div className={`relative flex flex-col ${compactClasses.heroGap} ${compactClasses.heroPadding} sm:flex-row sm:items-center`}>
               {/* Avatar */}
               <div className="relative shrink-0">
-                <div className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold shadow-lg shadow-[var(--accent-soft-strong)] text-[var(--accent-contrast)] ${compactClasses.avatarSize}`}>
+                <div
+                  className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold shadow-lg shadow-[var(--accent-soft-strong)] text-[var(--accent-contrast)] ring-1 ring-[var(--accent-contrast)]/10 ${compactClasses.avatarSize}`}
+                >
                   {initials}
                 </div>
                 <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-[var(--color-success)] ${compactClasses.avatarOnline}`}>
@@ -297,7 +333,7 @@ export default function Profile() {
               {/* Settings button */}
               <button
                 onClick={() => navigate("/settings")}
-                className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${compactClasses.settingsButton}`}
+                className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98] ${compactClasses.settingsButton}`}
               >
                 <span className="text-sm">⚙</span>
                 Settings
@@ -348,19 +384,17 @@ export default function Profile() {
           {/* GRADE BREAKDOWN */}
           {totalScans > 0 && (
             <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.gradeBreakdownPadding}`}>
-              <div className={`flex items-center justify-between ${compactClasses.gradeBreakdownMargin}`}>
-                <div>
-                  <h2 className={`font-semibold text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>
-                    Grade Breakdown
-                  </h2>
-                  <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>
-                    Distribution of your repository audit grades
-                  </p>
-                </div>
-                <div className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}>
-                  {totalScans} total
-                </div>
-              </div>
+              <SectionKicker
+                icon="◈"
+                title="Grade Breakdown"
+                subtitle="Distribution of your repository audit grades"
+                compact={compact}
+                right={
+                  <div className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+                    {totalScans} total
+                  </div>
+                }
+              />
 
               <div className={`space-y-3 ${compact ? "space-y-2" : ""}`}>
                 {["A", "B", "C", "D", "F"].map((g) => {
@@ -400,21 +434,21 @@ export default function Profile() {
           {/* RECENT ACTIVITY */}
           {reports.length > 0 && (
             <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-              <div className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
-                <div>
-                  <h2 className={`font-semibold text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>
-                    Recent Activity
-                  </h2>
-                  <p className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>
-                    Your latest repository audits
-                  </p>
-                </div>
-                <button
-                  onClick={() => navigate("/history")}
-                  className={`rounded-lg font-medium text-[var(--accent)] transition hover:bg-[var(--accent-soft)] ${compactClasses.viewAllButton}`}
-                >
-                  View all →
-                </button>
+              <div className={`border-b border-[var(--border-dark)] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
+                <SectionKicker
+                  icon="⌁"
+                  title="Recent Activity"
+                  subtitle="Your latest repository audits"
+                  compact={compact}
+                  right={
+                    <button
+                      onClick={() => navigate("/history")}
+                      className={`rounded-lg font-medium text-[var(--accent)] transition-colors duration-200 hover:bg-[var(--accent-soft)] ${compactClasses.viewAllButton}`}
+                    >
+                      View all →
+                    </button>
+                  }
+                />
               </div>
 
               <div className={compactClasses.recentActivityPadding}>
@@ -438,7 +472,7 @@ export default function Profile() {
                   return (
                     <div
                       key={r._id ?? i}
-                      className={`group flex items-center gap-3 rounded-xl transition hover:bg-[var(--bg-primary)] ${compactClasses.recentRowPadding}`}
+                      className={`group flex items-center gap-3 rounded-xl transition-colors duration-150 hover:bg-[var(--bg-primary)] ${compactClasses.recentRowPadding}`}
                     >
                       <span
                         className={`flex shrink-0 items-center justify-center rounded-lg font-bold ${style.badge} ${compact ? "h-6 w-6 text-[9px]" : "h-7 w-7 text-[10px]"}`}
@@ -468,7 +502,7 @@ export default function Profile() {
               <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="relative">
                 <div className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}>
-                  <span className={`${compact ? "text-lg" : "text-xl"}`}>◈</span>
+                  <span className={`text-[var(--accent)] ${compact ? "text-lg" : "text-xl"}`}>◈</span>
                 </div>
                 <p className={`font-semibold text-[var(--text-secondary)] ${compactClasses.emptyStateTitle}`}>No scans yet</p>
                 <p className={`mx-auto mt-1.5 max-w-sm leading-5 text-[var(--text-muted)] ${compactClasses.emptyStateDesc}`}>
@@ -477,7 +511,7 @@ export default function Profile() {
                 </p>
                 <button
                   onClick={() => navigate("/dashboard")}
-                  className={`mt-5 rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95 ${compact ? "px-4 py-2 text-[10px]" : "px-5 py-2.5 text-xs"}`}
+                  className={`mt-5 rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95 ${compact ? "px-4 py-2 text-[10px]" : "px-5 py-2.5 text-xs"}`}
                 >
                   Start analyzing →
                 </button>
@@ -511,12 +545,12 @@ function Pill({ icon, text, compact }) {
 }
 
 /* =========================================================
-   STAT CARD – matches Dashboard StatCard style
+   STAT CARD  matches Dashboard StatCard style
 ========================================================= */
 
 function StatCard({ icon, label, value, compact, padding, valueSize, iconSize }) {
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 ${padding}`}>
+    <div className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 ${padding}`}>
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative">
         <div className={`mb-3 flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${iconSize}`}>
