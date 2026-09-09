@@ -1,7 +1,8 @@
 import { useState } from "react";
+import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
-// Local mini components  same pattern as the other pages in this app
+// Local mini components – same pattern as the other pages in this app
 // -----------------------------------------------------------------
 
 function CodeVerityLogo() {
@@ -93,11 +94,10 @@ const contactInfo = [
 ];
 
 export default function Contact() {
+  const { success, error } = useToast();
   const [form, setForm] = useState({ name: "", email: "", subject: "", message: "" });
   const [errors, setErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
-  const [submitted, setSubmitted] = useState(false);
-  const [submitError, setSubmitError] = useState("");
 
   const update = (key) => (e) => {
     setForm((f) => ({ ...f, [key]: e.target.value }));
@@ -120,7 +120,6 @@ export default function Contact() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitError("");
     if (!validate()) return;
 
     setSubmitting(true);
@@ -128,23 +127,20 @@ export default function Contact() {
       // TODO: replace with your backend's contact endpoint, e.g.
       // await api.post("/contact", form);
       await new Promise((resolve) => setTimeout(resolve, 900));
-      setSubmitted(true);
-    } catch {
-      setSubmitError("Something went wrong sending your message. Please try again.");
+      success("Message sent! We'll get back to you soon.");
+      // Reset form
+      setForm({ name: "", email: "", subject: "", message: "" });
+      setErrors({});
+    } catch (err) {
+      error("Something went wrong sending your message. Please try again.");
     } finally {
       setSubmitting(false);
     }
   };
 
-  const resetForm = () => {
-    setForm({ name: "", email: "", subject: "", message: "" });
-    setErrors({});
-    setSubmitted(false);
-  };
-
   return (
     <div className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
-      {/* Ambient background  flat color + blur, dot grid, no gradients */}
+      {/* Ambient background – flat color + blur, dot grid, no gradients */}
       <div className="pointer-events-none absolute left-1/2 top-[10%] h-[600px] w-[600px] -translate-x-1/2 rounded-full bg-[var(--accent-soft)] opacity-60 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div
@@ -166,12 +162,12 @@ export default function Contact() {
             contact us
           </div>
           <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight sm:text-5xl">
-            Questions, bugs, or feedback {" "}
+            Questions, bugs, or feedback{" "}
             <span className="text-[var(--accent)]">we read everything.</span>
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
-            Whether it's a billing question, a false-positive from an audit, or a feature you wish existed 
-            send it over.
+            Whether it's a billing question, a false-positive from an audit, or a feature you wish existed
+            – send it over.
           </p>
         </div>
 
@@ -184,81 +180,55 @@ export default function Contact() {
             <span className="absolute -bottom-px -left-px h-4 w-4 rounded-bl-2xl border-b-2 border-l-2 border-[var(--accent)]/50" />
             <span className="absolute -bottom-px -right-px h-4 w-4 rounded-br-2xl border-b-2 border-r-2 border-[var(--accent)]/50" />
 
-            {submitted ? (
-              <div className="flex flex-col items-center justify-center py-10 text-center">
-                <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
-                  <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M20 6 9 17l-5-5" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold tracking-tight">Message sent</h2>
-                <p className="mt-2 max-w-sm text-sm text-[var(--text-secondary)]">
-                  Thanks  we'll get back to you at <span className="text-[var(--text-primary)]">{form.email}</span> soon.
-                </p>
-                <button
-                  onClick={resetForm}
-                  className="mt-6 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98]"
-                >
-                  Send another message
-                </button>
-              </div>
-            ) : (
-              <form onSubmit={handleSubmit} noValidate className="space-y-5">
-                <div className="grid gap-5 sm:grid-cols-2">
-                  <div>
-                    <Field label="Name" value={form.name} onChange={update("name")} placeholder="Your name" />
-                    {errors.name && <p className="mt-1.5 text-xs text-red-400">{errors.name}</p>}
-                  </div>
-                  <div>
-                    <Field
-                      label="Email"
-                      type="email"
-                      value={form.email}
-                      onChange={update("email")}
-                      placeholder="you@example.com"
-                    />
-                    {errors.email && <p className="mt-1.5 text-xs text-red-400">{errors.email}</p>}
-                  </div>
-                </div>
-
-                <Field
-                  label="Subject (optional)"
-                  value={form.subject}
-                  onChange={update("subject")}
-                  placeholder="What's this about?"
-                />
-
+            <form onSubmit={handleSubmit} noValidate className="space-y-5">
+              <div className="grid gap-5 sm:grid-cols-2">
                 <div>
-                  <label className="block">
-                    <span className="mb-1.5 block font-mono text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
-                      Message
-                    </span>
-                    <textarea
-                      value={form.message}
-                      onChange={update("message")}
-                      rows={6}
-                      placeholder="Tell us what's going on..."
-                      className="w-full resize-none rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
-                    />
-                  </label>
-                  {errors.message && <p className="mt-1.5 text-xs text-red-400">{errors.message}</p>}
+                  <Field label="Name" value={form.name} onChange={update("name")} placeholder="Your name" />
+                  {errors.name && <p className="mt-1.5 text-xs text-red-400">{errors.name}</p>}
                 </div>
+                <div>
+                  <Field
+                    label="Email"
+                    type="email"
+                    value={form.email}
+                    onChange={update("email")}
+                    placeholder="you@example.com"
+                  />
+                  {errors.email && <p className="mt-1.5 text-xs text-red-400">{errors.email}</p>}
+                </div>
+              </div>
 
-                {submitError && (
-                  <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 font-mono text-xs text-red-400">
-                    error: {submitError}
-                  </div>
-                )}
+              <Field
+                label="Subject (optional)"
+                value={form.subject}
+                onChange={update("subject")}
+                placeholder="What's this about?"
+              />
 
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:w-auto sm:px-8"
-                >
-                  {submitting ? "Sending..." : "Send message"}
-                </button>
-              </form>
-            )}
+              <div>
+                <label className="block">
+                  <span className="mb-1.5 block font-mono text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
+                    Message
+                  </span>
+                  <textarea
+                    value={form.message}
+                    onChange={update("message")}
+                    rows={6}
+                    placeholder="Tell us what's going on..."
+                    className="w-full resize-none rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
+                  />
+                </label>
+                {errors.message && <p className="mt-1.5 text-xs text-red-400">{errors.message}</p>}
+              </div>
+
+              <button
+                type="submit"
+                disabled={submitting}
+                className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:w-auto sm:px-8"
+              >
+                {submitting ? "Sending..." : "Send message"}
+              </button>
+            </form>
           </div>
 
           {/* CONTACT INFO */}
