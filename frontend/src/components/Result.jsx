@@ -12,6 +12,7 @@ import {
 import { generateTests as defaultGenerateTests } from "../api/github";
 import { usePreferences } from "../context/PreferencesContext";
 import RepoEditor from "../components/CodeEditor/RepoEditor";
+import { useToast } from "../hooks/useToast";
 
 // ── Grade → color mapping ──
 function gradeAccent(grade) {
@@ -28,17 +29,12 @@ function gradeAccent(grade) {
 // ── Severity → color mapping ──
 function severityColor(severity) {
   const map = {
-    critical:
-      "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/30",
+    critical: "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/30",
     high: "bg-[var(--color-caution-soft)] text-[var(--color-caution)] border-[var(--color-caution)]/30",
-    medium:
-      "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/30",
+    medium: "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/30",
     low: "bg-[var(--color-info-soft)] text-[var(--color-info)] border-[var(--color-info)]/30",
   };
-  return (
-    map[severity?.toLowerCase()] ??
-    "bg-[var(--bg-hover)] text-[var(--text-muted)] border-[var(--border-light)]"
-  );
+  return map[severity?.toLowerCase()] ?? "bg-[var(--bg-hover)] text-[var(--text-muted)] border-[var(--border-light)]";
 }
 
 // ── Main Component ──
@@ -52,6 +48,7 @@ export default function Result({
   reportId,
 }) {
   const { token } = useAuth();
+  const { success, error } = useToast();
   const [activeTab, setActiveTab] = useState("audit");
   const [testData, setTestData] = useState(null);
   const [testLoading, setTestLoading] = useState(false);
@@ -90,7 +87,6 @@ export default function Result({
     architectureGraph = { nodes: [], edges: [] },
     tokensUsed = 0,
     tokensRemaining = 0,
-    // ─── NEW FIELDS ──────────────────────────────────────────────
     complexity = {
       maxComplexity: 0,
       averageComplexity: 0,
@@ -154,15 +150,14 @@ export default function Result({
 
       const repo = repoUrl || data?.repoUrl || repoUrlProp;
       if (!repo) {
-        alert("Repository URL not available. Cannot create a fix PR.");
+        error("Repository URL not available. Cannot create a fix PR.");
         setFixing((prev) => ({ ...prev, [issueId]: false }));
         return;
       }
 
       const filePath = issue.file || issue.location || issue.filePath || "";
       const lineNumber = issue.line || issue.lineNumber || "";
-      const description =
-        issue.title || issue.issue || issue.description || "Fix issue";
+      const description = issue.title || issue.issue || issue.description || "Fix issue";
       const suggestedFix = issue.suggestedFix || issue.fix || "";
 
       const response = await fetch("/api/github/auto-fix", {
@@ -184,19 +179,17 @@ export default function Result({
 
       const result = await response.json();
       if (result.success) {
-        alert(`✅ Fix PR created! View it here: ${result.prUrl}`);
+        success(`✅ Fix PR #${result.prNumber} created!`);
         window.open(result.prUrl, "_blank");
       } else {
-        alert(`❌ Failed to create fix: ${result.error}`);
+        error(result.error || "Failed to create fix PR.");
         if (result.action === "connect_github") {
-          alert(
-            "Please connect your GitHub account in settings to use Auto‑Fix.",
-          );
+          error("Please connect your GitHub account in settings to use Auto‑Fix.");
         }
       }
     } catch (err) {
       console.error("Auto‑fix error:", err);
-      alert("An error occurred while creating the fix PR.");
+      error("An error occurred while creating the fix PR.");
     } finally {
       setFixing((prev) => ({ ...prev, [issueId]: false }));
     }
@@ -212,9 +205,7 @@ export default function Result({
   const gradeTextSize = compact ? "text-xl" : "text-2xl";
   const scoreCardGap = compact ? "gap-2" : "gap-3";
   const tabPadding = compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs";
-  const buttonPadding = compact
-    ? "px-2 py-1 text-[10px]"
-    : "px-3 py-1.5 text-[11px]";
+  const buttonPadding = compact ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]";
   const testFilePadding = compact ? "px-2 py-1.5" : "px-3 py-2";
   const testFileFont = compact ? "text-[10px]" : "text-[11px]";
   const codeBlockPadding = compact ? "p-3" : "p-4";
@@ -228,23 +219,20 @@ export default function Result({
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage:
-            "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
       <div
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          background:
-            "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 65%)",
+          background: "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 65%)",
         }}
       />
       <div
         className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
         style={{
-          background:
-            "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 70%)",
         }}
       />
 
@@ -395,11 +383,7 @@ export default function Result({
             </GlassCard>
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <GlassCard
-                title="Quality Score Analysis"
-                icon="◎"
-                compact={compact}
-              >
+              <GlassCard title="Quality Score Analysis" icon="◎" compact={compact}>
                 <div
                   style={{
                     width: "100%",
@@ -407,11 +391,7 @@ export default function Result({
                     minHeight: compact ? 220 : 280,
                   }}
                 >
-                  <ResponsiveContainer
-                    width="100%"
-                    height="100%"
-                    minWidth={200}
-                  >
+                  <ResponsiveContainer width="100%" height="100%" minWidth={200}>
                     <RadarChart data={chartData}>
                       <PolarGrid stroke="var(--border-light)" />
                       <PolarAngleAxis
@@ -507,10 +487,7 @@ export default function Result({
                   ))}
                 </div>
               ) : (
-                <EmptyState
-                  text="No architecture insights provided."
-                  compact={compact}
-                />
+                <EmptyState text="No architecture insights provided." compact={compact} />
               )}
             </GlassCard>
 
@@ -628,10 +605,7 @@ export default function Result({
                   })}
                 </div>
               ) : (
-                <EmptyState
-                  text="No critical security issues reported."
-                  compact={compact}
-                />
+                <EmptyState text="No critical security issues reported." compact={compact} />
               )}
             </GlassCard>
 
@@ -811,11 +785,7 @@ export default function Result({
 
             {/* ─── NEW: Complexity ─────────────────────────────── */}
             {complexity.functions && complexity.functions.length > 0 && (
-              <GlassCard
-                title="Cyclomatic Complexity"
-                icon="◈"
-                compact={compact}
-              >
+              <GlassCard title="Cyclomatic Complexity" icon="◈" compact={compact}>
                 <div className="grid grid-cols-3 gap-3 mb-4">
                   <div className="text-center p-2 border border-[var(--border-light)] rounded">
                     <p className="text-xs text-[var(--text-muted)]">
@@ -865,11 +835,7 @@ export default function Result({
 
             {/* ─── NEW: CVE List ────────────────────────────────── */}
             {cveList && cveList.length > 0 && (
-              <GlassCard
-                title={`Dependency Vulnerabilities (CVEs)`}
-                icon="◇"
-                compact={compact}
-              >
+              <GlassCard title={`Dependency Vulnerabilities (CVEs)`} icon="◇" compact={compact}>
                 <div className="space-y-2">
                   {cveList.map((cve, i) => (
                     <div
@@ -1181,8 +1147,7 @@ export default function Result({
                       {(() => {
                         const nodes = architectureGraph.nodes || [];
                         const edges = architectureGraph.edges || [];
-                        const centerX = 400,
-                          centerY = 200;
+                        const centerX = 400, centerY = 200;
                         const radius = 150;
                         const n = nodes.length;
                         if (n === 0) return null;
@@ -1701,10 +1666,8 @@ function ScoreCard({ label, value, icon, compact }) {
 
 function Badge({ children, color = "accent", compact }) {
   const colors = {
-    accent:
-      "border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)]",
-    warning:
-      "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+    accent: "border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)]",
+    warning: "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
   };
   return (
     <span
