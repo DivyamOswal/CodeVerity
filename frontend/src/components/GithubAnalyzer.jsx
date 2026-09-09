@@ -2,6 +2,7 @@ import { useState } from "react";
 import { analyzeGithub, generateTests } from "../api/github";
 import Result from "./Result";
 import { usePreferences } from "../context/PreferencesContext";
+import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
 // Mini components – same as Home / CodeInput
@@ -54,18 +55,17 @@ function ScanLine() {
 export default function GithubAnalyzer({ setData }) {
   const [repo, setRepo] = useState("");
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
   const [analysis, setAnalysis] = useState(null);
-
+  const { success, error } = useToast();
   const { compact } = usePreferences();
 
   const analyze = async () => {
     if (!repo.startsWith("https://github.com/")) {
-      return setError("Enter a valid GitHub repo URL");
+      error("Enter a valid GitHub repo URL");
+      return;
     }
 
     try {
-      setError("");
       setLoading(true);
       setAnalysis(null);
 
@@ -74,8 +74,10 @@ export default function GithubAnalyzer({ setData }) {
 
       if (setData) setData(data);
       setAnalysis(data);
+      success("Repository analysis completed successfully!");
     } catch (err) {
-      setError(err.response?.data?.error || "Analysis failed");
+      const msg = err.response?.data?.error || "Analysis failed";
+      error(msg);
     } finally {
       setLoading(false);
     }
@@ -83,7 +85,6 @@ export default function GithubAnalyzer({ setData }) {
 
   const handleReset = () => {
     setAnalysis(null);
-    setError("");
     setRepo("");
     if (setData) setData(null);
   };
@@ -211,15 +212,7 @@ export default function GithubAnalyzer({ setData }) {
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">🔗</span>
               </div>
 
-              {error && (
-                <div
-                  role="alert"
-                  aria-live="assertive"
-                  className="mt-3 text-[var(--color-danger)] text-sm bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/25 p-3 rounded-lg"
-                >
-                  {error}
-                </div>
-              )}
+              {/* Error is now handled via toast – inline error removed */}
 
               <div className="flex justify-between items-center mt-5">
                 <span className="text-xs text-[var(--text-muted)]">
