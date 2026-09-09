@@ -3,9 +3,11 @@ import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
 import { FolderTree, FileCode, X, Sparkles, Loader2 } from 'lucide-react';
 import { useAuth } from '../../App';
+import { useToast } from '../../hooks/useToast';
 
 export default function RepoEditor({ repoUrl, reportId }) {
   const { token } = useAuth();
+  const { success, error } = useToast();
   const [files, setFiles] = useState([]);
   const [currentFile, setCurrentFile] = useState(null);
   const [content, setContent] = useState('');
@@ -49,6 +51,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
       }
     } catch (err) {
       console.error('Failed to load repo:', err);
+      error('Failed to load repository.');
     } finally {
       setRepoContentLoading(false);
     }
@@ -71,12 +74,13 @@ export default function RepoEditor({ repoUrl, reportId }) {
       }
     } catch (err) {
       console.error('Failed to load file:', err);
+      error('Failed to load file content.');
     }
   };
 
   // ── AI Fix ──
-  const handleFix = async (error, lineNumber) => {
-    const issueId = error._id || error.id || Date.now();
+  const handleFix = async (errObj, lineNumber) => {
+    const issueId = errObj._id || errObj.id || Date.now();
     setFixLoading(prev => ({ ...prev, [issueId]: true }));
 
     try {
@@ -89,25 +93,25 @@ export default function RepoEditor({ repoUrl, reportId }) {
         body: JSON.stringify({
           repoUrl,
           filePath: currentFile.path,
-          description: error.message || error.issue || error.title || 'Fix issue',
-          lineNumber: lineNumber || error.line || 1,
+          description: errObj.message || errObj.issue || errObj.title || 'Fix issue',
+          lineNumber: lineNumber || errObj.line || 1,
           currentCode: content,
-          suggestedFix: error.suggestedFix || error.fix || '',
+          suggestedFix: errObj.suggestedFix || errObj.fix || '',
         }),
       });
 
       const result = await response.json();
       if (result.success) {
-        alert(`✅ Fix PR created! View it here: ${result.prUrl}`);
+        success(`✅ Fix PR #${result.prNumber} created!`);
         window.open(result.prUrl, '_blank');
         // Mark line as fixed
         setFixedLines(prev => ({ ...prev, [lineNumber]: true }));
       } else {
-        alert(`❌ Failed to create fix: ${result.error}`);
+        error(result.error || 'Failed to create fix PR.');
       }
     } catch (err) {
       console.error('Fix error:', err);
-      alert('An error occurred while applying the fix.');
+      error('An error occurred while applying the fix.');
     } finally {
       setFixLoading(prev => ({ ...prev, [issueId]: false }));
     }
