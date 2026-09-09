@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { Users, Briefcase, FileText, DollarSign, TrendingUp, Activity, Clock, Zap } from "lucide-react";
 import axios from "../api/axios";
 import ConfirmationDialog from "../components/ConfirmationDialog";
+import { useToast } from "../hooks/useToast";
 
 function StatCard({ label, value, icon: Icon, color }) {
   return (
@@ -24,6 +25,7 @@ function StatCard({ label, value, icon: Icon, color }) {
 export default function AdminDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { error } = useToast();
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
@@ -51,6 +53,7 @@ export default function AdminDashboard() {
       setStats(res.data);
     } catch (err) {
       console.error("Failed to fetch stats:", err);
+      error("Failed to load admin statistics.");
     } finally {
       setLoading(false);
     }
@@ -228,6 +231,7 @@ function Overview({ stats }) {
 
 // ─── UserManagement ─────────────────────────────────────────────
 function UserManagement({ openDialog }) {
+  const { error } = useToast();
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -238,6 +242,7 @@ function UserManagement({ openDialog }) {
       setUsers(res.data.users);
     } catch (err) {
       console.error(err);
+      error("Failed to load users.");
     } finally {
       setLoading(false);
     }
@@ -258,7 +263,7 @@ function UserManagement({ openDialog }) {
           await axios.put(`/admin/users/${userId}/toggle-admin`);
           fetchUsers();
         } catch (err) {
-          alert(err.response?.data?.error || "Failed to toggle admin");
+          error(err.response?.data?.error || "Failed to toggle admin");
         }
       },
     });
@@ -316,6 +321,7 @@ function UserManagement({ openDialog }) {
 
 // ─── WorkspaceManagement ────────────────────────────────────────
 function WorkspaceManagement({ openDialog }) {
+  const { error } = useToast();
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -325,6 +331,7 @@ function WorkspaceManagement({ openDialog }) {
       setWorkspaces(res.data.workspaces);
     } catch (err) {
       console.error(err);
+      error("Failed to load workspaces.");
     } finally {
       setLoading(false);
     }
@@ -343,7 +350,7 @@ function WorkspaceManagement({ openDialog }) {
           await axios.delete(`/admin/workspaces/${id}`);
           fetchWorkspaces();
         } catch (err) {
-          alert(err.response?.data?.error || "Failed to delete workspace");
+          error(err.response?.data?.error || "Failed to delete workspace");
         }
       },
     });
@@ -388,6 +395,7 @@ function WorkspaceManagement({ openDialog }) {
 
 // ─── ReportManagement ───────────────────────────────────────────
 function ReportManagement() {
+  const { error } = useToast();
   const [reports, setReports] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -397,6 +405,7 @@ function ReportManagement() {
       setReports(res.data.reports);
     } catch (err) {
       console.error(err);
+      error("Failed to load reports.");
     } finally {
       setLoading(false);
     }
