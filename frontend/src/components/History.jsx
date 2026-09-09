@@ -3,6 +3,7 @@ import axios from "axios";
 import { generateTests } from "../api/github";
 import Result from "./Result";
 import { usePreferences } from "../context/PreferencesContext";
+import { useToast } from "../hooks/useToast";
 
 const API = import.meta.env.VITE_API_URL;
 
@@ -33,6 +34,7 @@ export default function History() {
   const [filterGrade, setFilterGrade] = useState("all");
 
   const { compact, showScores } = usePreferences();
+  const { success, error } = useToast();
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -45,7 +47,7 @@ export default function History() {
         headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setReports(res.data.reports || []))
-      .catch(() => alert("Failed to load history"))
+      .catch(() => error("Failed to load history"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -66,8 +68,9 @@ export default function History() {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
+      success("PDF downloaded successfully");
     } catch {
-      alert("Download failed");
+      error("Download failed");
     }
   };
 
