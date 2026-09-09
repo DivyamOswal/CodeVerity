@@ -27,13 +27,14 @@ function getAccentRGB() {
 }
 
 // ============================================================
-//  COMPONENT: BackgroundAnimation (canvas dependency-graph mesh)
-//  A sparse node/edge graph with pulses traveling along edges —
-//  evokes "data flowing through your codebase" rather than
-//  ambient decoration. Single accent color, no gradients.
+//  COMPONENT: BoxBoardBackground (canvas scanning grid-of-boxes)
+//  A board of square cells, faintly outlined, where cells randomly
+//  ignite and fade — plus a horizontal scan band that sweeps down
+//  the board igniting cells beneath it. Reads as "the AI scanning
+//  your repository box by box." Single accent color, no gradients.
 //  Respects prefers-reduced-motion (renders a static frame).
 // ============================================================
-function BackgroundAnimation() {
+function BoxBoardBackground() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -44,117 +45,125 @@ function BackgroundAnimation() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    let width, height;
-    let nodes = [];
-    let edges = [];
-    let pulses = [];
+    const cellSize = 64;
+    let width, height, cols, rows;
+    let cells = [];
+    let scanY = 0;
+    let frame = 0;
     let animationFrame;
 
-    function buildGraph() {
-      nodes = [];
-      edges = [];
-      const spacing = 150;
-      const cols = Math.ceil(width / spacing) + 1;
-      const rows = Math.ceil(height / spacing) + 1;
-      const grid = [];
-
-      for (let r = 0; r < rows; r++) {
-        grid[r] = [];
-        for (let c = 0; c < cols; c++) {
-          const jitterX = (Math.random() - 0.5) * spacing * 0.5;
-          const jitterY = (Math.random() - 0.5) * spacing * 0.5;
-          grid[r][c] = nodes.length;
-          nodes.push({
-            x: c * spacing + jitterX,
-            y: r * spacing + jitterY,
-            r: Math.random() * 1.2 + 1,
-          });
-        }
-      }
-
-      // Sparse connections — a circuit/dependency-graph feel, not a full mesh
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const idx = grid[r][c];
-          if (c + 1 < cols && Math.random() > 0.35) {
-            edges.push([idx, grid[r][c + 1]]);
-          }
-          if (r + 1 < rows && Math.random() > 0.35) {
-            edges.push([idx, grid[r + 1][c]]);
-          }
-        }
-      }
-
-      pulses = [];
-      if (!edges.length) return;
-      const pulseCount = Math.min(14, Math.max(6, Math.floor(edges.length / 12)));
-      for (let i = 0; i < pulseCount; i++) {
-        pulses.push({
-          edge: edges[Math.floor(Math.random() * edges.length)],
-          t: Math.random(),
-          speed: 0.0035 + Math.random() * 0.004,
-        });
-      }
+    function buildGrid() {
+      cols = Math.ceil(width / cellSize) + 1;
+      rows = Math.ceil(height / cellSize) + 1;
+      cells = new Array(cols * rows).fill(null).map(() => ({
+        opacity: 0,
+        target: 0,
+      }));
     }
 
     const resize = () => {
       width = canvas.width = window.innerWidth;
       height = canvas.height = window.innerHeight;
-      buildGraph();
+      buildGrid();
     };
     window.addEventListener("resize", resize);
     resize();
 
-    const drawStatic = () => {
+    function drawGrid(highlightRow) {
       ctx.clearRect(0, 0, width, height);
-      edges.forEach(([a, b]) => {
-        const na = nodes[a],
-          nb = nodes[b];
+
+      // faint board lines
+      ctx.strokeStyle = `rgba(${accentRGB},0.06)`;
+      ctx.lineWidth = 1;
+      for (let c = 0; c <= cols; c++) {
         ctx.beginPath();
-        ctx.moveTo(na.x, na.y);
-        ctx.lineTo(nb.x, nb.y);
-        ctx.strokeStyle = `rgba(${accentRGB},0.07)`;
-        ctx.lineWidth = 1;
+        ctx.moveTo(c * cellSize, 0);
+        ctx.lineTo(c * cellSize, height);
         ctx.stroke();
-      });
-      nodes.forEach((n) => {
+      }
+      for (let r = 0; r <= rows; r++) {
         ctx.beginPath();
-        ctx.arc(n.x, n.y, n.r, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${accentRGB},0.18)`;
-        ctx.fill();
-      });
-    };
+        ctx.moveTo(0, r * cellSize);
+        ctx.lineTo(width, r * cellSize);
+        ctx.stroke();
+      }
+
+      // ignited / fading cells
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const cell = cells[r * cols + c];
+          if (cell.opacity > 0.002) {
+            const x = c * cellSize;
+            const y = r * cellSize;
+            ctx.fillStyle = `rgba(${accentRGB},${cell.opacity * 0.14})`;
+            ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
+            ctx.strokeStyle = `rgba(${accentRGB},${cell.opacity * 0.5})`;
+            ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+          }
+        }
+      }
+
+      // scan band sweeping the board
+      if (highlightRow != null) {
+        const y = highlightRow * cellSize;
+        ctx.fillStyle = `rgba(${accentRGB},0.05)`;
+        ctx.fillRect(0, y, width, cellSize);
+        ctx.strokeStyle = `rgba(${accentRGB},0.35)`;
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(0, y);
+        ctx.lineTo(width, y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(0, y + cellSize);
+        ctx.lineTo(width, y + cellSize);
+        ctx.stroke();
+      }
+    }
 
     if (reduceMotion) {
-      drawStatic();
+      const litCount = Math.floor(cells.length * 0.04);
+      for (let i = 0; i < litCount; i++) {
+        cells[Math.floor(Math.random() * cells.length)].opacity = 0.6;
+      }
+      drawGrid(null);
       return () => window.removeEventListener("resize", resize);
     }
 
     const animate = () => {
-      drawStatic();
+      frame++;
 
-      pulses.forEach((p) => {
-        p.t += p.speed;
-        if (p.t >= 1) {
-          p.t = 0;
-          p.edge = edges[Math.floor(Math.random() * edges.length)];
+      // randomly ignite a couple of idle cells each tick
+      if (frame % 6 === 0) {
+        for (let i = 0; i < 2; i++) {
+          const idx = Math.floor(Math.random() * cells.length);
+          if (cells[idx].opacity < 0.05) cells[idx].target = 1;
         }
-        const [a, b] = p.edge;
-        const na = nodes[a],
-          nb = nodes[b];
-        if (!na || !nb) return;
-        const x = na.x + (nb.x - na.x) * p.t;
-        const y = na.y + (nb.y - na.y) * p.t;
+      }
 
-        ctx.beginPath();
-        ctx.arc(x, y, 2.4, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${accentRGB},0.9)`;
-        ctx.shadowColor = `rgba(${accentRGB},0.8)`;
-        ctx.shadowBlur = 8;
-        ctx.fill();
-        ctx.shadowBlur = 0;
+      cells.forEach((cell) => {
+        if (cell.target > cell.opacity) {
+          cell.opacity += 0.04;
+          if (cell.opacity >= 1) {
+            cell.opacity = 1;
+            cell.target = 0;
+          }
+        } else if (cell.opacity > 0) {
+          cell.opacity -= 0.012;
+          if (cell.opacity < 0) cell.opacity = 0;
+        }
       });
 
+      scanY += 0.055;
+      if (scanY >= rows) scanY = 0;
+      const highlightRow = Math.floor(scanY) % rows;
+
+      for (let c = 0; c < cols; c++) {
+        const cell = cells[highlightRow * cols + c];
+        if (Math.random() > 0.9) cell.target = 1;
+      }
+
+      drawGrid(highlightRow);
       animationFrame = requestAnimationFrame(animate);
     };
     animate();
@@ -1172,7 +1181,7 @@ export default function Home() {
         }}
       />
 
-      <BackgroundAnimation />
+      <BoxBoardBackground />
 
       {/* MAIN CONTENT */}
       <div
