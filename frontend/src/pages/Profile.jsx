@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import axios from "../api/axios";
 import { usePreferences } from "../context/PreferencesContext";
+import { useToast } from "../hooks/useToast";
 
 /* =========================================================
    CODEVERITY LOGO uses the theme's --accent token, so it
@@ -38,7 +39,7 @@ function CodeVerityLogo() {
 }
 
 /* =========================================================
-   SECTION KICKER  small uppercase label + accent dot, used
+   SECTION KICKER – small uppercase label + accent dot, used
    to give each card a consistent heading treatment instead
    of a plain <h2>, matching the page header's "Account" tag.
 ========================================================= */
@@ -78,6 +79,7 @@ export default function Profile() {
   const navigate = useNavigate();
   const { token, logout } = useAuth();
   const { compact } = usePreferences();
+  const { error: toastError } = useToast();
 
   const [user, setUser] = useState(null);
   const [reports, setReports] = useState([]);
@@ -110,14 +112,19 @@ export default function Profile() {
         const u = res.data.user ?? res.data;
         setUser(u);
       })
-      .catch(() => {});
+      .catch((err) => {
+        toastError("Failed to load user profile.");
+        console.error(err);
+      });
 
     const reportsPromise = axios
       .get("/report")
       .then((res) => {
         setReports(res.data.reports ?? []);
       })
-      .catch(() => {
+      .catch((err) => {
+        toastError("Failed to load report history.");
+        console.error(err);
         setReports([]);
       });
 
@@ -294,7 +301,7 @@ export default function Profile() {
             </p>
           </div>
 
-          {/* HERO  User Profile Card */}
+          {/* HERO – User Profile Card */}
           <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
             <span className="absolute inset-x-0 top-0 h-[2px] bg-[var(--accent)]" />
             <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
@@ -545,7 +552,7 @@ function Pill({ icon, text, compact }) {
 }
 
 /* =========================================================
-   STAT CARD  matches Dashboard StatCard style
+   STAT CARD – matches Dashboard StatCard style
 ========================================================= */
 
 function StatCard({ icon, label, value, compact, padding, valueSize, iconSize }) {
@@ -564,7 +571,7 @@ function StatCard({ icon, label, value, compact, padding, valueSize, iconSize })
 }
 
 /* =========================================================
-   GRADE STYLE 5-tier severity scale, aligned with the same
+   GRADE STYLE – 5-tier severity scale, aligned with the same
    tokens used in History.jsx and Dashboard.jsx's ReportRow
    (success/info/warning/caution/danger).
 ========================================================= */
