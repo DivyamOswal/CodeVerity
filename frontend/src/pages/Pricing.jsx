@@ -3,12 +3,13 @@ import { useNavigate } from "react-router-dom";
 import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
 import Reveal from "../components/Reveal";
 import { gsap, useGSAP } from "../lib/gsap";
+import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
 // Built on the existing Indigo Slate theme (same CSS vars as Navbar):
 // --bg-primary / --bg-card / --bg-hover / --border-light / --accent /
 // --accent-hover / --accent-soft / --accent-contrast / --text-*.
-// No gradients flat accent fills only, matching the rest of the app.
+// No gradients – flat accent fills only, matching the rest of the app.
 // -----------------------------------------------------------------
 
 function CheckIcon({ className = "" }) {
@@ -182,7 +183,7 @@ const TRUST_ITEMS = ["No credit card required", "Cancel anytime", "GST invoices 
 const FAQ = [
   {
     q: "What counts as a repository scan?",
-    a: "One scan is one full analysis of a repo code quality, structure, and the AI-generated summary regenerated any time the repo changes.",
+    a: "One scan is one full analysis of a repo – code quality, structure, and the AI-generated summary – regenerated any time the repo changes.",
   },
   {
     q: "Can I switch plans later?",
@@ -190,24 +191,27 @@ const FAQ = [
   },
   {
     q: "Do you support Indian GST invoices?",
-    a: "Yes GST is calculated at checkout for INR billing, and a GST-compliant invoice is emailed after every payment.",
+    a: "Yes – GST is calculated at checkout for INR billing, and a GST-compliant invoice is emailed after every payment.",
   },
   {
     q: "Is there a free trial on Pro or Team?",
-    a: "Solo is free forever with no card required. Pro and Team can be cancelled anytime from Settings no lock-in.",
+    a: "Solo is free forever with no card required. Pro and Team can be cancelled anytime from Settings – no lock-in.",
   },
 ];
 
 export default function Pricing() {
   const navigate = useNavigate();
+  const { info } = useToast();
   const [cycle, setCycle] = useState("monthly");
-  const [currency, setCurrency] = useState("INR"); // default currency: Rupee
+  const [currency, setCurrency] = useState("INR");
 
   const handleSelect = (plan) => {
     if (plan.monthly.INR === 0) {
+      info("Redirecting to registration...");
       navigate("/register");
       return;
     }
+    info("Redirecting to checkout...");
     navigate(`/checkout?plan=${plan.id}&cycle=${cycle}&currency=${currency}`);
   };
 
@@ -229,7 +233,7 @@ export default function Pricing() {
           reviews code.
         </p>
 
-        {/* Trust strip a professional pricing page reassures before it asks for a decision */}
+        {/* Trust strip – a professional pricing page reassures before it asks for a decision */}
         <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-[var(--text-muted)]">
           {TRUST_ITEMS.map((item) => (
             <span key={item} className="inline-flex items-center gap-1.5">
@@ -264,7 +268,7 @@ export default function Pricing() {
         />
       </Reveal>
 
-      {/* Plan cards each staggers in as the grid scrolls into view */}
+      {/* Plan cards – each staggers in as the grid scrolls into view */}
       <section className="mx-auto mt-10 grid max-w-5xl gap-6 px-6 sm:grid-cols-2 lg:grid-cols-3">
         {PRICING_PLANS.map((plan, i) => (
           <Reveal key={plan.id} className="h-full" delay={i * 0.1} duration={0.5}>
@@ -273,7 +277,7 @@ export default function Pricing() {
         ))}
       </section>
 
-      {/* Enterprise / contact strip a plain text-and-link row, not a new page or a fourth plan card */}
+      {/* Enterprise / contact strip – a plain text-and-link row, not a new page or a fourth plan card */}
       <Reveal
         className="mx-auto mt-6 flex max-w-5xl flex-col items-center justify-between gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-6 py-5 text-center sm:flex-row sm:text-left"
         delay={0.35}
@@ -293,7 +297,7 @@ export default function Pricing() {
         </a>
       </Reveal>
 
-      {/* FAQ heading reveals once, then each question staggers in */}
+      {/* FAQ – heading reveals once, then each question staggers in */}
       <section className="mx-auto max-w-3xl px-6 pb-24 pt-16">
         <Reveal as="h2" className="text-center font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
           frequently asked
