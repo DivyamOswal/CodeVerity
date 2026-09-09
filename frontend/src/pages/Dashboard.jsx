@@ -8,12 +8,16 @@ import { gsap, useGSAP } from "../lib/gsap";
 import { useAuth } from "../App";
 import { Search } from "lucide-react";
 import { getReport } from "../api/report";
+import { useToast } from "../hooks/useToast";
+
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
 /* =========================================================
    CODEVERITY DASHBOARD – Token-based only
 ========================================================= */
 
 export default function Dashboard() {
+  const { error: toastError } = useToast();
   const [data, setData] = useState(null);
   const [statsKey, setStatsKey] = useState(0);
   const [repoUrl, setRepoUrl] = useState(""); // input field value
@@ -23,7 +27,6 @@ export default function Dashboard() {
   const [error, setError] = useState("");
   const [activeView, setActiveView] = useState("home");
   const [mounted, setMounted] = useState(false);
-
 
   const [currentRepoUrl, setCurrentRepoUrl] = useState("");
 
@@ -152,11 +155,11 @@ export default function Dashboard() {
   const downloadPDF = async () => {
     try {
       const token = localStorage.getItem("token");
-      if (!token || !reportId) throw new Error();
-      const res = await fetch(
-        `http://localhost:5000/api/report/${reportId}/pdf`,
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
+      if (!token || !reportId) throw new Error("Missing token or report ID");
+      const res = await fetch(`${API_URL}/report/${reportId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) throw new Error("PDF download failed");
       const blob = await res.blob();
       const url = window.URL.createObjectURL(blob);
       Object.assign(document.createElement("a"), {
@@ -164,127 +167,129 @@ export default function Dashboard() {
         download: "AI-Code-Audit.pdf",
       }).click();
       URL.revokeObjectURL(url);
-    } catch {
-      alert("Download failed");
+    } catch (err) {
+      toastError(err.message || "Download failed");
     }
   };
 
   const generateReport = async () => {
-  if (!repoUrl.startsWith("https://github.com/")) {
-    return setError("Enter a valid GitHub URL");
-  }
-  try {
-    setLoading(true);
-    setError("");
-    const res = await analyzeGithub({ repoUrl });
-    setReportId(res.data.reportId);
-    const a = res.data.analysis || {};
-
-    // ── Map ALL fields (mirrors the logic in openResult) ──
-    setAnalysis({
-      summary: a.summary ?? "",
-      architecture: a.architecture ?? [],
-      bugs: a.bugs ?? [],
-      securityIssues: a.securityIssues ?? [],
-      futureRoadmap: a.futureRoadmap ?? [],
-      toolsAndPackages: a.toolsAndPackages ?? [],
-      scores: a.scores ?? {},
-      grade: a.grade ?? "N/A",
-      finalVerdict: a.finalVerdict ?? "",
-      _sourceCode: a._sourceCode ?? "",
-      repoUrl: repoUrl,
-      // ── Detailed fields (now included) ──
-      healthScore: a.healthScore,
-      securityVulnerabilities: a.securityVulnerabilities,
-      dependencyVulnerabilities: a.dependencyVulnerabilities,
-      secrets: a.secrets,
-      techDebt: a.techDebt,
-      architectureGraph: a.architectureGraph,
-      tokensUsed: a.tokensUsed,
-      tokensRemaining: a.tokensRemaining,
-    });
-
-    setCurrentRepoUrl(repoUrl);
-    setActiveView("result");
-    loadDashboard();
-  } catch (err) {
-    const errorMsg = err.response?.data?.error || "Analysis failed";
-
-    if (errorMsg === "Insufficient tokens") {
-      setError(
-        `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
-      );
-    } else {
-      setError(errorMsg);
+    if (!repoUrl.startsWith("https://github.com/")) {
+      return setError("Enter a valid GitHub URL");
     }
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      setLoading(true);
+      setError("");
+      const res = await analyzeGithub({ repoUrl });
+      setReportId(res.data.reportId);
+      const a = res.data.analysis || {};
+
+      // ── Map ALL fields (mirrors the logic in openResult) ──
+      setAnalysis({
+        summary: a.summary ?? "",
+        architecture: a.architecture ?? [],
+        bugs: a.bugs ?? [],
+        securityIssues: a.securityIssues ?? [],
+        futureRoadmap: a.futureRoadmap ?? [],
+        toolsAndPackages: a.toolsAndPackages ?? [],
+        scores: a.scores ?? {},
+        grade: a.grade ?? "N/A",
+        finalVerdict: a.finalVerdict ?? "",
+        _sourceCode: a._sourceCode ?? "",
+        repoUrl: repoUrl,
+        // ── Detailed fields (now included) ──
+        healthScore: a.healthScore,
+        securityVulnerabilities: a.securityVulnerabilities,
+        dependencyVulnerabilities: a.dependencyVulnerabilities,
+        secrets: a.secrets,
+        techDebt: a.techDebt,
+        architectureGraph: a.architectureGraph,
+        tokensUsed: a.tokensUsed,
+        tokensRemaining: a.tokensRemaining,
+      });
+
+      setCurrentRepoUrl(repoUrl);
+      setActiveView("result");
+      loadDashboard();
+    } catch (err) {
+      const errorMsg = err.response?.data?.error || "Analysis failed";
+
+      if (errorMsg === "Insufficient tokens") {
+        setError(
+          `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
+        );
+      } else {
+        // For other errors, show a toast and also display inline for visibility
+        toastError(errorMsg);
+        setError(errorMsg);
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
 
   const openResult = async (report) => {
-  try {
-    // If report already has enhanced fields, use it directly
-    if (report.healthScore || report.securityVulnerabilities?.length) {
-      setAnalysis({
-        summary: report.summary ?? "",
-        architecture: report.architecture ?? [],
-        bugs: report.bugs ?? [],
-        securityIssues: report.securityIssues ?? [],
-        futureRoadmap: report.futureRoadmap ?? [],
-        toolsAndPackages: report.toolsAndPackages ?? [],
-        scores: report.scores ?? {},
-        grade: report.grade ?? "N/A",
-        finalVerdict: report.finalVerdict ?? "",
-        _sourceCode: report._sourceCode ?? "",
-        repoUrl: report.repoUrl || "",
-        healthScore: report.healthScore,
-        securityVulnerabilities: report.securityVulnerabilities,
-        dependencyVulnerabilities: report.dependencyVulnerabilities,
-        secrets: report.secrets,
-        techDebt: report.techDebt,
-        architectureGraph: report.architectureGraph,
-        tokensUsed: report.tokensUsed,
-        tokensRemaining: report.tokensRemaining,
-      });
-      setReportId(report._id);
-      setCurrentRepoUrl(report.repoUrl || "");
-      setActiveView("result");
-      return;
-    }
+    try {
+      // If report already has enhanced fields, use it directly
+      if (report.healthScore || report.securityVulnerabilities?.length) {
+        setAnalysis({
+          summary: report.summary ?? "",
+          architecture: report.architecture ?? [],
+          bugs: report.bugs ?? [],
+          securityIssues: report.securityIssues ?? [],
+          futureRoadmap: report.futureRoadmap ?? [],
+          toolsAndPackages: report.toolsAndPackages ?? [],
+          scores: report.scores ?? {},
+          grade: report.grade ?? "N/A",
+          finalVerdict: report.finalVerdict ?? "",
+          _sourceCode: report._sourceCode ?? "",
+          repoUrl: report.repoUrl || "",
+          healthScore: report.healthScore,
+          securityVulnerabilities: report.securityVulnerabilities,
+          dependencyVulnerabilities: report.dependencyVulnerabilities,
+          secrets: report.secrets,
+          techDebt: report.techDebt,
+          architectureGraph: report.architectureGraph,
+          tokensUsed: report.tokensUsed,
+          tokensRemaining: report.tokensRemaining,
+        });
+        setReportId(report._id);
+        setCurrentRepoUrl(report.repoUrl || "");
+        setActiveView("result");
+        return;
+      }
 
-    // Otherwise fetch the full report
-    const res = await getReport(report._id);
-    const full = res.data.report;
-    setAnalysis({
-      summary: full.summary ?? "",
-      architecture: full.architecture ?? [],
-      bugs: full.bugs ?? [],
-      securityIssues: full.securityIssues ?? [],
-      futureRoadmap: full.futureRoadmap ?? [],
-      toolsAndPackages: full.toolsAndPackages ?? [],
-      scores: full.scores ?? {},
-      grade: full.grade ?? "N/A",
-      finalVerdict: full.finalVerdict ?? "",
-      _sourceCode: full._sourceCode ?? "",
-      repoUrl: full.repoUrl || "",
-      healthScore: full.healthScore,
-      securityVulnerabilities: full.securityVulnerabilities,
-      dependencyVulnerabilities: full.dependencyVulnerabilities,
-      secrets: full.secrets,
-      techDebt: full.techDebt,
-      architectureGraph: full.architectureGraph,
-      tokensUsed: full.tokensUsed,
-      tokensRemaining: full.tokensRemaining,
-    });
-    setReportId(full._id);
-    setCurrentRepoUrl(full.repoUrl || "");
-    setActiveView("result");
-  } catch (err) {
-    console.error("Failed to load full report:", err);
-    alert("Could not load report details.");
-  }
-};
+      // Otherwise fetch the full report
+      const res = await getReport(report._id);
+      const full = res.data.report;
+      setAnalysis({
+        summary: full.summary ?? "",
+        architecture: full.architecture ?? [],
+        bugs: full.bugs ?? [],
+        securityIssues: full.securityIssues ?? [],
+        futureRoadmap: full.futureRoadmap ?? [],
+        toolsAndPackages: full.toolsAndPackages ?? [],
+        scores: full.scores ?? {},
+        grade: full.grade ?? "N/A",
+        finalVerdict: full.finalVerdict ?? "",
+        _sourceCode: full._sourceCode ?? "",
+        repoUrl: full.repoUrl || "",
+        healthScore: full.healthScore,
+        securityVulnerabilities: full.securityVulnerabilities,
+        dependencyVulnerabilities: full.dependencyVulnerabilities,
+        secrets: full.secrets,
+        techDebt: full.techDebt,
+        architectureGraph: full.architectureGraph,
+        tokensUsed: full.tokensUsed,
+        tokensRemaining: full.tokensRemaining,
+      });
+      setReportId(full._id);
+      setCurrentRepoUrl(full.repoUrl || "");
+      setActiveView("result");
+    } catch (err) {
+      console.error("Failed to load full report:", err);
+      toastError("Could not load report details.");
+    }
+  };
 
   if (!data) {
     return <LoadingScreen />;
