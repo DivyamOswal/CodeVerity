@@ -3,6 +3,7 @@ import { useState } from "react";
 import { registerUser } from "../../api/auth";
 import { useNavigate } from "react-router-dom";
 import AuthLayout from "./AuthLayout";
+import { useToast } from "../../hooks/useToast";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -36,21 +37,22 @@ function LockIcon({ className }) {
 export default function Register() {
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const { success, error } = useToast();
   const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.name || !form.email || !form.password) {
-      return setError("Please fill in all fields.");
+      error("Please fill in all fields.");
+      return;
     }
     setLoading(true);
-    setError("");
     try {
       await registerUser(form);
+      success("Account created! Please log in.");
       navigate("/login");
     } catch (err) {
-      setError(err.response?.data?.message || "Registration failed");
+      error(err.response?.data?.message || "Registration failed");
     } finally {
       setLoading(false);
     }
@@ -62,13 +64,12 @@ export default function Register() {
 
   const inputBase =
     "w-full rounded-xl border bg-[var(--bg-input)] py-2.5 pl-10 pr-4 text-sm text-[var(--text-primary)] placeholder-[var(--text-muted)] transition-all duration-200 hover:border-[var(--border-medium)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/40";
-  const inputBorder = error ? "border-[var(--color-danger)]/50 focus:border-[var(--color-danger)]" : "border-[var(--border-light)] focus:border-[var(--accent)]";
+  const inputBorder = "border-[var(--border-light)] focus:border-[var(--accent)]";
 
   return (
     <AuthLayout
       title="Create your account"
       terminalText="start auditing repos"
-      error={error}
       onOAuth={handleOAuth}
       footer={{
         question: "Already have an account?",
