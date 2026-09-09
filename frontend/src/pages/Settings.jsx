@@ -284,23 +284,37 @@ export default function Settings() {
               className={`flex md:flex-col gap-1 ${compactClasses.sidebarWidth} shrink-0`}
               aria-label="Settings tabs"
             >
-              {TABS.map((t) => (
-                <button
-                  key={t}
-                  onClick={() => setTab(t)}
-                  className={`${compactClasses.sidebarButton} font-medium text-left transition-all rounded-xl
-                    ${
-                      tab === t
-                        ? "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30"
-                        : t === "Danger Zone"
-                          ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger)]"
-                          : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                    }`}
-                  aria-current={tab === t ? "page" : undefined}
-                >
-                  {tabIcon(t)} {t}
-                </button>
-              ))}
+              {TABS.map((t) => {
+                const active = tab === t;
+                const isDanger = t === "Danger Zone";
+                return (
+                  <button
+                    key={t}
+                    onClick={() => setTab(t)}
+                    className={`relative flex items-center gap-2 ${compactClasses.sidebarButton} font-medium text-left transition-all duration-150 rounded-xl
+                      ${
+                        active
+                          ? isDanger
+                            ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border border-[var(--color-danger)]/30"
+                            : "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30"
+                          : isDanger
+                            ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger)]"
+                            : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                      }`}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    {active && (
+                      <span
+                        className={`absolute left-0 top-1/2 hidden h-4 w-0.5 -translate-y-1/2 rounded-full md:block ${
+                          isDanger ? "bg-[var(--color-danger)]" : "bg-[var(--accent)]"
+                        }`}
+                      />
+                    )}
+                    <span className="text-sm leading-none">{tabIcon(t)}</span>
+                    {t}
+                  </button>
+                );
+              })}
             </nav>
 
             {/* PANEL */}
@@ -309,6 +323,7 @@ export default function Settings() {
               {tab === "Account" && (
                 <Section
                   title="Public Profile"
+                  icon="👤"
                   compact={compact}
                   padding={compactClasses.sectionPadding}
                   gap={compactClasses.sectionGap}
@@ -387,6 +402,7 @@ export default function Settings() {
               {tab === "Security" && (
                 <Section
                   title="Change Password"
+                  icon="🔐"
                   compact={compact}
                   padding={compactClasses.sectionPadding}
                   gap={compactClasses.sectionGap}
@@ -464,6 +480,7 @@ export default function Settings() {
               {tab === "Appearance" && (
                 <Section
                   title="Display Preferences"
+                  icon="🎨"
                   compact={compact}
                   padding={compactClasses.sectionPadding}
                   gap={compactClasses.sectionGap}
@@ -478,7 +495,7 @@ export default function Settings() {
                         <button
                           key={t}
                           onClick={() => setTheme(t)}
-                          className={`flex-1 ${compactClasses.themeButton} capitalize border rounded-xl transition
+                          className={`flex-1 ${compactClasses.themeButton} capitalize border rounded-xl transition-all duration-150
                             ${
                               theme === t
                                 ? "bg-[var(--accent-soft)] border-[var(--accent)]/40 text-[var(--accent)]"
@@ -527,6 +544,7 @@ export default function Settings() {
               {tab === "Integrations" && (
                 <Section
                   title="GitHub Integration"
+                  icon="🔗"
                   compact={compact}
                   padding={compactClasses.sectionPadding}
                   gap={compactClasses.sectionGap}
@@ -551,7 +569,7 @@ export default function Settings() {
                       </div>
                       <button
                         onClick={disconnectGitHub}
-                        className="ml-auto rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] hover:bg-[var(--color-danger)]/20"
+                        className="ml-auto rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.98]"
                       >
                         Disconnect
                       </button>
@@ -570,7 +588,7 @@ export default function Settings() {
                       </div>
                       <button
                         onClick={connectGitHub}
-                        className="rounded-xl bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] transition-all shadow-lg shadow-[var(--accent-soft-strong)]"
+                        className="rounded-xl bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)]"
                       >
                         Connect GitHub Account
                       </button>
@@ -599,6 +617,7 @@ export default function Settings() {
               {tab === "Danger Zone" && (
                 <Section
                   title="Danger Zone"
+                  icon="⚠️"
                   danger
                   compact={compact}
                   padding={compactClasses.sectionPadding}
@@ -650,7 +669,7 @@ export default function Settings() {
         <div
           role="alert"
           aria-live="polite"
-          className={`fixed bottom-6 right-6 rounded-xl shadow-2xl font-medium
+          className={`fixed bottom-6 right-6 flex items-center gap-2 rounded-xl shadow-2xl font-medium
             transition-all duration-300 z-50
             ${compactClasses.toastSize}
             ${
@@ -659,7 +678,8 @@ export default function Settings() {
                 : "bg-[var(--accent)] text-[var(--accent-contrast)] border border-[var(--accent)]/30"
             }`}
         >
-          {toast.type === "error" ? "⚠️" : "✅"} {toast.msg}
+          <span>{toast.type === "error" ? "⚠️" : "✅"}</span>
+          <span>{toast.msg}</span>
         </div>
       )}
     </div>
@@ -668,17 +688,32 @@ export default function Settings() {
 
 /*  UI helpers  */
 
-function Section({ title, children, danger, compact, padding, gap }) {
+function Section({ title, icon, children, danger, compact, padding, gap }) {
   return (
     <div
       className={`bg-[var(--bg-card)] border rounded-2xl ${padding} ${gap}
       ${danger ? "border-[var(--color-danger)]/20" : "border-[var(--border-light)]"}`}
     >
-      <h2
-        className={`font-semibold ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}
-      >
-        {title}
-      </h2>
+      <div className="flex items-center gap-2.5">
+        {icon && (
+          <span
+            className={`flex shrink-0 items-center justify-center rounded-lg text-xs ${
+              compact ? "h-6 w-6" : "h-7 w-7"
+            } ${
+              danger
+                ? "bg-[var(--color-danger-soft)]"
+                : "bg-[var(--accent-soft)]"
+            }`}
+          >
+            {icon}
+          </span>
+        )}
+        <h2
+          className={`font-semibold ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}
+        >
+          {title}
+        </h2>
+      </div>
       {children}
     </div>
   );
@@ -819,7 +854,7 @@ function DangerRow({
       <button
         onClick={onClick}
         className={`shrink-0 rounded-lg font-medium
-          bg-[var(--color-danger-soft)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition ${buttonClass}`}
+          bg-[var(--color-danger-soft)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-all duration-150 active:scale-[0.98] ${buttonClass}`}
       >
         {label}
       </button>
@@ -905,6 +940,7 @@ function tabIcon(tab) {
     Account: "👤",
     Security: "🔐",
     Appearance: "🎨",
+    Integrations: "🔗",
     "Danger Zone": "⚠️",
   };
   return map[tab] ?? "";
