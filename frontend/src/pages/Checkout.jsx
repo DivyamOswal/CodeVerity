@@ -66,7 +66,10 @@ export default function Checkout() {
   const cycle = searchParams.get("cycle") === "yearly" ? "yearly" : "monthly";
   const currency = searchParams.get("currency") === "USD" ? "USD" : "INR";
 
-  const plan = useMemo(() => PRICING_PLANS.find((p) => p.id === planId) ?? PRICING_PLANS[1], [planId]);
+  const plan = useMemo(
+    () => PRICING_PLANS.find((p) => p.id === planId) ?? PRICING_PLANS[1],
+    [planId]
+  );
   const price = plan[cycle][currency];
   const gst = currency === "INR" ? Math.round(price * 0.18) : 0;
   const total = price + gst;
@@ -81,10 +84,10 @@ export default function Checkout() {
         cycle,
         currency,
       });
-      // Redirect to Stripe Checkout
       window.location.href = res.data.url;
     } catch (err) {
-      const msg = err.response?.data?.error || "Checkout failed. Please try again.";
+      const msg =
+        err.response?.data?.error || "Checkout failed. Please try again.";
       error(msg);
       setLoading(false);
     }
@@ -96,56 +99,76 @@ export default function Checkout() {
   const gstDisplay = currency === "INR" ? formatPrice(gst, currency) : null;
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] py-12 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-[var(--bg-primary)] px-3 py-8 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-6xl">
         {/* Back link */}
         <Link
           to="/pricing"
-          className="inline-flex items-center gap-1.5 font-mono text-[12px] text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text-primary)]"
+          className="inline-flex items-center gap-1.5 font-mono text-[11px] text-[var(--text-muted)] transition-colors duration-150 hover:text-[var(--text-primary)] sm:text-[12px]"
         >
           <ArrowLeftIcon /> back to pricing
         </Link>
 
-        <div className="mt-6 grid gap-8 lg:grid-cols-[1fr_400px]">
-          {/* ─── LEFT – Checkout Form ─────────────────────────── */}
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight text-[var(--text-primary)]">Checkout</h1>
-            <p className="mt-1 text-sm text-[var(--text-secondary)]">
-              You're subscribing to the <span className="font-semibold text-[var(--text-primary)]">{plan.name}</span> plan, billed {cycle}.
-            </p>
+        {/* Page header */}
+        <div className="mt-5 sm:mt-6">
+          <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+            Secure checkout
+          </div>
+          <h1 className="mt-3 text-2xl font-bold tracking-tight text-[var(--text-primary)] sm:text-3xl">
+            Complete your subscription
+          </h1>
+          <p className="mt-1 text-xs text-[var(--text-secondary)] sm:text-sm">
+            You're subscribing to the{" "}
+            <span className="font-semibold text-[var(--text-primary)]">
+              {plan.name}
+            </span>{" "}
+            plan, billed {cycle}.
+          </p>
+        </div>
 
+        {/* ─── Layout ─────────────────────────────────────────── */}
+        <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1fr_400px] lg:gap-8">
+          {/* ─── LEFT – Checkout Form ─────────────────────────── */}
+          <div className="min-w-0">
             {/* Payment card */}
-            <div className="mt-8 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_25px_55px_-35px_var(--accent-soft-strong)] transition-shadow hover:shadow-[0_30px_65px_-35px_var(--accent-soft-strong)]">
+            <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-[0_25px_55px_-35px_var(--accent-soft-strong)] transition-shadow hover:shadow-[0_30px_65px_-35px_var(--accent-soft-strong)] sm:p-6">
               <div className="space-y-5">
                 {/* Plan summary */}
-                <div className="flex items-start justify-between border-b border-[var(--border-dark)] pb-4">
-                  <div>
-                    <p className="text-base font-semibold text-[var(--text-primary)]">{plan.name} Plan</p>
-                    <p className="text-xs text-[var(--text-muted)]">
+                <div className="flex flex-col gap-3 border-b border-[var(--border-dark)] pb-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-[var(--text-primary)] sm:text-base">
+                      {plan.name} Plan
+                    </p>
+                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">
                       {formatTokens(plan.tokensPerMonth)} tokens / mo · {cycle}
                     </p>
                   </div>
-                  <div className="text-right">
-                    <p className="text-xl font-bold text-[var(--text-primary)]">{priceDisplay}</p>
-                    <p className="text-[10px] text-[var(--text-muted)]">{isMonthly ? 'per month' : 'per year'}</p>
+                  <div className="flex items-baseline gap-2 sm:flex-col sm:items-end sm:gap-0">
+                    <p className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
+                      {priceDisplay}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      {isMonthly ? "per month" : "per year"}
+                    </p>
                   </div>
                 </div>
 
                 {/* Order breakdown */}
                 <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-[var(--text-secondary)]">
+                  <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
                     <span>Subtotal</span>
-                    <span>{priceDisplay}</span>
+                    <span className="font-mono tabular-nums">{priceDisplay}</span>
                   </div>
                   {gstDisplay && (
-                    <div className="flex justify-between text-[var(--text-secondary)]">
+                    <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
                       <span>GST (18%)</span>
-                      <span>{gstDisplay}</span>
+                      <span className="font-mono tabular-nums">{gstDisplay}</span>
                     </div>
                   )}
-                  <div className="flex justify-between border-t border-[var(--border-dark)] pt-2 text-base font-bold text-[var(--text-primary)]">
+                  <div className="flex items-center justify-between gap-3 border-t border-[var(--border-dark)] pt-3 text-base font-bold text-[var(--text-primary)]">
                     <span>Total</span>
-                    <span>{totalDisplay}</span>
+                    <span className="font-mono tabular-nums">{totalDisplay}</span>
                   </div>
                 </div>
 
@@ -153,18 +176,26 @@ export default function Checkout() {
                 <button
                   onClick={handleCheckout}
                   disabled={loading}
-                  className="group relative w-full overflow-hidden rounded-xl bg-[var(--accent)] py-3.5 text-[15px] font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 shadow-lg shadow-[var(--accent-soft-strong)]"
+                  className="group relative w-full overflow-hidden rounded-xl bg-[var(--accent)] py-3.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.01] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:text-[15px]"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {loading ? (
                       <>
-                        <span className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent" style={{ borderColor: 'var(--accent-contrast)', borderTopColor: 'transparent' }} />
+                        <span
+                          className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
+                          style={{
+                            borderColor: "var(--accent-contrast)",
+                            borderTopColor: "transparent",
+                          }}
+                        />
                         Redirecting…
                       </>
                     ) : (
                       <>
                         Proceed to Payment
-                        <span className="transition-transform group-hover:translate-x-1">→</span>
+                        <span className="transition-transform group-hover:translate-x-1">
+                          →
+                        </span>
                       </>
                     )}
                   </span>
@@ -172,84 +203,106 @@ export default function Checkout() {
                 </button>
 
                 {/* Security badge */}
-                <div className="flex items-center justify-center gap-2 text-center text-[11px] text-[var(--text-muted)]">
-                  <LockIcon className="text-[var(--text-muted)]" />
+                <div className="flex items-center justify-center gap-2 text-center text-[10px] text-[var(--text-muted)] sm:text-[11px]">
+                  <LockIcon className="shrink-0 text-[var(--text-muted)]" />
                   <span>Secured by Stripe – your payment details are encrypted.</span>
                 </div>
               </div>
             </div>
 
             {/* Trust signals */}
-            <div className="mt-8 grid grid-cols-2 gap-4 sm:grid-cols-3">
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2 text-xs text-[var(--text-secondary)]">
-                <ShieldIcon className="text-[var(--accent)]" />
+            <div className="mt-6 grid grid-cols-1 gap-2 sm:mt-8 sm:grid-cols-3 sm:gap-4">
+              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                <ShieldIcon className="shrink-0 text-[var(--accent)]" />
                 <span>256‑bit SSL</span>
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2 text-xs text-[var(--text-secondary)]">
-                <SparklesIcon className="text-[var(--accent)]" />
+              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                <SparklesIcon className="shrink-0 text-[var(--accent)]" />
                 <span>AI‑powered audit</span>
               </div>
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2 text-xs text-[var(--text-secondary)]">
-                <CheckIcon className="text-[var(--accent)]" />
+              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                <CheckIcon className="shrink-0 text-[var(--accent)]" />
                 <span>Cancel anytime</span>
               </div>
             </div>
           </div>
 
           {/* ─── RIGHT – Order Summary Card ───────────────────── */}
-          <aside className="h-fit rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_20px_45px_-30px_var(--accent-soft-strong)] transition-shadow hover:shadow-[0_25px_55px_-30px_var(--accent-soft-strong)]">
-            <h2 className="font-mono text-[11px] uppercase tracking-[0.15em] text-[var(--text-muted)]">Order Summary</h2>
+          <aside className="h-fit rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-[0_20px_45px_-30px_var(--accent-soft-strong)] transition-shadow hover:shadow-[0_25px_55px_-30px_var(--accent-soft-strong)] sm:p-6 lg:sticky lg:top-24">
+            <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--text-muted)] sm:text-[11px]">
+              Order Summary
+            </h2>
 
             <div className="mt-4 space-y-4">
               <div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">{plan.name} Plan</p>
-                <p className="text-[12px] text-[var(--text-muted)]">billed {cycle}</p>
+                <p className="text-sm font-semibold text-[var(--text-primary)]">
+                  {plan.name} Plan
+                </p>
+                <p className="text-[12px] text-[var(--text-muted)]">
+                  billed {cycle}
+                </p>
                 <p className="mt-1 font-mono text-[11px] text-[var(--accent)]">
                   {formatTokens(plan.tokensPerMonth)} tokens / mo
                 </p>
               </div>
 
-              <div className="border-t border-[var(--border-light)] pt-4 space-y-2 text-[13px]">
-                <div className="flex justify-between text-[var(--text-secondary)]">
+              <div className="space-y-2 border-t border-[var(--border-light)] pt-4 text-[13px]">
+                <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
                   <span>Subtotal</span>
-                  <span>{priceDisplay}</span>
+                  <span className="font-mono tabular-nums">{priceDisplay}</span>
                 </div>
                 {gstDisplay && (
-                  <div className="flex justify-between text-[var(--text-secondary)]">
+                  <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
                     <span>GST (18%)</span>
-                    <span>{gstDisplay}</span>
+                    <span className="font-mono tabular-nums">{gstDisplay}</span>
                   </div>
                 )}
               </div>
 
-              <div className="border-t border-[var(--border-light)] pt-4 flex items-center justify-between">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">Total due today</span>
-                <span className="text-xl font-bold text-[var(--text-primary)]">{totalDisplay}</span>
+              <div className="flex items-center justify-between gap-3 border-t border-[var(--border-light)] pt-4">
+                <span className="text-sm font-semibold text-[var(--text-primary)]">
+                  Total due today
+                </span>
+                <span className="font-mono text-lg font-bold tabular-nums text-[var(--text-primary)] sm:text-xl">
+                  {totalDisplay}
+                </span>
               </div>
 
               <ul className="mt-4 space-y-1.5 text-xs text-[var(--text-secondary)]">
                 {plan.features.slice(0, 4).map((f, i) => (
-                  <li key={i} className="flex items-center gap-2">
-                    <span className="text-[var(--accent)]">✓</span>
-                    {f}
+                  <li key={i} className="flex items-start gap-2">
+                    <span className="mt-0.5 shrink-0 text-[var(--accent)]">✓</span>
+                    <span className="min-w-0">{f}</span>
                   </li>
                 ))}
                 {plan.features.length > 4 && (
-                  <li className="text-[var(--text-muted)]">+{plan.features.length - 4} more</li>
+                  <li className="text-[var(--text-muted)]">
+                    +{plan.features.length - 4} more
+                  </li>
                 )}
               </ul>
 
               {/* Payment method note */}
               <div className="mt-4 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center text-xs text-[var(--text-muted)]">
-                <span className="block">💳 All major credit & debit cards accepted</span>
+                <span className="block">
+                  💳 All major credit &amp; debit cards accepted
+                </span>
               </div>
             </div>
           </aside>
         </div>
 
         {/* Footer note */}
-        <p className="mt-12 text-center text-[10px] text-[var(--text-muted)]">
-          By proceeding you agree to our <Link to="/terms" className="text-[var(--accent)] hover:underline">Terms of Service</Link> and <Link to="/privacy" className="text-[var(--accent)] hover:underline">Privacy Policy</Link>.
+        <p className="mt-8 text-center text-[10px] text-[var(--text-muted)] sm:mt-12">
+          By proceeding you agree to our{" "}
+          <Link to="/terms" className="text-[var(--accent)] hover:underline">
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link to="/privacy" className="text-[var(--accent)] hover:underline">
+            Privacy Policy
+          </Link>
+          .
         </p>
       </div>
     </div>

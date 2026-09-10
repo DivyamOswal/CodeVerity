@@ -281,7 +281,7 @@ export default function Settings() {
           >
             {/* SIDEBAR */}
             <nav
-              className={`flex md:flex-col gap-1 ${compactClasses.sidebarWidth} shrink-0`}
+              className={`-mx-1 flex gap-1 overflow-x-auto px-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 ${compactClasses.sidebarWidth} shrink-0`}
               aria-label="Settings tabs"
             >
               {TABS.map((t) => {
@@ -291,7 +291,7 @@ export default function Settings() {
                   <button
                     key={t}
                     onClick={() => setTab(t)}
-                    className={`relative flex items-center gap-2 ${compactClasses.sidebarButton} font-medium text-left transition-all duration-150 rounded-xl
+                    className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap ${compactClasses.sidebarButton} font-medium text-left transition-all duration-150 rounded-xl
                       ${
                         active
                           ? isDanger
@@ -318,7 +318,7 @@ export default function Settings() {
             </nav>
 
             {/* PANEL */}
-            <div className={`flex-1 ${compact ? "space-y-4" : "space-y-5"}`}>
+            <div className={`flex-1 min-w-0 ${compact ? "space-y-4" : "space-y-5"}`}>
               {/* ACCOUNT */}
               {tab === "Account" && (
                 <Section
@@ -332,18 +332,18 @@ export default function Settings() {
                     className={`flex items-center ${compact ? "gap-3 mb-3" : "gap-4 mb-5"}`}
                   >
                     <div
-                      className={`rounded-2xl bg-[var(--accent)] flex items-center justify-center font-bold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ${compactClasses.avatarSize}`}
+                      className={`shrink-0 rounded-2xl bg-[var(--accent)] flex items-center justify-center font-bold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ${compactClasses.avatarSize}`}
                     >
                       {initials}
                     </div>
-                    <div>
+                    <div className="min-w-0">
                       <p
-                        className={`font-medium text-[var(--text-primary)] ${compactClasses.avatarText}`}
+                        className={`truncate font-medium text-[var(--text-primary)] ${compactClasses.avatarText}`}
                       >
                         {name || "Your Name"}
                       </p>
                       <p
-                        className={`text-[var(--text-muted)] ${compactClasses.userEmail}`}
+                        className={`truncate text-[var(--text-muted)] ${compactClasses.userEmail}`}
                       >
                         {email}
                       </p>
@@ -379,19 +379,19 @@ export default function Settings() {
                     />
                   </Field>
 
-                  <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     {profileDirty && (
                       <p className="text-xs text-[var(--color-warning)]">
                         Unsaved changes
                       </p>
                     )}
-                    <div className="ml-auto">
+                    <div className="sm:ml-auto">
                       <SaveButton
                         onClick={saveProfile}
                         loading={saving}
                         disabled={!profileDirty}
                         compact={compact}
-                        buttonClass={compactClasses.saveButton}
+                        buttonClass={`${compactClasses.saveButton} w-full sm:w-auto`}
                       />
                     </div>
                   </div>
@@ -470,7 +470,7 @@ export default function Settings() {
                       label="Update Password"
                       disabled={!oldPass || !newPass || !confPass}
                       compact={compact}
-                      buttonClass={compactClasses.saveButton}
+                      buttonClass={`${compactClasses.saveButton} w-full sm:w-auto`}
                     />
                   </div>
                 </Section>
@@ -490,7 +490,7 @@ export default function Settings() {
                     compact={compact}
                     labelClass={compactClasses.fieldLabel}
                   >
-                    <div className="flex gap-3">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                       {["dark", "light", "system"].map((t) => (
                         <button
                           key={t}
@@ -534,7 +534,7 @@ export default function Settings() {
                       loading={false}
                       label="Save Preferences"
                       compact={compact}
-                      buttonClass={compactClasses.saveButton}
+                      buttonClass={`${compactClasses.saveButton} w-full sm:w-auto`}
                     />
                   </div>
                 </Section>
@@ -557,9 +557,9 @@ export default function Settings() {
                   </p>
 
                   {user?.githubAccessToken ? (
-                    <div className="flex items-center gap-3 rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] p-4">
+                    <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] p-4 sm:flex-row sm:items-center">
                       <span className="text-2xl">✅</span>
-                      <div>
+                      <div className="min-w-0 flex-1">
                         <p className="font-medium text-[var(--text-primary)]">
                           GitHub connected
                         </p>
@@ -569,13 +569,13 @@ export default function Settings() {
                       </div>
                       <button
                         onClick={disconnectGitHub}
-                        className="ml-auto rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.98]"
+                        className="shrink-0 self-start rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.98] sm:self-auto"
                       >
                         Disconnect
                       </button>
                     </div>
                   ) : (
-                    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] p-6 text-center">
+                    <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] p-5 text-center sm:p-6">
                       <span className="text-4xl">🔗</span>
                       <div>
                         <p className="font-medium text-[var(--text-primary)]">
@@ -588,7 +588,7 @@ export default function Settings() {
                       </div>
                       <button
                         onClick={connectGitHub}
-                        className="rounded-xl bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)]"
+                        className="w-full rounded-xl bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)] sm:w-auto"
                       >
                         Connect GitHub Account
                       </button>
@@ -744,9 +744,9 @@ function Toggle({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-4 ${compact ? "gap-3" : ""}`}
+      className={`flex items-center justify-between gap-3 sm:gap-4 ${compact ? "gap-3" : ""}`}
     >
-      <div>
+      <div className="min-w-0">
         <p className={`font-medium text-[var(--text-primary)] ${textClass}`}>
           {label}
         </p>
@@ -758,7 +758,7 @@ function Toggle({
         role="switch"
         aria-checked={value}
         onClick={() => onChange(!value)}
-        className={`relative w-11 h-6 rounded-full transition-colors duration-200 shrink-0
+        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200
           ${value ? "bg-[var(--accent)]" : "bg-[var(--border-light)]"}`}
       >
         <span
@@ -788,7 +788,7 @@ function SaveButton({
         transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)] ${buttonClass}`}
     >
       {loading ? (
-        <span className="flex items-center gap-2">
+        <span className="flex items-center justify-center gap-2">
           <span
             className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
             style={{
@@ -820,9 +820,9 @@ function DangerRow({
 }) {
   return (
     <div
-      className={`flex items-center justify-between gap-4 rounded-xl bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 ${padding}`}
+      className={`flex flex-col gap-3 rounded-xl bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${padding}`}
     >
-      <div>
+      <div className="min-w-0">
         <p
           className={`${bold ? "font-semibold text-[var(--color-danger)]" : "text-[var(--text-secondary)]"} ${titleClass}`}
         >
@@ -834,7 +834,7 @@ function DangerRow({
       </div>
       <button
         onClick={onClick}
-        className={`shrink-0 rounded-lg font-medium
+        className={`shrink-0 self-start rounded-lg font-medium sm:self-auto
           bg-[var(--color-danger-soft)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-all duration-150 active:scale-[0.98] ${buttonClass}`}
       >
         {label}

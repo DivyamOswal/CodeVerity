@@ -15,25 +15,29 @@ import {
 } from "react";
 import SmoothScroll from "./components/SmoothScroll";
 import Navbar from "./components/Navbar";
-import Home from "./components/Home";
-import Login from "./components/Auth/Login";
-import Register from "./components/Auth/Register";
-import History from "./components/History";
-import About from "./pages/About";
-import Contact from "./pages/Contact";
-import Dashboard from "./pages/Dashboard";
+import { lazy, Suspense } from "react";
+import PageLoader from "./components/PageLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
-import Result from "./components/Result";
-import Profile from "./pages/Profile";
-import Settings from "./pages/Settings";
-import Workspace from "./pages/Workspace";
-import OAuthSuccess from "./pages/OAuthSuccess";
-import Pricing from "./pages/Pricing";
-import Checkout from "./pages/Checkout";
-import Privacy from "./pages/Privacy";
-import Support from "./pages/Support";
-import Terms from "./pages/Terms";
-import AdminDashboard from "./pages/AdminDashboard";
+
+// ─── Lazy-loaded pages ───────────────────────────────────────
+const Home = lazy(() => import("./components/Home"));
+const Login = lazy(() => import("./components/Auth/Login"));
+const Register = lazy(() => import("./components/Auth/Register"));
+const History = lazy(() => import("./components/History"));
+const About = lazy(() => import("./pages/About"));
+const Contact = lazy(() => import("./pages/Contact"));
+const Dashboard = lazy(() => import("./pages/Dashboard"));
+const Result = lazy(() => import("./components/Result"));
+const Profile = lazy(() => import("./pages/Profile"));
+const Settings = lazy(() => import("./pages/Settings"));
+const Workspace = lazy(() => import("./pages/Workspace"));
+const OAuthSuccess = lazy(() => import("./pages/OAuthSuccess"));
+const Pricing = lazy(() => import("./pages/Pricing"));
+const Checkout = lazy(() => import("./pages/Checkout"));
+const Privacy = lazy(() => import("./pages/Privacy"));
+const Support = lazy(() => import("./pages/Support"));
+const Terms = lazy(() => import("./pages/Terms"));
+const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 import ErrorBoundary from "./components/ErrorBoundary";
 
 import { PreferencesProvider } from "./context/PreferencesContext";
@@ -135,6 +139,7 @@ function Layout() {
     <>
       {showNav && <Navbar />}
       <SmoothScroll>
+        <Suspense fallback={<PageLoader />}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/about" element={<About />} />
@@ -217,6 +222,7 @@ function Layout() {
           />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
+        </Suspense>
       </SmoothScroll>
     </>
   );

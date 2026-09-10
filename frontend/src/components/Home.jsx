@@ -364,6 +364,78 @@ function ScanLine() {
 }
 
 // ============================================================
+//  COMPONENT: ScanReportCard3D  the visual content of the new
+//  3D showcase panel. Pure markup/CSS; all motion is applied to
+//  its wrapper from the scroll-triggered GSAP block in Home, so
+//  this component itself holds no animation logic.
+// ============================================================
+function ScanReportCard3D() {
+  return (
+    <div
+      className="relative w-full rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_50px_100px_-30px_var(--accent-soft-strong)] sm:p-7"
+      style={{ transformStyle: "preserve-3d" }}
+    >
+      {/* faux window chrome, so the panel reads as "product", not decoration */}
+      <div className="mb-5 flex items-center gap-1.5">
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-danger)]/50" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-warning)]/50" />
+        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-success)]/50" />
+        <span className="ml-3 font-mono text-[10px] text-[var(--text-muted)]">
+          audit-report.json
+        </span>
+      </div>
+
+      <div className="flex items-center gap-5">
+        <div className="relative h-20 w-20 shrink-0">
+          <svg viewBox="0 0 36 36" className="-rotate-90">
+            <path
+              d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
+              fill="none"
+              stroke="var(--border-light)"
+              strokeWidth="3"
+            />
+            <path
+              d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
+              fill="none"
+              stroke="var(--accent)"
+              strokeWidth="3"
+              strokeDasharray="92,100"
+              strokeLinecap="round"
+            />
+          </svg>
+          <span className="absolute inset-0 flex items-center justify-center text-base font-bold text-[var(--text-primary)]">
+            A+
+          </span>
+        </div>
+        <div className="flex-1 space-y-2.5">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-light)]">
+            <div className="h-full w-[92%] rounded-full bg-[var(--accent)]" />
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-light)]">
+            <div className="h-full w-[78%] rounded-full bg-[var(--color-success)]" />
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-light)]">
+            <div className="h-full w-[85%] rounded-full bg-[var(--color-info)]" />
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        <span className="rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-mono text-[10px] text-[var(--accent)]">
+          0 critical bugs
+        </span>
+        <span className="rounded-md bg-[var(--color-success-soft)] px-2.5 py-1 font-mono text-[10px] text-[var(--color-success)]">
+          Security passed
+        </span>
+        <span className="rounded-md bg-[var(--color-info-soft)] px-2.5 py-1 font-mono text-[10px] text-[var(--color-info)]">
+          12 tests generated
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
 //  SECTION: How It Works
 // ============================================================
 function HowItWorks() {
@@ -831,6 +903,12 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
+  // ── New refs for the 3D scroll showcase. wrapperRef holds the
+  // ScrollTrigger; cardRef is the element that actually gets the
+  // 3D transform (perspective lives on wrapperRef's inline style).
+  const showcaseWrapperRef = useRef(null);
+  const showcaseCardRef = useRef(null);
+
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
@@ -968,6 +1046,52 @@ export default function Home() {
           });
         }
 
+        // --- 3D SHOWCASE PANEL: tilts in from an angled, receded
+        // position to flat-and-close as the panel enters view, then
+        // idles with a slow ambient tilt once fully revealed. Scoped
+        // entirely to its own refs  doesn't touch any existing
+        // section's animation.
+        if (showcaseCardRef.current && showcaseWrapperRef.current) {
+          const startState = { rotateY: -32, rotateX: 14, y: 70, scale: 0.9, opacity: 0 };
+          gsap.set(showcaseCardRef.current, startState);
+
+          ScrollTrigger.create({
+            trigger: showcaseWrapperRef.current,
+            start: "top 88%",
+            end: "top 40%",
+            scrub: 1,
+            onUpdate: (self) => {
+              const p = self.progress;
+              gsap.to(showcaseCardRef.current, {
+                rotateY: startState.rotateY + (0 - startState.rotateY) * p,
+                rotateX: startState.rotateX + (0 - startState.rotateX) * p,
+                y: startState.y + (0 - startState.y) * p,
+                scale: startState.scale + (1 - startState.scale) * p,
+                opacity: p,
+                duration: 0.1,
+                overwrite: true,
+              });
+            },
+            onLeaveBack: () => {
+              gsap.set(showcaseCardRef.current, startState);
+            },
+          });
+
+          // gentle continuous idle tilt, same ambient-loop pattern
+          // used for the AuthLayout orbs  runs regardless of scroll
+          // position once mounted; the scroll-tied tween above simply
+          // overwrites it while the panel is animating into view.
+          gsap.to(showcaseCardRef.current, {
+            rotateY: "+=5",
+            rotateX: "+=2.5",
+            duration: 4.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+            delay: 1.2,
+          });
+        }
+
         return () => {
           ScrollTrigger.getAll().forEach((st) => st.kill());
         };
@@ -981,8 +1105,9 @@ export default function Home() {
             descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
             featureLabelRef.current, featureCardsRef.current, howRef.current,
             testimonialRef.current, pricingRef.current, faqRef.current,
+            showcaseCardRef.current,
           ],
-          { opacity: 1, y: 0, clearProps: "all" },
+          { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, clearProps: "all" },
         );
       });
 
@@ -1218,6 +1343,34 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* ================================================================
+          3D SHOWCASE  new section, self-contained. Sits between the
+          hero and "How it works" as the natural point where someone
+          scrolling has just read what CodeVerity checks and is about
+          to learn how the process runs  a good place to *show* the
+          output rather than only describe it.
+      ================================================================ */}
+      <section className="relative z-10 border-t border-[var(--border-light)] px-4 py-20 sm:px-6">
+        <div className="mx-auto max-w-2xl text-center">
+          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            See it in action
+          </p>
+          <h2 className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+            A real audit, not a demo screenshot
+          </h2>
+
+          <div
+            ref={showcaseWrapperRef}
+            className="mx-auto w-full max-w-md"
+            style={{ perspective: "1400px" }}
+          >
+            <div ref={showcaseCardRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
+              <ScanReportCard3D />
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* NEW SECTIONS */}
       <div className="relative z-10 mx-auto max-w-7xl">

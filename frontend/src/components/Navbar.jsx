@@ -140,7 +140,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
       }`}
     >
       <span
-        className={`flex h-7 w-7 items-center justify-center rounded-lg transition-colors duration-150 ${
+        className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition-colors duration-150 ${
           danger
             ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
             : "bg-[var(--bg-hover)] text-[var(--text-muted)] group-hover:text-[var(--accent)] group-hover:bg-[var(--accent-soft)]"
@@ -148,7 +148,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
       >
         {icon}
       </span>
-      <span>{label}</span>
+      <span className="truncate">{label}</span>
     </button>
   );
 }
@@ -221,8 +221,6 @@ export default function Navbar() {
       const timeline = gsap.timeline({
         defaults: { ease: "power3.out" },
         onComplete: () => {
-          // Guarantee nothing stays stuck at opacity:0 / visibility:hidden
-          // if the timeline gets interrupted by a route change (e.g. Sign in -> back).
           [
             navRef.current,
             logoRef.current,
@@ -242,19 +240,6 @@ export default function Navbar() {
           autoAlpha: 0,
           duration: 0.55,
         });
-      }
-
-      if (logoRef.current) {
-        timeline.from(
-          logoRef.current,
-          {
-            scale: 0.85,
-            autoAlpha: 0,
-            duration: 0.4,
-            ease: "back.out(1.5)",
-          },
-          "-=0.3",
-        );
       }
 
       if (logoRef.current) {
@@ -304,8 +289,6 @@ export default function Navbar() {
 
     return () => {
       mm.revert();
-      // Belt-and-braces: if unmounted mid-animation, make sure the logo
-      // and nav don't get left invisible.
       if (logoRef.current) gsap.set(logoRef.current, { clearProps: "all" });
       if (navRef.current) gsap.set(navRef.current, { clearProps: "all" });
     };
@@ -410,7 +393,6 @@ export default function Navbar() {
     : "px-4 py-3 text-sm";
 
   // ─── Background & shadow ─────────────────────────────────────
-  // ─── Background & shadow ─────────────────────────────────────
   const bgClass = isScrolled
     ? "bg-[var(--bg-primary)] shadow-lg shadow-black/10"
     : "bg-[var(--bg-primary)]";
@@ -453,7 +435,7 @@ export default function Navbar() {
     >
       <div
         ref={navContentRef}
-        className={`mx-auto flex h-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 ${
+        className={`mx-auto flex h-full max-w-7xl items-center justify-between gap-2 px-3 sm:px-6 lg:px-8 ${
           compact ? "px-3 sm:px-4" : ""
         }`}
       >
@@ -462,7 +444,7 @@ export default function Navbar() {
           <NavLink
             ref={logoRef}
             to="/"
-            className="group flex items-center gap-2.5 transition-all duration-200"
+            className="group flex min-w-0 items-center gap-2.5 transition-all duration-200"
           >
             {/* Icon */}
             <div
@@ -483,16 +465,16 @@ export default function Navbar() {
               </span>
             </div>
 
-            {/* Brand Name – always visible */}
-            <div className="flex flex-col">
+            {/* Brand Name */}
+            <div className="flex min-w-0 flex-col">
               <div
-                className={`flex items-center font-bold leading-none tracking-tight transition-all duration-200 ${brandTextSize}`}
+                className={`flex items-center truncate font-bold leading-none tracking-tight transition-all duration-200 ${brandTextSize}`}
               >
                 <span className="text-[var(--text-primary)]">Code</span>
                 <span className="text-[var(--accent)]">Verity</span>
               </div>
               <p
-                className={`font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] transition-all duration-200 ${brandSubSize}`}
+                className={`hidden truncate font-mono font-medium uppercase leading-none tracking-[0.2em] text-[var(--text-muted)] transition-all duration-200 xs:block sm:block ${brandSubSize}`}
               >
                 AI Code Intelligence
               </p>
@@ -519,7 +501,7 @@ export default function Navbar() {
         </div>
 
         {/* ─── RIGHT: User & actions ──────────────────────────── */}
-        <div className="flex items-center gap-1">
+        <div className="flex shrink-0 items-center gap-1">
           {isAuth ? (
             <div ref={dropRef} className="relative">
               <button
@@ -571,7 +553,7 @@ export default function Navbar() {
 
               {/* Dropdown */}
               <div
-                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-64 origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out ${
+                className={`absolute right-0 top-[calc(100%+8px)] z-50 w-[calc(100vw-1.5rem)] max-w-[16rem] origin-top-right overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-black/40 transition-all duration-200 ease-out sm:w-64 sm:max-w-none ${
                   dropOpen
                     ? "translate-y-0 scale-100 opacity-100"
                     : "pointer-events-none -translate-y-1 scale-95 opacity-0"
@@ -655,7 +637,7 @@ export default function Navbar() {
             type="button"
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             onClick={() => setMenuOpen((prev) => !prev)}
-            className={`relative ml-1 flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
+            className={`relative ml-1 flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-colors duration-200 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] md:hidden ${
               isScrolled
                 ? compact
                   ? "h-8 w-8"
@@ -690,11 +672,13 @@ export default function Navbar() {
       <div
         className={`overflow-hidden border-t border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out md:hidden ${
           menuOpen
-            ? "max-h-[36rem] opacity-100"
+            ? "max-h-[calc(100vh-4rem)] opacity-100"
             : "max-h-0 border-t-0 opacity-0"
         }`}
       >
-        <div className={`mx-auto max-w-7xl space-y-1 ${mobileMenuPadding}`}>
+        <div
+          className={`mx-auto max-h-[calc(100vh-4rem)] max-w-7xl space-y-1 overflow-y-auto ${mobileMenuPadding}`}
+        >
           {isAuth && (
             <>
               <NavLink

@@ -8,14 +8,14 @@ import { useToast } from "../hooks/useToast";
 
 function StatCard({ label, value, icon: Icon, color }) {
   return (
-    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_-20px_var(--accent-soft-strong)]">
-      <div className="flex items-center justify-between">
-        <div>
-          <p className="text-sm text-[var(--text-muted)]">{label}</p>
-          <p className="mt-1 text-2xl font-bold text-[var(--text-primary)]">{value}</p>
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_-20px_var(--accent-soft-strong)] sm:p-5">
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0">
+          <p className="text-xs text-[var(--text-muted)] sm:text-sm">{label}</p>
+          <p className="mt-1 text-xl font-bold text-[var(--text-primary)] sm:text-2xl">{value}</p>
         </div>
-        <div className={`rounded-full p-3 ${color}`}>
-          <Icon className="h-5 w-5" />
+        <div className={`shrink-0 rounded-full p-2.5 sm:p-3 ${color}`}>
+          <Icon className="h-4 w-4 sm:h-5 sm:w-5" />
         </div>
       </div>
     </div>
@@ -80,13 +80,13 @@ export default function AdminDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-[var(--bg-primary)] p-6 pt-20">
+    <div className="min-h-screen bg-[var(--bg-primary)] p-4 pt-20 sm:p-6">
       <div className="mx-auto max-w-7xl">
-        <h1 className="text-2xl font-bold text-[var(--text-primary)]">Admin Dashboard</h1>
-        <p className="mt-1 text-sm text-[var(--text-muted)]">Manage users, workspaces, and system settings.</p>
+        <h1 className="text-xl font-bold text-[var(--text-primary)] sm:text-2xl">Admin Dashboard</h1>
+        <p className="mt-1 text-xs text-[var(--text-muted)] sm:text-sm">Manage users, workspaces, and system settings.</p>
 
         {/* Stats Grid */}
-        <div className="mt-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-2 sm:gap-4 lg:grid-cols-4">
           <StatCard label="Total Users" value={stats?.totalUsers || 0} icon={Users} color="bg-[var(--color-info-soft)] text-[var(--color-info)]" />
           <StatCard label="Workspaces" value={stats?.totalWorkspaces || 0} icon={Briefcase} color="bg-[var(--accent-soft)] text-[var(--accent)]" />
           <StatCard label="Reports" value={stats?.totalReports || 0} icon={FileText} color="bg-[var(--color-success-soft)] text-[var(--color-success)]" />
@@ -94,13 +94,13 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="mt-8 border-b border-[var(--border-dark)]">
-          <div className="flex gap-4 overflow-x-auto">
+        <div className="mt-8 overflow-x-auto border-b border-[var(--border-dark)]">
+          <div className="flex gap-2 min-w-max sm:gap-4">
             {["overview", "users", "workspaces", "reports"].map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-4 py-2 text-sm font-medium capitalize transition-colors duration-150 ${
+                className={`whitespace-nowrap px-3 py-2 text-xs font-medium capitalize transition-colors duration-150 sm:px-4 sm:text-sm ${
                   activeTab === tab
                     ? "border-b-2 border-[var(--accent)] text-[var(--accent)]"
                     : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -143,28 +143,28 @@ function Overview({ stats }) {
 
   return (
     <div className="space-y-6">
-      <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
-        <h2 className="text-lg font-semibold text-[var(--text-primary)]">System Overview</h2>
-        <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 transition-colors duration-150 hover:border-[var(--border-medium)]">
-            <Activity className="h-5 w-5 text-[var(--accent)]" />
-            <div>
+      <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:p-6">
+        <h2 className="text-base font-semibold text-[var(--text-primary)] sm:text-lg">System Overview</h2>
+        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 transition-colors duration-150 hover:border-[var(--border-medium)] sm:p-4">
+            <Activity className="h-5 w-5 shrink-0 text-[var(--accent)]" />
+            <div className="min-w-0">
               <p className="text-xs text-[var(--text-muted)]">System Status</p>
               <p className="text-sm font-medium text-[var(--color-success)]">● Online</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 transition-colors duration-150 hover:border-[var(--border-medium)]">
-            <Clock className="h-5 w-5 text-[var(--accent)]" />
-            <div>
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 transition-colors duration-150 hover:border-[var(--border-medium)] sm:p-4">
+            <Clock className="h-5 w-5 shrink-0 text-[var(--accent)]" />
+            <div className="min-w-0">
               <p className="text-xs text-[var(--text-muted)]">Uptime</p>
               <p className="text-sm font-medium text-[var(--text-primary)]">{systemUptime}</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 transition-colors duration-150 hover:border-[var(--border-medium)]">
-            <Zap className="h-5 w-5 text-[var(--accent)]" />
-            <div>
+          <div className="flex items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 transition-colors duration-150 hover:border-[var(--border-medium)] sm:p-4">
+            <Zap className="h-5 w-5 shrink-0 text-[var(--accent)]" />
+            <div className="min-w-0">
               <p className="text-xs text-[var(--text-muted)]">Last Updated</p>
-              <p className="text-sm font-medium text-[var(--text-primary)]">{currentTime}</p>
+              <p className="truncate text-sm font-medium text-[var(--text-primary)]">{currentTime}</p>
             </div>
           </div>
         </div>
@@ -172,38 +172,38 @@ function Overview({ stats }) {
 
       {/* Quick Stats Breakdown */}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-        <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+        <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:p-6">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">User Activity</h3>
           <div className="mt-3 space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-[var(--text-muted)]">Total Users</span>
               <span className="font-medium text-[var(--text-primary)]">{stats?.totalUsers || 0}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-[var(--text-muted)]">Workspaces</span>
               <span className="font-medium text-[var(--text-primary)]">{stats?.totalWorkspaces || 0}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-[var(--text-muted)]">Reports Generated</span>
               <span className="font-medium text-[var(--text-primary)]">{stats?.totalReports || 0}</span>
             </div>
           </div>
         </div>
 
-        <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+        <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:p-6">
           <h3 className="text-sm font-semibold text-[var(--text-primary)]">Financial Summary</h3>
           <div className="mt-3 space-y-2">
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-[var(--text-muted)]">Total Revenue</span>
               <span className="font-medium text-[var(--text-primary)]">₹{(stats?.totalRevenue || 0).toLocaleString()}</span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-[var(--text-muted)]">Average Revenue / User</span>
               <span className="font-medium text-[var(--text-primary)]">
                 ₹{stats?.totalUsers ? Math.round((stats.totalRevenue || 0) / stats.totalUsers).toLocaleString() : 0}
               </span>
             </div>
-            <div className="flex justify-between text-sm">
+            <div className="flex justify-between gap-3 text-sm">
               <span className="text-[var(--text-muted)]">Paid Users</span>
               <span className="font-medium text-[var(--text-primary)]">0</span> {/* You can add a field if you track paid users */}
             </div>
@@ -211,16 +211,16 @@ function Overview({ stats }) {
         </div>
       </div>
 
-      <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+      <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:p-6">
         <h3 className="text-sm font-semibold text-[var(--text-primary)]">Quick Actions</h3>
-        <div className="mt-3 flex flex-wrap gap-3">
-          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.97]">
+        <div className="mt-3 flex flex-wrap gap-2 sm:gap-3">
+          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.97] sm:px-4 sm:text-sm">
             View All Users
           </button>
-          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.97]">
+          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.97] sm:px-4 sm:text-sm">
             Export Reports
           </button>
-          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.97]">
+          <button className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2 text-xs text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.97] sm:px-4 sm:text-sm">
             System Logs
           </button>
         </div>
@@ -272,24 +272,24 @@ function UserManagement({ openDialog }) {
   if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading users...</div>;
 
   return (
-    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-3 sm:p-4">
       <div className="mb-4 flex items-center gap-4">
         <input
           type="text"
           placeholder="Search users..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-[var(--accent)]"
+          className="w-full flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition-colors focus:border-[var(--accent)]"
         />
       </div>
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm min-w-[640px]">
           <thead className="bg-[var(--bg-hover)]">
             <tr>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Name</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Email</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Admin</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Actions</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Name</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Email</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Admin</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-dark)]">
@@ -302,7 +302,7 @@ function UserManagement({ openDialog }) {
                     {u.isGlobalAdmin ? "✅" : "❌"}
                   </span>
                 </td>
-                <td className="px-4 py-2">
+                <td className="whitespace-nowrap px-4 py-2">
                   <button
                     onClick={() => toggleAdmin(u._id)}
                     className="rounded-lg border border-[var(--border-light)] px-3 py-1 text-xs text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] active:scale-[0.96]"
@@ -359,15 +359,15 @@ function WorkspaceManagement({ openDialog }) {
   if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading workspaces...</div>;
 
   return (
-    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-3 sm:p-4">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm min-w-[640px]">
           <thead className="bg-[var(--bg-hover)]">
             <tr>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Workspace</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Owner</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Members</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Actions</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Workspace</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Owner</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Members</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-dark)]">
@@ -376,7 +376,7 @@ function WorkspaceManagement({ openDialog }) {
                 <td className="px-4 py-2 text-[var(--text-primary)]">{ws.name}</td>
                 <td className="px-4 py-2 text-[var(--text-secondary)]">{ws.ownerId?.email || "N/A"}</td>
                 <td className="px-4 py-2 text-[var(--text-secondary)]">{ws.members?.length || 0}</td>
-                <td className="px-4 py-2">
+                <td className="whitespace-nowrap px-4 py-2">
                   <button
                     onClick={() => deleteWorkspace(ws._id)}
                     className="rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1 text-xs text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.96]"
@@ -416,24 +416,28 @@ function ReportManagement() {
   if (loading) return <div className="text-sm text-[var(--text-muted)]">Loading reports...</div>;
 
   return (
-    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+    <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-3 sm:p-4">
       <div className="overflow-x-auto">
-        <table className="w-full text-left text-sm">
+        <table className="w-full text-left text-sm min-w-[640px]">
           <thead className="bg-[var(--bg-hover)]">
             <tr>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Repo</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">User</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Workspace</th>
-              <th className="px-4 py-2 font-medium text-[var(--text-muted)]">Date</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Repo</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">User</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Workspace</th>
+              <th className="whitespace-nowrap px-4 py-2 font-medium text-[var(--text-muted)]">Date</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border-dark)]">
             {reports.map((r) => (
               <tr key={r._id} className="transition-colors duration-150 hover:bg-[var(--bg-hover)]/40">
-                <td className="px-4 py-2 text-[var(--text-primary)]">{r.repoUrl}</td>
+                <td className="px-4 py-2 text-[var(--text-primary)]">
+                  <span className="inline-block max-w-[240px] truncate" title={r.repoUrl}>
+                    {r.repoUrl}
+                  </span>
+                </td>
                 <td className="px-4 py-2 text-[var(--text-secondary)]">{r.userId?.email || "Unknown"}</td>
                 <td className="px-4 py-2 text-[var(--text-secondary)]">{r.workspaceId?.name || "N/A"}</td>
-                <td className="px-4 py-2 text-[var(--text-secondary)]">{new Date(r.createdAt).toLocaleDateString()}</td>
+                <td className="whitespace-nowrap px-4 py-2 text-[var(--text-secondary)]">{new Date(r.createdAt).toLocaleDateString()}</td>
               </tr>
             ))}
           </tbody>

@@ -46,8 +46,10 @@ function CodeVerityLogo() {
 
 function SectionKicker({ icon, title, subtitle, compact, right }) {
   return (
-    <div className={`flex items-start justify-between ${compact ? "mb-3" : "mb-5"}`}>
-      <div className="flex items-start gap-2.5">
+    <div
+      className={`flex flex-wrap items-start justify-between gap-2 ${compact ? "mb-3" : "mb-5"}`}
+    >
+      <div className="flex min-w-0 items-start gap-2.5">
         {icon && (
           <span
             className={`mt-0.5 flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] ${
@@ -57,12 +59,18 @@ function SectionKicker({ icon, title, subtitle, compact, right }) {
             {icon}
           </span>
         )}
-        <div>
-          <h2 className={`font-semibold leading-tight text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}>
+        <div className="min-w-0">
+          <h2
+            className={`font-semibold leading-tight text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}
+          >
             {title}
           </h2>
           {subtitle && (
-            <p className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>{subtitle}</p>
+            <p
+              className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+            >
+              {subtitle}
+            </p>
           )}
         </div>
       </div>
@@ -143,11 +151,11 @@ export default function Profile() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-[var(--text-primary)]">
+      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-[var(--text-primary)] px-4">
         <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)]">
           <span className="text-xl">!</span>
         </div>
-        <p className="text-sm text-[var(--color-danger)]">{error}</p>
+        <p className="text-sm text-[var(--color-danger)] text-center">{error}</p>
         <button
           onClick={load}
           className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] active:scale-[0.98]"
@@ -307,15 +315,19 @@ export default function Profile() {
             <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
-            <div className={`relative flex flex-col ${compactClasses.heroGap} ${compactClasses.heroPadding} sm:flex-row sm:items-center`}>
+            <div
+              className={`relative flex flex-col ${compactClasses.heroGap} ${compactClasses.heroPadding} sm:flex-row sm:items-center`}
+            >
               {/* Avatar */}
-              <div className="relative shrink-0">
+              <div className="relative shrink-0 self-start sm:self-auto">
                 <div
                   className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold shadow-lg shadow-[var(--accent-soft-strong)] text-[var(--accent-contrast)] ring-1 ring-[var(--accent-contrast)]/10 ${compactClasses.avatarSize}`}
                 >
                   {initials}
                 </div>
-                <div className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-[var(--color-success)] ${compactClasses.avatarOnline}`}>
+                <div
+                  className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-[var(--color-success)] ${compactClasses.avatarOnline}`}
+                >
                   <span className="h-1.5 w-1.5 rounded-full bg-white" />
                 </div>
               </div>
@@ -323,24 +335,40 @@ export default function Profile() {
               {/* User Info */}
               <div className="min-w-0 flex-1">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-                  <h1 className={`truncate font-bold text-[var(--text-primary)] ${compactClasses.nameSize}`}>{name}</h1>
+                  <h1
+                    className={`truncate font-bold text-[var(--text-primary)] ${compactClasses.nameSize}`}
+                  >
+                    {name}
+                  </h1>
                   {user?.role && (
-                    <span className={`w-fit rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[var(--text-secondary)] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]"}`}>
+                    <span
+                      className={`w-fit rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[var(--text-secondary)] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]"}`}
+                    >
                       {user.role}
                     </span>
                   )}
                 </div>
-                <p className={`mt-1 truncate text-[var(--text-muted)] ${compactClasses.userEmailSize}`}>{user?.email ?? ""}</p>
+                <p
+                  className={`mt-1 truncate text-[var(--text-muted)] ${compactClasses.userEmailSize}`}
+                >
+                  {user?.email ?? ""}
+                </p>
                 <div className={`mt-3 flex flex-wrap ${compactClasses.pillsGap}`}>
-                  {joinDate && <Pill icon="◷" text={`Joined ${joinDate}`} compact={compact} />}
-                  <Pill icon="⌁" text={`${totalScans} scan${totalScans !== 1 ? "s" : ""}`} compact={compact} />
+                  {joinDate && (
+                    <Pill icon="◷" text={`Joined ${joinDate}`} compact={compact} />
+                  )}
+                  <Pill
+                    icon="⌁"
+                    text={`${totalScans} scan${totalScans !== 1 ? "s" : ""}`}
+                    compact={compact}
+                  />
                 </div>
               </div>
 
               {/* Settings button */}
               <button
                 onClick={() => navigate("/settings")}
-                className={`flex shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98] ${compactClasses.settingsButton}`}
+                className={`flex w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98] sm:w-auto ${compactClasses.settingsButton}`}
               >
                 <span className="text-sm">⚙</span>
                 Settings
@@ -390,14 +418,18 @@ export default function Profile() {
 
           {/* GRADE BREAKDOWN */}
           {totalScans > 0 && (
-            <div className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.gradeBreakdownPadding}`}>
+            <div
+              className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.gradeBreakdownPadding}`}
+            >
               <SectionKicker
                 icon="◈"
                 title="Grade Breakdown"
                 subtitle="Distribution of your repository audit grades"
                 compact={compact}
                 right={
-                  <div className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+                  <div
+                    className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}
+                  >
                     {totalScans} total
                   </div>
                 }
@@ -410,25 +442,36 @@ export default function Profile() {
                   const style = gradeStyle(g);
 
                   return (
-                    <div key={g} className={`flex items-center gap-3 ${compact ? "gap-2" : ""}`}>
+                    <div
+                      key={g}
+                      className={`flex items-center gap-2 sm:gap-3 ${compact ? "gap-2" : ""}`}
+                    >
                       <span
                         className={`flex shrink-0 items-center justify-center rounded-lg text-xs font-bold ${style.badge} ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}
                       >
                         {g}
                       </span>
-                      <div className="flex-1">
-                        <div className={`flex justify-between ${compact ? "mb-1" : "mb-1.5"}`}>
-                          <span className={`text-[var(--text-muted)] ${compactClasses.gradeLabelSize}`}>Grade {g}</span>
-                          <span className={`text-[var(--text-muted)] text-[9px]`}>{pct}%</span>
+                      <div className="min-w-0 flex-1">
+                        <div className={`flex justify-between gap-2 ${compact ? "mb-1" : "mb-1.5"}`}>
+                          <span className={`text-[var(--text-muted)] ${compactClasses.gradeLabelSize}`}>
+                            Grade {g}
+                          </span>
+                          <span className={`shrink-0 text-[var(--text-muted)] text-[9px]`}>
+                            {pct}%
+                          </span>
                         </div>
-                        <div className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${compactClasses.gradeBarHeight}`}>
+                        <div
+                          className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${compactClasses.gradeBarHeight}`}
+                        >
                           <div
                             className={`h-full rounded-full ${style.bar} transition-all duration-700`}
                             style={{ width: `${pct}%` }}
                           />
                         </div>
                       </div>
-                      <span className={`w-14 text-right text-[var(--text-muted)] text-[9px]`}>
+                      <span
+                        className={`w-12 shrink-0 text-right text-[var(--text-muted)] text-[9px] sm:w-14`}
+                      >
                         {count} repo{count !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -479,7 +522,7 @@ export default function Profile() {
                   return (
                     <div
                       key={r._id ?? i}
-                      className={`group flex items-center gap-3 rounded-xl transition-colors duration-150 hover:bg-[var(--bg-primary)] ${compactClasses.recentRowPadding}`}
+                      className={`group flex items-center gap-2 rounded-xl transition-colors duration-150 hover:bg-[var(--bg-primary)] sm:gap-3 ${compactClasses.recentRowPadding}`}
                     >
                       <span
                         className={`flex shrink-0 items-center justify-center rounded-lg font-bold ${style.badge} ${compact ? "h-6 w-6 text-[9px]" : "h-7 w-7 text-[10px]"}`}
@@ -487,13 +530,23 @@ export default function Profile() {
                         {r.grade ?? "N/A"}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className={`truncate font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${compactClasses.recentRepoSize}`}>
+                        <p
+                          className={`truncate font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${compactClasses.recentRepoSize}`}
+                        >
                           {repoName}
                         </p>
-                        <p className={`mt-0.5 text-[var(--text-muted)] text-[9px]`}>Repository audit</p>
+                        <p className={`mt-0.5 text-[var(--text-muted)] text-[9px]`}>
+                          Repository audit
+                        </p>
                       </div>
-                      <span className={`hidden text-[var(--text-muted)] sm:block ${compactClasses.recentDateSize}`}>{date}</span>
-                      <span className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] ${compactClasses.recentScoreSize}`}>
+                      <span
+                        className={`hidden shrink-0 text-[var(--text-muted)] sm:block ${compactClasses.recentDateSize}`}
+                      >
+                        {date}
+                      </span>
+                      <span
+                        className={`shrink-0 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] ${compactClasses.recentScoreSize}`}
+                      >
                         {avg}%
                       </span>
                     </div>
@@ -505,16 +558,28 @@ export default function Profile() {
 
           {/* EMPTY STATE */}
           {totalScans === 0 && !loading && (
-            <div className={`relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center ${compactClasses.emptyStatePadding}`}>
+            <div
+              className={`relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center ${compactClasses.emptyStatePadding}`}
+            >
               <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="relative">
-                <div className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}>
-                  <span className={`text-[var(--accent)] ${compact ? "text-lg" : "text-xl"}`}>◈</span>
+                <div
+                  className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}
+                >
+                  <span className={`text-[var(--accent)] ${compact ? "text-lg" : "text-xl"}`}>
+                    ◈
+                  </span>
                 </div>
-                <p className={`font-semibold text-[var(--text-secondary)] ${compactClasses.emptyStateTitle}`}>No scans yet</p>
-                <p className={`mx-auto mt-1.5 max-w-sm leading-5 text-[var(--text-muted)] ${compactClasses.emptyStateDesc}`}>
-                  Analyze a GitHub repository to start building your CodeVerity profile and see your audit
-                  statistics here.
+                <p
+                  className={`font-semibold text-[var(--text-secondary)] ${compactClasses.emptyStateTitle}`}
+                >
+                  No scans yet
+                </p>
+                <p
+                  className={`mx-auto mt-1.5 max-w-sm leading-5 text-[var(--text-muted)] ${compactClasses.emptyStateDesc}`}
+                >
+                  Analyze a GitHub repository to start building your CodeVerity
+                  profile and see your audit statistics here.
                 </p>
                 <button
                   onClick={() => navigate("/dashboard")}
@@ -527,7 +592,9 @@ export default function Profile() {
           )}
 
           {/* FOOTER */}
-          <div className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}>
+          <div
+            className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
+          >
             <span>CodeVerity</span>
             <span>•</span>
             <span>AI Repository Intelligence</span>
@@ -544,7 +611,9 @@ export default function Profile() {
 
 function Pill({ icon, text, compact }) {
   return (
-    <span className={`flex items-center gap-1.5 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}>
+    <span
+      className={`flex items-center gap-1.5 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}
+    >
       <span className="text-[var(--accent)]">{icon}</span>
       {text}
     </span>
@@ -555,16 +624,36 @@ function Pill({ icon, text, compact }) {
    STAT CARD – matches Dashboard StatCard style
 ========================================================= */
 
-function StatCard({ icon, label, value, compact, padding, valueSize, iconSize }) {
+function StatCard({
+  icon,
+  label,
+  value,
+  compact,
+  padding,
+  valueSize,
+  iconSize,
+}) {
   return (
-    <div className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 ${padding}`}>
+    <div
+      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 ${padding}`}
+    >
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative">
-        <div className={`mb-3 flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${iconSize}`}>
+        <div
+          className={`mb-2 flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] sm:mb-3 ${iconSize}`}
+        >
           {icon}
         </div>
-        <p className={`font-bold tabular-nums text-[var(--text-primary)] ${valueSize}`}>{value}</p>
-        <p className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[9px]"}`}>{label}</p>
+        <p
+          className={`font-bold tabular-nums text-[var(--text-primary)] ${valueSize}`}
+        >
+          {value}
+        </p>
+        <p
+          className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[9px]"}`}
+        >
+          {label}
+        </p>
       </div>
     </div>
   );
@@ -623,7 +712,9 @@ function LoadingScreen() {
       <div className="flex flex-col items-center gap-4">
         <CodeVerityLogo />
         <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
-        <p className="font-mono text-[10px] text-[var(--text-muted)]">Loading CodeVerity profile…</p>
+        <p className="font-mono text-[10px] text-[var(--text-muted)]">
+          Loading CodeVerity profile…
+        </p>
       </div>
     </div>
   );

@@ -197,14 +197,14 @@ export default function Result({
 
   // ── Compact overrides ──
   const containerPadding = compact
-    ? "px-4 py-4 sm:px-5 lg:px-6"
-    : "px-4 py-6 sm:px-6 lg:px-8";
+    ? "px-3 py-4 sm:px-5 lg:px-6"
+    : "px-3 py-5 sm:px-6 lg:px-8";
   const headerMargin = compact ? "pb-3" : "pb-5";
-  const headingSize = compact ? "text-xl md:text-2xl" : "text-2xl md:text-3xl";
+  const headingSize = compact ? "text-lg sm:text-xl md:text-2xl" : "text-xl sm:text-2xl md:text-3xl";
   const gradeBoxPadding = compact ? "px-3 py-2" : "px-4 py-2.5";
-  const gradeTextSize = compact ? "text-xl" : "text-2xl";
+  const gradeTextSize = compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl";
   const scoreCardGap = compact ? "gap-2" : "gap-3";
-  const tabPadding = compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs";
+  const tabPadding = compact ? "px-2 py-2 text-[10px] sm:px-3" : "px-3 py-2.5 text-[10px] sm:px-4 sm:text-xs";
   const buttonPadding = compact ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]";
   const testFilePadding = compact ? "px-2 py-1.5" : "px-3 py-2";
   const testFileFont = compact ? "text-[10px]" : "text-[11px]";
@@ -249,10 +249,10 @@ export default function Result({
         <div
           className={`flex flex-col gap-4 border-b border-[var(--border-dark)] ${headerMargin} md:flex-row md:items-center md:justify-between`}
         >
-          <div>
+          <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2">
               <div
-                className={`flex items-center justify-center rounded-lg bg-[var(--accent)] text-sm shadow-lg shadow-[var(--accent-soft-strong)] ${compact ? "h-6 w-6" : "h-8 w-8"}`}
+                className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-sm shadow-lg shadow-[var(--accent-soft-strong)] ${compact ? "h-6 w-6" : "h-8 w-8"}`}
               >
                 <span className="text-[var(--accent-contrast)]">⌘</span>
               </div>
@@ -274,7 +274,7 @@ export default function Result({
             </p>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div
               className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_10px_25px_-18px_var(--accent-soft-strong)] ${gradeBoxPadding}`}
             >
@@ -332,8 +332,8 @@ export default function Result({
         </div>
 
         {/* TAB BAR */}
-        <div className="flex items-center border-b border-[var(--border-dark)]">
-          <div className="flex items-center gap-1">
+        <div className="flex flex-col gap-2 border-b border-[var(--border-dark)] sm:flex-row sm:items-center sm:gap-0">
+          <div className="flex items-center gap-0.5 overflow-x-auto sm:gap-1">
             {[
               { id: "audit", label: "Audit Report" },
               { id: "full", label: "Full Report" },
@@ -342,7 +342,7 @@ export default function Result({
               <button
                 key={tab.id}
                 onClick={() => handleTabClick(tab.id)}
-                className={`relative flex items-center gap-2 font-medium transition-colors duration-150 ${tabPadding} ${activeTab === tab.id ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}
+                className={`relative flex items-center gap-1.5 whitespace-nowrap font-medium transition-colors duration-150 ${tabPadding} ${activeTab === tab.id ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}
               >
                 <span
                   className={
@@ -363,7 +363,7 @@ export default function Result({
           {!testData && !testLoading && activeTab === "audit" && (
             <button
               onClick={() => handleTabClick("tests")}
-              className={`ml-auto mb-1 flex items-center gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] font-semibold text-[var(--accent)] transition-all duration-150 hover:bg-[var(--accent-soft-strong)] active:scale-[0.97] ${buttonPadding}`}
+              className={`flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] font-semibold text-[var(--accent)] transition-all duration-150 hover:bg-[var(--accent-soft-strong)] active:scale-[0.97] ${buttonPadding} sm:ml-auto sm:mb-1`}
             >
               <span>+</span>
               {compact ? "Tests" : "Generate Tests"}
@@ -431,11 +431,11 @@ export default function Result({
                       className={`flex items-center gap-3 ${compact ? "mb-3" : "mb-5"}`}
                     >
                       <div
-                        className={`flex items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-8 w-8" : "h-10 w-10"}`}
+                        className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-8 w-8" : "h-10 w-10"}`}
                       >
                         ✓
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p
                           className={`uppercase tracking-wider text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
                         >
@@ -468,7 +468,7 @@ export default function Result({
                     >
                       <div className="mb-1 flex items-center gap-2">
                         <span
-                          className={`flex items-center justify-center rounded bg-[var(--accent-soft)] text-[10px] text-[var(--accent)] ${compact ? "h-4 w-4 text-[9px]" : "h-5 w-5"}`}
+                          className={`flex shrink-0 items-center justify-center rounded bg-[var(--accent-soft)] text-[10px] text-[var(--accent)] ${compact ? "h-4 w-4 text-[9px]" : "h-5 w-5"}`}
                         >
                           {i + 1}
                         </span>
@@ -498,7 +498,7 @@ export default function Result({
                     const issueId = b._id || b.id || i;
                     return (
                       <AlertCard key={i} type="error" compact={compact}>
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-2 sm:gap-3">
                           <div
                             className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}
                           >
@@ -558,7 +558,7 @@ export default function Result({
                     const issueId = s._id || s.id || i;
                     return (
                       <AlertCard key={i} type="warning" compact={compact}>
-                        <div className="flex items-start gap-3">
+                        <div className="flex items-start gap-2 sm:gap-3">
                           <div
                             className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--color-warning-soft)] text-[var(--color-warning)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}
                           >
@@ -615,7 +615,7 @@ export default function Result({
                   {futureRoadmap.map((f, i) => (
                     <div
                       key={i}
-                      className={`flex gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] ${compact ? "p-2" : "p-3"}`}
+                      className={`flex gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] sm:gap-3 ${compact ? "p-2" : "p-3"}`}
                     >
                       <div
                         className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[10px]"}`}
@@ -664,7 +664,7 @@ export default function Result({
           <div className="space-y-4">
             {(tokensUsed > 0 || tokensRemaining > 0) && (
               <div
-                className={`flex flex-wrap items-center gap-4 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 ${compact ? "p-3" : ""}`}
+                className={`flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:gap-4 ${compact ? "p-3" : ""}`}
               >
                 <div className="flex items-center gap-2">
                   <span className="text-[var(--accent)]">⚡</span>
@@ -747,7 +747,7 @@ export default function Result({
                     Grade: {healthScore.grade}
                   </div>
                 </div>
-                <div className="flex-1">
+                <div className="w-full flex-1">
                   <div
                     className={`grid grid-cols-2 gap-2 ${compact ? "gap-1.5" : ""}`}
                   >
@@ -786,26 +786,26 @@ export default function Result({
             {/* ─── NEW: Complexity ─────────────────────────────── */}
             {complexity.functions && complexity.functions.length > 0 && (
               <GlassCard title="Cyclomatic Complexity" icon="◈" compact={compact}>
-                <div className="grid grid-cols-3 gap-3 mb-4">
-                  <div className="text-center p-2 border border-[var(--border-light)] rounded">
-                    <p className="text-xs text-[var(--text-muted)]">
+                <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
+                  <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
                       Max Complexity
                     </p>
-                    <p className="text-xl font-bold text-[var(--accent)]">
+                    <p className="text-lg font-bold text-[var(--accent)] sm:text-xl">
                       {complexity.maxComplexity}
                     </p>
                   </div>
-                  <div className="text-center p-2 border border-[var(--border-light)] rounded">
-                    <p className="text-xs text-[var(--text-muted)]">Average</p>
-                    <p className="text-xl font-bold text-[var(--accent)]">
+                  <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">Average</p>
+                    <p className="text-lg font-bold text-[var(--accent)] sm:text-xl">
                       {complexity.averageComplexity}
                     </p>
                   </div>
-                  <div className="text-center p-2 border border-[var(--border-light)] rounded">
-                    <p className="text-xs text-[var(--text-muted)]">
+                  <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
                       Maintainability
                     </p>
-                    <p className="text-xl font-bold text-[var(--accent)]">
+                    <p className="text-lg font-bold text-[var(--accent)] sm:text-xl">
                       {complexity.maintainability}%
                     </p>
                   </div>
@@ -814,18 +814,18 @@ export default function Result({
                   {complexity.functions.slice(0, 10).map((fn, i) => (
                     <div
                       key={i}
-                      className="flex justify-between border-b border-[var(--border-dark)] py-1"
+                      className="flex justify-between gap-2 border-b border-[var(--border-dark)] py-1"
                     >
-                      <span className="font-mono truncate max-w-[70%]">
+                      <span className="max-w-[70%] truncate font-mono">
                         {fn.functionName}
                       </span>
-                      <span className="text-[var(--text-muted)]">
+                      <span className="shrink-0 text-[var(--text-muted)]">
                         complexity {fn.complexity}
                       </span>
                     </div>
                   ))}
                   {complexity.functions.length > 10 && (
-                    <p className="text-[10px] text-[var(--text-muted)] pt-1">
+                    <p className="pt-1 text-[10px] text-[var(--text-muted)]">
                       + {complexity.functions.length - 10} more functions
                     </p>
                   )}
@@ -840,10 +840,10 @@ export default function Result({
                   {cveList.map((cve, i) => (
                     <div
                       key={i}
-                      className={`flex flex-wrap items-center justify-between p-2 border border-[var(--border-light)] rounded ${severityColor(cve.severity)}`}
+                      className={`flex flex-col gap-2 rounded border border-[var(--border-light)] p-2 sm:flex-row sm:items-center sm:justify-between ${severityColor(cve.severity)}`}
                     >
                       <div className="min-w-0 flex-1">
-                        <p className="font-mono text-sm">
+                        <p className="break-words font-mono text-xs sm:text-sm">
                           {cve.package}@{cve.version}
                         </p>
                         <p className="text-xs text-[var(--text-secondary)]">
@@ -855,7 +855,7 @@ export default function Result({
                           </p>
                         )}
                       </div>
-                      <div className="text-right">
+                      <div className="text-left sm:text-right">
                         <p className="text-xs text-[var(--text-muted)]">
                           Fix: <span className="font-mono">{cve.fixedIn}</span>
                         </p>
@@ -869,8 +869,8 @@ export default function Result({
             {/* ─── NEW: README Quality ──────────────────────────── */}
             {readmeScore && readmeScore.score > 0 && (
               <GlassCard title="README Quality" icon="◈" compact={compact}>
-                <div className="flex items-center gap-4">
-                  <div className="relative w-20 h-20">
+                <div className="flex flex-col items-center gap-4 sm:flex-row">
+                  <div className="relative h-20 w-20 shrink-0">
                     <svg viewBox="0 0 100 100">
                       <circle
                         cx="50"
@@ -903,7 +903,7 @@ export default function Result({
                       </text>
                     </svg>
                   </div>
-                  <div>
+                  <div className="min-w-0 text-center sm:text-left">
                     <p className="text-sm text-[var(--text-secondary)]">
                       {readmeScore.score >= 80
                         ? "✅ Well documented"
@@ -932,19 +932,19 @@ export default function Result({
                 compact={compact}
               >
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[560px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-[var(--border-dark)]">
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Severity
                         </th>
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Title
                         </th>
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           File
                         </th>
-                        <th className="pb-2 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Line
                         </th>
                       </tr>
@@ -986,22 +986,22 @@ export default function Result({
                 compact={compact}
               >
                 <div className="overflow-x-auto">
-                  <table className="w-full text-left text-xs">
+                  <table className="w-full min-w-[640px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-[var(--border-dark)]">
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Package
                         </th>
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Version
                         </th>
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           CVE
                         </th>
-                        <th className="pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Severity
                         </th>
-                        <th className="pb-2 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                        <th className="whitespace-nowrap pb-2 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                           Fixed In
                         </th>
                       </tr>
@@ -1075,7 +1075,7 @@ export default function Result({
                         <span className="rounded bg-[var(--color-danger-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-danger)]">
                           {s.pattern}
                         </span>
-                        <span className="font-mono text-xs text-[var(--text-secondary)]">
+                        <span className="break-all font-mono text-xs text-[var(--text-secondary)]">
                           {s.file}
                         </span>
                         <span className="text-xs text-[var(--text-muted)]">
@@ -1093,7 +1093,7 @@ export default function Result({
 
             <GlassCard title="Technical Debt" icon="◇" compact={compact}>
               <div className="space-y-3">
-                <div className="flex items-center gap-4">
+                <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-2">
                     <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                       Estimated Hours
@@ -1114,17 +1114,17 @@ export default function Result({
                     {techDebt.issues.map((issue, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs"
+                        className="flex items-center gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs sm:gap-3"
                       >
                         <span
-                          className={`rounded px-1.5 py-0.5 text-[9px] font-medium ${issue.severity === "critical" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]" : issue.severity === "major" ? "bg-[var(--color-caution-soft)] text-[var(--color-caution)]" : "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"}`}
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium ${issue.severity === "critical" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]" : issue.severity === "major" ? "bg-[var(--color-caution-soft)] text-[var(--color-caution)]" : "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"}`}
                         >
                           {issue.severity}
                         </span>
-                        <span className="flex-1 truncate text-[var(--text-secondary)]">
+                        <span className="min-w-0 flex-1 truncate text-[var(--text-secondary)]">
                           {issue.description}
                         </span>
-                        <span className="font-mono text-[var(--text-muted)]">
+                        <span className="shrink-0 font-mono text-[var(--text-muted)]">
                           {issue.effort}h
                         </span>
                       </div>
@@ -1147,7 +1147,8 @@ export default function Result({
                       {(() => {
                         const nodes = architectureGraph.nodes || [];
                         const edges = architectureGraph.edges || [];
-                        const centerX = 400, centerY = 200;
+                        const centerX = 400,
+                          centerY = 200;
                         const radius = 150;
                         const n = nodes.length;
                         if (n === 0) return null;
@@ -1297,7 +1298,7 @@ export default function Result({
                     {testData.coverageSummary?.estimatedCoverage ?? 0}%
                   </Badge>
                   <span
-                    className={`ml-auto text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                    className={`w-full text-[var(--text-muted)] sm:ml-auto sm:w-auto ${compact ? "text-[9px]" : "text-[10px]"}`}
                   >
                     {testData.setupInstructions}
                   </span>
@@ -1310,7 +1311,7 @@ export default function Result({
                     compact={compact}
                   >
                     <div className="space-y-4">
-                      <div className="flex items-center justify-between">
+                      <div className="flex items-center justify-between gap-3">
                         <span
                           className={`text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
                         >
@@ -1368,7 +1369,7 @@ export default function Result({
                           className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)]"
                         >
                           <div
-                            className={`flex items-center justify-between border-b border-[var(--border-dark)] bg-[var(--bg-card)] ${testFilePadding}`}
+                            className={`flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-dark)] bg-[var(--bg-card)] ${testFilePadding}`}
                           >
                             <span
                               className={`max-w-[60%] truncate font-mono text-[var(--accent)] ${testFileFont}`}
@@ -1412,7 +1413,7 @@ export default function Result({
                               {fn.functionName}()
                             </span>
                             <span
-                              className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                              className={`break-all text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
                             >
                               {fn.filePath}
                             </span>
@@ -1514,10 +1515,10 @@ export default function Result({
                     >
                       {testData.mocks.map((m, i) => (
                         <AlertCard key={i} type="warning" compact={compact}>
-                          <div className="flex items-start justify-between gap-3">
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                             <div className="min-w-0 flex-1">
                               <p
-                                className={`font-mono font-semibold text-[var(--color-warning)] ${compact ? "text-[10px]" : "text-xs"}`}
+                                className={`break-all font-mono font-semibold text-[var(--color-warning)] ${compact ? "text-[10px]" : "text-xs"}`}
                               >
                                 {m.target}
                               </p>
@@ -1534,7 +1535,7 @@ export default function Result({
                             </div>
                             <button
                               onClick={() => copy(m.snippet, `mock-${i}`)}
-                              className={`shrink-0 rounded-md border border-[var(--border-light)] bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all duration-150 hover:text-[var(--text-primary)] active:scale-[0.95] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
+                              className={`shrink-0 self-start rounded-md border border-[var(--border-light)] bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all duration-150 hover:text-[var(--text-primary)] active:scale-[0.95] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
                             >
                               {copiedId === `mock-${i}` ? "✓" : "Copy"}
                             </button>
@@ -1562,7 +1563,7 @@ export default function Result({
         {/* ─── Quick Fix Editor ─────────────────────────── */}
         {data && data.repoUrl && reportId && (
           <div className="mt-6">
-            <h3 className="text-sm font-semibold text-[var(--text-primary)] mb-3">
+            <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
               Quick Fix Editor
             </h3>
             <RepoEditor repoUrl={data.repoUrl} reportId={reportId} />
@@ -1584,7 +1585,7 @@ function GlassCard({ title, children, icon, compact }) {
         className={`flex items-center gap-2 border-b border-[var(--border-dark)] ${compact ? "px-3 py-2" : "px-4 py-3"}`}
       >
         <span
-          className={`flex items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-[11px]"}`}
+          className={`flex shrink-0 items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-[11px]"}`}
         >
           {icon}
         </span>
@@ -1634,7 +1635,7 @@ function ScoreCard({ label, value, icon, compact }) {
       <div
         className={`flex items-end justify-between ${compact ? "mt-2" : "mt-3"}`}
       >
-        <div>
+        <div className="min-w-0">
           <p
             className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
           >
@@ -1647,7 +1648,7 @@ function ScoreCard({ label, value, icon, compact }) {
           </p>
         </div>
         <span
-          className={`mb-1 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+          className={`mb-1 shrink-0 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
         >
           /100
         </span>
@@ -1705,10 +1706,10 @@ function TestCaseRow({
       <div
         className={`flex flex-col gap-1 text-[var(--text-muted)] sm:flex-row sm:gap-5 ${compact ? "text-[9px]" : "text-[10px]"}`}
       >
-        <span>
+        <span className="break-all">
           Input: <span className="text-[var(--text-secondary)]">{c.input}</span>
         </span>
-        <span>
+        <span className="break-all">
           Expected:{" "}
           <span className="text-[var(--text-secondary)]">{c.expected}</span>
         </span>
@@ -1766,7 +1767,7 @@ function EmptyState({ text, compact }) {
       className={`flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "px-2 py-2" : "px-3 py-4"}`}
     >
       <span
-        className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-xs"}`}
+        className={`shrink-0 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-xs"}`}
       >
         ○
       </span>

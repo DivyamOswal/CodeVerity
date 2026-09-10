@@ -1,7 +1,7 @@
 // frontend/src/components/CodeEditor/RepoEditor.jsx
 import { useState, useEffect } from 'react';
 import Editor from '@monaco-editor/react';
-import { FolderTree, FileCode, X, Sparkles, Loader2 } from 'lucide-react';
+import { FolderTree, FileCode, X, Sparkles, Loader2, Menu } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/useToast';
 
@@ -16,6 +16,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [fixLoading, setFixLoading] = useState({});
   const [fixedLines, setFixedLines] = useState({});
   const [repoContentLoading, setRepoContentLoading] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   // ── Fetch repo structure ──
   const loadRepo = async () => {
@@ -64,6 +65,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
   // ── Open a file ──
   const openFile = async (file) => {
     setCurrentFile(file);
+    setSidebarOpen(false); // close sidebar on mobile after selecting a file
     try {
       const res = await fetch(`/api/github/repo/file?repoUrl=${encodeURIComponent(repoUrl)}&filePath=${encodeURIComponent(file.path)}`, {
         headers: { Authorization: `Bearer ${token}` },
@@ -125,8 +127,8 @@ export default function RepoEditor({ repoUrl, reportId }) {
         {item.type === 'dir' ? (
           <details>
             <summary className="flex items-center gap-2 py-1 cursor-pointer hover:bg-[var(--bg-hover)] rounded px-2 text-sm text-[var(--text-secondary)]">
-              <FolderTree size={14} />
-              {item.name}
+              <FolderTree size={14} className="shrink-0" />
+              <span className="truncate">{item.name}</span>
             </summary>
             <div>{item.children && renderFileTree(item.children, level + 1)}</div>
           </details>
@@ -137,10 +139,10 @@ export default function RepoEditor({ repoUrl, reportId }) {
             }`}
             onClick={() => openFile(item)}
           >
-            <FileCode size={14} />
-            {item.name}
+            <FileCode size={14} className="shrink-0" />
+            <span className="truncate">{item.name}</span>
             {errors[item.path]?.length > 0 && (
-              <span className="ml-auto text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] px-1.5 py-0.5 rounded">
+              <span className="ml-auto shrink-0 text-xs text-[var(--color-danger)] bg-[var(--color-danger-soft)] px-1.5 py-0.5 rounded">
                 {errors[item.path].length}
               </span>
             )}
@@ -160,12 +162,35 @@ export default function RepoEditor({ repoUrl, reportId }) {
   }
 
   return (
-    <div className="flex h-[600px] border border-[var(--border-light)] rounded-xl overflow-hidden bg-[var(--bg-primary)]">
+    <div className="relative flex h-[70vh] min-h-[420px] border border-[var(--border-light)] rounded-xl overflow-hidden bg-[var(--bg-primary)] sm:h-[600px]">
+      {/* ─── Mobile: overlay backdrop when sidebar is open ─── */}
+      {sidebarOpen && (
+        <div
+          className="absolute inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
       {/* ─── File Tree ───────────────────────────── */}
-      <div className="w-64 border-r border-[var(--border-light)] bg-[var(--bg-card)] overflow-y-auto p-2">
+      <div
+        className={`absolute inset-y-0 left-0 z-40 w-64 max-w-[80%] border-r border-[var(--border-light)] bg-[var(--bg-card)] overflow-y-auto p-2 transition-transform duration-200 md:relative md:z-0 md:translate-x-0 ${
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
+        }`}
+      >
         <div className="flex items-center justify-between mb-3 px-2">
-          <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">Files</span>
-          {loading && <span className="text-xs text-[var(--text-muted)]">Loading...</span>}
+          <span className="text-xs font-medium text-[var(--text-muted)] uppercase tracking-wider">
+            Files
+          </span>
+          <div className="flex items-center gap-2">
+            {loading && <span className="text-xs text-[var(--text-muted)]">Loading...</span>}
+            <button
+              onClick={() => setSidebarOpen(false)}
+              className="rounded-md p-1 hover:bg-[var(--bg-hover)] md:hidden"
+              aria-label="Close file tree"
+            >
+              <X size={14} />
+            </button>
+          </div>
         </div>
         {files.length > 0 ? (
           renderFileTree(files)
@@ -175,15 +200,24 @@ export default function RepoEditor({ repoUrl, reportId }) {
       </div>
 
       {/* ─── Editor ─────────────────────────────── */}
-      <div className="flex-1 flex flex-col">
+      <div className="flex min-w-0 flex-1 flex-col">
         {/* File header */}
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[var(--border-light)] bg-[var(--bg-card)]">
-          <span className="text-sm text-[var(--text-secondary)]">
-            {currentFile ? currentFile.path : 'Select a file'}
-          </span>
+        <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-light)] bg-[var(--bg-card)] sm:px-4">
+          <div className="flex min-w-0 items-center gap-2">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="shrink-0 rounded-md p-1 hover:bg-[var(--bg-hover)] md:hidden"
+              aria-label="Open file tree"
+            >
+              <Menu size={16} />
+            </button>
+            <span className="truncate text-xs text-[var(--text-secondary)] sm:text-sm">
+              {currentFile ? currentFile.path : 'Select a file'}
+            </span>
+          </div>
           {currentFile && (
-            <div className="flex items-center gap-2">
-              <span className="text-xs text-[var(--text-muted)]">
+            <div className="flex shrink-0 items-center gap-2">
+              <span className="hidden text-xs text-[var(--text-muted)] sm:inline">
                 {errors[currentFile.path]?.length || 0} issues
               </span>
               <button
@@ -197,19 +231,22 @@ export default function RepoEditor({ repoUrl, reportId }) {
         </div>
 
         {/* Monaco Editor */}
-        <div className="flex-1">
+        <div className="min-h-0 flex-1">
           <Editor
             height="100%"
             language="javascript"
             value={content}
             onChange={setContent}
             options={{
-              minimap: { enabled: true },
-              fontSize: 13,
+              minimap: { enabled: false },
+              fontSize: 12,
               theme: 'vs-dark',
               padding: { top: 10 },
               glyphMargin: true,
               automaticLayout: true,
+              scrollBeyondLastLine: false,
+              lineNumbersMinChars: 3,
+              wordWrap: 'on',
             }}
             onMount={(editor) => {
               // Add error decorations
@@ -236,30 +273,34 @@ export default function RepoEditor({ repoUrl, reportId }) {
 
         {/* Error list & Fix buttons */}
         {currentFile && errors[currentFile.path]?.length > 0 && (
-          <div className="border-t border-[var(--border-light)] bg-[var(--bg-card)] max-h-40 overflow-y-auto p-2">
-            <div className="text-xs font-medium text-[var(--text-muted)] mb-2">Issues in this file</div>
+          <div className="max-h-40 overflow-y-auto border-t border-[var(--border-light)] bg-[var(--bg-card)] p-2">
+            <div className="mb-2 text-xs font-medium text-[var(--text-muted)]">
+              Issues in this file
+            </div>
             {errors[currentFile.path].map((err, idx) => {
               const issueId = err._id || err.id || idx;
               return (
                 <div
                   key={idx}
-                  className="flex items-start gap-2 py-1.5 px-2 rounded hover:bg-[var(--bg-hover)] border-b border-[var(--border-dark)] last:border-0"
+                  className="flex flex-col gap-2 border-b border-[var(--border-dark)] py-2 px-1 last:border-0 sm:flex-row sm:items-start sm:gap-2 sm:px-2"
                 >
-                  <span className="text-[var(--color-danger)] text-xs">⚠</span>
-                  <div className="flex-1">
-                    <span className="text-xs text-[var(--text-secondary)]">
-                      Line {err.line || '?'}: {err.message || err.issue || err.title}
-                    </span>
-                    {err.suggestion && (
-                      <span className="block text-xs text-[var(--text-muted)] mt-0.5">
-                        💡 {err.suggestion}
+                  <div className="flex min-w-0 flex-1 items-start gap-2">
+                    <span className="shrink-0 text-[var(--color-danger)] text-xs">⚠</span>
+                    <div className="min-w-0 flex-1">
+                      <span className="block text-xs text-[var(--text-secondary)]">
+                        Line {err.line || '?'}: {err.message || err.issue || err.title}
                       </span>
-                    )}
+                      {err.suggestion && (
+                        <span className="mt-0.5 block text-xs text-[var(--text-muted)]">
+                          💡 {err.suggestion}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <button
                     onClick={() => handleFix(err, err.line)}
                     disabled={fixLoading[issueId] || fixedLines[err.line]}
-                    className={`flex items-center gap-1 px-2 py-0.5 rounded text-xs font-medium transition ${
+                    className={`flex shrink-0 items-center justify-center gap-1 self-start rounded px-2 py-1 text-xs font-medium transition sm:self-auto ${
                       fixedLines[err.line]
                         ? 'bg-green-500/20 text-green-400'
                         : 'bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]'
