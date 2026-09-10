@@ -4,6 +4,7 @@ import { cloneAndParseGithubRepo, parseGithubRepo, estimateTokens } from "../uti
 import Report from "../models/Report.js";
 import User from "../models/User.js";
 import { Octokit } from "@octokit/rest";
+import path from "path";
 import {
   scanDependencies,
   scanSecrets,
@@ -35,6 +36,22 @@ function statusForError(err) {
   return 500;
 }
 
+// ─── Sanitize file paths to prevent path traversal ───────────
+function sanitizeFilePath(filePath) {
+  if (!filePath || typeof filePath !== "string") {
+    throw new Error("File path is required and must be a string.");
+  }
+  if (path.isAbsolute(filePath)) {
+    throw new Error("Absolute paths are not allowed.");
+  }
+  const normalized = path.normalize(filePath);
+  if (normalized.includes("..")) {
+    throw new Error("Path traversal is not allowed.");
+  }
+  return normalized;
+}
+
+// ─── Analyze GitHub repo ─────────────────────────────────────
 export const analyzeGithubRepo = async (req, res) => {
   const { repoUrl } = req.body;
   const userId = req.user.id;
@@ -55,7 +72,6 @@ export const analyzeGithubRepo = async (req, res) => {
       return res.status(401).json({ error: "User not found" });
     }
 
-    // 2. Clone and parse the repo
     const parsed = await cloneAndParseGithubRepo(repoUrl.trim());
     code = parsed.code;
     repoPath = parsed.repoPath;
@@ -64,7 +80,6 @@ export const analyzeGithubRepo = async (req, res) => {
       throw new Error("No source code extracted from repository.");
     }
 
-    // 3. Run AI analysis
     const aiResponse = await analyzeWithGroq(code);
     const ai = aiResponse.result;
     const usage = aiResponse.usage || { total_tokens: 0 };
@@ -89,7 +104,6 @@ export const analyzeGithubRepo = async (req, res) => {
       finalVerdict: ai.finalVerdict ?? "",
     };
 
-    // 4. Run local scanners (existing)
     let depVulns = [],
         secrets = [],
         secVulns = [],
@@ -137,7 +151,6 @@ export const analyzeGithubRepo = async (req, res) => {
       techDebt
     );
 
-    // ─── NEW: Run enhanced scanners ──────────────────────────
     let complexity = { maxComplexity: 0, averageComplexity: 0, maintainability: 0, functions: [] };
     let cveList = [];
     let readmeScore = { score: 0, details: {} };
@@ -163,7 +176,6 @@ export const analyzeGithubRepo = async (req, res) => {
       }
     }
 
-    // 6. Build final analysis object (merged with new fields)
     const analysis = {
       ...aiAnalysis,
       healthScore,
@@ -175,13 +187,11 @@ export const analyzeGithubRepo = async (req, res) => {
       _sourceCode: code,
       tokensUsed,
       tokensRemaining: user.tokensRemaining,
-      // ─── NEW FIELDS ──────────────────────────────────────────
       complexity,
       cveList,
       readmeScore,
     };
 
-    // 7. Save report with workspaceId
     const report = await Report.create({
       userId: req.user.id,
       workspaceId: user.workspaceId,
@@ -207,7 +217,7 @@ export const analyzeGithubRepo = async (req, res) => {
   }
 };
 
-// POST /api/github/generate-tests
+// ─── Generate tests ─────────────────────────────────────────
 export const generateTestCases = async (req, res) => {
   try {
     const { code } = req.body;
@@ -226,7 +236,7 @@ export const generateTestCases = async (req, res) => {
   }
 };
 
-// POST /api/github/auto-fix (unchanged, but now uses addAuditLog)
+// ─── Auto-Fix (creates PR) ──────────────────────────────────
 export const autoFixIssue = async (req, res) => {
   try {
     const { repoUrl, issueId, filePath, lineNumber, description, currentCode, suggestedFix } = req.body;
@@ -235,10 +245,13 @@ export const autoFixIssue = async (req, res) => {
       return res.status(400).json({ error: "repoUrl and filePath are required." });
     }
 
+    // ✅ Sanitize file path
+    const safePath = sanitizeFilePath(filePath);
+
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
 
-    const githubToken = user.githubAccessToken;
+    const githubToken = user.getGithubToken();
     if (!githubToken) {
       return res.status(403).json({
         error: "Please connect your GitHub account to use Auto‑Fix.",
@@ -268,7 +281,7 @@ export const autoFixIssue = async (req, res) => {
       const { data } = await octokit.repos.getContent({
         owner,
         repo,
-        path: filePath,
+        path: safePath,   // ✅ use safePath
       });
       fileContent = Buffer.from(data.content, "base64").toString("utf-8");
       sha = data.sha;
@@ -319,7 +332,7 @@ export const autoFixIssue = async (req, res) => {
     await octokit.repos.createOrUpdateFileContents({
       owner,
       repo,
-      path: filePath,
+      path: safePath,   // ✅ use safePath
       message: `Fix: ${description || "Auto-fix issue"}`,
       content: Buffer.from(fixedCode).toString("base64"),
       sha,
@@ -330,7 +343,7 @@ export const autoFixIssue = async (req, res) => {
       owner,
       repo,
       title: `Fix: ${description || "Auto-fix issue"}`,
-      body: `This PR automatically fixes the issue identified by CodeVerity.\n\n**Issue:** ${description}\n**File:** ${filePath}\n**Line:** ${lineNumber || "N/A"}`,
+      body: `This PR automatically fixes the issue identified by CodeVerity.\n\n**Issue:** ${description}\n**File:** ${safePath}\n**Line:** ${lineNumber || "N/A"}`,
       head: branchName,
       base: defaultBranch,
     });
@@ -354,23 +367,26 @@ export const autoFixIssue = async (req, res) => {
 
   } catch (err) {
     console.error("Auto‑fix error:", err);
-    res.status(500).json({ error: "Failed to create auto‑fix PR. Please try again later." });
+    const status = err.message.includes("not allowed") || err.message.includes("required") ? 400 : 500;
+    res.status(status).json({ error: err.message || "Failed to create auto‑fix PR." });
   }
 };
 
 // ─── Get repo file tree ──────────────────────────────────────
 export const getRepoContents = async (req, res) => {
   try {
-    const { repoUrl, path = '' } = req.query;
+    const { repoUrl, path: rawPath = '' } = req.query;
+    // ✅ Sanitize path (allow empty for root)
+    const safePath = rawPath ? sanitizeFilePath(rawPath) : '';
+
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
 
-    const githubToken = user.githubAccessToken;
+    const githubToken = user.getGithubToken();
     if (!githubToken) {
       return res.status(403).json({ error: "GitHub token required. Please connect your account." });
     }
 
-    // Parse owner/repo from URL
     const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
     if (!match) throw new Error('Invalid GitHub URL');
     const [owner, repo] = match[1].split('/');
@@ -379,7 +395,7 @@ export const getRepoContents = async (req, res) => {
     const { data } = await octokit.repos.getContent({
       owner,
       repo,
-      path: path || '',
+      path: safePath,
     });
 
     const files = data.map(item => ({
@@ -394,7 +410,8 @@ export const getRepoContents = async (req, res) => {
     res.json({ success: true, files });
   } catch (err) {
     console.error('Get repo contents error:', err);
-    res.status(500).json({ error: err.message });
+    const status = err.message.includes("not allowed") || err.message.includes("required") ? 400 : 500;
+    res.status(status).json({ error: err.message });
   }
 };
 
@@ -402,10 +419,13 @@ export const getRepoContents = async (req, res) => {
 export const getFileContent = async (req, res) => {
   try {
     const { repoUrl, filePath } = req.query;
+    // ✅ Sanitize file path
+    const safePath = sanitizeFilePath(filePath);
+
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
 
-    const githubToken = user.githubAccessToken;
+    const githubToken = user.getGithubToken();
     if (!githubToken) {
       return res.status(403).json({ error: "GitHub token required." });
     }
@@ -418,66 +438,14 @@ export const getFileContent = async (req, res) => {
     const { data } = await octokit.repos.getContent({
       owner,
       repo,
-      path: filePath,
+      path: safePath,   // ✅ use safePath
     });
 
     const content = Buffer.from(data.content, 'base64').toString('utf-8');
     res.json({ success: true, content, sha: data.sha });
   } catch (err) {
     console.error('Get file content error:', err);
-    res.status(500).json({ error: err.message });
-  }
-};
-
-// ─── AI Fix ──────────────────────────────────────────────────
-export const applyAIFix = async (req, res) => {
-  try {
-    const { repoUrl, filePath, code, error, line } = req.body;
-    const token = req.headers.authorization?.split(' ')[1];
-
-    // 1. Use AI to generate a fix
-    const fixPrompt = `
-      The following code has an error:
-      
-      File: ${filePath}
-      Error: ${error} at line ~${line}
-      
-      Code:
-      ${code}
-      
-      Please provide the fixed code only (no explanation).
-    `;
-
-    const aiResponse = await analyzeCode(fixPrompt);
-    const fixedCode = aiResponse.fixedCode || aiResponse.response || code;
-
-    // 2. Get the current file SHA
-    const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
-    const repoPath = match[1];
-
-    const url = `https://api.github.com/repos/${repoPath}/contents/${filePath}`;
-    const fileInfo = await axios.get(url, {
-      headers: { Authorization: `token ${token}` },
-    });
-
-    // 3. Commit the fix to GitHub
-    const commitRes = await axios.put(url, {
-      message: `AI fix: ${error.substring(0, 50)}`,
-      content: Buffer.from(fixedCode).toString('base64'),
-      sha: fileInfo.data.sha,
-      branch: 'main',
-    }, {
-      headers: { Authorization: `token ${token}` },
-    });
-
-    res.json({
-      success: true,
-      fixedCode,
-      commit: commitRes.data,
-      message: 'Fix applied successfully',
-    });
-  } catch (err) {
-    console.error('Apply AI fix error:', err);
-    res.status(500).json({ error: err.message });
+    const status = err.message.includes("not allowed") || err.message.includes("required") ? 400 : 500;
+    res.status(status).json({ error: err.message });
   }
 };
