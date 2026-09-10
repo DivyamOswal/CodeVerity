@@ -5,6 +5,9 @@ import { FolderTree, FileCode, X, Sparkles, Loader2, Menu } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/useToast';
 
+// ✅ Absolute backend URL – required because fetch() ignores axios baseURL
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+
 export default function RepoEditor({ repoUrl, reportId }) {
   const { token } = useAuth();
   const { success, error } = useToast();
@@ -23,32 +26,47 @@ export default function RepoEditor({ repoUrl, reportId }) {
     if (!repoUrl) return;
     setRepoContentLoading(true);
     try {
-      const res = await fetch(`/api/github/repo/contents?repoUrl=${encodeURIComponent(repoUrl)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // ✅ Absolute URL
+      const res = await fetch(
+        `${API_URL}/github/repo/contents?repoUrl=${encodeURIComponent(repoUrl)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       if (data.success) {
         setFiles(data.files || []);
         // Also fetch report to map errors
         if (reportId) {
-          const reportRes = await fetch(`/api/report/${reportId}`, {
+          // ✅ Absolute URL
+          const reportRes = await fetch(`${API_URL}/report/${reportId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const reportData = await reportRes.json();
-          const report = reportData.data?.report || {};
+          const report = reportData.data?.report || reportData.report || {};
           // Build error map by file path
           const errorMap = {};
           const allErrors = [
-            ...(report.bugs || []).map(b => ({ ...b, file: b.file || 'unknown', line: b.line || 1 })),
-            ...(report.securityIssues || []).map(s => ({ ...s, file: s.file || 'unknown', line: s.line || 1 })),
+            ...(report.bugs || []).map((b) => ({
+              ...b,
+              file: b.file || 'unknown',
+              line: b.line || 1,
+            })),
+            ...(report.securityIssues || []).map((s) => ({
+              ...s,
+              file: s.file || 'unknown',
+              line: s.line || 1,
+            })),
           ];
-          allErrors.forEach(err => {
+          allErrors.forEach((err) => {
             const filePath = err.file || 'unknown';
             if (!errorMap[filePath]) errorMap[filePath] = [];
             errorMap[filePath].push(err);
           });
           setErrors(errorMap);
         }
+      } else {
+        error(data.error || 'Failed to load repository.');
       }
     } catch (err) {
       console.error('Failed to load repo:', err);
@@ -65,14 +83,20 @@ export default function RepoEditor({ repoUrl, reportId }) {
   // ── Open a file ──
   const openFile = async (file) => {
     setCurrentFile(file);
-    setSidebarOpen(false); // close sidebar on mobile after selecting a file
+    setSidebarOpen(false);
     try {
-      const res = await fetch(`/api/github/repo/file?repoUrl=${encodeURIComponent(repoUrl)}&filePath=${encodeURIComponent(file.path)}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // ✅ Absolute URL
+      const res = await fetch(
+        `${API_URL}/github/repo/file?repoUrl=${encodeURIComponent(repoUrl)}&filePath=${encodeURIComponent(file.path)}`,
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       const data = await res.json();
       if (data.success) {
         setContent(data.content || '');
+      } else {
+        error(data.error || 'Failed to load file.');
       }
     } catch (err) {
       console.error('Failed to load file:', err);
@@ -83,10 +107,11 @@ export default function RepoEditor({ repoUrl, reportId }) {
   // ── AI Fix ──
   const handleFix = async (errObj, lineNumber) => {
     const issueId = errObj._id || errObj.id || Date.now();
-    setFixLoading(prev => ({ ...prev, [issueId]: true }));
+    setFixLoading((prev) => ({ ...prev, [issueId]: true }));
 
     try {
-      const response = await fetch('/api/github/auto-fix', {
+      // ✅ Absolute URL
+      const response = await fetch(`${API_URL}/github/auto-fix`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -95,7 +120,8 @@ export default function RepoEditor({ repoUrl, reportId }) {
         body: JSON.stringify({
           repoUrl,
           filePath: currentFile.path,
-          description: errObj.message || errObj.issue || errObj.title || 'Fix issue',
+          description:
+            errObj.message || errObj.issue || errObj.title || 'Fix issue',
           lineNumber: lineNumber || errObj.line || 1,
           currentCode: content,
           suggestedFix: errObj.suggestedFix || errObj.fix || '',
@@ -106,16 +132,18 @@ export default function RepoEditor({ repoUrl, reportId }) {
       if (result.success) {
         success(`✅ Fix PR #${result.prNumber} created!`);
         window.open(result.prUrl, '_blank');
-        // Mark line as fixed
-        setFixedLines(prev => ({ ...prev, [lineNumber]: true }));
+        setFixedLines((prev) => ({ ...prev, [lineNumber]: true }));
       } else {
         error(result.error || 'Failed to create fix PR.');
+        if (result.action === 'connect_github') {
+          error('Please connect your GitHub account in settings.');
+        }
       }
     } catch (err) {
       console.error('Fix error:', err);
       error('An error occurred while applying the fix.');
     } finally {
-      setFixLoading(prev => ({ ...prev, [issueId]: false }));
+      setFixLoading((prev) => ({ ...prev, [issueId]: false }));
     }
   };
 
@@ -130,12 +158,16 @@ export default function RepoEditor({ repoUrl, reportId }) {
               <FolderTree size={14} className="shrink-0" />
               <span className="truncate">{item.name}</span>
             </summary>
-            <div>{item.children && renderFileTree(item.children, level + 1)}</div>
+            <div>
+              {item.children && renderFileTree(item.children, level + 1)}
+            </div>
           </details>
         ) : (
           <div
             className={`flex items-center gap-2 py-1 px-2 rounded cursor-pointer text-sm hover:bg-[var(--bg-hover)] ${
-              currentFile?.path === item.path ? 'bg-[var(--accent-soft)] text-[var(--accent)]' : 'text-[var(--text-secondary)]'
+              currentFile?.path === item.path
+                ? 'bg-[var(--accent-soft)] text-[var(--accent)]'
+                : 'text-[var(--text-secondary)]'
             }`}
             onClick={() => openFile(item)}
           >
@@ -156,7 +188,9 @@ export default function RepoEditor({ repoUrl, reportId }) {
     return (
       <div className="flex items-center justify-center py-12 border border-[var(--border-light)] rounded-xl">
         <Loader2 className="animate-spin text-[var(--accent)] mr-2" size={24} />
-        <span className="text-sm text-[var(--text-muted)]">Loading repository...</span>
+        <span className="text-sm text-[var(--text-muted)]">
+          Loading repository...
+        </span>
       </div>
     );
   }
@@ -182,7 +216,11 @@ export default function RepoEditor({ repoUrl, reportId }) {
             Files
           </span>
           <div className="flex items-center gap-2">
-            {loading && <span className="text-xs text-[var(--text-muted)]">Loading...</span>}
+            {loading && (
+              <span className="text-xs text-[var(--text-muted)]">
+                Loading...
+              </span>
+            )}
             <button
               onClick={() => setSidebarOpen(false)}
               className="rounded-md p-1 hover:bg-[var(--bg-hover)] md:hidden"
@@ -195,7 +233,9 @@ export default function RepoEditor({ repoUrl, reportId }) {
         {files.length > 0 ? (
           renderFileTree(files)
         ) : (
-          <div className="text-center py-8 text-sm text-[var(--text-muted)]">No files loaded</div>
+          <div className="text-center py-8 text-sm text-[var(--text-muted)]">
+            No files loaded
+          </div>
         )}
       </div>
 
@@ -249,10 +289,9 @@ export default function RepoEditor({ repoUrl, reportId }) {
               wordWrap: 'on',
             }}
             onMount={(editor) => {
-              // Add error decorations
               if (!currentFile) return;
               const fileErrors = errors[currentFile.path] || [];
-              const decorations = fileErrors.map(err => ({
+              const decorations = fileErrors.map((err) => ({
                 range: {
                   startLineNumber: err.line || 1,
                   endLineNumber: err.line || 1,
@@ -263,7 +302,9 @@ export default function RepoEditor({ repoUrl, reportId }) {
                   isWholeLine: true,
                   className: 'error-line',
                   glyphMarginClassName: 'error-glyph',
-                  glyphMarginHoverMessage: { value: err.message || err.issue || '' },
+                  glyphMarginHoverMessage: {
+                    value: err.message || err.issue || '',
+                  },
                 },
               }));
               editor.deltaDecorations([], decorations);
@@ -285,10 +326,13 @@ export default function RepoEditor({ repoUrl, reportId }) {
                   className="flex flex-col gap-2 border-b border-[var(--border-dark)] py-2 px-1 last:border-0 sm:flex-row sm:items-start sm:gap-2 sm:px-2"
                 >
                   <div className="flex min-w-0 flex-1 items-start gap-2">
-                    <span className="shrink-0 text-[var(--color-danger)] text-xs">⚠</span>
+                    <span className="shrink-0 text-[var(--color-danger)] text-xs">
+                      ⚠
+                    </span>
                     <div className="min-w-0 flex-1">
                       <span className="block text-xs text-[var(--text-secondary)]">
-                        Line {err.line || '?'}: {err.message || err.issue || err.title}
+                        Line {err.line || '?'}:{' '}
+                        {err.message || err.issue || err.title}
                       </span>
                       {err.suggestion && (
                         <span className="mt-0.5 block text-xs text-[var(--text-muted)]">
