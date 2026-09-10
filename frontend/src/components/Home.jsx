@@ -45,7 +45,7 @@ function BoxBoardBackground() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    const cellSize = 64;
+    const cellSize = 96;
     let width, height, cols, rows;
     let cells = [];
     let scanY = 0;
@@ -73,7 +73,7 @@ function BoxBoardBackground() {
       ctx.clearRect(0, 0, width, height);
 
       // faint board lines
-      ctx.strokeStyle = `rgba(${accentRGB},0.06)`;
+      ctx.strokeStyle = `rgba(${accentRGB},0.08)`;
       ctx.lineWidth = 1;
       for (let c = 0; c <= cols; c++) {
         ctx.beginPath();
