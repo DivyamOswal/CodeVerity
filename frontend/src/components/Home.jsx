@@ -10,10 +10,7 @@ import {
 
 // ============================================================
 //  Reads the current --accent token and converts it to an "r,g,b"
-//  string for use in canvas fillStyle/strokeStyle, which can't
-//  consume CSS custom properties directly. Read once at mount, so
-//  the background animation follows the active theme's accent
-//  color instead of a hardcoded literal.
+//  string for use in canvas fillStyle/strokeStyle.
 // ============================================================
 function getAccentRGB() {
   if (typeof window === "undefined") return "34,211,238";
@@ -27,14 +24,9 @@ function getAccentRGB() {
 }
 
 // ============================================================
-//  COMPONENT: BoxBoardBackground (canvas scanning grid-of-boxes)
-//  A board of square cells, faintly outlined, where cells randomly
-//  ignite and fade — plus a horizontal scan band that sweeps down
-//  the board igniting cells beneath it. Reads as "the AI scanning
-//  your repository box by box." Single accent color, no gradients.
-//  Respects prefers-reduced-motion (renders a static frame).
+//  COMPONENT: NeuralNetworkBackground 
 // ============================================================
-function BoxBoardBackground() {
+function NeuralNetworkBackground() {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -45,129 +37,127 @@ function BoxBoardBackground() {
       "(prefers-reduced-motion: reduce)",
     ).matches;
 
-    const cellSize = 96;
-    let width, height, cols, rows;
-    let cells = [];
-    let scanY = 0;
-    let frame = 0;
+    let width, height;
+    let particles = [];
     let animationFrame;
-
-    function buildGrid() {
-      cols = Math.ceil(width / cellSize) + 1;
-      rows = Math.ceil(height / cellSize) + 1;
-      cells = new Array(cols * rows).fill(null).map(() => ({
-        opacity: 0,
-        target: 0,
-      }));
-    }
+    let mouse = { x: null, y: null, radius: 150 };
 
     const resize = () => {
-      width = canvas.width = window.innerWidth;
-      height = canvas.height = window.innerHeight;
-      buildGrid();
+      width = document.documentElement.clientWidth;
+      height = document.documentElement.clientHeight;
+      canvas.width = width;
+      canvas.height = height;
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      initParticles();
     };
+
+    function initParticles() {
+      const particleCount = Math.min(Math.floor((width * height) / 15000), 100);
+      particles = [];
+      for (let i = 0; i < particleCount; i++) {
+        particles.push({
+          x: Math.random() * width,
+          y: Math.random() * height,
+          vx: (Math.random() - 0.5) * 0.5,
+          vy: (Math.random() - 0.5) * 0.5,
+          size: Math.random() * 1.5 + 0.5,
+        });
+      }
+    }
+
+    const handleMouseMove = (e) => {
+      mouse.x = e.clientX;
+      mouse.y = e.clientY;
+    };
+
+    const handleMouseLeave = () => {
+      mouse.x = null;
+      mouse.y = null;
+    };
+
     window.addEventListener("resize", resize);
+    window.addEventListener("mousemove", handleMouseMove);
+    window.addEventListener("mouseleave", handleMouseLeave);
     resize();
 
-    function drawGrid(highlightRow) {
+    const animate = () => {
       ctx.clearRect(0, 0, width, height);
 
-      // faint board lines
-      ctx.strokeStyle = `rgba(${accentRGB},0.08)`;
-      ctx.lineWidth = 1;
-      for (let c = 0; c <= cols; c++) {
-        ctx.beginPath();
-        ctx.moveTo(c * cellSize, 0);
-        ctx.lineTo(c * cellSize, height);
-        ctx.stroke();
-      }
-      for (let r = 0; r <= rows; r++) {
-        ctx.beginPath();
-        ctx.moveTo(0, r * cellSize);
-        ctx.lineTo(width, r * cellSize);
-        ctx.stroke();
-      }
+      particles.forEach((p) => {
+        p.x += p.vx;
+        p.y += p.vy;
 
-      // ignited / fading cells
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const cell = cells[r * cols + c];
-          if (cell.opacity > 0.002) {
-            const x = c * cellSize;
-            const y = r * cellSize;
-            ctx.fillStyle = `rgba(${accentRGB},${cell.opacity * 0.14})`;
-            ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-            ctx.strokeStyle = `rgba(${accentRGB},${cell.opacity * 0.5})`;
-            ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
+        if (p.x < 0 || p.x > width) p.vx *= -1;
+        if (p.y < 0 || p.y > height) p.vy *= -1;
+
+        if (mouse.x != null && mouse.y != null) {
+          const dx = p.x - mouse.x;
+          const dy = p.y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < mouse.radius) {
+            const force = (mouse.radius - dist) / mouse.radius;
+            p.x += (dx / dist) * force * 2;
+            p.y += (dy / dist) * force * 2;
           }
         }
-      }
 
-      // scanning row — each cell in the row highlights as its own square,
-      // instead of one continuous full-width band
-      if (highlightRow != null) {
-        const y = highlightRow * cellSize;
-        ctx.lineWidth = 1.5;
-        for (let c = 0; c < cols; c++) {
-          const x = c * cellSize;
-          ctx.fillStyle = `rgba(${accentRGB},0.07)`;
-          ctx.fillRect(x + 1, y + 1, cellSize - 2, cellSize - 2);
-          ctx.strokeStyle = `rgba(${accentRGB},0.4)`;
-          ctx.strokeRect(x + 0.5, y + 0.5, cellSize - 1, cellSize - 1);
-        }
-      }
-    }
-
-    if (reduceMotion) {
-      const litCount = Math.floor(cells.length * 0.04);
-      for (let i = 0; i < litCount; i++) {
-        cells[Math.floor(Math.random() * cells.length)].opacity = 0.6;
-      }
-      drawGrid(null);
-      return () => window.removeEventListener("resize", resize);
-    }
-
-    const animate = () => {
-      frame++;
-
-      // randomly ignite a couple of idle cells each tick
-      if (frame % 6 === 0) {
-        for (let i = 0; i < 2; i++) {
-          const idx = Math.floor(Math.random() * cells.length);
-          if (cells[idx].opacity < 0.05) cells[idx].target = 1;
-        }
-      }
-
-      cells.forEach((cell) => {
-        if (cell.target > cell.opacity) {
-          cell.opacity += 0.04;
-          if (cell.opacity >= 1) {
-            cell.opacity = 1;
-            cell.target = 0;
-          }
-        } else if (cell.opacity > 0) {
-          cell.opacity -= 0.012;
-          if (cell.opacity < 0) cell.opacity = 0;
-        }
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${accentRGB}, 0.4)`;
+        ctx.fill();
       });
 
-      scanY += 0.055;
-      if (scanY >= rows) scanY = 0;
-      const highlightRow = Math.floor(scanY) % rows;
+      for (let i = 0; i < particles.length; i++) {
+        for (let j = i + 1; j < particles.length; j++) {
+          const dx = particles[i].x - particles[j].x;
+          const dy = particles[i].y - particles[j].y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
 
-      for (let c = 0; c < cols; c++) {
-        const cell = cells[highlightRow * cols + c];
-        if (Math.random() > 0.9) cell.target = 1;
+          if (dist < 120) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(particles[j].x, particles[j].y);
+            ctx.strokeStyle = `rgba(${accentRGB}, ${0.15 * (1 - dist / 120)})`;
+            ctx.lineWidth = 0.5;
+            ctx.stroke();
+          }
+        }
+
+        if (mouse.x != null && mouse.y != null) {
+          const dx = particles[i].x - mouse.x;
+          const dy = particles[i].y - mouse.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          if (dist < mouse.radius) {
+            ctx.beginPath();
+            ctx.moveTo(particles[i].x, particles[i].y);
+            ctx.lineTo(mouse.x, mouse.y);
+            ctx.strokeStyle = `rgba(${accentRGB}, ${0.3 * (1 - dist / mouse.radius)})`;
+            ctx.lineWidth = 0.8;
+            ctx.stroke();
+          }
+        }
       }
 
-      drawGrid(highlightRow);
       animationFrame = requestAnimationFrame(animate);
     };
-    animate();
+
+    if (reduceMotion) {
+      particles.forEach((p) => {
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${accentRGB}, 0.4)`;
+        ctx.fill();
+      });
+    } else {
+      animate();
+    }
 
     return () => {
       cancelAnimationFrame(animationFrame);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseleave", handleMouseLeave);
     };
   }, []);
 
@@ -175,13 +165,12 @@ function BoxBoardBackground() {
     <canvas
       ref={canvasRef}
       className="pointer-events-none fixed inset-0 z-0"
-      style={{ width: "100%", height: "100%" }}
     />
   );
 }
 
 // ============================================================
-//  COMPONENT: TypedWord (cycle through words)
+//  COMPONENT: TypedWord
 // ============================================================
 function TypedWord({ words }) {
   const [index, setIndex] = useState(0);
@@ -257,8 +246,7 @@ function CodeVerityLogo() {
 }
 
 // ============================================================
-//  COMPONENT: Feature  left-aligned, accent rail instead of the
-//  identical centered icon-in-circle "SaaS card kit" treatment.
+//  COMPONENT: Feature
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   return (
@@ -284,37 +272,16 @@ function Feature({ icon, title, desc, index }) {
 // ============================================================
 function BugIcon() {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-      <path d="M18 13h-2" />
-      <path d="M8 13H6" />
-      <path d="M10 4 8 2" />
-      <path d="M14 4 16 2" />
-      <path d="M12 22v-4" />
+      <path d="M18 13h-2" /><path d="M8 13H6" /><path d="M10 4 8 2" />
+      <path d="M14 4 16 2" /><path d="M12 22v-4" />
     </svg>
   );
 }
 function ShieldIcon() {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
@@ -322,16 +289,7 @@ function ShieldIcon() {
 }
 function FlaskIcon() {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
       <path d="M8 2h8" />
     </svg>
@@ -339,7 +297,7 @@ function FlaskIcon() {
 }
 
 // ============================================================
-//  COMPONENT: StatPill (animated count)  logic untouched
+//  COMPONENT: StatPill (Glowing card effect)
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -368,13 +326,7 @@ function StatPill({ value, label, delayMs = 0 }) {
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(num * eased);
-      let output = isPct
-        ? `${current}%`
-        : isPlus
-          ? `${current}+`
-          : isLt
-            ? `<${current}s`
-            : String(current);
+      let output = isPct ? `${current}%` : isPlus ? `${current}+` : isLt ? `<${current}s` : String(current);
       setDisplay(output);
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
@@ -389,11 +341,11 @@ function StatPill({ value, label, delayMs = 0 }) {
   }, [value, hasStarted]);
 
   return (
-    <div className="flex min-w-[110px] flex-col items-center gap-0.5 border-l border-[var(--border-light)] px-5 first:border-l-0">
-      <span className="text-xl font-bold tabular-nums text-[var(--text-primary)]">
+    <div className="stat-card relative flex min-w-[130px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[var(--accent)]/30 bg-[var(--bg-card)]/50 px-5 py-4 backdrop-blur-md transition-all duration-300">
+      <span className="stat-number text-2xl font-extrabold tabular-nums">
         {display}
       </span>
-      <span className="text-[9px] tracking-wide text-[var(--text-muted)]">
+      <span className="text-[10px] font-medium tracking-wide text-[var(--text-secondary)]">
         {label}
       </span>
     </div>
@@ -401,7 +353,7 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 // ============================================================
-//  COMPONENT: ScanLine (for button hover)
+//  COMPONENT: ScanLine
 // ============================================================
 function ScanLine() {
   return (
@@ -412,9 +364,8 @@ function ScanLine() {
 }
 
 // ============================================================
-//  SECTION: How It Works, Testimonials, Pricing, FAQ
+//  SECTION: How It Works
 // ============================================================
-
 function HowItWorks() {
   const steps = [
     {
@@ -490,23 +441,23 @@ function HowItWorks() {
   );
 }
 
+// ============================================================
+//  SECTION: Testimonials
+// ============================================================
 function Testimonials() {
   const testimonials = [
     {
-      quote:
-        "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
+      quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
       author: "Sarah Chen",
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote:
-        "I use it before every PR. The bug detection is surprisingly accurate  it's like having a senior reviewer.",
+      quote: "I use it before every PR. The bug detection is surprisingly accurate  it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full-stack Developer, OpenSource Collective",
     },
     {
-      quote:
-        "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
+      quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
       author: "Dr. Aisha Patel",
       role: "CTO, DevSafe",
     },
@@ -532,11 +483,7 @@ function Testimonials() {
               </p>
               <div className="mt-5 flex items-center gap-2.5 border-t border-[var(--border-light)] pt-4">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
-                  {t.author
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)}
+                  {t.author.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-[var(--text-primary)]">
@@ -555,6 +502,9 @@ function Testimonials() {
   );
 }
 
+// ============================================================
+//  SECTION: Pricing
+// ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
 
@@ -654,6 +604,9 @@ function Pricing() {
   );
 }
 
+// ============================================================
+//  SECTION: FAQ
+// ============================================================
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
 
@@ -716,14 +669,13 @@ function FAQ() {
 }
 
 // ============================================================
-//  FOOTER (large wordmark + centered logo badge)
+//  FOOTER (Dynamic based on login state)
 // ============================================================
-function Footer() {
+function Footer({ isLoggedIn }) {
   return (
     <footer className="relative overflow-hidden border-t border-[var(--border-light)] bg-[var(--accent)] px-4 pt-16 pb-8 sm:px-6">
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
-          {/* Brand / tagline */}
           <div className="col-span-2 sm:col-span-1">
             <h3 className="text-2xl font-extrabold leading-tight text-[var(--accent-contrast)] sm:text-3xl">
               AI-powered code
@@ -736,109 +688,68 @@ function Footer() {
             </p>
           </div>
 
-          {/* Product Column */}
+          {/* Dynamic Product Column */}
           <div>
             <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
               Product
             </h4>
             <ul className="space-y-2">
-              <li>
-                <Link to="/dashboard" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Dashboard
-                </Link>
-              </li>
-              <li>
-                <Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Pricing
-                </Link>
-              </li>
-              <li>
-                <Link to="/workspace" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Workspace
-                </Link>
-              </li>
-              <li>
-                <Link to="/history" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  History
-                </Link>
-              </li>
+              {isLoggedIn ? (
+                <>
+                  <li><Link to="/dashboard" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Dashboard</Link></li>
+                  <li><Link to="/workspace" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Workspace</Link></li>
+                  <li><Link to="/history" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">History</Link></li>
+                  <li><Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Pricing</Link></li>
+                </>
+              ) : (
+                <>
+                  <li><Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Pricing</Link></li>
+                  <li><Link to="/login" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Sign In</Link></li>
+                  <li><Link to="/register" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Get Started</Link></li>
+                  <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
+                </>
+              )}
             </ul>
           </div>
 
-          {/* Resources Column */}
+          {/* Static Resources Column */}
           <div>
             <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
               Resources
             </h4>
             <ul className="space-y-2">
-              <li>
-                <Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Support
-                </Link>
-              </li>
-              <li>
-                <Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Terms
-                </Link>
-              </li>
+              <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
+              <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
+              <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
+              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
             </ul>
           </div>
 
-          {/* Company Column */}
+          {/* Static Company Column */}
           <div>
             <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
               Company
             </h4>
             <ul className="space-y-2">
-              <li>
-                <a href="mailto:support@codeverity.dev" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  Contact
-                </a>
-              </li>
-              <li>
-                <Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <span className="text-[12px] text-[var(--accent-contrast)]/60">
-                  © {new Date().getFullYear()}
-                </span>
-              </li>
+              <li><a href="mailto:support@codeverity.dev" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Contact</a></li>
+              <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About Us</Link></li>
+              <li><span className="text-[12px] text-[var(--accent-contrast)]/60">© {new Date().getFullYear()}</span></li>
             </ul>
           </div>
         </div>
 
-        {/* Bottom bar */}
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--accent-contrast)]/15 pt-6 sm:flex-row">
           <p className="text-[10px] text-[var(--accent-contrast)]/60">
             Built with ❤️ for developers everywhere.
           </p>
           <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
-            <Link to="/privacy" className="transition hover:text-[var(--accent-contrast)]">
-              Privacy
-            </Link>
-            <Link to="/terms" className="transition hover:text-[var(--accent-contrast)]">
-              Terms
-            </Link>
-            <Link to="/support" className="transition hover:text-[var(--accent-contrast)]">
-              Support
-            </Link>
+            <Link to="/privacy" className="transition hover:text-[var(--accent-contrast)]">Privacy</Link>
+            <Link to="/terms" className="transition hover:text-[var(--accent-contrast)]">Terms</Link>
+            <Link to="/support" className="transition hover:text-[var(--accent-contrast)]">Support</Link>
           </div>
         </div>
       </div>
 
-      {/* Brand lockup: logo mark sits above the wordmark, not on top of it */}
       <div className="relative z-10 mt-16 flex select-none flex-col items-center gap-4">
         <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20">
           <CodeVerityLogo />
@@ -846,10 +757,8 @@ function Footer() {
         <div
           className="pointer-events-none w-full overflow-hidden text-center"
           style={{
-            maskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
+            maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+            WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
           }}
         >
           <span
@@ -867,10 +776,8 @@ function Footer() {
 // ============================================================
 //  MAIN HOME COMPONENT
 // ============================================================
-
 export default function Home() {
   const token = localStorage.getItem("token");
-  const [show, setShow] = useState(false);
   const { compact } = usePreferences();
 
   const [stats, setStats] = useState({
@@ -884,27 +791,10 @@ export default function Home() {
     const fetchStats = async () => {
       try {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/stats/public`);
-
-        console.log("Stats response:", {
-          status: res.status,
-          statusText: res.statusText,
-          contentType: res.headers.get("content-type"),
-        });
-
         const text = await res.text();
-
-        console.log("Stats raw response:", text);
-
-        if (!res.ok) {
-          throw new Error(`Stats API failed: ${res.status} ${res.statusText}`);
-        }
-
-        if (!text.trim()) {
-          throw new Error("Stats API returned an empty response");
-        }
-
+        if (!res.ok) throw new Error(`Stats API failed: ${res.status}`);
+        if (!text.trim()) throw new Error("Stats API returned an empty response");
         const data = JSON.parse(text);
-
         if (data.success) {
           setStats({
             totalScans: data.stats.totalScans ?? 0,
@@ -918,7 +808,6 @@ export default function Home() {
         setStatsLoading(false);
       }
     };
-
     fetchStats();
   }, []);
 
@@ -942,63 +831,50 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  useEffect(() => {
-    const t = setTimeout(() => setShow(true), 80);
-    return () => clearTimeout(t);
-  }, []);
-
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // --- HERO ENTRANCE ANIMATION (Simple 2D Fade/Slide) ---
         const tl = gsap.timeline({
-          defaults: { ease: "power3.out", duration: 0.6 },
+          defaults: { ease: "power3.out", duration: 0.8 },
         });
 
-        gsap.set(
-          [
-            brandRef.current,
-            badgeRef.current,
-            headingRef.current,
-            typedRef.current,
-            descriptionRef.current,
-            ctasRef.current,
-            trustRef.current,
-            statsRef.current,
-          ],
-          { opacity: 0, y: 20 },
-        );
+        tl.fromTo(brandRef.current, 
+          { opacity: 0, y: 30 }, 
+          { opacity: 1, y: 0, duration: 0.6 })
+          .fromTo(badgeRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
+          .fromTo(headingRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.6 }, "-=0.3")
+          .fromTo(typedRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.5 }, "-=0.4")
+          .fromTo(descriptionRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
+          .fromTo(ctasRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, "-=0.3")
+          .fromTo(trustRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.4 }, "-=0.2")
+          .fromTo(statsRef.current, 
+            { opacity: 0, y: 30 }, 
+            { opacity: 1, y: 0, duration: 0.5, stagger: 0.1 }, "-=0.2");
 
-        tl.to(brandRef.current, { opacity: 1, y: 0, duration: 0.5 })
-          .to(badgeRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
-          .to(headingRef.current, { opacity: 1, y: 0, duration: 0.5 }, "-=0.2")
-          .to(typedRef.current, { opacity: 1, y: 0, duration: 0.4 }, "-=0.25")
-          .to(
-            descriptionRef.current,
-            { opacity: 1, y: 0, duration: 0.4 },
-            "-=0.2",
-          )
-          .to(
-            ctasRef.current,
-            { opacity: 1, y: 0, duration: 0.4, stagger: 0.06 },
-            "-=0.2",
-          )
-          .to(trustRef.current, { opacity: 1, y: 0, duration: 0.3 }, "-=0.15")
-          .to(
-            statsRef.current,
-            { opacity: 1, y: 0, duration: 0.4, stagger: 0.08 },
-            "-=0.15",
-          );
-
+        // --- FEATURE CARDS SCROLLTRIGGER (Simple 2D) ---
         ScrollTrigger.create({
           trigger: featureLabelRef.current,
           start: "top 85%",
           onEnter: () => {
             gsap.fromTo(
               featureLabelRef.current,
-              { opacity: 0, y: 15 },
-              { opacity: 1, y: 0, duration: 0.5, ease: "power2.out" },
+              { opacity: 0, y: 20 },
+              { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
             );
           },
           once: true,
@@ -1006,29 +882,30 @@ export default function Home() {
 
         ScrollTrigger.create({
           trigger: featureCardsRef.current,
-          start: "top 80%",
+          start: "top 85%",
           onEnter: () => {
             gsap.fromTo(
               featureCardsRef.current,
-              { opacity: 0, y: 20 },
+              { opacity: 0, y: 40 },
               {
                 opacity: 1,
                 y: 0,
-                duration: 0.5,
-                stagger: 0.12,
+                duration: 0.7,
+                stagger: 0.15,
                 ease: "power2.out",
-                clearProps: "opacity",
+                clearProps: "opacity, transform",
               },
             );
           },
           once: true,
         });
 
+        // --- SECTIONS SCROLLTRIGGER (Simple 2D) ---
         const sections = [
-          { ref: howRef, start: "top 80%" },
-          { ref: testimonialRef, start: "top 80%" },
-          { ref: pricingRef, start: "top 80%" },
-          { ref: faqRef, start: "top 80%" },
+          { ref: howRef, start: "top 85%" },
+          { ref: testimonialRef, start: "top 85%" },
+          { ref: pricingRef, start: "top 85%" },
+          { ref: faqRef, start: "top 85%" },
         ];
         sections.forEach(({ ref, start }) => {
           if (!ref.current) return;
@@ -1038,13 +915,13 @@ export default function Home() {
             onEnter: () => {
               gsap.fromTo(
                 ref.current,
-                { opacity: 0, y: 30 },
+                { opacity: 0, y: 50 },
                 {
                   opacity: 1,
                   y: 0,
-                  duration: 0.6,
+                  duration: 0.8,
                   ease: "power2.out",
-                  clearProps: "opacity",
+                  clearProps: "opacity, transform",
                 },
               );
             },
@@ -1052,48 +929,41 @@ export default function Home() {
           });
         });
 
+        // --- BACKGROUND PARALLAX (Gentle Depth Effect) ---
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
+        
         if (bgGlow1) {
           ScrollTrigger.create({
             trigger: containerRef.current,
-            start: "top bottom",
+            start: "top top",
             end: "bottom top",
+            scrub: true,
             onUpdate: (self) => {
-              gsap.to(bgGlow1, {
-                y: self.progress * 20,
-                duration: 0.1,
-                overwrite: true,
-              });
+              gsap.to(bgGlow1, { y: self.progress * 200, duration: 0.1, overwrite: true });
             },
           });
         }
         if (bgGlow2) {
           ScrollTrigger.create({
             trigger: containerRef.current,
-            start: "top bottom",
+            start: "top top",
             end: "bottom top",
+            scrub: true,
             onUpdate: (self) => {
-              gsap.to(bgGlow2, {
-                y: -self.progress * 25,
-                duration: 0.1,
-                overwrite: true,
-              });
+              gsap.to(bgGlow2, { y: -self.progress * 150, duration: 0.1, overwrite: true });
             },
           });
         }
         if (bgGrid) {
           ScrollTrigger.create({
             trigger: containerRef.current,
-            start: "top bottom",
+            start: "top top",
             end: "bottom top",
+            scrub: true,
             onUpdate: (self) => {
-              gsap.to(bgGrid, {
-                y: self.progress * 10,
-                duration: 0.1,
-                overwrite: true,
-              });
+              gsap.to(bgGrid, { y: self.progress * 50, duration: 0.1, overwrite: true });
             },
           });
         }
@@ -1104,22 +974,13 @@ export default function Home() {
       });
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
+        // Fallback for reduced motion: just show everything
         gsap.set(
           [
-            brandRef.current,
-            badgeRef.current,
-            headingRef.current,
-            typedRef.current,
-            descriptionRef.current,
-            ctasRef.current,
-            trustRef.current,
-            statsRef.current,
-            featureLabelRef.current,
-            featureCardsRef.current,
-            howRef.current,
-            testimonialRef.current,
-            pricingRef.current,
-            faqRef.current,
+            brandRef.current, badgeRef.current, headingRef.current, typedRef.current,
+            descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
+            featureLabelRef.current, featureCardsRef.current, howRef.current,
+            testimonialRef.current, pricingRef.current, faqRef.current,
           ],
           { opacity: 1, y: 0, clearProps: "all" },
         );
@@ -1132,25 +993,25 @@ export default function Home() {
 
   const compactClasses = compact
     ? {
-        container: "py-8",
-        heading: "text-4xl sm:text-5xl md:text-[3.6rem]",
-        subheading: "text-lg sm:text-xl",
+        container: "pt-32 pb-8",
+        heading: "text-3xl sm:text-4xl md:text-[3rem]",
+        subheading: "text-base sm:text-lg",
         description: "text-xs sm:text-sm",
-        brandMargin: "mb-5",
-        badgeMargin: "mb-4",
-        ctaMargin: "mb-6",
-        statsMargin: "mb-8",
+        brandMargin: "mb-4",
+        badgeMargin: "mb-3",
+        ctaMargin: "mb-5",
+        statsMargin: "mb-6",
         featureGap: "gap-x-6 gap-y-8",
       }
     : {
-        container: "py-16",
-        heading: "text-5xl sm:text-6xl md:text-[4.2rem]",
-        subheading: "text-xl sm:text-2xl",
-        description: "text-sm sm:text-[15px]",
-        brandMargin: "mb-7",
-        badgeMargin: "mb-6",
-        ctaMargin: "mb-9",
-        statsMargin: "mb-12",
+        container: "pt-32 pb-16",
+        heading: "text-4xl sm:text-5xl md:text-[3.8rem]",
+        subheading: "text-lg sm:text-xl",
+        description: "text-sm sm:text-base",
+        brandMargin: "mb-6",
+        badgeMargin: "mb-5",
+        ctaMargin: "mb-7",
+        statsMargin: "mb-10",
         featureGap: "gap-x-8 gap-y-10",
       };
 
@@ -1159,6 +1020,42 @@ export default function Home() {
       ref={containerRef}
       className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
     >
+      {/* Enhanced Glowing Effects for Hero Heading and Stat Cards */}
+      <style dangerouslySetInnerHTML={{__html: `
+        .stat-card {
+          box-shadow: 0 0 20px -5px var(--accent-soft-strong), inset 0 0 10px var(--accent-soft);
+        }
+        .stat-card:hover {
+          box-shadow: 0 0 30px -5px var(--accent), inset 0 0 15px var(--accent-soft-strong);
+          border-color: var(--accent);
+        }
+        .stat-number {
+          background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 0 8px var(--accent-soft-strong));
+        }
+        
+        /* New Hero Title Glow Effect */
+        .hero-title-glow {
+          background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 50%, var(--text-primary) 100%);
+          background-size: 200% 200%;
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+          filter: drop-shadow(0 0 20px var(--accent-soft-strong));
+          animation: gradient-shift 5s ease infinite;
+        }
+        @keyframes gradient-shift {
+          0% { background-position: 0% 50%; }
+          50% { background-position: 100% 50%; }
+          100% { background-position: 0% 50%; }
+        }
+      `}} />
+
       {/* Background glows and dot grid  theme-driven */}
       <div
         ref={bgGlow1Ref}
@@ -1172,19 +1069,16 @@ export default function Home() {
         ref={bgGridRef}
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage:
-            "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
 
-      <BoxBoardBackground />
+      <NeuralNetworkBackground />
 
       {/* MAIN CONTENT */}
       <div
-        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container} transition-all duration-700 ease-out ${
-          show ? "translate-y-0 opacity-100" : "translate-y-6 opacity-0"
-        }`}
+        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container}`}
       >
         <div className="w-full max-w-5xl text-center">
           {/* BRAND */}
@@ -1212,13 +1106,12 @@ export default function Home() {
             AI-powered GitHub code analysis
           </div>
 
-          {/* HEADING */}
+          {/* HEADING with Glow Effect */}
           <h1
             ref={headingRef}
             className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
           >
-            <span className="text-[var(--text-primary)]">Code</span>
-            <span className="text-[var(--accent)]">Verity</span>
+            <span className="hero-title-glow">CodeVerity</span>
           </h1>
 
           {/* TYPED SUBTITLE */}
@@ -1265,9 +1158,7 @@ export default function Home() {
                 <Link
                   to="/login"
                   className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-                  style={{
-                    boxShadow: "0 8px 24px -6px var(--accent-soft-strong)",
-                  }}
+                  style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}
                 >
                   <ScanLine />
                   <span className="relative z-10">Sign In</span>
@@ -1296,30 +1187,17 @@ export default function Home() {
           {/* STATS */}
           <div
             ref={statsRef}
-            className={`mx-auto flex w-fit justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2 py-3 backdrop-blur-sm ${compactClasses.statsMargin}`}
+            className={`mx-auto flex w-fit flex-wrap justify-center gap-4 ${compactClasses.statsMargin}`}
           >
-            <StatPill
-              value={statsLoading ? "..." : `${stats.totalScans}+`}
-              label="Repos Scanned"
-              delayMs={500}
-            />
-            <StatPill
-              value={statsLoading ? "..." : `${stats.avgQuality}%`}
-              label="Issue Accuracy"
-              delayMs={600}
-            />
-            <StatPill
-              value={statsLoading ? "..." : stats.avgTime}
-              label="Avg Audit Time"
-              delayMs={700}
-            />
+            <StatPill value={statsLoading ? "..." : `${stats.totalScans}+`} label="Repos Scanned" delayMs={500} />
+            <StatPill value={statsLoading ? "..." : `${stats.avgQuality}%`} label="Issue Accuracy" delayMs={600} />
+            <StatPill value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={700} />
           </div>
 
           {/* FEATURE LABEL */}
           <div
             ref={featureLabelRef}
             className="mb-6 text-left"
-            style={{ opacity: 0 }}
           >
             <p className="text-sm font-semibold text-[var(--text-primary)]">
               What CodeVerity checks
@@ -1328,29 +1206,14 @@ export default function Home() {
 
           {/* FEATURE CARDS */}
           <div className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}>
-            <div ref={(el) => (featureCardsRef.current[0] = el)} style={{ opacity: 0 }}>
-              <Feature
-                icon={<BugIcon />}
-                title="AI Bug Detection"
-                desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
-                index={0}
-              />
+            <div ref={(el) => (featureCardsRef.current[0] = el)}>
+              <Feature icon={<BugIcon />} title="AI Bug Detection" desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase." index={0} />
             </div>
-            <div ref={(el) => (featureCardsRef.current[1] = el)} style={{ opacity: 0 }}>
-              <Feature
-                icon={<ShieldIcon />}
-                title="Security Analysis"
-                desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
-                index={1}
-              />
+            <div ref={(el) => (featureCardsRef.current[1] = el)}>
+              <Feature icon={<ShieldIcon />} title="Security Analysis" desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly." index={1} />
             </div>
-            <div ref={(el) => (featureCardsRef.current[2] = el)} style={{ opacity: 0 }}>
-              <Feature
-                icon={<FlaskIcon />}
-                title="Smart Test Generation"
-                desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
-                index={2}
-              />
+            <div ref={(el) => (featureCardsRef.current[2] = el)}>
+              <Feature icon={<FlaskIcon />} title="Smart Test Generation" desc="Creates useful test cases from your repository to help verify fixes and prevent regressions." index={2} />
             </div>
           </div>
         </div>
@@ -1358,19 +1221,19 @@ export default function Home() {
 
       {/* NEW SECTIONS */}
       <div className="relative z-10 mx-auto max-w-7xl">
-        <div ref={howRef} style={{ opacity: 0 }}>
+        <div ref={howRef}>
           <HowItWorks />
         </div>
-        <div ref={testimonialRef} style={{ opacity: 0 }}>
+        <div ref={testimonialRef}>
           <Testimonials />
         </div>
-        <div ref={pricingRef} style={{ opacity: 0 }}>
+        <div ref={pricingRef}>
           <Pricing />
         </div>
-        <div ref={faqRef} style={{ opacity: 0 }}>
+        <div ref={faqRef}>
           <FAQ />
         </div>
-        <Footer />
+        <Footer isLoggedIn={!!token} />
       </div>
     </div>
   );

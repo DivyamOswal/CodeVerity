@@ -16,6 +16,7 @@ import workspaceRoutes from "./routes/workspace.js";
 import statsRoutes from "./routes/stats.js";
 import adminRoutes from "./routes/admin.js";
 import { startCleanupCron } from './services/cleanupService.js';
+import helmet from "helmet";
 
 connectDB();
 // ─── Start cleanup cron ──────────────────────────
@@ -24,11 +25,38 @@ startCleanupCron();
 const app = express();
 
 // ─── CORS ────────────────────────────────────────
+// ─── CORS ────────────────────────────────────────
 const allowedOrigins = [
   "http://localhost:5173",
-  process.env.FRONTEND_URL || "https://codeverity.pages.dev"
-];
-app.use(cors({ origin: allowedOrigins }));
+  "http://localhost:3000",           // in case you use a different dev port
+  process.env.FRONTEND_URL || "https://codeverity.pages.dev",
+].filter(Boolean);
+
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, Postman, curl)
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+      return callback(new Error("Not allowed by CORS"));
+    },
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
+    exposedHeaders: ["Content-Length"],
+    maxAge: 86400, // Cache preflight for 24 hours
+  })
+);
+
+// ─── Security headers ────────────────────────────
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    contentSecurityPolicy: false, // Disabled because frontend is on Cloudflare Pages
+  })
+);
 
 // ─── Body parsing (Stripe webhook needs raw body first) ──
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
