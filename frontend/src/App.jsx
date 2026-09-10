@@ -34,6 +34,7 @@ import Privacy from "./pages/Privacy";
 import Support from "./pages/Support";
 import Terms from "./pages/Terms";
 import AdminDashboard from "./pages/AdminDashboard";
+import ErrorBoundary from "./components/ErrorBoundary";
 
 import { PreferencesProvider } from "./context/PreferencesContext";
 
@@ -224,38 +225,40 @@ function Layout() {
 // ─── App ────────────────────────────────────────────────────────
 export default function App() {
   return (
-    <BrowserRouter>
-    <Toaster
-        position="top-right"
-        toastOptions={{
-          duration: 4000,
-          style: {
-            background: 'var(--bg-card)',
-            color: 'var(--text-primary)',
-            border: '1px solid var(--border-light)',
-            borderRadius: '12px',
-            padding: '12px 16px',
-            fontSize: '14px',
-            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
-          },
-          success: {
-            iconTheme: { primary: 'var(--color-success)', secondary: 'white' },
-            duration: 3000,
-          },
-          error: {
-            iconTheme: { primary: 'var(--color-danger)', secondary: 'white' },
-            duration: 5000,
-          },
-          loading: {
-            iconTheme: { primary: 'var(--accent)', secondary: 'white' },
-          },
-        }}
-      />
-      <AuthProvider>
-        <PreferencesProvider>
-          <Layout />
-        </PreferencesProvider>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <Toaster
+          position="top-right"
+          toastOptions={{
+            duration: 4000,
+            style: {
+              background: "var(--bg-card)",
+              color: "var(--text-primary)",
+              border: "1px solid var(--border-light)",
+              borderRadius: "12px",
+              padding: "12px 16px",
+              fontSize: "14px",
+              boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
+            },
+            success: {
+              iconTheme: { primary: "var(--color-success)", secondary: "white" },
+              duration: 3000,
+            },
+            error: {
+              iconTheme: { primary: "var(--color-danger)", secondary: "white" },
+              duration: 5000,
+            },
+            loading: {
+              iconTheme: { primary: "var(--accent)", secondary: "white" },
+            },
+          }}
+        />
+        <AuthProvider>
+          <PreferencesProvider>
+            <Layout />
+          </PreferencesProvider>
+        </AuthProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
