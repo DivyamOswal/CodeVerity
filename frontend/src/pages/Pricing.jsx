@@ -53,13 +53,13 @@ function TokenIcon({ className = "" }) {
 
 function Toggle({ options, value, onChange }) {
   return (
-    <div className="inline-flex items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] p-1 font-mono text-[12px]">
+    <div className="inline-flex items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] p-1 font-mono text-[11px] sm:text-[12px]">
       {options.map((opt) => (
         <button
           key={opt.value}
           type="button"
           onClick={() => onChange(opt.value)}
-          className={`rounded-full px-4 py-1.5 transition-colors duration-150 ${
+          className={`whitespace-nowrap rounded-full px-3 py-1.5 transition-colors duration-150 sm:px-4 ${
             value === opt.value
               ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
@@ -67,7 +67,13 @@ function Toggle({ options, value, onChange }) {
         >
           {opt.label}
           {opt.badge && (
-            <span className={value === opt.value ? "ml-1.5 opacity-90" : "ml-1.5 text-[var(--accent)]"}>
+            <span
+              className={
+                value === opt.value
+                  ? "ml-1.5 opacity-90"
+                  : "ml-1.5 text-[var(--accent)]"
+              }
+            >
               {opt.badge}
             </span>
           )}
@@ -112,7 +118,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
 
   return (
     <div
-      className={`relative flex h-full flex-col overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-200 ${
+      className={`relative flex h-full flex-col overflow-hidden rounded-xl border bg-[var(--bg-card)] p-5 transition-all duration-200 sm:p-6 ${
         plan.highlight
           ? "border-[var(--accent)] shadow-[0_20px_45px_-20px_var(--accent-soft-strong)]"
           : "border-[var(--border-light)] hover:-translate-y-1 hover:border-[var(--accent)]/30"
@@ -122,7 +128,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
         <span className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
       )}
 
-      <div className="flex items-center justify-between gap-2">
+      <div className="flex flex-wrap items-center justify-between gap-2">
         <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">
           {plan.name}
         </h3>
@@ -132,19 +138,28 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
           </span>
         )}
       </div>
-      <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">{plan.tagline}</p>
+      <p className="mt-2 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+        {plan.tagline}
+      </p>
 
-      <div className="mt-6 flex items-baseline gap-1.5">
-        <span ref={priceRef} className="text-4xl font-bold tracking-tight text-[var(--text-primary)]">
+      <div className="mt-6 flex flex-wrap items-baseline gap-1.5">
+        <span
+          ref={priceRef}
+          className="text-3xl font-bold tracking-tight text-[var(--text-primary)] sm:text-4xl"
+        >
           {formatPrice(price, currency)}
         </span>
         {!isFree && (
-          <span className="text-sm text-[var(--text-muted)]">/{cycle === "monthly" ? "mo" : "yr"}</span>
+          <span className="text-sm text-[var(--text-muted)]">
+            /{cycle === "monthly" ? "mo" : "yr"}
+          </span>
         )}
       </div>
 
       {!isFree && (
-        <p className="mt-1 text-[11px] text-[var(--text-muted)]">incl. 18% GST</p>
+        <p className="mt-1 text-[11px] text-[var(--text-muted)]">
+          incl. 18% GST
+        </p>
       )}
 
       <div className="mt-3 flex flex-wrap items-center gap-2">
@@ -156,9 +171,12 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
 
       <ul className="mt-6 flex-1 space-y-3 border-t border-[var(--border-light)] pt-5">
         {plan.features.map((feature) => (
-          <li key={feature} className="flex items-start gap-2.5 text-[13px] text-[var(--text-secondary)]">
+          <li
+            key={feature}
+            className="flex items-start gap-2.5 text-[13px] text-[var(--text-secondary)]"
+          >
             <CheckIcon className="mt-0.5 shrink-0 text-[var(--accent)]" />
-            {feature}
+            <span className="min-w-0">{feature}</span>
           </li>
         ))}
       </ul>
@@ -166,7 +184,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
       <button
         type="button"
         onClick={() => onSelect(plan)}
-        className={`mt-8 rounded-lg px-4 py-2.5 text-center text-[13px] font-semibold transition-all duration-200 active:scale-[0.98] ${
+        className={`mt-8 w-full rounded-lg px-4 py-2.5 text-center text-[13px] font-semibold transition-all duration-200 active:scale-[0.98] ${
           plan.highlight
             ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] hover:bg-[var(--accent-hover)]"
             : "border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
@@ -178,7 +196,11 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
   );
 }
 
-const TRUST_ITEMS = ["No credit card required", "Cancel anytime", "GST invoices included"];
+const TRUST_ITEMS = [
+  "No credit card required",
+  "Cancel anytime",
+  "GST invoices included",
+];
 
 const FAQ = [
   {
@@ -218,23 +240,29 @@ export default function Pricing() {
   return (
     <div className="bg-[var(--bg-primary)]">
       {/* Hero */}
-      <Reveal as="section" className="mx-auto max-w-4xl px-6 pb-6 pt-20 text-center" delay={0} duration={0.6}>
-        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-1 font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+      <Reveal
+        as="section"
+        className="mx-auto max-w-4xl px-4 pb-6 pt-16 text-center sm:px-6 sm:pt-20"
+        delay={0}
+        duration={0.6}
+      >
+        <div className="inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-[11px]">
           <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
           pricing
         </div>
-        <h1 className="mt-5 text-4xl font-bold leading-[1.1] tracking-tight text-[var(--text-primary)] sm:text-5xl">
+        <h1 className="mt-5 text-3xl font-bold leading-[1.1] tracking-tight text-[var(--text-primary)] sm:text-4xl md:text-5xl">
           Analyze more repos.
           <br className="hidden sm:block" />
-          Pay for what you <span className="text-[var(--accent)]">actually</span> use.
+          Pay for what you{" "}
+          <span className="text-[var(--accent)]">actually</span> use.
         </h1>
-        <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
-          Start free with a handful of scans a month. Upgrade once CodeVerity becomes part of how your team
-          reviews code.
+        <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
+          Start free with a handful of scans a month. Upgrade once CodeVerity
+          becomes part of how your team reviews code.
         </p>
 
-        {/* Trust strip – a professional pricing page reassures before it asks for a decision */}
-        <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[12px] text-[var(--text-muted)]">
+        {/* Trust strip */}
+        <div className="mx-auto mt-6 flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-[11px] text-[var(--text-muted)] sm:text-[12px]">
           {TRUST_ITEMS.map((item) => (
             <span key={item} className="inline-flex items-center gap-1.5">
               <CheckIcon className="text-[var(--accent)]" />
@@ -246,7 +274,7 @@ export default function Pricing() {
 
       {/* Toggles */}
       <Reveal
-        className="mx-auto mt-8 flex max-w-5xl flex-col items-center gap-4 px-6 sm:flex-row sm:justify-between"
+        className="mx-auto mt-8 flex max-w-5xl flex-col items-center gap-3 px-4 sm:flex-row sm:justify-between sm:gap-4 sm:px-6"
         delay={0.1}
         duration={0.5}
       >
@@ -268,53 +296,75 @@ export default function Pricing() {
         />
       </Reveal>
 
-      {/* Plan cards – each staggers in as the grid scrolls into view */}
-      <section className="mx-auto mt-10 grid max-w-5xl gap-6 px-6 sm:grid-cols-2 lg:grid-cols-3">
+      {/* Plan cards */}
+      <section className="mx-auto mt-10 grid max-w-5xl gap-4 px-4 sm:grid-cols-2 sm:gap-6 sm:px-6 lg:grid-cols-3">
         {PRICING_PLANS.map((plan, i) => (
-          <Reveal key={plan.id} className="h-full" delay={i * 0.1} duration={0.5}>
-            <PlanCard plan={plan} cycle={cycle} currency={currency} onSelect={handleSelect} />
+          <Reveal
+            key={plan.id}
+            className="h-full"
+            delay={i * 0.1}
+            duration={0.5}
+          >
+            <PlanCard
+              plan={plan}
+              cycle={cycle}
+              currency={currency}
+              onSelect={handleSelect}
+            />
           </Reveal>
         ))}
       </section>
 
-      {/* Enterprise / contact strip – a plain text-and-link row, not a new page or a fourth plan card */}
+      {/* Enterprise / contact strip */}
       <Reveal
-        className="mx-auto mt-6 flex max-w-5xl flex-col items-center justify-between gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-6 py-5 text-center sm:flex-row sm:text-left"
+        className="mx-auto mt-6 flex max-w-5xl flex-col items-center justify-between gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-5 text-center sm:mx-6 sm:flex-row sm:px-6 sm:text-left"
         delay={0.35}
         duration={0.5}
       >
-        <div>
-          <p className="text-sm font-semibold text-[var(--text-primary)]">Need more than 10 seats or a custom contract?</p>
+        <div className="min-w-0">
+          <p className="text-sm font-semibold text-[var(--text-primary)]">
+            Need more than 10 seats or a custom contract?
+          </p>
           <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">
-            We'll put together an Enterprise plan around your team's repos and compliance needs.
+            We'll put together an Enterprise plan around your team's repos and
+            compliance needs.
           </p>
         </div>
         <a
           href="mailto:sales@codeverity.dev"
-          className="shrink-0 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-[13px] font-semibold text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
+          className="w-full shrink-0 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-center text-[13px] font-semibold text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] sm:w-auto"
         >
           Contact sales
         </a>
       </Reveal>
 
-      {/* FAQ – heading reveals once, then each question staggers in */}
-      <section className="mx-auto max-w-3xl px-6 pb-24 pt-16">
-        <Reveal as="h2" className="text-center font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+      {/* FAQ */}
+      <section className="mx-auto max-w-3xl px-4 pb-20 pt-12 sm:px-6 sm:pb-24 sm:pt-16">
+        <Reveal
+          as="h2"
+          className="text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)] sm:text-[11px]"
+        >
           frequently asked
         </Reveal>
         <div className="mt-6 overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           {FAQ.map((item, i) => (
             <Reveal key={item.q} delay={i * 0.08} duration={0.45}>
               <div
-                className={`group p-5 transition-colors duration-150 hover:bg-[var(--bg-hover)]/40 ${
+                className={`group p-4 transition-colors duration-150 hover:bg-[var(--bg-hover)]/40 sm:p-5 ${
                   i !== 0 ? "border-t border-[var(--border-light)]" : ""
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 font-mono text-[11px] text-[var(--accent)]">Q.</span>
-                  <div>
-                    <p className="text-[14px] font-semibold text-[var(--text-primary)]">{item.q}</p>
-                    <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">{item.a}</p>
+                  <span className="mt-0.5 shrink-0 font-mono text-[11px] text-[var(--accent)]">
+                    Q.
+                  </span>
+                  <div className="min-w-0">
+                    <p className="text-[14px] font-semibold text-[var(--text-primary)]">
+                      {item.q}
+                    </p>
+                    <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+                      {item.a}
+                    </p>
                   </div>
                 </div>
               </div>
