@@ -36,7 +36,17 @@ export default function Settings() {
     setLoading(true);
     try {
       const res = await axios.get("/auth/me");
+
+      // Guard against empty 304 / cached responses
+      if (!res || !res.data) return;
+
       const u = res.data.user ?? res.data;
+      if (!u) {
+        logout();
+        navigate("/login");
+        return;
+      }
+
       setUser(u);
       setName(u.name ?? "");
       setEmail(u.email ?? "");
@@ -44,13 +54,13 @@ export default function Settings() {
       if (err.response?.status === 401) {
         logout();
         navigate("/login");
-      } else {
+      } else if (err.response?.status !== 304) {
         toastError("Failed to load settings.");
       }
     } finally {
       setLoading(false);
     }
-  }, [navigate, logout, toastError]);
+  }, [navigate, logout]);   // ✅ toastError removed
 
   useEffect(() => {
     if (!isAuth) {
@@ -58,7 +68,7 @@ export default function Settings() {
       return;
     }
     fetchUser();
-  }, [isAuth, fetchUser, navigate]);
+  }, [isAuth, fetchUser]);  // ✅ navigate removed
 
   const saveProfile = async () => {
     if (!name.trim()) {
@@ -843,10 +853,6 @@ function DangerRow({
   );
 }
 
-// 4-tier strength scale, aligned with the app's severity tokens
-// (Weak→danger, Fair→warning, Good→info, Strong→success) so this
-// matches the same red/amber/blue/green vocabulary used everywhere
-// else instead of running its own independent color scheme.
 function PasswordStrength({ password, compact }) {
   if (!password) return null;
 
