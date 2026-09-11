@@ -19,12 +19,18 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // 1. Remove the invalid token
-      localStorage.removeItem("token");
-      
-      // 2. Redirect to login page (window.location ensures full app state reset)
-      if (window.location.pathname !== "/login") {
+      const publicPaths = ["/", "/login", "/register", "/pricing", "/about", "/contact", "/terms", "/privacy", "/support"];
+      const currentPath = window.location.pathname;
+      const isPublic = publicPaths.some(
+        (p) => currentPath === p || currentPath.startsWith(`${p}/`)
+      );
+
+      if (!isPublic && currentPath !== "/login") {
+        localStorage.removeItem("token");
         window.location.href = "/login";
+      } else {
+        // On public pages, just clear the token quietly — don't redirect
+        localStorage.removeItem("token");
       }
     }
     return Promise.reject(error);
