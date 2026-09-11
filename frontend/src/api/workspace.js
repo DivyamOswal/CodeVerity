@@ -23,7 +23,9 @@ export const updateIntegrations = (data) =>
   axios.put("/workspace/integrations", data);
 
 // ─── Audit Log ──────────────────────────────────────────────────
-export const getAuditLogs = () => axios.get("/workspace/audit-logs");
+// ─── Audit Log (paginated) ──────────────────────────────────────
+export const getAuditLogs = (page = 1, limit = 20) =>
+  axios.get(`/workspace/audit-logs?page=${page}&limit=${limit}`);
 
 // ─── Repositories ──────────────────────────────────────────────
 export const getRepositories = () => axios.get("/workspace/repositories");
@@ -59,4 +61,6 @@ export const transferOwnership = (userId) => axios.post("/workspace/transfer-own
 export const deleteWorkspace = () => axios.delete("/workspace");
 
 // ─── Activity ──────────────────────────────────────────────────
-export const getMemberActivity = () => axios.get("/workspace/activity");
+// ─── Activity (paginated) ──────────────────────────────────────
+export const getMemberActivity = (page = 1, limit = 10) =>
+  axios.get(`/workspace/activity?page=${page}&limit=${limit}`);

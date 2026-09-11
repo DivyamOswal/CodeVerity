@@ -100,6 +100,11 @@ export default function WorkspaceSettings() {
 
   const [showInviteModal, setShowInviteModal] = useState(false);
 
+  // ── Audit log pagination ──
+  const [auditPage, setAuditPage] = useState(1);
+  const [auditPagination, setAuditPagination] = useState(null);
+  const [auditLoading, setAuditLoading] = useState(false);
+
   const [analytics, setAnalytics] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(false);
 
@@ -151,23 +156,23 @@ export default function WorkspaceSettings() {
   const loadWorkspaceData = async () => {
     try {
       setLoading(true);
-      const [wsRes, membersRes, keysRes, logsRes] = await Promise.all([
+      const [wsRes, membersRes, keysRes] = await Promise.all([
         getWorkspace(),
         getMembers(),
         getApiKeys(),
-        getAuditLogs(),
       ]);
       setWorkspace(wsRes.data.workspace);
       setWorkspaceName(wsRes.data.workspace?.name || "");
       setMembers(membersRes.data.members || []);
       setApiKeys(keysRes.data.apiKeys || []);
-      setAuditLogs(logsRes.data.logs || []);
+
+      // Fetch first page of audit logs separately
+      await fetchAuditLogs(1);
+
       if (wsRes.data.workspace?.settings?.integrations) {
         setIntegrations(wsRes.data.workspace.settings.integrations);
       }
-      if (wsRes.data.workspace?.branding) {
-        setBranding(wsRes.data.workspace.branding);
-      }
+      // ... rest of the existing code unchanged
       if (wsRes.data.workspace?.webhookUrl) {
         setWebhookUrl(wsRes.data.workspace.webhookUrl);
       }
@@ -178,6 +183,21 @@ export default function WorkspaceSettings() {
       toastError(err.response?.data?.error || "Failed to load workspace");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchAuditLogs = async (page = 1) => {
+    try {
+      setAuditLoading(true);
+      const res = await getAuditLogs(page, 20);
+      setAuditLogs(res.data.logs || []);
+      setAuditPagination(res.data.pagination || null);
+      setAuditPage(page);
+    } catch (err) {
+      console.error("Failed to fetch audit logs", err);
+      toastError(err.response?.data?.error || "Failed to load audit logs");
+    } finally {
+      setAuditLoading(false);
     }
   };
 
@@ -555,14 +575,32 @@ export default function WorkspaceSettings() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-3 sm:grid-cols-4 sm:gap-4">
-                  <StatCard label="Members" value={members.length} icon={Users} />
-                  <StatCard label="Total Scans" value={workspace?.totalScans || 0} icon={BarChart3} />
-                  <StatCard label="API Keys" value={apiKeys.length} icon={Key} />
-                  <StatCard label="Plan" value={workspace?.plan || "Starter"} icon={CreditCard} />
+                  <StatCard
+                    label="Members"
+                    value={members.length}
+                    icon={Users}
+                  />
+                  <StatCard
+                    label="Total Scans"
+                    value={workspace?.totalScans || 0}
+                    icon={BarChart3}
+                  />
+                  <StatCard
+                    label="API Keys"
+                    value={apiKeys.length}
+                    icon={Key}
+                  />
+                  <StatCard
+                    label="Plan"
+                    value={workspace?.plan || "Starter"}
+                    icon={CreditCard}
+                  />
                 </div>
 
                 <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-4">
-                  <h3 className="text-sm font-semibold text-red-400">Danger Zone</h3>
+                  <h3 className="text-sm font-semibold text-red-400">
+                    Danger Zone
+                  </h3>
                   <button
                     onClick={leaveWorkspaceHandler}
                     className="mt-2 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-2 text-sm font-medium text-red-400 transition hover:bg-red-500/20"
@@ -577,13 +615,17 @@ export default function WorkspaceSettings() {
           {/* ===== INTEGRATIONS ===== */}
           {activeTab === "Integrations" && (
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Integrations</h2>
+              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                Integrations
+              </h2>
               <div className="mt-6 space-y-6">
                 {/* Slack */}
                 <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
                   <div className="flex items-start justify-between gap-3 sm:items-center">
                     <div className="min-w-0">
-                      <h3 className="font-medium text-[var(--text-primary)]">Slack</h3>
+                      <h3 className="font-medium text-[var(--text-primary)]">
+                        Slack
+                      </h3>
                       <p className="text-xs text-[var(--text-muted)] sm:text-sm">
                         Send scan notifications to Slack
                       </p>
@@ -595,7 +637,10 @@ export default function WorkspaceSettings() {
                         onChange={(e) =>
                           setIntegrations({
                             ...integrations,
-                            slack: { ...integrations.slack, enabled: e.target.checked },
+                            slack: {
+                              ...integrations.slack,
+                              enabled: e.target.checked,
+                            },
                           })
                         }
                         className="peer sr-only"
@@ -606,14 +651,19 @@ export default function WorkspaceSettings() {
                   {integrations.slack.enabled && (
                     <div className="mt-4 space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">Webhook URL</label>
+                        <label className="block text-sm font-medium text-[var(--text-muted)]">
+                          Webhook URL
+                        </label>
                         <input
                           type="url"
                           value={integrations.slack.webhookUrl}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              slack: { ...integrations.slack, webhookUrl: e.target.value },
+                              slack: {
+                                ...integrations.slack,
+                                webhookUrl: e.target.value,
+                              },
                             })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -621,14 +671,19 @@ export default function WorkspaceSettings() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">Channel (optional)</label>
+                        <label className="block text-sm font-medium text-[var(--text-muted)]">
+                          Channel (optional)
+                        </label>
                         <input
                           type="text"
                           value={integrations.slack.channel}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              slack: { ...integrations.slack, channel: e.target.value },
+                              slack: {
+                                ...integrations.slack,
+                                channel: e.target.value,
+                              },
                             })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -643,7 +698,9 @@ export default function WorkspaceSettings() {
                 <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
                   <div className="flex items-start justify-between gap-3 sm:items-center">
                     <div className="min-w-0">
-                      <h3 className="font-medium text-[var(--text-primary)]">Jira</h3>
+                      <h3 className="font-medium text-[var(--text-primary)]">
+                        Jira
+                      </h3>
                       <p className="text-xs text-[var(--text-muted)] sm:text-sm">
                         Create tickets from scan findings
                       </p>
@@ -655,7 +712,10 @@ export default function WorkspaceSettings() {
                         onChange={(e) =>
                           setIntegrations({
                             ...integrations,
-                            jira: { ...integrations.jira, enabled: e.target.checked },
+                            jira: {
+                              ...integrations.jira,
+                              enabled: e.target.checked,
+                            },
                           })
                         }
                         className="peer sr-only"
@@ -666,14 +726,19 @@ export default function WorkspaceSettings() {
                   {integrations.jira.enabled && (
                     <div className="mt-4 space-y-3">
                       <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">Jira URL</label>
+                        <label className="block text-sm font-medium text-[var(--text-muted)]">
+                          Jira URL
+                        </label>
                         <input
                           type="url"
                           value={integrations.jira.url}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              jira: { ...integrations.jira, url: e.target.value },
+                              jira: {
+                                ...integrations.jira,
+                                url: e.target.value,
+                              },
                             })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -681,14 +746,19 @@ export default function WorkspaceSettings() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">Project Key</label>
+                        <label className="block text-sm font-medium text-[var(--text-muted)]">
+                          Project Key
+                        </label>
                         <input
                           type="text"
                           value={integrations.jira.projectKey}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              jira: { ...integrations.jira, projectKey: e.target.value },
+                              jira: {
+                                ...integrations.jira,
+                                projectKey: e.target.value,
+                              },
                             })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -696,14 +766,19 @@ export default function WorkspaceSettings() {
                         />
                       </div>
                       <div>
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">API Token</label>
+                        <label className="block text-sm font-medium text-[var(--text-muted)]">
+                          API Token
+                        </label>
                         <input
                           type="password"
                           value={integrations.jira.apiToken}
                           onChange={(e) =>
                             setIntegrations({
                               ...integrations,
-                              jira: { ...integrations.jira, apiToken: e.target.value },
+                              jira: {
+                                ...integrations.jira,
+                                apiToken: e.target.value,
+                              },
                             })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
@@ -730,8 +805,12 @@ export default function WorkspaceSettings() {
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">API Keys</h2>
-                  <p className="text-sm text-[var(--text-muted)]">Use these keys for CI/CD integration</p>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    API Keys
+                  </h2>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    Use these keys for CI/CD integration
+                  </p>
                 </div>
                 <button
                   onClick={() => setShowNewKey(true)}
@@ -766,7 +845,9 @@ export default function WorkspaceSettings() {
               {apiKeys.length === 0 ? (
                 <div className="mt-6 rounded-xl border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] p-8 text-center sm:p-12">
                   <Key className="mx-auto h-10 w-10 text-[var(--text-muted)]" />
-                  <p className="mt-2 text-sm text-[var(--text-muted)]">No API keys created yet.</p>
+                  <p className="mt-2 text-sm text-[var(--text-muted)]">
+                    No API keys created yet.
+                  </p>
                 </div>
               ) : (
                 <div className="mt-6 space-y-3">
@@ -776,11 +857,19 @@ export default function WorkspaceSettings() {
                       className="flex flex-col gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 sm:flex-row sm:items-center sm:justify-between"
                     >
                       <div className="min-w-0">
-                        <p className="truncate font-medium text-[var(--text-primary)]">{key.name}</p>
+                        <p className="truncate font-medium text-[var(--text-primary)]">
+                          {key.name}
+                        </p>
                         <div className="mt-0.5 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[var(--text-muted)]">
-                          <span>Created: {new Date(key.createdAt).toLocaleDateString()}</span>
                           <span>
-                            Last used: {key.lastUsed ? new Date(key.lastUsed).toLocaleDateString() : "Never"}
+                            Created:{" "}
+                            {new Date(key.createdAt).toLocaleDateString()}
+                          </span>
+                          <span>
+                            Last used:{" "}
+                            {key.lastUsed
+                              ? new Date(key.lastUsed).toLocaleDateString()
+                              : "Never"}
                           </span>
                         </div>
                       </div>
@@ -806,12 +895,16 @@ export default function WorkspaceSettings() {
               {showNewKey && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
                   <div className="w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-xl">
-                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">Create API Key</h3>
+                    <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+                      Create API Key
+                    </h3>
                     <p className="mt-1 text-sm text-[var(--text-muted)]">
                       Name this key to identify it later.
                     </p>
                     <div className="mt-4">
-                      <label className="block text-sm font-medium text-[var(--text-muted)]">Key Name</label>
+                      <label className="block text-sm font-medium text-[var(--text-muted)]">
+                        Key Name
+                      </label>
                       <input
                         type="text"
                         value={newKeyName}
@@ -850,7 +943,9 @@ export default function WorkspaceSettings() {
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Members</h2>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Members
+                  </h2>
                   <p className="text-sm text-[var(--text-muted)]">
                     {members.length} members in this workspace
                   </p>
@@ -890,7 +985,10 @@ export default function WorkspaceSettings() {
                       const isOwner = member.role === "owner";
                       const canEdit = !isMe || (isMe && isOwner);
                       return (
-                        <tr key={member.userId._id} className="hover:bg-[var(--bg-hover)]/30">
+                        <tr
+                          key={member.userId._id}
+                          className="hover:bg-[var(--bg-hover)]/30"
+                        >
                           <td className="px-4 py-3 text-sm text-[var(--text-primary)]">
                             {member.userId.name || member.userId.email}
                           </td>
@@ -900,7 +998,12 @@ export default function WorkspaceSettings() {
                           <td className="px-4 py-3">
                             <select
                               value={member.role}
-                              onChange={(e) => updateRoleHandler(member.userId._id, e.target.value)}
+                              onChange={(e) =>
+                                updateRoleHandler(
+                                  member.userId._id,
+                                  e.target.value,
+                                )
+                              }
                               disabled={!canEdit || isOwner}
                               className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 py-1.5 text-sm text-[var(--text-secondary)] outline-none transition focus:border-[var(--accent)] disabled:opacity-60"
                             >
@@ -916,7 +1019,9 @@ export default function WorkspaceSettings() {
                           <td className="px-4 py-3 text-right">
                             {!isMe && (
                               <button
-                                onClick={() => removeMemberHandler(member.userId._id)}
+                                onClick={() =>
+                                  removeMemberHandler(member.userId._id)
+                                }
                                 className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm text-red-400 transition hover:bg-red-500/20"
                               >
                                 Remove
@@ -953,15 +1058,21 @@ export default function WorkspaceSettings() {
               <div className="mt-6 space-y-4">
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
                   <div>
-                    <p className="text-sm font-medium text-[var(--text-primary)]">Current Plan</p>
-                    <p className="text-sm text-[var(--text-muted)]">{workspace?.plan || "Starter"}</p>
+                    <p className="text-sm font-medium text-[var(--text-primary)]">
+                      Current Plan
+                    </p>
+                    <p className="text-sm text-[var(--text-muted)]">
+                      {workspace?.plan || "Starter"}
+                    </p>
                   </div>
                   <div className="text-right">
                     <p className="text-sm font-bold text-[var(--text-primary)]">
                       {workspace?.plan === "starter" ? "Free" : "Paid"}
                     </p>
                     <p className="text-xs text-[var(--text-muted)]">
-                      {workspace?.subscriptionStatus === "active" ? "✅ Active" : "❌ Inactive"}
+                      {workspace?.subscriptionStatus === "active"
+                        ? "✅ Active"
+                        : "❌ Inactive"}
                     </p>
                   </div>
                 </div>
@@ -971,13 +1082,17 @@ export default function WorkspaceSettings() {
                     <p className="text-2xl font-bold text-[var(--text-primary)]">
                       {workspace?.scansLimit || 5}
                     </p>
-                    <p className="text-xs text-[var(--text-muted)]">Scans / month</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Scans / month
+                    </p>
                   </div>
                   <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-center">
                     <p className="text-2xl font-bold text-[var(--text-primary)]">
                       {workspace?.tokensLimit || 50000}
                     </p>
-                    <p className="text-xs text-[var(--text-muted)]">Tokens / month</p>
+                    <p className="text-xs text-[var(--text-muted)]">
+                      Tokens / month
+                    </p>
                   </div>
                 </div>
 
@@ -985,7 +1100,9 @@ export default function WorkspaceSettings() {
                   onClick={() => navigate("/pricing")}
                   className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]"
                 >
-                  {workspace?.plan === "starter" ? "Upgrade Plan" : "Change Plan"}
+                  {workspace?.plan === "starter"
+                    ? "Upgrade Plan"
+                    : "Change Plan"}
                 </button>
               </div>
             </div>
@@ -994,8 +1111,27 @@ export default function WorkspaceSettings() {
           {/* ===== AUDIT LOG ===== */}
           {activeTab === "Audit Log" && (
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">Audit Log</h2>
-              {auditLogs.length === 0 ? (
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Audit Log
+                  </h2>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    All actions taken in this workspace
+                  </p>
+                </div>
+                {auditPagination && (
+                  <span className="w-fit rounded-full bg-[var(--bg-primary)] px-3 py-1 text-xs text-[var(--text-muted)]">
+                    {auditPagination.total} total entries
+                  </span>
+                )}
+              </div>
+
+              {auditLoading ? (
+                <div className="mt-6 flex justify-center py-12">
+                  <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+                </div>
+              ) : auditLogs.length === 0 ? (
                 <div className="mt-6 rounded-xl border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] p-8 text-center sm:p-12">
                   <List className="mx-auto h-10 w-10 text-[var(--text-muted)]" />
                   <p className="mt-2 text-sm text-[var(--text-muted)]">
@@ -1003,39 +1139,67 @@ export default function WorkspaceSettings() {
                   </p>
                 </div>
               ) : (
-                <div className="mt-6 space-y-3">
-                  {auditLogs.map((log) => (
-                    <div
-                      key={log._id}
-                      className="flex items-start gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 sm:p-4"
-                    >
-                      <div className="mt-0.5 flex-shrink-0">
-                        <span
-                          className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            log.action === "scan"
-                              ? "bg-blue-500/10 text-blue-400"
-                              : log.action === "invite"
-                                ? "bg-green-500/10 text-green-400"
-                                : log.action === "delete"
-                                  ? "bg-red-500/10 text-red-400"
-                                  : "bg-[var(--border-light)] text-[var(--text-muted)]"
-                          }`}
-                        >
-                          {log.action}
-                        </span>
+                <>
+                  <div className="mt-6 space-y-3">
+                    {auditLogs.map((log) => (
+                      <div
+                        key={log._id}
+                        className="flex items-start gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 sm:p-4"
+                      >
+                        <div className="mt-0.5 flex-shrink-0">
+                          <span
+                            className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              log.action === "scan"
+                                ? "bg-blue-500/10 text-blue-400"
+                                : log.action === "invite"
+                                  ? "bg-green-500/10 text-green-400"
+                                  : log.action === "delete"
+                                    ? "bg-red-500/10 text-red-400"
+                                    : "bg-[var(--border-light)] text-[var(--text-muted)]"
+                            }`}
+                          >
+                            {log.action}
+                          </span>
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <p className="break-words text-sm text-[var(--text-secondary)]">
+                            {log.message}
+                          </p>
+                          <p className="mt-0.5 text-xs text-[var(--text-muted)]">
+                            {log.user?.name || "Unknown"} •{" "}
+                            {new Date(log.createdAt).toLocaleString()}
+                          </p>
+                        </div>
                       </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="break-words text-sm text-[var(--text-secondary)]">
-                          {log.message}
-                        </p>
-                        <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                          {log.user?.name || "Unknown"} •{" "}
-                          {new Date(log.createdAt).toLocaleString()}
-                        </p>
+                    ))}
+                  </div>
+
+                  {/* Pagination */}
+                  {auditPagination && auditPagination.totalPages > 1 && (
+                    <div className="mt-4 flex flex-col items-center justify-between gap-3 border-t border-[var(--border-dark)] pt-4 sm:flex-row">
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Page {auditPagination.page} of{" "}
+                        {auditPagination.totalPages}
+                      </p>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => fetchAuditLogs(auditPage - 1)}
+                          disabled={!auditPagination.hasPrev || auditLoading}
+                          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          ← Previous
+                        </button>
+                        <button
+                          onClick={() => fetchAuditLogs(auditPage + 1)}
+                          disabled={!auditPagination.hasNext || auditLoading}
+                          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] disabled:opacity-40 disabled:cursor-not-allowed"
+                        >
+                          Next →
+                        </button>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  )}
+                </>
               )}
             </div>
           )}
@@ -1045,7 +1209,9 @@ export default function WorkspaceSettings() {
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Repositories</h2>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Repositories
+                  </h2>
                   <p className="text-sm text-[var(--text-muted)]">
                     All repositories scanned in this workspace
                   </p>
@@ -1106,21 +1272,31 @@ export default function WorkspaceSettings() {
                             F: "text-[var(--color-danger)]",
                           }[grade[0]] || "text-[var(--text-muted)]";
                         return (
-                          <tr key={repo.repoUrl} className="hover:bg-[var(--bg-hover)]/30">
+                          <tr
+                            key={repo.repoUrl}
+                            className="hover:bg-[var(--bg-hover)]/30"
+                          >
                             <td className="px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
                               <span
                                 className="inline-block max-w-[200px] truncate"
                                 title={repo.repoUrl}
                               >
-                                {repo.repoUrl.replace("https://github.com/", "")}
+                                {repo.repoUrl.replace(
+                                  "https://github.com/",
+                                  "",
+                                )}
                               </span>
                             </td>
                             <td className="whitespace-nowrap px-4 py-3 text-sm text-[var(--text-secondary)]">
                               {repo.lastScannedAt
-                                ? new Date(repo.lastScannedAt).toLocaleDateString()
+                                ? new Date(
+                                    repo.lastScannedAt,
+                                  ).toLocaleDateString()
                                 : "Never"}
                             </td>
-                            <td className={`px-4 py-3 text-sm font-bold ${gradeColor}`}>
+                            <td
+                              className={`px-4 py-3 text-sm font-bold ${gradeColor}`}
+                            >
                               {grade}
                             </td>
                             <td className="px-4 py-3 text-sm text-[var(--text-secondary)]">
@@ -1132,7 +1308,9 @@ export default function WorkspaceSettings() {
                             <td className="whitespace-nowrap px-4 py-3 text-right">
                               <button
                                 onClick={() =>
-                                  navigate(`/dashboard?repo=${encodeURIComponent(repo.repoUrl)}`)
+                                  navigate(
+                                    `/dashboard?repo=${encodeURIComponent(repo.repoUrl)}`,
+                                  )
                                 }
                                 className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-sm text-[var(--text-secondary)] transition hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
                               >
@@ -1154,14 +1332,17 @@ export default function WorkspaceSettings() {
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">Usage Analytics</h2>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Usage Analytics
+                  </h2>
                   <p className="text-sm text-[var(--text-muted)]">
                     Token consumption and scan activity across your workspace
                   </p>
                 </div>
                 {analytics?.lastUpdated && (
                   <span className="w-fit rounded-full bg-[var(--bg-primary)] px-3 py-1 text-xs text-[var(--text-muted)]">
-                    Updated: {new Date(analytics.lastUpdated).toLocaleDateString()}
+                    Updated:{" "}
+                    {new Date(analytics.lastUpdated).toLocaleDateString()}
                   </span>
                 )}
               </div>
@@ -1177,19 +1358,25 @@ export default function WorkspaceSettings() {
                       <p className="text-2xl font-bold text-[var(--text-primary)]">
                         {analytics.totalScans}
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]">Total Scans</p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Total Scans
+                      </p>
                     </div>
                     <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-center">
                       <p className="text-2xl font-bold text-[var(--text-primary)]">
                         {analytics.totalTokens.toLocaleString()}
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]">Total Tokens Used</p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Total Tokens Used
+                      </p>
                     </div>
                     <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-center">
                       <p className="text-2xl font-bold text-[var(--text-primary)]">
                         {analytics.totalMembers}
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]">Active Members</p>
+                      <p className="text-xs text-[var(--text-muted)]">
+                        Active Members
+                      </p>
                     </div>
                   </div>
 
@@ -1203,9 +1390,23 @@ export default function WorkspaceSettings() {
                           <div className="mt-3 h-48">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={analytics.dailyUsage}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
-                                <XAxis dataKey="_id" tick={{ fontSize: 9, fill: "var(--text-muted)" }} />
-                                <YAxis tick={{ fontSize: 9, fill: "var(--text-muted)" }} />
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  stroke="var(--border-light)"
+                                />
+                                <XAxis
+                                  dataKey="_id"
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
+                                <YAxis
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
                                 <Tooltip
                                   contentStyle={{
                                     backgroundColor: "var(--bg-card)",
@@ -1213,7 +1414,11 @@ export default function WorkspaceSettings() {
                                     color: "var(--text-primary)",
                                   }}
                                 />
-                                <Bar dataKey="scans" fill="var(--accent)" radius={[4, 4, 0, 0]} />
+                                <Bar
+                                  dataKey="scans"
+                                  fill="var(--accent)"
+                                  radius={[4, 4, 0, 0]}
+                                />
                               </BarChart>
                             </ResponsiveContainer>
                           </div>
@@ -1225,9 +1430,23 @@ export default function WorkspaceSettings() {
                           <div className="mt-3 h-48">
                             <ResponsiveContainer width="100%" height="100%">
                               <BarChart data={analytics.dailyUsage}>
-                                <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
-                                <XAxis dataKey="_id" tick={{ fontSize: 9, fill: "var(--text-muted)" }} />
-                                <YAxis tick={{ fontSize: 9, fill: "var(--text-muted)" }} />
+                                <CartesianGrid
+                                  strokeDasharray="3 3"
+                                  stroke="var(--border-light)"
+                                />
+                                <XAxis
+                                  dataKey="_id"
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
+                                <YAxis
+                                  tick={{
+                                    fontSize: 9,
+                                    fill: "var(--text-muted)",
+                                  }}
+                                />
                                 <Tooltip
                                   contentStyle={{
                                     backgroundColor: "var(--bg-card)",
@@ -1235,7 +1454,11 @@ export default function WorkspaceSettings() {
                                     color: "var(--text-primary)",
                                   }}
                                 />
-                                <Bar dataKey="tokens" fill="var(--text-muted)" radius={[4, 4, 0, 0]} />
+                                <Bar
+                                  dataKey="tokens"
+                                  fill="var(--text-muted)"
+                                  radius={[4, 4, 0, 0]}
+                                />
                               </BarChart>
                             </ResponsiveContainer>
                           </div>
@@ -1267,7 +1490,10 @@ export default function WorkspaceSettings() {
                               </thead>
                               <tbody className="divide-y divide-[var(--border-dark)]">
                                 {analytics.members.map((member) => (
-                                  <tr key={member._id} className="hover:bg-[var(--bg-hover)]/30">
+                                  <tr
+                                    key={member._id}
+                                    className="hover:bg-[var(--bg-hover)]/30"
+                                  >
                                     <td className="px-4 py-2 text-sm text-[var(--text-primary)]">
                                       {member.name}
                                     </td>
@@ -1341,7 +1567,11 @@ export default function WorkspaceSettings() {
                   <div className="mt-2 flex flex-wrap items-center gap-3 sm:gap-4">
                     {branding.logo && (
                       <div className="h-16 w-16 overflow-hidden rounded-lg border border-[var(--border-light)]">
-                        <img src={branding.logo} alt="Logo preview" className="h-full w-full object-contain" />
+                        <img
+                          src={branding.logo}
+                          alt="Logo preview"
+                          className="h-full w-full object-contain"
+                        />
                       </div>
                     )}
                     <input
@@ -1371,7 +1601,9 @@ export default function WorkspaceSettings() {
                   <input
                     type="text"
                     value={branding.brandName}
-                    onChange={(e) => setBranding({ ...branding, brandName: e.target.value })}
+                    onChange={(e) =>
+                      setBranding({ ...branding, brandName: e.target.value })
+                    }
                     className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                     placeholder="CodeVerity"
                   />
@@ -1385,13 +1617,23 @@ export default function WorkspaceSettings() {
                     <input
                       type="color"
                       value={branding.primaryColor}
-                      onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                      onChange={(e) =>
+                        setBranding({
+                          ...branding,
+                          primaryColor: e.target.value,
+                        })
+                      }
                       className="h-10 w-14 cursor-pointer rounded-lg border border-[var(--border-light)] bg-transparent"
                     />
                     <input
                       type="text"
                       value={branding.primaryColor}
-                      onChange={(e) => setBranding({ ...branding, primaryColor: e.target.value })}
+                      onChange={(e) =>
+                        setBranding({
+                          ...branding,
+                          primaryColor: e.target.value,
+                        })
+                      }
                       className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                       placeholder="#22d3ee"
                     />
@@ -1406,13 +1648,23 @@ export default function WorkspaceSettings() {
                     <input
                       type="color"
                       value={branding.secondaryColor}
-                      onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}
+                      onChange={(e) =>
+                        setBranding({
+                          ...branding,
+                          secondaryColor: e.target.value,
+                        })
+                      }
                       className="h-10 w-14 cursor-pointer rounded-lg border border-[var(--border-light)] bg-transparent"
                     />
                     <input
                       type="text"
                       value={branding.secondaryColor}
-                      onChange={(e) => setBranding({ ...branding, secondaryColor: e.target.value })}
+                      onChange={(e) =>
+                        setBranding({
+                          ...branding,
+                          secondaryColor: e.target.value,
+                        })
+                      }
                       className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                       placeholder="#0e7490"
                     />
@@ -1420,14 +1672,23 @@ export default function WorkspaceSettings() {
                 </div>
 
                 <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4">
-                  <h4 className="text-sm font-medium text-[var(--text-muted)]">Preview</h4>
+                  <h4 className="text-sm font-medium text-[var(--text-muted)]">
+                    Preview
+                  </h4>
                   <div className="mt-3 flex items-center gap-3">
                     {branding.logo && (
                       <div className="h-8 w-8 overflow-hidden rounded border border-[var(--border-light)]">
-                        <img src={branding.logo} alt="Preview" className="h-full w-full object-contain" />
+                        <img
+                          src={branding.logo}
+                          alt="Preview"
+                          className="h-full w-full object-contain"
+                        />
                       </div>
                     )}
-                    <span className="text-base font-bold" style={{ color: branding.primaryColor }}>
+                    <span
+                      className="text-base font-bold"
+                      style={{ color: branding.primaryColor }}
+                    >
                       {branding.brandName || "CodeVerity"}
                     </span>
                   </div>
@@ -1516,13 +1777,19 @@ export default function WorkspaceSettings() {
                     </thead>
                     <tbody className="divide-y divide-[var(--border-dark)]">
                       {schedules.map((schedule) => (
-                        <tr key={schedule._id} className="hover:bg-[var(--bg-hover)]/30">
+                        <tr
+                          key={schedule._id}
+                          className="hover:bg-[var(--bg-hover)]/30"
+                        >
                           <td className="px-4 py-3 text-sm font-medium text-[var(--text-primary)]">
                             <span
                               className="inline-block max-w-[200px] truncate"
                               title={schedule.repoUrl}
                             >
-                              {schedule.repoUrl.replace("https://github.com/", "")}
+                              {schedule.repoUrl.replace(
+                                "https://github.com/",
+                                "",
+                              )}
                             </span>
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-sm capitalize text-[var(--text-secondary)]">
@@ -1538,7 +1805,9 @@ export default function WorkspaceSettings() {
                           </td>
                           <td className="whitespace-nowrap px-4 py-3 text-right">
                             <button
-                              onClick={() => deleteScheduleHandler(schedule._id)}
+                              onClick={() =>
+                                deleteScheduleHandler(schedule._id)
+                              }
                               className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1.5 text-sm text-red-400 transition hover:bg-red-500/20"
                             >
                               <Trash2 className="h-4 w-4" />
@@ -1569,7 +1838,10 @@ export default function WorkspaceSettings() {
                           type="text"
                           value={newSchedule.repoUrl}
                           onChange={(e) =>
-                            setNewSchedule({ ...newSchedule, repoUrl: e.target.value })
+                            setNewSchedule({
+                              ...newSchedule,
+                              repoUrl: e.target.value,
+                            })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                           placeholder="https://github.com/username/repo"
@@ -1582,7 +1854,10 @@ export default function WorkspaceSettings() {
                         <select
                           value={newSchedule.frequency}
                           onChange={(e) =>
-                            setNewSchedule({ ...newSchedule, frequency: e.target.value })
+                            setNewSchedule({
+                              ...newSchedule,
+                              frequency: e.target.value,
+                            })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                         >
@@ -1599,7 +1874,10 @@ export default function WorkspaceSettings() {
                           type="time"
                           value={newSchedule.time}
                           onChange={(e) =>
-                            setNewSchedule({ ...newSchedule, time: e.target.value })
+                            setNewSchedule({
+                              ...newSchedule,
+                              time: e.target.value,
+                            })
                           }
                           className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                         />
@@ -1608,7 +1886,11 @@ export default function WorkspaceSettings() {
                     <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                       <button
                         onClick={createScheduleHandler}
-                        disabled={submitting || !newSchedule.repoUrl || !newSchedule.time}
+                        disabled={
+                          submitting ||
+                          !newSchedule.repoUrl ||
+                          !newSchedule.time
+                        }
                         className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] disabled:opacity-50"
                       >
                         {submitting ? "Creating…" : "Create Schedule"}
@@ -1616,7 +1898,11 @@ export default function WorkspaceSettings() {
                       <button
                         onClick={() => {
                           setShowScheduleForm(false);
-                          setNewSchedule({ repoUrl: "", frequency: "daily", time: "09:00" });
+                          setNewSchedule({
+                            repoUrl: "",
+                            frequency: "daily",
+                            time: "09:00",
+                          });
                         }}
                         className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)]"
                       >
@@ -1633,7 +1919,9 @@ export default function WorkspaceSettings() {
           {activeTab === "Webhooks" && (
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div>
-                <h2 className="text-lg font-semibold text-[var(--text-primary)]">Webhooks</h2>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  Webhooks
+                </h2>
                 <p className="text-sm text-[var(--text-muted)]">
                   Send scan completion events to external services
                 </p>
@@ -1745,9 +2033,18 @@ export default function WorkspaceSettings() {
                   <div className="h-64">
                     <ResponsiveContainer width="100%" height="100%">
                       <LineChart data={trends}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="var(--border-light)" />
-                        <XAxis dataKey="period" tick={{ fontSize: 10, fill: "var(--text-muted)" }} />
-                        <YAxis domain={[0, 100]} tick={{ fontSize: 10, fill: "var(--text-muted)" }} />
+                        <CartesianGrid
+                          strokeDasharray="3 3"
+                          stroke="var(--border-light)"
+                        />
+                        <XAxis
+                          dataKey="period"
+                          tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                        />
+                        <YAxis
+                          domain={[0, 100]}
+                          tick={{ fontSize: 10, fill: "var(--text-muted)" }}
+                        />
                         <Tooltip
                           contentStyle={{
                             backgroundColor: "var(--bg-card)",
@@ -1756,10 +2053,34 @@ export default function WorkspaceSettings() {
                           }}
                         />
                         <Legend wrapperStyle={{ fontSize: 11 }} />
-                        <Line type="monotone" dataKey="codeQuality" stroke="#22d3ee" name="Code Quality" strokeWidth={2} />
-                        <Line type="monotone" dataKey="security" stroke="#f472b6" name="Security" strokeWidth={2} />
-                        <Line type="monotone" dataKey="performance" stroke="#fbbf24" name="Performance" strokeWidth={2} />
-                        <Line type="monotone" dataKey="maintainability" stroke="#a78bfa" name="Maintainability" strokeWidth={2} />
+                        <Line
+                          type="monotone"
+                          dataKey="codeQuality"
+                          stroke="#22d3ee"
+                          name="Code Quality"
+                          strokeWidth={2}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="security"
+                          stroke="#f472b6"
+                          name="Security"
+                          strokeWidth={2}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="performance"
+                          stroke="#fbbf24"
+                          name="Performance"
+                          strokeWidth={2}
+                        />
+                        <Line
+                          type="monotone"
+                          dataKey="maintainability"
+                          stroke="#a78bfa"
+                          name="Maintainability"
+                          strokeWidth={2}
+                        />
                       </LineChart>
                     </ResponsiveContainer>
                   </div>
@@ -1789,9 +2110,16 @@ export default function WorkspaceSettings() {
                               <p className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
                                 {latest.codeQuality || 0}%
                               </p>
-                              <p className={`text-xs ${changeColor(change(latest.codeQuality, "codeQuality"))}`}>
-                                {change(latest.codeQuality, "codeQuality") > 0 ? "↑" : "↓"}{" "}
-                                {Math.abs(change(latest.codeQuality, "codeQuality"))}%
+                              <p
+                                className={`text-xs ${changeColor(change(latest.codeQuality, "codeQuality"))}`}
+                              >
+                                {change(latest.codeQuality, "codeQuality") > 0
+                                  ? "↑"
+                                  : "↓"}{" "}
+                                {Math.abs(
+                                  change(latest.codeQuality, "codeQuality"),
+                                )}
+                                %
                               </p>
                             </div>
                             <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center">
@@ -1801,8 +2129,12 @@ export default function WorkspaceSettings() {
                               <p className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
                                 {latest.security || 0}%
                               </p>
-                              <p className={`text-xs ${changeColor(change(latest.security, "security"))}`}>
-                                {change(latest.security, "security") > 0 ? "↑" : "↓"}{" "}
+                              <p
+                                className={`text-xs ${changeColor(change(latest.security, "security"))}`}
+                              >
+                                {change(latest.security, "security") > 0
+                                  ? "↑"
+                                  : "↓"}{" "}
                                 {Math.abs(change(latest.security, "security"))}%
                               </p>
                             </div>
@@ -1813,9 +2145,16 @@ export default function WorkspaceSettings() {
                               <p className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
                                 {latest.performance || 0}%
                               </p>
-                              <p className={`text-xs ${changeColor(change(latest.performance, "performance"))}`}>
-                                {change(latest.performance, "performance") > 0 ? "↑" : "↓"}{" "}
-                                {Math.abs(change(latest.performance, "performance"))}%
+                              <p
+                                className={`text-xs ${changeColor(change(latest.performance, "performance"))}`}
+                              >
+                                {change(latest.performance, "performance") > 0
+                                  ? "↑"
+                                  : "↓"}{" "}
+                                {Math.abs(
+                                  change(latest.performance, "performance"),
+                                )}
+                                %
                               </p>
                             </div>
                             <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center">
@@ -1825,9 +2164,22 @@ export default function WorkspaceSettings() {
                               <p className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
                                 {latest.maintainability || 0}%
                               </p>
-                              <p className={`text-xs ${changeColor(change(latest.maintainability, "maintainability"))}`}>
-                                {change(latest.maintainability, "maintainability") > 0 ? "↑" : "↓"}{" "}
-                                {Math.abs(change(latest.maintainability, "maintainability"))}%
+                              <p
+                                className={`text-xs ${changeColor(change(latest.maintainability, "maintainability"))}`}
+                              >
+                                {change(
+                                  latest.maintainability,
+                                  "maintainability",
+                                ) > 0
+                                  ? "↑"
+                                  : "↓"}{" "}
+                                {Math.abs(
+                                  change(
+                                    latest.maintainability,
+                                    "maintainability",
+                                  ),
+                                )}
+                                %
                               </p>
                             </div>
                           </>

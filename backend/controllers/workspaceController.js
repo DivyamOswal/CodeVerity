@@ -460,18 +460,40 @@ export const updateIntegrations = async (req, res) => {
 };
 
 // ─── Audit Log ──────────────────────────────────────────────────
+// ─── Audit Log (with pagination) ──────────────────────────────
 export const getAuditLogs = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
-    // Populate user details for each log entry
     await workspace.populate("auditLogs.userId", "name email");
+
     const logs = workspace.auditLogs || [];
 
-    const recent = logs.slice(-50).reverse();
-    res.json({ success: true, logs: recent });
+    // ─── Pagination ──────────────────────────────────
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const total = logs.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    // newest first
+    const sorted = [...logs].reverse();
+    const start = (page - 1) * limit;
+    const paginated = sorted.slice(start, start + limit);
+
+    res.json({
+      success: true,
+      logs: paginated,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (err) {
     console.error("Get audit logs error:", err);
     res.status(500).json({ error: "Failed to fetch audit logs" });
@@ -1341,6 +1363,7 @@ export const permanentDeleteWorkspace = async (workspaceId) => {
 // }
 
 // ─── Get Member Activity Dashboard ─────────────────────────────
+// ─── Get Member Activity Dashboard (with pagination) ─────────
 export const getMemberActivity = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
@@ -1349,11 +1372,9 @@ export const getMemberActivity = async (req, res) => {
     const workspace = await ensureWorkspace(user);
     const workspaceId = workspace._id;
 
-    // Get last 30 days of activity per member
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
 
-    // Aggregate activity from audit logs
     const activity = await WorkSpace.aggregate([
       { $match: { _id: workspaceId } },
       { $unwind: "$auditLogs" },
@@ -1361,30 +1382,58 @@ export const getMemberActivity = async (req, res) => {
       {
         $group: {
           _id: "$auditLogs.userId",
-          actions: { $push: { action: "$auditLogs.action", createdAt: "$auditLogs.createdAt", message: "$auditLogs.message" } },
+          actions: {
+            $push: {
+              action: "$auditLogs.action",
+              createdAt: "$auditLogs.createdAt",
+              message: "$auditLogs.message",
+            },
+          },
           totalActions: { $sum: 1 },
           lastActive: { $max: "$auditLogs.createdAt" },
         },
       },
+      { $sort: { lastActive: -1 } },
     ]);
 
-    // Get user details
-    const userIds = activity.map(a => a._id);
+    // ─── Pagination ──────────────────────────────────
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 10, 50);
+    const total = activity.length;
+    const totalPages = Math.ceil(total / limit) || 1;
+    const start = (page - 1) * limit;
+    const paginated = activity.slice(start, start + limit);
+
+    // Get user details for this page only
+    const userIds = paginated.map((a) => a._id);
     const users = await User.find({ _id: { $in: userIds } }).select("name email");
 
-    const result = activity.map(a => {
-      const userInfo = users.find(u => u._id.toString() === a._id.toString());
+    const result = paginated.map((a) => {
+      const userInfo = users.find(
+        (u) => u._id.toString() === a._id.toString()
+      );
       return {
         userId: a._id,
         name: userInfo?.name || "Unknown",
         email: userInfo?.email || "",
         totalActions: a.totalActions,
         lastActive: a.lastActive,
-        actions: a.actions.slice(0, 20), // recent actions
+        actions: a.actions.slice(0, 20),
       };
     });
 
-    res.json({ success: true, activity: result });
+    res.json({
+      success: true,
+      activity: result,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (err) {
     console.error("Get member activity error:", err);
     res.status(500).json({ error: "Failed to fetch activity" });
