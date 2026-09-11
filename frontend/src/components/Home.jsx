@@ -364,72 +364,151 @@ function ScanLine() {
 }
 
 // ============================================================
-//  COMPONENT: ScanReportCard3D  the visual content of the new
-//  3D showcase panel. Pure markup/CSS; all motion is applied to
-//  its wrapper from the scroll-triggered GSAP block in Home, so
-//  this component itself holds no animation logic.
+//  COMPONENT: CodeShowcase3D — replaces the old single flat
+//  ScanReportCard3D. This is a layered scene: a central floating
+//  terminal/editor window (extending the app's existing editor-
+//  chrome identity — traffic lights, tab label, line gutter) with
+//  three result badges floating around it at different depths.
+//  badgeRefs is populated by the parent so each badge can get its
+//  own independent scroll-entrance stagger + idle float loop.
+//  Pure markup/CSS — all motion lives in Home's useGSAP block.
 // ============================================================
-function ScanReportCard3D() {
+function CodeShowcase3D({ badgeRefs }) {
   return (
-    <div
-      className="relative w-full rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_50px_100px_-30px_var(--accent-soft-strong)] sm:p-7"
-      style={{ transformStyle: "preserve-3d" }}
-    >
-      {/* faux window chrome, so the panel reads as "product", not decoration */}
-      <div className="mb-5 flex items-center gap-1.5">
-        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-danger)]/50" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-warning)]/50" />
-        <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-success)]/50" />
-        <span className="ml-3 font-mono text-[10px] text-[var(--text-muted)]">
-          audit-report.json
+    <div className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
+      {/* Floating badge: bug count */}
+      <div
+        ref={(el) => (badgeRefs.current[0] = el)}
+        className="absolute -top-6 -right-5 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
+            <path d="M18 13h-2" /><path d="M8 13H6" /><path d="M10 4 8 2" />
+            <path d="M14 4 16 2" /><path d="M12 22v-4" />
+          </svg>
         </span>
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Bugs found</p>
+          <p className="font-mono text-sm font-bold text-[var(--text-primary)]">0 critical</p>
+        </div>
       </div>
 
-      <div className="flex items-center gap-5">
-        <div className="relative h-20 w-20 shrink-0">
+      {/* Floating badge: grade ring */}
+      <div
+        ref={(el) => (badgeRefs.current[1] = el)}
+        className="absolute -bottom-7 -left-6 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <div className="relative h-9 w-9 shrink-0">
           <svg viewBox="0 0 36 36" className="-rotate-90">
             <path
               d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
               fill="none"
               stroke="var(--border-light)"
-              strokeWidth="3"
+              strokeWidth="4"
             />
             <path
               d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
               fill="none"
               stroke="var(--accent)"
-              strokeWidth="3"
+              strokeWidth="4"
               strokeDasharray="92,100"
               strokeLinecap="round"
             />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-base font-bold text-[var(--text-primary)]">
+          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[var(--text-primary)]">
             A+
           </span>
         </div>
-        <div className="flex-1 space-y-2.5">
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-light)]">
-            <div className="h-full w-[92%] rounded-full bg-[var(--accent)]" />
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-light)]">
-            <div className="h-full w-[78%] rounded-full bg-[var(--color-success)]" />
-          </div>
-          <div className="h-2 w-full overflow-hidden rounded-full bg-[var(--border-light)]">
-            <div className="h-full w-[85%] rounded-full bg-[var(--color-info)]" />
-          </div>
+        <div>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Grade</p>
+          <p className="font-mono text-xs font-semibold text-[var(--color-success)]">92 / 100</p>
         </div>
       </div>
 
-      <div className="mt-5 flex flex-wrap gap-2">
-        <span className="rounded-md bg-[var(--accent-soft)] px-2.5 py-1 font-mono text-[10px] text-[var(--accent)]">
-          0 critical bugs
-        </span>
-        <span className="rounded-md bg-[var(--color-success-soft)] px-2.5 py-1 font-mono text-[10px] text-[var(--color-success)]">
-          Security passed
-        </span>
-        <span className="rounded-md bg-[var(--color-info-soft)] px-2.5 py-1 font-mono text-[10px] text-[var(--color-info)]">
-          12 tests generated
-        </span>
+      {/* Floating badge: tests generated */}
+      <div
+        ref={(el) => (badgeRefs.current[2] = el)}
+        className="absolute -top-4 left-8 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
+        style={{ transformStyle: "preserve-3d" }}
+      >
+        <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
+        <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
+      </div>
+
+      {/* MAIN: floating terminal / editor window */}
+      <div className="relative z-10 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_50px_100px_-30px_var(--accent-soft-strong)]">
+        <div className="flex items-center justify-between border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex gap-1.5">
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-danger)]/60" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-warning)]/60" />
+              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-success)]/60" />
+            </div>
+            <span className="font-mono text-[10px] text-[var(--text-muted)]">analyzer.ts</span>
+          </div>
+          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
+            live scan
+          </span>
+        </div>
+
+        <div className="flex">
+          <div className="hidden select-none flex-col items-end gap-[7px] border-r border-[var(--border-light)] px-3 py-5 font-mono text-[10px] leading-[1.6] text-[var(--text-muted)]/50 sm:flex">
+            {Array.from({ length: 8 }, (_, i) => (
+              <span key={i}>{i + 1}</span>
+            ))}
+          </div>
+          <pre className="flex-1 overflow-hidden px-4 py-5 font-mono text-[11px] leading-[1.6]">
+            <code>
+              <span className="text-[var(--accent-secondary)]">function</span>{" "}
+              <span className="text-[var(--accent)]">auditRepository</span>
+              <span className="text-[var(--text-secondary)]">(repo) {"{"}</span>
+              {"\n"}
+              {"  "}
+              <span className="text-[var(--text-muted)]">// scan architecture &amp; deps</span>
+              {"\n"}
+              {"  "}
+              <span className="text-[var(--accent-secondary)]">const</span>{" "}
+              <span className="text-[var(--text-primary)]">issues</span>{" "}
+              <span className="text-[var(--text-secondary)]">= </span>
+              <span className="text-[var(--accent)]">scan</span>
+              <span className="text-[var(--text-secondary)]">(repo);</span>
+              {"\n"}
+              {"  "}
+              <span className="text-[var(--accent-secondary)]">if</span>{" "}
+              <span className="text-[var(--text-secondary)]">(issues.</span>
+              <span className="text-[var(--color-danger)]">critical</span>
+              <span className="text-[var(--text-secondary)]">) </span>
+              <span className="text-[var(--accent-secondary)]">return</span>{" "}
+              <span className="text-[var(--color-warning)]">"fail"</span>
+              <span className="text-[var(--text-secondary)]">;</span>
+              {"\n"}
+              {"  "}
+              <span className="text-[var(--accent-secondary)]">return</span>{" "}
+              <span className="text-[var(--color-success)]">"A+"</span>
+              <span className="text-[var(--text-secondary)]">;</span>
+              {"\n"}
+              <span className="text-[var(--text-secondary)]">{"}"}</span>
+              <span className="ml-0.5 inline-block h-[1em] w-[6px] translate-y-[2px] animate-pulse bg-[var(--accent)]" />
+            </code>
+          </pre>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2">
+          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 3v12" />
+              <circle cx="18" cy="6" r="3" />
+              <circle cx="6" cy="18" r="3" />
+              <path d="M18 9a9 9 0 0 1-9 9" />
+            </svg>
+            main
+          </span>
+          <span className="font-mono text-[9px] font-semibold text-[var(--color-success)]">0 errors · A+ grade</span>
+        </div>
       </div>
     </div>
   );
@@ -480,7 +559,7 @@ function HowItWorks() {
             How it works
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
-            Repository in, report out  three steps.
+            Repository in, report out — three steps.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
@@ -524,7 +603,7 @@ function Testimonials() {
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote: "I use it before every PR. The bug detection is surprisingly accurate  it's like having a senior reviewer.",
+      quote: "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full-stack Developer, OpenSource Collective",
     },
@@ -669,7 +748,7 @@ function Pricing() {
           })}
         </div>
         <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">
-          All prices in INR. Yearly plans offer 20% off  see full pricing page.
+          All prices in INR. Yearly plans offer 20% off — see full pricing page.
         </p>
       </div>
     </section>
@@ -760,7 +839,6 @@ function Footer({ isLoggedIn }) {
             </p>
           </div>
 
-          {/* Dynamic Product Column */}
           <div>
             <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
               Product
@@ -784,7 +862,6 @@ function Footer({ isLoggedIn }) {
             </ul>
           </div>
 
-          {/* Static Resources Column */}
           <div>
             <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
               Resources
@@ -797,7 +874,6 @@ function Footer({ isLoggedIn }) {
             </ul>
           </div>
 
-          {/* Static Company Column */}
           <div>
             <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
               Company
@@ -903,17 +979,37 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  // ── New refs for the 3D scroll showcase. wrapperRef holds the
-  // ScrollTrigger; cardRef is the element that actually gets the
-  // 3D transform (perspective lives on wrapperRef's inline style).
+  // 3D showcase refs. wrapperRef holds the ScrollTrigger; cardRef is
+  // the element that gets the 3D transform; badgeRefs is populated by
+  // CodeShowcase3D so each floating badge can animate independently.
   const showcaseWrapperRef = useRef(null);
   const showcaseCardRef = useRef(null);
+  const showcaseBadgeRefs = useRef([]);
+
+  // NEW: GSAP-driven scroll progress bar at the top of the page.
+  // Purely additive — a fixed element + one ScrollTrigger, doesn't
+  // touch any existing animation or scroll behavior.
+  const progressRef = useRef(null);
 
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
+        // --- SCROLL PROGRESS BAR ---
+        if (progressRef.current) {
+          gsap.set(progressRef.current, { scaleX: 0 });
+          ScrollTrigger.create({
+            trigger: document.documentElement,
+            start: "top top",
+            end: "bottom bottom",
+            scrub: 0.3,
+            onUpdate: (self) => {
+              gsap.set(progressRef.current, { scaleX: self.progress });
+            },
+          });
+        }
+
         // --- HERO ENTRANCE ANIMATION (Simple 2D Fade/Slide) ---
         const tl = gsap.timeline({
           defaults: { ease: "power3.out", duration: 0.8 },
@@ -1046,11 +1142,10 @@ export default function Home() {
           });
         }
 
-        // --- 3D SHOWCASE PANEL: tilts in from an angled, receded
-        // position to flat-and-close as the panel enters view, then
-        // idles with a slow ambient tilt once fully revealed. Scoped
-        // entirely to its own refs  doesn't touch any existing
-        // section's animation.
+        // --- 3D SHOWCASE: main window tilts in from an angled,
+        // receded position to flat-and-close as it enters view, then
+        // idles with a slow ambient tilt once revealed (unchanged
+        // from before). ---
         if (showcaseCardRef.current && showcaseWrapperRef.current) {
           const startState = { rotateY: -32, rotateX: 14, y: 70, scale: 0.9, opacity: 0 };
           gsap.set(showcaseCardRef.current, startState);
@@ -1077,10 +1172,6 @@ export default function Home() {
             },
           });
 
-          // gentle continuous idle tilt, same ambient-loop pattern
-          // used for the AuthLayout orbs  runs regardless of scroll
-          // position once mounted; the scroll-tied tween above simply
-          // overwrites it while the panel is animating into view.
           gsap.to(showcaseCardRef.current, {
             rotateY: "+=5",
             rotateX: "+=2.5",
@@ -1092,22 +1183,59 @@ export default function Home() {
           });
         }
 
+        // --- 3D SHOWCASE BADGES: each floating badge fades/scales in
+        // with its own stagger once the panel is in view, then drifts
+        // with an independent idle float loop (offset timing per
+        // badge so they don't move in unison). Additive — scoped
+        // entirely to showcaseBadgeRefs. ---
+        if (showcaseBadgeRefs.current.length) {
+          gsap.set(showcaseBadgeRefs.current, { opacity: 0, scale: 0.85, z: -40 });
+
+          ScrollTrigger.create({
+            trigger: showcaseWrapperRef.current,
+            start: "top 80%",
+            onEnter: () => {
+              gsap.to(showcaseBadgeRefs.current, {
+                opacity: 1,
+                scale: 1,
+                z: 0,
+                duration: 0.7,
+                stagger: 0.15,
+                ease: "back.out(1.6)",
+                delay: 0.3,
+              });
+            },
+            once: true,
+          });
+
+          showcaseBadgeRefs.current.forEach((el, i) => {
+            if (!el) return;
+            gsap.to(el, {
+              y: "+=8",
+              duration: 3 + i * 0.6,
+              repeat: -1,
+              yoyo: true,
+              ease: "sine.inOut",
+              delay: 1.5 + i * 0.4,
+            });
+          });
+        }
+
         return () => {
           ScrollTrigger.getAll().forEach((st) => st.kill());
         };
       });
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
-        // Fallback for reduced motion: just show everything
         gsap.set(
           [
             brandRef.current, badgeRef.current, headingRef.current, typedRef.current,
             descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
             featureLabelRef.current, featureCardsRef.current, howRef.current,
             testimonialRef.current, pricingRef.current, faqRef.current,
-            showcaseCardRef.current,
+            showcaseCardRef.current, ...(showcaseBadgeRefs.current || []),
           ],
-          { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, clearProps: "all" },
+          { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, z: 0, clearProps: "all" },
         );
       });
 
@@ -1145,7 +1273,15 @@ export default function Home() {
       ref={containerRef}
       className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
     >
-      {/* Enhanced Glowing Effects for Hero Heading and Stat Cards */}
+      {/* Scroll progress bar — GSAP ScrollTrigger driven, fixed to
+          top of viewport, scales along the X axis with scroll. */}
+      <div
+        ref={progressRef}
+        className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]"
+        style={{ transform: "scaleX(0)" }}
+        aria-hidden="true"
+      />
+
       <style dangerouslySetInnerHTML={{__html: `
         .stat-card {
           box-shadow: 0 0 20px -5px var(--accent-soft-strong), inset 0 0 10px var(--accent-soft);
@@ -1162,8 +1298,6 @@ export default function Home() {
           color: transparent;
           filter: drop-shadow(0 0 8px var(--accent-soft-strong));
         }
-        
-        /* New Hero Title Glow Effect */
         .hero-title-glow {
           background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 50%, var(--text-primary) 100%);
           background-size: 200% 200%;
@@ -1181,7 +1315,6 @@ export default function Home() {
         }
       `}} />
 
-      {/* Background glows and dot grid  theme-driven */}
       <div
         ref={bgGlow1Ref}
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl"
@@ -1201,12 +1334,10 @@ export default function Home() {
 
       <NeuralNetworkBackground />
 
-      {/* MAIN CONTENT */}
       <div
         className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container}`}
       >
         <div className="w-full max-w-5xl text-center">
-          {/* BRAND */}
           <div
             ref={brandRef}
             className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}
@@ -1222,7 +1353,6 @@ export default function Home() {
             </div>
           </div>
 
-          {/* BADGE */}
           <div
             ref={badgeRef}
             className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}
@@ -1231,7 +1361,6 @@ export default function Home() {
             AI-powered GitHub code analysis
           </div>
 
-          {/* HEADING with Glow Effect */}
           <h1
             ref={headingRef}
             className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
@@ -1239,7 +1368,6 @@ export default function Home() {
             <span className="hero-title-glow">CodeVerity</span>
           </h1>
 
-          {/* TYPED SUBTITLE */}
           <p
             ref={typedRef}
             className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
@@ -1254,17 +1382,15 @@ export default function Home() {
             />
           </p>
 
-          {/* DESCRIPTION */}
           <p
             ref={descriptionRef}
             className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
           >
             Drop any public GitHub URL and get a complete AI-powered repository
-            audit  architecture analysis, security findings, bug detection,
+            audit — architecture analysis, security findings, bug detection,
             performance insights, and generated tests.
           </p>
 
-          {/* CTA BUTTONS */}
           <div
             ref={ctasRef}
             className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
@@ -1298,7 +1424,6 @@ export default function Home() {
             )}
           </div>
 
-          {/* TRUST LINE */}
           <div
             ref={trustRef}
             className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
@@ -1309,7 +1434,6 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
-          {/* STATS */}
           <div
             ref={statsRef}
             className={`mx-auto flex w-fit flex-wrap justify-center gap-4 ${compactClasses.statsMargin}`}
@@ -1319,7 +1443,6 @@ export default function Home() {
             <StatPill value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={700} />
           </div>
 
-          {/* FEATURE LABEL */}
           <div
             ref={featureLabelRef}
             className="mb-6 text-left"
@@ -1329,7 +1452,6 @@ export default function Home() {
             </p>
           </div>
 
-          {/* FEATURE CARDS */}
           <div className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}>
             <div ref={(el) => (featureCardsRef.current[0] = el)}>
               <Feature icon={<BugIcon />} title="AI Bug Detection" desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase." index={0} />
@@ -1345,11 +1467,7 @@ export default function Home() {
       </div>
 
       {/* ================================================================
-          3D SHOWCASE  new section, self-contained. Sits between the
-          hero and "How it works" as the natural point where someone
-          scrolling has just read what CodeVerity checks and is about
-          to learn how the process runs  a good place to *show* the
-          output rather than only describe it.
+          3D SHOWCASE — layered floating code editor with result badges
       ================================================================ */}
       <section className="relative z-10 border-t border-[var(--border-light)] px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
@@ -1366,13 +1484,12 @@ export default function Home() {
             style={{ perspective: "1400px" }}
           >
             <div ref={showcaseCardRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
-              <ScanReportCard3D />
+              <CodeShowcase3D badgeRefs={showcaseBadgeRefs} />
             </div>
           </div>
         </div>
       </section>
 
-      {/* NEW SECTIONS */}
       <div className="relative z-10 mx-auto max-w-7xl">
         <div ref={howRef}>
           <HowItWorks />

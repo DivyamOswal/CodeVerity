@@ -12,6 +12,8 @@
   "license": "ISC",
   "dependencies": {
     "@octokit/rest": "^22.0.1",
+    "@sentry/node": "^10.74.0",
+    "@sentry/profiling-node": "^10.74.0",
     "axios": "^1.13.5",
     "bcryptjs": "^3.0.3",
     "chartjs-node-canvas": "^5.0.0",

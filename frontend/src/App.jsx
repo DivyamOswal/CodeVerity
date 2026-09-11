@@ -1,3 +1,4 @@
+// frontend/src/App.jsx
 import axios from "./api/axios";
 import {
   BrowserRouter,
@@ -12,10 +13,12 @@ import {
   createContext,
   useContext,
   useEffect,
+  lazy,
+  Suspense,
 } from "react";
+import * as Sentry from "@sentry/react";
 import SmoothScroll from "./components/SmoothScroll";
 import Navbar from "./components/Navbar";
-import { lazy, Suspense } from "react";
 import PageLoader from "./components/PageLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
 
@@ -38,13 +41,57 @@ const Privacy = lazy(() => import("./pages/Privacy"));
 const Support = lazy(() => import("./pages/Support"));
 const Terms = lazy(() => import("./pages/Terms"));
 const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
-import ErrorBoundary from "./components/ErrorBoundary";
 
 import { PreferencesProvider } from "./context/PreferencesContext";
-
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
 import { ScrollSmoother, ScrollTrigger } from "gsap/all";
 import { Toaster } from "react-hot-toast";
+
+// ─── Sentry Error Fallback UI ──────────────────────────────────
+function SentryFallback({ error, resetError }) {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)] px-4">
+      <div className="w-full max-w-md rounded-2xl border border-[var(--color-danger)]/20 bg-[var(--bg-card)] p-8 text-center shadow-xl">
+        <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)]">
+          <span className="text-2xl text-[var(--color-danger)]">⚠</span>
+        </div>
+
+        <h1 className="text-lg font-bold text-[var(--text-primary)]">
+          Something went wrong
+        </h1>
+        <p className="mt-2 text-sm text-[var(--text-muted)]">
+          The error has been reported. You can reload or return home.
+        </p>
+
+        {error && (
+          <details className="mt-4 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-left">
+            <summary className="cursor-pointer text-xs font-medium text-[var(--text-muted)]">
+              Error details
+            </summary>
+            <pre className="mt-2 overflow-x-auto whitespace-pre-wrap text-[10px] text-[var(--color-danger)]">
+              {error.toString()}
+            </pre>
+          </details>
+        )}
+
+        <div className="mt-6 flex gap-3">
+          <button
+            onClick={() => window.location.reload()}
+            className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)]"
+          >
+            Reload Page
+          </button>
+          <button
+            onClick={resetError}
+            className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ─── Auth Context ──────────────────────────────────────────────
 export const AuthContext = createContext(null);
@@ -59,7 +106,6 @@ function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Fetch user when token changes
   useEffect(() => {
     if (token) {
       setLoading(true);
@@ -71,7 +117,6 @@ function AuthProvider({ children }) {
           setUser(res.data.user);
         })
         .catch(() => {
-          // Invalid token – logout
           localStorage.removeItem("token");
           setToken(null);
           setUser(null);
@@ -109,7 +154,6 @@ function AuthProvider({ children }) {
 // ─── AnalyzePage (keep your existing code) ──────────────────
 function AnalyzePage() {
   // ... your existing AnalyzePage code ...
-  // (I've omitted it for brevity, but you should keep your existing code)
 }
 
 // ─── Layout ─────────────────────────────────────────────────────
@@ -140,88 +184,88 @@ function Layout() {
       {showNav && <Navbar />}
       <SmoothScroll>
         <Suspense fallback={<PageLoader />}>
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/privacy" element={<Privacy />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/support" element={<Support />} />
-          <Route
-            path="/login"
-            element={isAuth ? <Navigate to="/dashboard" replace /> : <Login />}
-          />
-          <Route
-            path="/register"
-            element={
-              isAuth ? <Navigate to="/dashboard" replace /> : <Register />
-            }
-          />
-          <Route path="/oauth-success" element={<OAuthSuccess />} />
-          <Route
-            path="/oauth-error"
-            element={<Navigate to="/login" replace />}
-          />
-          <Route
-            path="/history"
-            element={
-              <ProtectedRoute>
-                <History />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/analyze" element={<AnalyzePage />} />
-          <Route
-            path="/profile"
-            element={
-              <ProtectedRoute>
-                <Profile />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/settings"
-            element={
-              <ProtectedRoute>
-                <Settings />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/dashboard"
-            element={
-              <ProtectedRoute>
-                <Dashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute requireAdmin>
-                <AdminDashboard />
-              </ProtectedRoute>
-            }
-          />
-          <Route
-            path="/workspace"
-            element={
-              <ProtectedRoute>
-                <Workspace />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="/pricing" element={<Pricing />} />
-          <Route
-            path="/checkout"
-            element={
-              <ProtectedRoute>
-                <Checkout />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
+          <Routes>
+            <Route path="/" element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/privacy" element={<Privacy />} />
+            <Route path="/terms" element={<Terms />} />
+            <Route path="/support" element={<Support />} />
+            <Route
+              path="/login"
+              element={isAuth ? <Navigate to="/dashboard" replace /> : <Login />}
+            />
+            <Route
+              path="/register"
+              element={
+                isAuth ? <Navigate to="/dashboard" replace /> : <Register />
+              }
+            />
+            <Route path="/oauth-success" element={<OAuthSuccess />} />
+            <Route
+              path="/oauth-error"
+              element={<Navigate to="/login" replace />}
+            />
+            <Route
+              path="/history"
+              element={
+                <ProtectedRoute>
+                  <History />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/analyze" element={<AnalyzePage />} />
+            <Route
+              path="/profile"
+              element={
+                <ProtectedRoute>
+                  <Profile />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <Settings />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/dashboard"
+              element={
+                <ProtectedRoute>
+                  <Dashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute requireAdmin>
+                  <AdminDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workspace"
+              element={
+                <ProtectedRoute>
+                  <Workspace />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="/pricing" element={<Pricing />} />
+            <Route
+              path="/checkout"
+              element={
+                <ProtectedRoute>
+                  <Checkout />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
         </Suspense>
       </SmoothScroll>
     </>
@@ -231,7 +275,7 @@ function Layout() {
 // ─── App ────────────────────────────────────────────────────────
 export default function App() {
   return (
-    <ErrorBoundary>
+    <Sentry.ErrorBoundary fallback={SentryFallback} showDialog={false}>
       <BrowserRouter>
         <Toaster
           position="top-right"
@@ -265,6 +309,6 @@ export default function App() {
           </PreferencesProvider>
         </AuthProvider>
       </BrowserRouter>
-    </ErrorBoundary>
+    </Sentry.ErrorBoundary>
   );
 }
