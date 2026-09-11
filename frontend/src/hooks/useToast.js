@@ -1,11 +1,16 @@
 // frontend/src/hooks/useToast.js
+import { useMemo } from 'react';
 import toast from 'react-hot-toast';
 
 export const useToast = () => {
-  const success = (message) => toast.success(message);
-  const error = (message) => toast.error(message);
-  const info = (message) => toast(message);
-  const warning = (message) => toast(message, { icon: '⚠️' });
-
-  return { success, error, info, warning };
+  return useMemo(
+    () => ({
+      success: (message) => toast.success(message),
+      error: (message) => toast.error(message),
+      info: (message) => toast(message),
+      warning: (message) => toast(message, { icon: '⚠️' }),
+      promise: (promise, messages) => toast.promise(promise, messages),
+    }),
+    []
+  );
 };
