@@ -129,6 +129,11 @@ export const register = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
+  // ✅ Prevent browser from caching this response (avoids 304 with empty body)
+  res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
+  res.set("Pragma", "no-cache");
+  res.set("Expires", "0");
+
   try {
     const user = await User.findById(req.user.id).select("-password");
     if (!user) {
