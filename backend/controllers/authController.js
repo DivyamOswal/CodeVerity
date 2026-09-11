@@ -129,17 +129,32 @@ export const register = async (req, res) => {
 };
 
 export const getMe = async (req, res) => {
-  // ✅ Prevent browser from caching this response (avoids 304 with empty body)
+  // ✅ Prevent browser caching (avoids 304 with empty body)
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.set("Pragma", "no-cache");
   res.set("Expires", "0");
 
   try {
-    const user = await User.findById(req.user.id).select("-password");
+    // Include githubAccessToken so we can compute hasGithubConnected
+    const user = await User.findById(req.user.id)
+      .select("-password +githubAccessToken")
+      .lean();
+
     if (!user) {
       return res.status(404).json({ error: "User not found" });
     }
-    res.json({ success: true, user });
+
+    // Never send the actual token to the client
+    const { githubAccessToken, ...safeUser } = user;
+
+    res.json({
+      success: true,
+      user: {
+        ...safeUser,
+        // ✅ Boolean flag instead of raw token
+        hasGithubConnected: Boolean(githubAccessToken),
+      },
+    });
   } catch (err) {
     console.error("Get /me error:", err);
     res.status(500).json({ error: "Failed to fetch user" });

@@ -566,7 +566,7 @@ export default function Settings() {
                     creates PRs with AI‑generated fixes for detected issues.
                   </p>
 
-                  {user?.githubAccessToken ? (
+                  {user?.hasGithubConnected ? (
                     <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] p-4 sm:flex-row sm:items-center">
                       <span className="text-2xl">✅</span>
                       <div className="min-w-0 flex-1">
