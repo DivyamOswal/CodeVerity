@@ -5,7 +5,7 @@ export function initSentry() {
   const dsn = import.meta.env.VITE_SENTRY_DSN_FRONTEND;
 
   if (!dsn) {
-    console.warn("Sentry DSN not set — skipping init.");
+    console.warn("Sentry DSN not set skipping init.");
     return;
   }
 

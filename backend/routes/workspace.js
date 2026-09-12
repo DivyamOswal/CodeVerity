@@ -83,7 +83,7 @@ router.put("/branding", auth, updateBranding);
 router.post("/invitations", auth, createInvitation);
 router.post("/invitations/accept", auth, acceptInvitation);
 router.get("/invitations", auth, getPendingInvites);
-router.delete("/invitations/:token", auth, cancelInvitation);
+router.delete("/invitations/:id", auth, cancelInvitation);
 
 // ─── Ownership Transfer ────────────────────────────────────────
 router.post("/transfer-ownership", auth, transferOwnership);

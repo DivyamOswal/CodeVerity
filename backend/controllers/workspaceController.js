@@ -1496,9 +1496,10 @@ export const getPendingInvites = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-    const pending = (workspace.invitations || [])
+        const pending = (workspace.invitations || [])
       .filter((i) => i.status === "pending")
       .map((i) => ({
+        _id: i._id,
         email: i.email,
         role: i.role,
         expiresAt: i.expiresAt,
@@ -1517,7 +1518,7 @@ export const getPendingInvites = async (req, res) => {
 // ─── Cancel Invitation ─────────────────────────────────────────
 export const cancelInvitation = async (req, res) => {
   try {
-    const { token } = req.params;
+    const { id } = req.params;
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
 
@@ -1529,10 +1530,24 @@ export const cancelInvitation = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
+    const invite = workspace.invitations.find(
+      (i) => i._id.toString() === id,
+    );
+    if (!invite) {
+      return res.status(404).json({ error: "Invitation not found." });
+    }
+
     workspace.invitations = workspace.invitations.filter(
-      (i) => i.token !== token,
+      (i) => i._id.toString() !== id,
     );
     await workspace.save();
+
+    await addAuditLog(
+      workspace._id,
+      user._id,
+      "invite_cancelled",
+      `Cancelled invite for ${invite.email}`,
+    );
 
     res.json({ success: true, message: "Invitation cancelled." });
   } catch (err) {

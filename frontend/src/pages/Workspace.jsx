@@ -98,8 +98,6 @@ export default function WorkspaceSettings() {
   const [activeTab, setActiveTab] = useState("General");
   const [submitting, setSubmitting] = useState(false);
 
-  const [showInviteModal, setShowInviteModal] = useState(false);
-
   // ── Audit log pagination ──
   const [auditPage, setAuditPage] = useState(1);
   const [auditPagination, setAuditPagination] = useState(null);

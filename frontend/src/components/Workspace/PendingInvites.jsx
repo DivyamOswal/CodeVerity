@@ -29,22 +29,40 @@ export default function PendingInvites() {
     }
   };
 
-  useEffect(() => { fetchInvites(); }, []);
+  useEffect(() => {
+    fetchInvites();
+  }, []);
 
-  if (loading) return <p className="text-sm text-[var(--text-muted)]">Loading invites...</p>;
-  if (invites.length === 0) return <p className="text-sm text-[var(--text-muted)]">No pending invitations.</p>;
+  if (loading)
+    return (
+      <p className="text-sm text-[var(--text-muted)]">Loading invites...</p>
+    );
+  if (invites.length === 0)
+    return (
+      <p className="text-sm text-[var(--text-muted)]">
+        No pending invitations.
+      </p>
+    );
 
   return (
     <div className="mt-4 space-y-2">
-      <h4 className="text-sm font-medium text-[var(--text-primary)]">Pending Invites</h4>
+      <h4 className="text-sm font-medium text-[var(--text-primary)]">
+        Pending Invites
+      </h4>
       {invites.map((inv) => (
-        <div key={inv.token} className="flex items-center justify-between rounded-lg border border-[var(--border-light)] p-3">
+        <div
+          key={inv._id}
+          className="flex items-center justify-between rounded-lg border border-[var(--border-light)] p-3"
+        >
           <div>
             <p className="text-sm text-[var(--text-primary)]">{inv.email}</p>
-            <p className="text-xs text-[var(--text-muted)]">Role: {inv.role} • Expires: {new Date(inv.expiresAt).toLocaleDateString()}</p>
+            <p className="text-xs text-[var(--text-muted)]">
+              Role: {inv.role} • Expires:{" "}
+              {new Date(inv.expiresAt).toLocaleDateString()}
+            </p>
           </div>
           <button
-            onClick={() => handleCancel(inv.token)}
+            onClick={() => handleCancel(inv._id)}
             className="rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-1 text-xs text-red-400 hover:bg-red-500/20"
           >
             Cancel

@@ -5,7 +5,6 @@ import { FolderTree, FileCode, X, Sparkles, Loader2, Menu } from 'lucide-react';
 import { useAuth } from '../../App';
 import { useToast } from '../../hooks/useToast';
 
-// ✅ Absolute backend URL – required because fetch() ignores axios baseURL
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
 
 export default function RepoEditor({ repoUrl, reportId }) {
@@ -21,12 +20,10 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [repoContentLoading, setRepoContentLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // ── Fetch repo structure ──
   const loadRepo = async () => {
     if (!repoUrl) return;
     setRepoContentLoading(true);
     try {
-      // ✅ Absolute URL
       const res = await fetch(
         `${API_URL}/github/repo/contents?repoUrl=${encodeURIComponent(repoUrl)}`,
         {
@@ -36,15 +33,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
       const data = await res.json();
       if (data.success) {
         setFiles(data.files || []);
-        // Also fetch report to map errors
         if (reportId) {
-          // ✅ Absolute URL
           const reportRes = await fetch(`${API_URL}/report/${reportId}`, {
             headers: { Authorization: `Bearer ${token}` },
           });
           const reportData = await reportRes.json();
           const report = reportData.data?.report || reportData.report || {};
-          // Build error map by file path
           const errorMap = {};
           const allErrors = [
             ...(report.bugs || []).map((b) => ({
@@ -80,12 +74,10 @@ export default function RepoEditor({ repoUrl, reportId }) {
     if (repoUrl) loadRepo();
   }, [repoUrl, reportId]);
 
-  // ── Open a file ──
   const openFile = async (file) => {
     setCurrentFile(file);
     setSidebarOpen(false);
     try {
-      // ✅ Absolute URL
       const res = await fetch(
         `${API_URL}/github/repo/file?repoUrl=${encodeURIComponent(repoUrl)}&filePath=${encodeURIComponent(file.path)}`,
         {
@@ -104,13 +96,11 @@ export default function RepoEditor({ repoUrl, reportId }) {
     }
   };
 
-  // ── AI Fix ──
   const handleFix = async (errObj, lineNumber) => {
     const issueId = errObj._id || errObj.id || Date.now();
     setFixLoading((prev) => ({ ...prev, [issueId]: true }));
 
     try {
-      // ✅ Absolute URL
       const response = await fetch(`${API_URL}/github/auto-fix`, {
         method: 'POST',
         headers: {
@@ -147,7 +137,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
     }
   };
 
-  // ── Render file tree ──
   const renderFileTree = (items, level = 0) => {
     if (!items || !items.length) return null;
     return items.map((item) => (
@@ -197,15 +186,13 @@ export default function RepoEditor({ repoUrl, reportId }) {
 
   return (
     <div className="relative flex h-[70vh] min-h-[420px] border border-[var(--border-light)] rounded-xl overflow-hidden bg-[var(--bg-primary)] sm:h-[600px]">
-      {/* ─── Mobile: overlay backdrop when sidebar is open ─── */}
       {sidebarOpen && (
         <div
-          className="absolute inset-0 z-30 bg-black/50 backdrop-blur-sm md:hidden"
+          className="absolute inset-0 z-30 bg-[var(--bg-primary)]/70 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
-      {/* ─── File Tree ───────────────────────────── */}
       <div
         className={`absolute inset-y-0 left-0 z-40 w-64 max-w-[80%] border-r border-[var(--border-light)] bg-[var(--bg-card)] overflow-y-auto p-2 transition-transform duration-200 md:relative md:z-0 md:translate-x-0 ${
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'
@@ -239,9 +226,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
         )}
       </div>
 
-      {/* ─── Editor ─────────────────────────────── */}
       <div className="flex min-w-0 flex-1 flex-col">
-        {/* File header */}
         <div className="flex items-center justify-between gap-2 px-3 py-2 border-b border-[var(--border-light)] bg-[var(--bg-card)] sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <button
@@ -270,17 +255,16 @@ export default function RepoEditor({ repoUrl, reportId }) {
           )}
         </div>
 
-        {/* Monaco Editor */}
         <div className="min-h-0 flex-1">
           <Editor
             height="100%"
             language="javascript"
             value={content}
             onChange={setContent}
+            theme="vs-dark"
             options={{
               minimap: { enabled: false },
               fontSize: 12,
-              theme: 'vs-dark',
               padding: { top: 10 },
               glyphMargin: true,
               automaticLayout: true,
@@ -288,7 +272,29 @@ export default function RepoEditor({ repoUrl, reportId }) {
               lineNumbersMinChars: 3,
               wordWrap: 'on',
             }}
-            onMount={(editor) => {
+            onMount={(editor, monaco) => {
+              // Build a Monaco theme from the app's real CSS variable
+              // values (read once via getComputedStyle, since Monaco
+              // — like <canvas> — can't consume CSS custom properties
+              // directly). Falls back to vs-dark on first paint via the
+              // `theme` prop above; this overrides it once mounted so
+              // the editor follows the app's active light/dark theme
+              // instead of always forcing dark mode.
+              const styles = getComputedStyle(document.documentElement);
+              const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+              monaco.editor.defineTheme('codeverity', {
+                base: isLight ? 'vs' : 'vs-dark',
+                inherit: true,
+                rules: [],
+                colors: {
+                  'editor.background': styles.getPropertyValue('--bg-primary').trim(),
+                  'editor.foreground': styles.getPropertyValue('--text-primary').trim(),
+                  'editorLineNumber.foreground': styles.getPropertyValue('--text-muted').trim(),
+                  'editorGutter.background': styles.getPropertyValue('--bg-primary').trim(),
+                },
+              });
+              monaco.editor.setTheme('codeverity');
+
               if (!currentFile) return;
               const fileErrors = errors[currentFile.path] || [];
               const decorations = fileErrors.map((err) => ({
@@ -312,7 +318,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
           />
         </div>
 
-        {/* Error list & Fix buttons */}
         {currentFile && errors[currentFile.path]?.length > 0 && (
           <div className="max-h-40 overflow-y-auto border-t border-[var(--border-light)] bg-[var(--bg-card)] p-2">
             <div className="mb-2 text-xs font-medium text-[var(--text-muted)]">
@@ -346,7 +351,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
                     disabled={fixLoading[issueId] || fixedLines[err.line]}
                     className={`flex shrink-0 items-center justify-center gap-1 self-start rounded px-2 py-1 text-xs font-medium transition sm:self-auto ${
                       fixedLines[err.line]
-                        ? 'bg-green-500/20 text-green-400'
+                        ? 'bg-[var(--color-success-soft)] text-[var(--color-success)]'
                         : 'bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]'
                     }`}
                   >
@@ -363,6 +368,22 @@ export default function RepoEditor({ repoUrl, reportId }) {
           </div>
         )}
       </div>
+
+      {/* Monaco decoration CSS. These classNames are applied by
+          editor.deltaDecorations above but Monaco doesn't generate any
+          styling for them itself — without this block, error lines and
+          glyph markers render but are invisible. */}
+      <style>{`
+        .error-line {
+          background: var(--color-danger-soft) !important;
+        }
+        .error-glyph {
+          background: var(--color-danger);
+          width: 4px !important;
+          margin-left: 3px;
+          border-radius: 2px;
+        }
+      `}</style>
     </div>
   );
 }

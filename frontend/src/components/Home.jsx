@@ -24,7 +24,7 @@ function getAccentRGB() {
 }
 
 // ============================================================
-//  COMPONENT: NeuralNetworkBackground 
+//  COMPONENT: NeuralNetworkBackground
 // ============================================================
 function NeuralNetworkBackground() {
   const canvasRef = useRef(null);
@@ -298,6 +298,9 @@ function FlaskIcon() {
 
 // ============================================================
 //  COMPONENT: StatPill (Glowing card effect)
+//  Unchanged internal logic — count-up on mount/remount, driven
+//  by delayMs. Home now remounts these (via key) whenever the
+//  stats row re-enters the viewport, so the count-up replays.
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -364,19 +367,44 @@ function ScanLine() {
 }
 
 // ============================================================
-//  COMPONENT: CodeShowcase3D — replaces the old single flat
-//  ScanReportCard3D. This is a layered scene: a central floating
-//  terminal/editor window (extending the app's existing editor-
-//  chrome identity — traffic lights, tab label, line gutter) with
-//  three result badges floating around it at different depths.
-//  badgeRefs is populated by the parent so each badge can get its
-//  own independent scroll-entrance stagger + idle float loop.
-//  Pure markup/CSS — all motion lives in Home's useGSAP block.
+//  COMPONENT: TechBadge / TechStrip — "works with" trust strip.
+//  Purely presentational, reuses existing chip styling
+//  (--border-light / --bg-card / --accent-soft), no new logic.
+// ============================================================
+function TechBadge({ label }) {
+  return (
+    <span className="flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
+      <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-soft)]" style={{ boxShadow: "0 0 0 1px var(--accent)" }} />
+      {label}
+    </span>
+  );
+}
+
+function TechStrip() {
+  const items = ["GitHub", "TypeScript", "JavaScript", "Python", "Java"];
+  return (
+    <div className="mb-8 flex flex-col items-center gap-2.5">
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
+        Works with
+      </p>
+      <div className="flex flex-wrap justify-center gap-2">
+        {items.map((item) => (
+          <TechBadge key={item} label={item} />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+//  COMPONENT: CodeShowcase3D — layered scene: central floating
+//  terminal/editor window with three result badges floating
+//  around it at different depths. Pure markup/CSS; all motion
+//  (scroll entrance + cursor-tilt) lives in Home's useGSAP block.
 // ============================================================
 function CodeShowcase3D({ badgeRefs }) {
   return (
     <div className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
-      {/* Floating badge: bug count */}
       <div
         ref={(el) => (badgeRefs.current[0] = el)}
         className="absolute -top-6 -right-5 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
@@ -395,7 +423,6 @@ function CodeShowcase3D({ badgeRefs }) {
         </div>
       </div>
 
-      {/* Floating badge: grade ring */}
       <div
         ref={(el) => (badgeRefs.current[1] = el)}
         className="absolute -bottom-7 -left-6 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
@@ -428,7 +455,6 @@ function CodeShowcase3D({ badgeRefs }) {
         </div>
       </div>
 
-      {/* Floating badge: tests generated */}
       <div
         ref={(el) => (badgeRefs.current[2] = el)}
         className="absolute -top-4 left-8 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
@@ -438,7 +464,6 @@ function CodeShowcase3D({ badgeRefs }) {
         <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
       </div>
 
-      {/* MAIN: floating terminal / editor window */}
       <div className="relative z-10 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_50px_100px_-30px_var(--accent-soft-strong)]">
         <div className="flex items-center justify-between border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-3">
           <div className="flex items-center gap-3">
@@ -960,6 +985,7 @@ export default function Home() {
   }, []);
 
   const containerRef = useRef(null);
+  const heroSectionRef = useRef(null);
   const brandRef = useRef(null);
   const badgeRef = useRef(null);
   const headingRef = useRef(null);
@@ -979,17 +1005,24 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  // 3D showcase refs. wrapperRef holds the ScrollTrigger; cardRef is
-  // the element that gets the 3D transform; badgeRefs is populated by
-  // CodeShowcase3D so each floating badge can animate independently.
+  // 3D showcase refs
   const showcaseWrapperRef = useRef(null);
   const showcaseCardRef = useRef(null);
   const showcaseBadgeRefs = useRef([]);
+  const showcaseRevealedRef = useRef(false);
 
-  // NEW: GSAP-driven scroll progress bar at the top of the page.
-  // Purely additive — a fixed element + one ScrollTrigger, doesn't
-  // touch any existing animation or scroll behavior.
+  // Scroll progress bar
   const progressRef = useRef(null);
+
+  // NEW — sticky mini-CTA bar, shown once the hero has scrolled
+  // out of view. Purely additive state + one ScrollTrigger.
+  const [showStickyCta, setShowStickyCta] = useState(false);
+
+  // NEW — stat replay key. Incremented each time the stats row
+  // re-enters the viewport, forcing StatPill to remount (via key)
+  // so its count-up animation replays instead of only running once.
+  const [statsReplayKey, setStatsReplayKey] = useState(0);
+  const statsInViewRef = useRef(false);
 
   useGSAP(
     () => {
@@ -1010,37 +1043,71 @@ export default function Home() {
           });
         }
 
-        // --- HERO ENTRANCE ANIMATION (Simple 2D Fade/Slide) ---
+        // --- STICKY MINI-CTA: shows once the hero section has
+        // scrolled past, hides again if the user scrolls back up. ---
+        if (heroSectionRef.current) {
+          ScrollTrigger.create({
+            trigger: heroSectionRef.current,
+            start: "bottom top",
+            onEnter: () => setShowStickyCta(true),
+            onLeaveBack: () => setShowStickyCta(false),
+          });
+        }
+
+        // --- STATS REPLAY: re-trigger the count-up every time the
+        // stats row re-enters the viewport (not just once on mount). ---
+        if (statsRef.current) {
+          ScrollTrigger.create({
+            trigger: statsRef.current,
+            start: "top 90%",
+            onEnter: () => {
+              if (!statsInViewRef.current) {
+                statsInViewRef.current = true;
+                setStatsReplayKey((k) => k + 1);
+              }
+            },
+            onLeave: () => { statsInViewRef.current = false; },
+            onEnterBack: () => {
+              if (!statsInViewRef.current) {
+                statsInViewRef.current = true;
+                setStatsReplayKey((k) => k + 1);
+              }
+            },
+            onLeaveBack: () => { statsInViewRef.current = false; },
+          });
+        }
+
+        // --- HERO ENTRANCE ANIMATION (unchanged) ---
         const tl = gsap.timeline({
           defaults: { ease: "power3.out", duration: 0.8 },
         });
 
-        tl.fromTo(brandRef.current, 
-          { opacity: 0, y: 30 }, 
+        tl.fromTo(brandRef.current,
+          { opacity: 0, y: 30 },
           { opacity: 1, y: 0, duration: 0.6 })
-          .fromTo(badgeRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(badgeRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
-          .fromTo(headingRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(headingRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.6 }, "-=0.3")
-          .fromTo(typedRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(typedRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5 }, "-=0.4")
-          .fromTo(descriptionRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(descriptionRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
-          .fromTo(ctasRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(ctasRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, "-=0.3")
-          .fromTo(trustRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(trustRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.4 }, "-=0.2")
-          .fromTo(statsRef.current, 
-            { opacity: 0, y: 30 }, 
+          .fromTo(statsRef.current,
+            { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5, stagger: 0.1 }, "-=0.2");
 
-        // --- FEATURE CARDS SCROLLTRIGGER (Simple 2D) ---
+        // --- FEATURE CARDS SCROLLTRIGGER (unchanged) ---
         ScrollTrigger.create({
           trigger: featureLabelRef.current,
           start: "top 85%",
@@ -1074,7 +1141,7 @@ export default function Home() {
           once: true,
         });
 
-        // --- SECTIONS SCROLLTRIGGER (Simple 2D) ---
+        // --- SECTIONS SCROLLTRIGGER (unchanged) ---
         const sections = [
           { ref: howRef, start: "top 85%" },
           { ref: testimonialRef, start: "top 85%" },
@@ -1103,11 +1170,11 @@ export default function Home() {
           });
         });
 
-        // --- BACKGROUND PARALLAX (Gentle Depth Effect) ---
+        // --- BACKGROUND PARALLAX (unchanged) ---
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
-        
+
         if (bgGlow1) {
           ScrollTrigger.create({
             trigger: containerRef.current,
@@ -1142,10 +1209,9 @@ export default function Home() {
           });
         }
 
-        // --- 3D SHOWCASE: main window tilts in from an angled,
-        // receded position to flat-and-close as it enters view, then
-        // idles with a slow ambient tilt once revealed (unchanged
-        // from before). ---
+        // --- 3D SHOWCASE: scroll-driven entrance (angled/receded ->
+        // flat/close), same as before. Once fully revealed, hands off
+        // to cursor-based tilt (below) instead of an auto idle loop. ---
         if (showcaseCardRef.current && showcaseWrapperRef.current) {
           const startState = { rotateY: -32, rotateX: 14, y: 70, scale: 0.9, opacity: 0 };
           gsap.set(showcaseCardRef.current, startState);
@@ -1166,28 +1232,59 @@ export default function Home() {
                 duration: 0.1,
                 overwrite: true,
               });
+              showcaseRevealedRef.current = p >= 0.98;
             },
             onLeaveBack: () => {
+              showcaseRevealedRef.current = false;
               gsap.set(showcaseCardRef.current, startState);
             },
           });
 
+          // Gentle idle bob on Y only (not rotation) — keeps the
+          // panel feeling alive on touch devices with no cursor,
+          // and doesn't fight with the cursor-tilt rotation below
+          // since it animates a different property.
           gsap.to(showcaseCardRef.current, {
-            rotateY: "+=5",
-            rotateX: "+=2.5",
-            duration: 4.5,
+            y: "+=10",
+            duration: 3.5,
             repeat: -1,
             yoyo: true,
             ease: "sine.inOut",
             delay: 1.2,
           });
+
+          // NEW — cursor-tilt: once revealed, the panel tilts toward
+          // the mouse position within its wrapper. Uses quickTo for
+          // smooth, cheap updates on every mousemove. Resets to flat
+          // on mouse leave. Only active while showcaseRevealedRef is
+          // true, so it never fights the scroll-entrance tween.
+          const rotateXTo = gsap.quickTo(showcaseCardRef.current, "rotateX", {
+            duration: 0.6,
+            ease: "power3.out",
+          });
+          const rotateYTo = gsap.quickTo(showcaseCardRef.current, "rotateY", {
+            duration: 0.6,
+            ease: "power3.out",
+          });
+
+          const handleMouseMove = (e) => {
+            if (!showcaseRevealedRef.current) return;
+            const rect = showcaseWrapperRef.current.getBoundingClientRect();
+            const normX = (e.clientX - rect.left) / rect.width - 0.5;
+            const normY = (e.clientY - rect.top) / rect.height - 0.5;
+            rotateYTo(normX * 16);
+            rotateXTo(-normY * 16);
+          };
+          const handleMouseLeave = () => {
+            rotateXTo(0);
+            rotateYTo(0);
+          };
+
+          showcaseWrapperRef.current.addEventListener("mousemove", handleMouseMove);
+          showcaseWrapperRef.current.addEventListener("mouseleave", handleMouseLeave);
         }
 
-        // --- 3D SHOWCASE BADGES: each floating badge fades/scales in
-        // with its own stagger once the panel is in view, then drifts
-        // with an independent idle float loop (offset timing per
-        // badge so they don't move in unison). Additive — scoped
-        // entirely to showcaseBadgeRefs. ---
+        // --- 3D SHOWCASE BADGES (unchanged) ---
         if (showcaseBadgeRefs.current.length) {
           gsap.set(showcaseBadgeRefs.current, { opacity: 0, scale: 0.85, z: -40 });
 
@@ -1237,6 +1334,7 @@ export default function Home() {
           ],
           { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, z: 0, clearProps: "all" },
         );
+        setShowStickyCta(false);
       });
 
       return () => mm.revert();
@@ -1273,14 +1371,37 @@ export default function Home() {
       ref={containerRef}
       className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
     >
-      {/* Scroll progress bar — GSAP ScrollTrigger driven, fixed to
-          top of viewport, scales along the X axis with scroll. */}
       <div
         ref={progressRef}
         className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]"
         style={{ transform: "scaleX(0)" }}
         aria-hidden="true"
       />
+
+      {/* NEW — sticky mini-CTA, fades/slides in once past the hero */}
+      <div
+        className={`fixed bottom-0 left-0 right-0 z-[55] flex items-center justify-between gap-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]/95 px-4 py-3 backdrop-blur-md transition-all duration-300 sm:px-6 ${
+          showStickyCta ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
+        }`}
+      >
+        <div className="flex items-center gap-2">
+          <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent)] sm:flex">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-contrast)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="m9 12 2 2 4-4" />
+            </svg>
+          </div>
+          <span className="text-xs font-medium text-[var(--text-primary)] sm:text-sm">
+            Ready to audit your repository?
+          </span>
+        </div>
+        <Link
+          to={token ? "/dashboard" : "/register"}
+          className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]"
+        >
+          {token ? "Open Dashboard" : "Get Started Free"}
+        </Link>
+      </div>
 
       <style dangerouslySetInnerHTML={{__html: `
         .stat-card {
@@ -1335,6 +1456,7 @@ export default function Home() {
       <NeuralNetworkBackground />
 
       <div
+        ref={heroSectionRef}
         className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container}`}
       >
         <div className="w-full max-w-5xl text-center">
@@ -1434,13 +1556,15 @@ export default function Home() {
             Works with public GitHub repositories
           </div>
 
+          <TechStrip />
+
           <div
             ref={statsRef}
             className={`mx-auto flex w-fit flex-wrap justify-center gap-4 ${compactClasses.statsMargin}`}
           >
-            <StatPill value={statsLoading ? "..." : `${stats.totalScans}+`} label="Repos Scanned" delayMs={500} />
-            <StatPill value={statsLoading ? "..." : `${stats.avgQuality}%`} label="Issue Accuracy" delayMs={600} />
-            <StatPill value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={700} />
+            <StatPill key={`scans-${statsReplayKey}`} value={statsLoading ? "..." : `${stats.totalScans}+`} label="Repos Scanned" delayMs={200} />
+            <StatPill key={`quality-${statsReplayKey}`} value={statsLoading ? "..." : `${stats.avgQuality}%`} label="Issue Accuracy" delayMs={300} />
+            <StatPill key={`time-${statsReplayKey}`} value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={400} />
           </div>
 
           <div
@@ -1467,7 +1591,9 @@ export default function Home() {
       </div>
 
       {/* ================================================================
-          3D SHOWCASE — layered floating code editor with result badges
+          3D SHOWCASE — layered floating code editor with result badges.
+          Scroll-entrance unchanged; once revealed, tilts toward the
+          cursor instead of auto-rotating on a fixed loop.
       ================================================================ */}
       <section className="relative z-10 border-t border-[var(--border-light)] px-4 py-20 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">

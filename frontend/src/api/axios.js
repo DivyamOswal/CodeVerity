@@ -29,7 +29,7 @@ api.interceptors.response.use(
         localStorage.removeItem("token");
         window.location.href = "/login";
       } else {
-        // On public pages, just clear the token quietly — don't redirect
+        // On public pages, just clear the token quietly don't redirect
         localStorage.removeItem("token");
       }
     }

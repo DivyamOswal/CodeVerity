@@ -126,7 +126,7 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
                       {r.email}
                     </span>
                     {r.error && (
-                      <span className="text-red-400">— {r.error}</span>
+                      <span className="text-red-400">{r.error}</span>
                     )}
                   </li>
                 ))}
