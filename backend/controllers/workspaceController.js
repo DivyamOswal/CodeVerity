@@ -24,6 +24,51 @@ async function ensureWorkspace(user) {
   return newWorkspace;
 }
 
+// ─── Helper: Whitelist workspace fields for API responses ─────
+// Prevents leaking apiKeys[].key, invitations[].token,
+// webhookSecret, jira.apiToken, and billing IDs.
+function toSafeWorkspace(workspace) {
+  if (!workspace) return null;
+  const w =
+    typeof workspace.toObject === "function" ? workspace.toObject() : workspace;
+
+  const integrations = w.settings?.integrations || {};
+
+  return {
+    _id: w._id,
+    name: w.name,
+    ownerId: w.ownerId,
+    plan: w.plan,
+    tokensLimit: w.tokensLimit,
+    scansLimit: w.scansLimit,
+    totalScans: w.totalScans,
+    totalReports: w.totalReports,
+    branding: w.branding || {},
+    settings: {
+      scanSettings: w.settings?.scanSettings || {},
+      integrations: {
+        slack: {
+          enabled: integrations.slack?.enabled || false,
+          webhookUrl: integrations.slack?.webhookUrl || "",
+          channel: integrations.slack?.channel || "",
+        },
+        jira: {
+          enabled: integrations.jira?.enabled || false,
+          url: integrations.jira?.url || "",
+          projectKey: integrations.jira?.projectKey || "",
+          // apiToken intentionally omitted
+        },
+      },
+    },
+    webhookUrl: w.webhookUrl || "",
+    // webhookSecret intentionally omitted
+    subscriptionStatus: w.billing?.status || "active",
+    createdAt: w.createdAt,
+    updatedAt: w.updatedAt,
+    members: w.members,
+  };
+}
+
 // ─── Get workspace details ────────────────────────────────────
 export const getWorkspace = async (req, res) => {
   try {
@@ -35,7 +80,7 @@ export const getWorkspace = async (req, res) => {
       .populate("members.userId", "name email")
       .lean();
 
-    res.json({ success: true, workspace: populated });
+    res.json({ success: true, workspace: toSafeWorkspace(populated) });
   } catch (err) {
     console.error("Get workspace error:", err);
     res.status(500).json({ error: "Failed to fetch workspace" });
@@ -58,7 +103,7 @@ export const updateWorkspace = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -67,7 +112,8 @@ export const updateWorkspace = async (req, res) => {
     workspace.name = name.trim();
     await workspace.save();
 
-    res.json({ success: true, workspace });
+    await workspace.populate("members.userId", "name email");
+    res.json({ success: true, workspace: toSafeWorkspace(workspace) });
   } catch (err) {
     console.error("Update workspace error:", err);
     res.status(500).json({ error: "Failed to update workspace" });
@@ -88,7 +134,7 @@ export const addMember = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!currentMember || !["owner", "admin"].includes(currentMember.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -101,7 +147,7 @@ export const addMember = async (req, res) => {
 
     if (
       workspace.members.some(
-        (m) => m.userId.toString() === userToAdd._id.toString()
+        (m) => m.userId.toString() === userToAdd._id.toString(),
       )
     ) {
       return res
@@ -124,7 +170,7 @@ export const addMember = async (req, res) => {
       user._id,
       "invite",
       `Invited ${userToAdd.email} as ${role}`,
-      { invitedUserId: userToAdd._id, role }
+      { invitedUserId: userToAdd._id, role },
     );
 
     res.json({ success: true, member: { userId: userToAdd, role } });
@@ -145,7 +191,7 @@ export const removeMember = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!currentMember) {
       return res.status(403).json({ error: "Permission denied." });
@@ -158,7 +204,7 @@ export const removeMember = async (req, res) => {
     }
 
     const targetMember = workspace.members.find(
-      (m) => m.userId.toString() === userId
+      (m) => m.userId.toString() === userId,
     );
     if (!targetMember) {
       return res.status(404).json({ error: "Member not found." });
@@ -178,9 +224,15 @@ export const removeMember = async (req, res) => {
     const targetUser = await User.findById(userId).select("email");
 
     workspace.members = workspace.members.filter(
-      (m) => m.userId.toString() !== userId
+      (m) => m.userId.toString() !== userId,
     );
     await workspace.save();
+
+    // ── Clear the removed user's workspace association ─────
+    await User.updateOne(
+      { _id: userId, workspaceId: workspace._id },
+      { workspaceId: null, role: "member" },
+    );
 
     // ── Audit log: member removed ───────────────────────────
     await addAuditLog(
@@ -188,7 +240,7 @@ export const removeMember = async (req, res) => {
       user._id,
       "remove",
       `Removed ${targetUser?.email || userId} from workspace`,
-      { removedUserId: userId }
+      { removedUserId: userId },
     );
 
     res.json({ success: true, message: "Member removed." });
@@ -214,14 +266,14 @@ export const updateMemberRole = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!currentMember || !["owner", "admin"].includes(currentMember.role)) {
       return res.status(403).json({ error: "Permission denied." });
     }
 
     const targetMember = workspace.members.find(
-      (m) => m.userId.toString() === userId
+      (m) => m.userId.toString() === userId,
     );
     if (!targetMember) {
       return res.status(404).json({ error: "Member not found." });
@@ -260,7 +312,7 @@ export const updateMemberRole = async (req, res) => {
       user._id,
       "role_change",
       `Changed ${targetUser?.email || userId}'s role from ${oldRole} to ${role}`,
-      { userId, oldRole, newRole: role }
+      { userId, oldRole, newRole: role },
     );
 
     res.json({ success: true, member: { userId, role } });
@@ -279,7 +331,7 @@ export const leaveWorkspace = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member) {
       return res
@@ -289,19 +341,17 @@ export const leaveWorkspace = async (req, res) => {
 
     if (member.role === "owner") {
       const ownerCount = workspace.members.filter(
-        (m) => m.role === "owner"
+        (m) => m.role === "owner",
       ).length;
       if (ownerCount === 1) {
-        return res
-          .status(400)
-          .json({
-            error: "You are the only owner. Transfer ownership first.",
-          });
+        return res.status(400).json({
+          error: "You are the only owner. Transfer ownership first.",
+        });
       }
     }
 
     workspace.members = workspace.members.filter(
-      (m) => m.userId.toString() !== user._id.toString()
+      (m) => m.userId.toString() !== user._id.toString(),
     );
     await workspace.save();
 
@@ -314,7 +364,7 @@ export const leaveWorkspace = async (req, res) => {
       workspace._id,
       user._id,
       "leave",
-      `User ${user.email} left the workspace`
+      `User ${user.email} left the workspace`,
     );
 
     res.json({ success: true, message: "Left workspace." });
@@ -355,7 +405,24 @@ export const getApiKeys = async (req, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
-    res.json({ success: true, apiKeys: workspace.apiKeys || [] });
+
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === user._id.toString(),
+    );
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    // Return metadata only. Raw keys are shown once on creation.
+    const apiKeys = (workspace.apiKeys || []).map((k) => ({
+      _id: k._id,
+      name: k.name,
+      createdAt: k.createdAt,
+      lastUsed: k.lastUsed,
+      // key intentionally omitted
+    }));
+
+    res.json({ success: true, apiKeys });
   } catch (err) {
     console.error("Get API keys error:", err);
     res.status(500).json({ error: "Failed to fetch API keys" });
@@ -378,7 +445,7 @@ export const createApiKey = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -402,7 +469,7 @@ export const createApiKey = async (req, res) => {
       user._id,
       "api_key_create",
       `Created API key: ${newKey.name}`,
-      { keyId: newKey._id }
+      { keyId: newKey._id },
     );
 
     res.json({ success: true, apiKey: newKey });
@@ -423,7 +490,7 @@ export const deleteApiKey = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -431,12 +498,12 @@ export const deleteApiKey = async (req, res) => {
 
     // Find key name before deletion
     const keyToDelete = workspace.apiKeys.find(
-      (k) => k._id.toString() === keyId
+      (k) => k._id.toString() === keyId,
     );
     const keyName = keyToDelete?.name || keyId;
 
     workspace.apiKeys = workspace.apiKeys.filter(
-      (k) => k._id.toString() !== keyId
+      (k) => k._id.toString() !== keyId,
     );
     await workspace.save();
 
@@ -446,7 +513,7 @@ export const deleteApiKey = async (req, res) => {
       user._id,
       "api_key_delete",
       `Deleted API key: ${keyName}`,
-      { keyId }
+      { keyId },
     );
 
     res.json({ success: true, message: "API key deleted" });
@@ -467,7 +534,7 @@ export const updateIntegrations = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -477,7 +544,22 @@ export const updateIntegrations = async (req, res) => {
     if (!workspace.settings.integrations) workspace.settings.integrations = {};
 
     if (slack) workspace.settings.integrations.slack = slack;
-    if (jira) workspace.settings.integrations.jira = jira;
+
+    if (jira) {
+      // Preserve the existing apiToken unless the client explicitly sends a
+      // new non-empty one. This lets the UI save Jira config without having
+      // ever seen the token.
+      const existingToken =
+        workspace.settings.integrations.jira?.apiToken || "";
+      const incomingToken =
+        typeof jira.apiToken === "string" ? jira.apiToken.trim() : "";
+
+      workspace.settings.integrations.jira = {
+        ...workspace.settings.integrations.jira,
+        ...jira,
+        apiToken: incomingToken || existingToken,
+      };
+    }
 
     await workspace.save();
 
@@ -486,10 +568,25 @@ export const updateIntegrations = async (req, res) => {
       workspace._id,
       user._id,
       "integration_update",
-      `Updated integrations (Slack: ${!!slack}, Jira: ${!!jira})`
+      `Updated integrations (Slack: ${!!slack}, Jira: ${!!jira})`,
     );
 
-    res.json({ success: true, integrations: workspace.settings.integrations });
+    // Return a safe copy – never echo the Jira API token.
+    const safeIntegrations = {
+      slack: {
+        enabled: workspace.settings.integrations.slack?.enabled || false,
+        webhookUrl: workspace.settings.integrations.slack?.webhookUrl || "",
+        channel: workspace.settings.integrations.slack?.channel || "",
+      },
+      jira: {
+        enabled: workspace.settings.integrations.jira?.enabled || false,
+        url: workspace.settings.integrations.jira?.url || "",
+        projectKey: workspace.settings.integrations.jira?.projectKey || "",
+        // apiToken intentionally omitted
+      },
+    };
+
+    res.json({ success: true, integrations: safeIntegrations });
   } catch (err) {
     console.error("Update integrations error:", err);
     res.status(500).json({ error: "Failed to update integrations" });
@@ -542,7 +639,7 @@ export const addAuditLog = async (
   userId,
   action,
   message,
-  metadata = {}
+  metadata = {},
 ) => {
   try {
     const workspace = await WorkSpace.findById(workspaceId);
@@ -637,7 +734,7 @@ export const getRepositories = async (req, res) => {
       const avgPerf = Math.round(totalPerf / count);
       const avgMaint = Math.round(totalMaint / count);
       const overallAvg = Math.round(
-        (avgQuality + avgSecurity + avgPerf + avgMaint) / 4
+        (avgQuality + avgSecurity + avgPerf + avgMaint) / 4,
       );
 
       return {
@@ -651,7 +748,7 @@ export const getRepositories = async (req, res) => {
                 latest.scores.security +
                 latest.scores.performance +
                 latest.scores.maintainability) /
-                4
+                4,
             )
           : 0,
         avgQuality,
@@ -704,11 +801,11 @@ export const getWorkspaceAnalytics = async (req, res) => {
 
     // 3. Fetch user details
     const users = await User.find({ _id: { $in: memberIds } }).select(
-      "name email"
+      "name email",
     );
     const memberData = users.map((u) => {
       const stats = memberAggregation.find(
-        (a) => a._id.toString() === u._id.toString()
+        (a) => a._id.toString() === u._id.toString(),
       );
       return {
         _id: u._id,
@@ -751,8 +848,7 @@ export const getWorkspaceAnalytics = async (req, res) => {
       },
     ]);
 
-    const totalTokens =
-      totalTokensAgg.length > 0 ? totalTokensAgg[0].total : 0;
+    const totalTokens = totalTokensAgg.length > 0 ? totalTokensAgg[0].total : 0;
     const totalScans = workspace.totalScans || 0;
 
     res.json({
@@ -816,13 +912,13 @@ export const triggerWebhook = async (workspaceId, report, user) => {
       user._id,
       "webhook_trigger",
       `Webhook triggered for ${report.repoUrl} - status ${response.status}`,
-      { repoUrl: report.repoUrl, status: response.status }
+      { repoUrl: report.repoUrl, status: response.status },
     );
 
     // Retry logic for failures (optional: queue with exponential backoff)
     if (!response.ok) {
       console.warn(
-        `Webhook failed for ${workspace.webhookUrl}: ${response.status}`
+        `Webhook failed for ${workspace.webhookUrl}: ${response.status}`,
       );
     }
   } catch (err) {
@@ -831,7 +927,7 @@ export const triggerWebhook = async (workspaceId, report, user) => {
       workspaceId,
       user._id,
       "webhook_failed",
-      `Webhook failed for ${report.repoUrl}: ${err.message}`
+      `Webhook failed for ${report.repoUrl}: ${err.message}`,
     );
   }
 };
@@ -905,7 +1001,7 @@ export const updateBranding = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -924,7 +1020,7 @@ export const updateBranding = async (req, res) => {
       workspace._id,
       user._id,
       "branding_update",
-      `Updated branding (${brandName || "CodeVerity"})`
+      `Updated branding (${brandName || "CodeVerity"})`,
     );
 
     res.json({ success: true, branding: workspace.branding });
@@ -963,7 +1059,7 @@ export const createSchedule = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -976,7 +1072,7 @@ export const createSchedule = async (req, res) => {
     }
 
     const existing = workspace.schedules?.find(
-      (s) => s.repoUrl === repoUrl && s.enabled
+      (s) => s.repoUrl === repoUrl && s.enabled,
     );
     if (existing) {
       return res
@@ -1001,7 +1097,7 @@ export const createSchedule = async (req, res) => {
       workspace._id,
       user._id,
       "schedule_create",
-      `Created schedule for ${repoUrl} (${frequency} at ${time})`
+      `Created schedule for ${repoUrl} (${frequency} at ${time})`,
     );
 
     // Schedule the job if scheduler is available
@@ -1028,17 +1124,18 @@ export const deleteSchedule = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
     }
 
     const schedule = workspace.schedules.find((s) => s._id.toString() === id);
-    if (!schedule) return res.status(404).json({ error: "Schedule not found." });
+    if (!schedule)
+      return res.status(404).json({ error: "Schedule not found." });
 
     workspace.schedules = workspace.schedules.filter(
-      (s) => s._id.toString() !== id
+      (s) => s._id.toString() !== id,
     );
     await workspace.save();
 
@@ -1046,7 +1143,7 @@ export const deleteSchedule = async (req, res) => {
       workspace._id,
       user._id,
       "schedule_delete",
-      `Deleted schedule for ${schedule.repoUrl}`
+      `Deleted schedule for ${schedule.repoUrl}`,
     );
 
     // Cancel the cron job
@@ -1074,15 +1171,18 @@ export const updateWebhook = async (req, res) => {
     const workspace = await ensureWorkspace(user);
 
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-    if (webhookUrl !== undefined) workspace.webhookUrl = webhookUrl.trim();
-    if (webhookSecret !== undefined)
+    if (typeof webhookUrl === "string") {
+      workspace.webhookUrl = webhookUrl.trim();
+    }
+    if (typeof webhookSecret === "string" && webhookSecret.trim() !== "") {
       workspace.webhookSecret = webhookSecret.trim();
+    }
 
     await workspace.save();
 
@@ -1090,7 +1190,7 @@ export const updateWebhook = async (req, res) => {
       workspace._id,
       user._id,
       "webhook_update",
-      `Updated webhook URL: ${webhookUrl || "removed"}`
+      `Updated webhook URL: ${webhookUrl || "removed"}`,
     );
 
     res.json({ success: true, webhookUrl: workspace.webhookUrl });
@@ -1135,7 +1235,7 @@ export const testWebhook = async (req, res) => {
       workspace._id,
       user._id,
       "webhook_test",
-      `Test webhook sent to ${workspace.webhookUrl} - status ${status}`
+      `Test webhook sent to ${workspace.webhookUrl} - status ${status}`,
     );
 
     res.json({
@@ -1165,8 +1265,8 @@ export const createInvitation = async (req, res) => {
       new Set(
         raw
           .map((e) => (typeof e === "string" ? e.trim().toLowerCase() : ""))
-          .filter(Boolean)
-      )
+          .filter(Boolean),
+      ),
     );
 
     if (emails.length === 0) {
@@ -1186,7 +1286,7 @@ export const createInvitation = async (req, res) => {
 
     const workspace = await ensureWorkspace(user);
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
@@ -1211,7 +1311,7 @@ export const createInvitation = async (req, res) => {
       if (
         existingUser &&
         workspace.members.some(
-          (m) => m.userId.toString() === existingUser._id.toString()
+          (m) => m.userId.toString() === existingUser._id.toString(),
         )
       ) {
         results.push({
@@ -1224,7 +1324,7 @@ export const createInvitation = async (req, res) => {
 
       if (
         workspace.invitations.some(
-          (i) => i.email === targetEmail && i.status === "pending"
+          (i) => i.email === targetEmail && i.status === "pending",
         )
       ) {
         results.push({
@@ -1268,11 +1368,11 @@ export const createInvitation = async (req, res) => {
           } catch (emailErr) {
             console.error(
               `❌ Failed to send invite email to ${r.email}:`,
-              emailErr.message
+              emailErr.message,
             );
             r.error = "Email delivery failed";
           }
-        })
+        }),
     );
 
     // Never return tokens or invite links to the client
@@ -1286,7 +1386,7 @@ export const createInvitation = async (req, res) => {
         "invite_sent",
         `Sent ${sentList.length} invite${
           sentList.length > 1 ? "s" : ""
-        }: ${sentList.map((r) => r.email).join(", ")}`
+        }: ${sentList.map((r) => r.email).join(", ")}`,
       );
     }
 
@@ -1343,9 +1443,7 @@ export const acceptInvitation = async (req, res) => {
 
     // Check if user is already a member
     if (
-      workspace.members.some(
-        (m) => m.userId.toString() === user._id.toString()
-      )
+      workspace.members.some((m) => m.userId.toString() === user._id.toString())
     ) {
       return res
         .status(400)
@@ -1368,10 +1466,15 @@ export const acceptInvitation = async (req, res) => {
       workspace._id,
       user._id,
       "invite_accepted",
-      `Accepted invite to workspace as ${invitation.role}`
+      `Accepted invite to workspace as ${invitation.role}`,
     );
 
-    res.json({ success: true, message: "Invitation accepted!", workspace });
+    await workspace.populate("members.userId", "name email");
+    res.json({
+      success: true,
+      message: "Invitation accepted!",
+      workspace: toSafeWorkspace(workspace),
+    });
   } catch (err) {
     console.error("Accept invitation error:", err);
     res.status(500).json({ error: "Failed to accept invitation" });
@@ -1385,9 +1488,24 @@ export const getPendingInvites = async (req, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
-    const pending = (workspace.invitations || []).filter(
-      (i) => i.status === "pending"
+
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === user._id.toString(),
     );
+    if (!member || !["owner", "admin"].includes(member.role)) {
+      return res.status(403).json({ error: "Permission denied." });
+    }
+
+    const pending = (workspace.invitations || [])
+      .filter((i) => i.status === "pending")
+      .map((i) => ({
+        email: i.email,
+        role: i.role,
+        expiresAt: i.expiresAt,
+        createdAt: i.createdAt,
+        status: i.status,
+        // token intentionally omitted
+      }));
 
     res.json({ success: true, invitations: pending });
   } catch (err) {
@@ -1405,14 +1523,14 @@ export const cancelInvitation = async (req, res) => {
 
     const workspace = await ensureWorkspace(user);
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || !["owner", "admin"].includes(member.role)) {
       return res.status(403).json({ error: "Permission denied." });
     }
 
     workspace.invitations = workspace.invitations.filter(
-      (i) => i.token !== token
+      (i) => i.token !== token,
     );
     await workspace.save();
 
@@ -1432,7 +1550,7 @@ export const transferOwnership = async (req, res) => {
 
     const workspace = await ensureWorkspace(user);
     const currentMember = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!currentMember || currentMember.role !== "owner") {
       return res
@@ -1441,15 +1559,13 @@ export const transferOwnership = async (req, res) => {
     }
 
     const targetMember = workspace.members.find(
-      (m) => m.userId.toString() === userId
+      (m) => m.userId.toString() === userId,
     );
     if (!targetMember) {
       return res.status(404).json({ error: "Target user is not a member." });
     }
     if (targetMember.role !== "admin") {
-      return res
-        .status(400)
-        .json({ error: "Only admins can become owners." });
+      return res.status(400).json({ error: "Only admins can become owners." });
     }
 
     // Transfer ownership
@@ -1471,7 +1587,7 @@ export const transferOwnership = async (req, res) => {
       workspace._id,
       user._id,
       "ownership_transfer",
-      `Transferred ownership to ${targetUser?.email || userId}`
+      `Transferred ownership to ${targetUser?.email || userId}`,
     );
 
     res.json({ success: true, message: "Ownership transferred successfully." });
@@ -1489,14 +1605,13 @@ export const deleteWorkspace = async (req, res) => {
 
     const workspace = await ensureWorkspace(user);
     const member = workspace.members.find(
-      (m) => m.userId.toString() === user._id.toString()
+      (m) => m.userId.toString() === user._id.toString(),
     );
     if (!member || member.role !== "owner") {
       return res
         .status(403)
         .json({ error: "Only the owner can delete the workspace." });
     }
-
     // Soft delete – mark as deleted and set deletion date
     workspace.deletedAt = new Date();
     workspace.isDeleted = true;
@@ -1506,14 +1621,14 @@ export const deleteWorkspace = async (req, res) => {
     const memberIds = workspace.members.map((m) => m.userId);
     await User.updateMany(
       { _id: { $in: memberIds }, workspaceId: workspace._id },
-      { workspaceId: null, role: "member" }
+      { workspaceId: null, role: "member" },
     );
 
     await addAuditLog(
       workspace._id,
       user._id,
       "workspace_deleted",
-      `Deleted workspace (will be permanently removed in 30 days)`
+      `Deleted workspace (will be permanently removed in 30 days)`,
     );
 
     res.json({
@@ -1577,7 +1692,7 @@ export const permanentDeleteWorkspace = async (workspaceId) => {
   await workspace.deleteOne();
 
   console.log(
-    `✅ Permanently deleted workspace ${workspace.name} (${workspace._id})`
+    `✅ Permanently deleted workspace ${workspace.name} (${workspace._id})`,
   );
 };
 
@@ -1638,13 +1753,11 @@ export const getMemberActivity = async (req, res) => {
     // Get user details for this page only
     const userIds = paginated.map((a) => a._id);
     const users = await User.find({ _id: { $in: userIds } }).select(
-      "name email"
+      "name email",
     );
 
     const result = paginated.map((a) => {
-      const userInfo = users.find(
-        (u) => u._id.toString() === a._id.toString()
-      );
+      const userInfo = users.find((u) => u._id.toString() === a._id.toString());
       return {
         userId: a._id,
         name: userInfo?.name || "Unknown",

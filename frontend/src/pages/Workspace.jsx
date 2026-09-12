@@ -131,7 +131,7 @@ export default function WorkspaceSettings() {
   const [webhookTestResult, setWebhookTestResult] = useState(null);
 
   const [showInviteModal, setShowInviteModal] = useState(false);
-const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
+  const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
 
   const [trends, setTrends] = useState([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
@@ -177,11 +177,9 @@ const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
       }
       // ... rest of the existing code unchanged
       if (wsRes.data.workspace?.webhookUrl) {
-        setWebhookUrl(wsRes.data.workspace.webhookUrl);
-      }
-      if (wsRes.data.workspace?.webhookSecret) {
-        setWebhookSecret(wsRes.data.workspace.webhookSecret);
-      }
+  setWebhookUrl(wsRes.data.workspace.webhookUrl);
+}
+// webhookSecret is write-only; never read from the response.
     } catch (err) {
       toastError(err.response?.data?.error || "Failed to load workspace");
     } finally {
@@ -406,16 +404,21 @@ const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
   };
 
   const updateWebhookHandler = async () => {
-    try {
-      setSubmitting(true);
-      await updateWebhook({ webhookUrl, webhookSecret });
-      success("Webhook updated");
-    } catch (err) {
-      toastError(err.response?.data?.error || "Failed to update webhook");
-    } finally {
-      setSubmitting(false);
-    }
-  };
+  try {
+    setSubmitting(true);
+    await updateWebhook({
+      webhookUrl,
+      // Only send the secret when the user is actually rotating it.
+      ...(webhookSecret.trim() ? { webhookSecret: webhookSecret.trim() } : {}),
+    });
+    success("Webhook updated");
+    setWebhookSecret(""); // clear the write-only field
+  } catch (err) {
+    toastError(err.response?.data?.error || "Failed to update webhook");
+  } finally {
+    setSubmitting(false);
+  }
+};
 
   const testWebhookHandler = async () => {
     try {
@@ -448,14 +451,14 @@ const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
   };
 
   const filteredMembers = members.filter((m) => {
-  const q = memberSearch.trim().toLowerCase();
-  if (!q) return true;
+    const q = memberSearch.trim().toLowerCase();
+    if (!q) return true;
 
-  const name = (m.userId?.name || "").toLowerCase();
-  const email = (m.userId?.email || "").toLowerCase();
+    const name = (m.userId?.name || "").toLowerCase();
+    const email = (m.userId?.email || "").toLowerCase();
 
-  return name.includes(q) || email.includes(q);
-});
+    return name.includes(q) || email.includes(q);
+  });
 
   if (loading) {
     return (
@@ -887,19 +890,13 @@ const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
                         </div>
                       </div>
                       <div className="flex items-center gap-2 sm:flex-shrink-0">
-                        <button
-                          onClick={() => copyToClipboard(key.key)}
-                          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-[var(--text-secondary)] transition hover:text-[var(--text-primary)]"
-                        >
-                          <Copy className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => deleteApiKeyHandler(key._id)}
-                          className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
+  <button
+    onClick={() => deleteApiKeyHandler(key._id)}
+    className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20"
+  >
+    <Trash2 className="h-4 w-4" />
+  </button>
+</div>
                     </div>
                   ))}
                 </div>
@@ -955,31 +952,31 @@ const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
           {activeTab === "Members" && (
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-  <div>
-    <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-      Members
-    </h2>
-    <p className="text-sm text-[var(--text-muted)]">
-      {filteredMembers.length} of {members.length} members
-    </p>
-  </div>
+                <div>
+                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                    Members
+                  </h2>
+                  <p className="text-sm text-[var(--text-muted)]">
+                    {filteredMembers.length} of {members.length} members
+                  </p>
+                </div>
 
-  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
-    <input
-      type="search"
-      value={memberSearch}
-      onChange={(e) => setMemberSearch(e.target.value)}
-      placeholder="Search by name or email..."
-      className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 sm:w-64"
-    />
-    <button
-      onClick={() => setShowInviteModal(true)}
-      className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] sm:w-auto"
-    >
-      <Plus className="h-4 w-4" /> Invite Member
-    </button>
-  </div>
-</div>
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                  <input
+                    type="search"
+                    value={memberSearch}
+                    onChange={(e) => setMemberSearch(e.target.value)}
+                    placeholder="Search by name or email..."
+                    className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 sm:w-64"
+                  />
+                  <button
+                    onClick={() => setShowInviteModal(true)}
+                    className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] sm:w-auto"
+                  >
+                    <Plus className="h-4 w-4" /> Invite Member
+                  </button>
+                </div>
+              </div>
 
               <div className="mt-6 overflow-x-auto rounded-xl border border-[var(--border-light)]">
                 <table className="w-full text-left min-w-[640px]">
@@ -1966,22 +1963,22 @@ const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
 
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)]">
-                    Secret (optional)
-                  </label>
-                  <input
-                    type="password"
-                    value={webhookSecret}
-                    onChange={(e) => setWebhookSecret(e.target.value)}
-                    className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                    placeholder="Your secret for verifying webhook requests"
-                  />
-                  <p className="mt-1 text-xs text-[var(--text-muted)]">
-                    This secret will be sent as{" "}
-                    <code className="rounded bg-[var(--bg-primary)] px-1 font-mono">
-                      X-Webhook-Secret
-                    </code>{" "}
-                    header.
-                  </p>
+  Secret {workspace?.webhookUrl ? "(leave blank to keep current)" : "(optional)"}
+</label>
+<input
+  type="password"
+  value={webhookSecret}
+  onChange={(e) => setWebhookSecret(e.target.value)}
+  className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+  placeholder="Enter a new secret to rotate"
+/>
+<p className="mt-1 text-xs text-[var(--text-muted)]">
+  Sent as the{" "}
+  <code className="rounded bg-[var(--bg-primary)] px-1 font-mono">
+    X-Webhook-Secret
+  </code>{" "}
+  header on every webhook. Existing secrets are never sent to the browser.
+</p>
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
