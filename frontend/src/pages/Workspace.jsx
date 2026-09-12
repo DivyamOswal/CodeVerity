@@ -130,6 +130,9 @@ export default function WorkspaceSettings() {
   const [webhookTesting, setWebhookTesting] = useState(false);
   const [webhookTestResult, setWebhookTestResult] = useState(null);
 
+  const [showInviteModal, setShowInviteModal] = useState(false);
+const [memberSearch, setMemberSearch] = useState(""); // ✅ add this
+
   const [trends, setTrends] = useState([]);
   const [trendsLoading, setTrendsLoading] = useState(false);
 
@@ -443,6 +446,16 @@ export default function WorkspaceSettings() {
     }
     return null;
   };
+
+  const filteredMembers = members.filter((m) => {
+  const q = memberSearch.trim().toLowerCase();
+  if (!q) return true;
+
+  const name = (m.userId?.name || "").toLowerCase();
+  const email = (m.userId?.email || "").toLowerCase();
+
+  return name.includes(q) || email.includes(q);
+});
 
   if (loading) {
     return (
@@ -942,21 +955,31 @@ export default function WorkspaceSettings() {
           {activeTab === "Members" && (
             <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-sm sm:p-6">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                    Members
-                  </h2>
-                  <p className="text-sm text-[var(--text-muted)]">
-                    {members.length} members in this workspace
-                  </p>
-                </div>
-                <button
-                  onClick={() => setShowInviteModal(true)}
-                  className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] sm:w-auto"
-                >
-                  <Plus className="h-4 w-4" /> Invite Member
-                </button>
-              </div>
+  <div>
+    <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+      Members
+    </h2>
+    <p className="text-sm text-[var(--text-muted)]">
+      {filteredMembers.length} of {members.length} members
+    </p>
+  </div>
+
+  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+    <input
+      type="search"
+      value={memberSearch}
+      onChange={(e) => setMemberSearch(e.target.value)}
+      placeholder="Search by name or email..."
+      className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 sm:w-64"
+    />
+    <button
+      onClick={() => setShowInviteModal(true)}
+      className="flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] sm:w-auto"
+    >
+      <Plus className="h-4 w-4" /> Invite Member
+    </button>
+  </div>
+</div>
 
               <div className="mt-6 overflow-x-auto rounded-xl border border-[var(--border-light)]">
                 <table className="w-full text-left min-w-[640px]">
@@ -980,7 +1003,7 @@ export default function WorkspaceSettings() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border-dark)]">
-                    {members.map((member) => {
+                    {filteredMembers.map((member) => {
                       const isMe = member.userId._id === user?.id;
                       const isOwner = member.role === "owner";
                       const canEdit = !isMe || (isMe && isOwner);
