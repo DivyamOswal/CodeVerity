@@ -177,9 +177,9 @@ export default function WorkspaceSettings() {
       }
       // ... rest of the existing code unchanged
       if (wsRes.data.workspace?.webhookUrl) {
-  setWebhookUrl(wsRes.data.workspace.webhookUrl);
-}
-// webhookSecret is write-only; never read from the response.
+        setWebhookUrl(wsRes.data.workspace.webhookUrl);
+      }
+      // webhookSecret is write-only; never read from the response.
     } catch (err) {
       toastError(err.response?.data?.error || "Failed to load workspace");
     } finally {
@@ -404,21 +404,23 @@ export default function WorkspaceSettings() {
   };
 
   const updateWebhookHandler = async () => {
-  try {
-    setSubmitting(true);
-    await updateWebhook({
-      webhookUrl,
-      // Only send the secret when the user is actually rotating it.
-      ...(webhookSecret.trim() ? { webhookSecret: webhookSecret.trim() } : {}),
-    });
-    success("Webhook updated");
-    setWebhookSecret(""); // clear the write-only field
-  } catch (err) {
-    toastError(err.response?.data?.error || "Failed to update webhook");
-  } finally {
-    setSubmitting(false);
-  }
-};
+    try {
+      setSubmitting(true);
+      await updateWebhook({
+        webhookUrl,
+        // Only send the secret when the user is actually rotating it.
+        ...(webhookSecret.trim()
+          ? { webhookSecret: webhookSecret.trim() }
+          : {}),
+      });
+      success("Webhook updated");
+      setWebhookSecret(""); // clear the write-only field
+    } catch (err) {
+      toastError(err.response?.data?.error || "Failed to update webhook");
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const testWebhookHandler = async () => {
     try {
@@ -890,13 +892,13 @@ export default function WorkspaceSettings() {
                         </div>
                       </div>
                       <div className="flex items-center gap-2 sm:flex-shrink-0">
-  <button
-    onClick={() => deleteApiKeyHandler(key._id)}
-    className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20"
-  >
-    <Trash2 className="h-4 w-4" />
-  </button>
-</div>
+                        <button
+                          onClick={() => deleteApiKeyHandler(key._id)}
+                          className="rounded-lg border border-red-500/30 bg-red-500/10 p-2 text-red-400 transition hover:bg-red-500/20"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -1963,22 +1965,26 @@ export default function WorkspaceSettings() {
 
                 <div>
                   <label className="block text-sm font-medium text-[var(--text-muted)]">
-  Secret {workspace?.webhookUrl ? "(leave blank to keep current)" : "(optional)"}
-</label>
-<input
-  type="password"
-  value={webhookSecret}
-  onChange={(e) => setWebhookSecret(e.target.value)}
-  className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-  placeholder="Enter a new secret to rotate"
-/>
-<p className="mt-1 text-xs text-[var(--text-muted)]">
-  Sent as the{" "}
-  <code className="rounded bg-[var(--bg-primary)] px-1 font-mono">
-    X-Webhook-Secret
-  </code>{" "}
-  header on every webhook. Existing secrets are never sent to the browser.
-</p>
+                    Secret{" "}
+                    {workspace?.webhookUrl
+                      ? "(leave blank to keep current)"
+                      : "(optional)"}
+                  </label>
+                  <input
+                    type="password"
+                    value={webhookSecret}
+                    onChange={(e) => setWebhookSecret(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                    placeholder="Enter a new secret to rotate"
+                  />
+                  <p className="mt-1 text-xs text-[var(--text-muted)]">
+                    Sent as the{" "}
+                    <code className="rounded bg-[var(--bg-primary)] px-1 font-mono">
+                      X-Webhook-Secret
+                    </code>{" "}
+                    header on every webhook. Existing secrets are never sent to
+                    the browser.
+                  </p>
                 </div>
 
                 <div className="flex flex-col gap-3 sm:flex-row">
