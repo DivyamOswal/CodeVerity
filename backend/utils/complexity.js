@@ -14,7 +14,7 @@ export async function getComplexity(repoPath) {
   try {
     // Use ESLint to analyze JS/TS files
     const eslint = new ESLint({
-      useEslintrc: false,
+      overrideConfigFile: null,
       baseConfig: {
         parserOptions: { ecmaVersion: 2020, sourceType: "module" },
         rules: {
