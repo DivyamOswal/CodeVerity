@@ -234,7 +234,7 @@ export default function Login() {
 
   const getInputBorder = (invalid) =>
     invalid
-      ? "border-red-500/50 focus:border-red-500"
+      ? "border-[var(--color-danger)]/50 focus:border-[var(--color-danger)]"
       : "border-[var(--border-light)] focus:border-[var(--accent)]";
 
   return (
@@ -304,7 +304,7 @@ export default function Login() {
                 duration-200
                 ${
                   emailInvalid
-                    ? "text-red-400"
+                    ? "text-[var(--color-danger)]"
                     : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
                 }
               `}
@@ -345,7 +345,7 @@ export default function Login() {
                 items-center
                 gap-1.5
                 text-[10px]
-                text-red-400
+                text-[var(--color-danger)]
               "
             >
               <span>•</span>
@@ -406,7 +406,7 @@ export default function Login() {
                 duration-200
                 ${
                   passwordInvalid
-                    ? "text-red-400"
+                    ? "text-[var(--color-danger)]"
                     : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
                 }
               `}
@@ -482,7 +482,7 @@ export default function Login() {
                 items-center
                 gap-1.5
                 text-[10px]
-                text-red-400
+                text-[var(--color-danger)]
               "
             >
               <span>•</span>

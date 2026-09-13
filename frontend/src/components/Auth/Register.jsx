@@ -257,7 +257,7 @@ export default function Register() {
 
   const getInputBorder = (invalid) =>
     invalid
-      ? "border-red-500/50 focus:border-red-500"
+      ? "border-[var(--color-danger)]/50 focus:border-[var(--color-danger)]"
       : "border-[var(--border-light)] focus:border-[var(--accent)]";
 
   return (
@@ -327,7 +327,7 @@ export default function Register() {
                 duration-200
                 ${
                   nameInvalid
-                    ? "text-red-400"
+                    ? "text-[var(--color-danger)]"
                     : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
                 }
               `}
@@ -361,7 +361,7 @@ export default function Register() {
           {nameInvalid && (
             <p
               id="name-error"
-              className="flex items-center gap-1.5 text-[10px] text-red-400"
+              className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
             >
               <span>•</span>
               Please enter your name.
@@ -420,7 +420,7 @@ export default function Register() {
                 duration-200
                 ${
                   emailInvalid
-                    ? "text-red-400"
+                    ? "text-[var(--color-danger)]"
                     : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
                 }
               `}
@@ -456,7 +456,7 @@ export default function Register() {
           {emailInvalid && (
             <p
               id="email-error"
-              className="flex items-center gap-1.5 text-[10px] text-red-400"
+              className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
             >
               <span>•</span>
               Enter a valid email address.
@@ -499,7 +499,7 @@ export default function Register() {
                     ? "text-[var(--text-muted)] opacity-60"
                     : passwordLengthValid
                     ? "text-[var(--accent)]"
-                    : "text-amber-400"
+                    : "text-[var(--color-warning)]"
                 }
               `}
             >
@@ -525,7 +525,7 @@ export default function Register() {
                 duration-200
                 ${
                   passwordInvalid
-                    ? "text-red-400"
+                    ? "text-[var(--color-danger)]"
                     : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
                 }
               `}
@@ -633,7 +633,7 @@ export default function Register() {
           </div>
 
           {passwordInvalid && (
-            <p className="flex items-center gap-1.5 text-[10px] text-red-400">
+            <p className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]">
               <span>•</span>
               Password is required.
             </p>

@@ -486,9 +486,11 @@ export const disconnectGitHub = async (req, res) => {
   try {
     const user = await User.findById(req.user.id);
     if (!user) return res.status(401).json({ error: "User not found" });
+
     user.githubAccessToken = null;
-    user.githubId = null;
+    user.githubId = undefined;   // ← removes the field instead of storing null
     await user.save();
+
     res.json({ success: true, message: "GitHub account disconnected." });
   } catch (err) {
     console.error("Disconnect GitHub error:", err);

@@ -122,6 +122,7 @@ export default function AuthLayout({
   const orb2Ref = useRef(null);
   const cardRef = useRef(null);
   const rightPanelRef = useRef(null);
+  const errorRef = useRef(null);
 
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
@@ -232,6 +233,20 @@ export default function AuthLayout({
     return () => ctx.revert();
   }, []);
 
+  // NEW — subtle shake when a new error appears, drawing attention to
+  // it instead of it silently popping into place. Purely presentational:
+  // doesn't touch the error prop, when it's set, or how it's displayed.
+  useEffect(() => {
+    if (!error || !errorRef.current) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    gsap.fromTo(
+      errorRef.current,
+      { x: -6 },
+      { x: 0, duration: 0.4, ease: "elastic.out(1, 0.4)" },
+    );
+  }, [error]);
+
   return (
     <div
       className="
@@ -246,7 +261,7 @@ export default function AuthLayout({
 
       <main
         className="
-          relative flex min-h-0 w-full
+          no-scrollbar relative flex min-h-0 w-full
           flex-col overflow-y-auto
           lg:w-1/2
         "
@@ -358,7 +373,7 @@ export default function AuthLayout({
                 rounded-2xl
                 border border-[var(--border-light)]
                 bg-[var(--bg-card)]
-                shadow-[0_18px_70px_rgba(0,0,0,0.22)]
+                shadow-[var(--shadow-xl)]
                 backdrop-blur-xl
               "
             >
@@ -413,12 +428,14 @@ export default function AuthLayout({
 
                 {error && (
                   <div
+                    ref={errorRef}
                     role="alert"
+                    aria-live="assertive"
                     className="
                       mb-5 flex gap-3
                       rounded-xl
-                      border border-red-500/20
-                      bg-red-500/[0.06]
+                      border border-[var(--color-danger)]/20
+                      bg-[var(--color-danger-soft)]
                       px-4 py-3
                     "
                   >
@@ -427,21 +444,21 @@ export default function AuthLayout({
                         mt-0.5 flex h-5 w-5 shrink-0
                         items-center justify-center
                         rounded-full
-                        bg-red-500/10
+                        bg-[var(--color-danger)]/10
                         text-[10px]
                         font-semibold
-                        text-red-400
+                        text-[var(--color-danger)]
                       "
                     >
                       !
                     </div>
 
                     <div className="min-w-0">
-                      <div className="text-xs font-medium text-red-300">
-                        Authentication failed
+                      <div className="text-xs font-medium text-[var(--color-danger)]">
+                        Something went wrong
                       </div>
 
-                      <div className="mt-0.5 text-xs leading-5 text-red-300/70">
+                      <div className="mt-0.5 text-xs leading-5 text-[var(--color-danger)]/70">
                         {error}
                       </div>
                     </div>
@@ -471,6 +488,7 @@ export default function AuthLayout({
                           hover:bg-[var(--bg-primary)]
                           hover:shadow-[0_8px_25px_color-mix(in_srgb,var(--accent)_8%,transparent)]
                           active:translate-y-0
+                          active:scale-[0.98]
                         "
                       >
                         <GithubIcon />
@@ -494,6 +512,7 @@ export default function AuthLayout({
                           hover:bg-[var(--bg-primary)]
                           hover:shadow-[0_8px_25px_color-mix(in_srgb,var(--accent)_8%,transparent)]
                           active:translate-y-0
+                          active:scale-[0.98]
                         "
                       >
                         <GoogleIcon />

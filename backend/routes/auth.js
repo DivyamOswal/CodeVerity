@@ -24,7 +24,7 @@ router.get("/google/callback", googleAuthCallback);
 // GitHub OAuth
 router.get("/github", githubAuth);
 router.get("/github/callback", githubAuthCallback);
-router.get("/github",auth, disconnectGitHub);
+router.delete("/github",auth, disconnectGitHub);
 
 // ─── Get current user (protected) ──────────────────────────
 router.get("/me", auth, getMe);   
