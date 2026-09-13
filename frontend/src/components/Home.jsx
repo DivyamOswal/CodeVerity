@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
+import * as THREE from "three";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
 import {
@@ -10,21 +11,24 @@ import {
 
 // ============================================================
 //  Reads the current --accent token and converts it to an "r,g,b"
-//  string for use in canvas fillStyle/strokeStyle.
+//  string for use in canvas fillStyle/strokeStyle (NeuralNetworkBackground)
+//  or as a hex string for THREE.Color (CodeIntelligenceOrb).
 // ============================================================
+function getCSSColor(varName, fallbackHex) {
+  if (typeof window === "undefined") return fallbackHex;
+  const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  return val || fallbackHex;
+}
+
 function getAccentRGB() {
-  if (typeof window === "undefined") return "34,211,238";
-  const hex = getComputedStyle(document.documentElement)
-    .getPropertyValue("--accent")
-    .trim();
-  const clean = hex.replace("#", "");
-  const bigint = parseInt(clean, 16);
+  const hex = getCSSColor("--accent", "#22d3ee").replace("#", "");
+  const bigint = parseInt(hex, 16);
   if (isNaN(bigint)) return "34,211,238";
   return `${(bigint >> 16) & 255},${(bigint >> 8) & 255},${bigint & 255}`;
 }
 
 // ============================================================
-//  COMPONENT: NeuralNetworkBackground
+//  COMPONENT: NeuralNetworkBackground (unchanged)
 // ============================================================
 function NeuralNetworkBackground() {
   const canvasRef = useRef(null);
@@ -170,7 +174,7 @@ function NeuralNetworkBackground() {
 }
 
 // ============================================================
-//  COMPONENT: TypedWord
+//  COMPONENT: TypedWord (unchanged)
 // ============================================================
 function TypedWord({ words }) {
   const [index, setIndex] = useState(0);
@@ -215,7 +219,7 @@ function TypedWord({ words }) {
 }
 
 // ============================================================
-//  COMPONENT: CodeVerityLogo
+//  COMPONENT: CodeVerityLogo (unchanged)
 // ============================================================
 function CodeVerityLogo() {
   return (
@@ -246,7 +250,7 @@ function CodeVerityLogo() {
 }
 
 // ============================================================
-//  COMPONENT: Feature
+//  COMPONENT: Feature (unchanged)
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   return (
@@ -268,7 +272,7 @@ function Feature({ icon, title, desc, index }) {
 }
 
 // ============================================================
-//  ICON COMPONENTS
+//  ICON COMPONENTS (unchanged)
 // ============================================================
 function BugIcon() {
   return (
@@ -297,10 +301,7 @@ function FlaskIcon() {
 }
 
 // ============================================================
-//  COMPONENT: StatPill (Glowing card effect)
-//  Unchanged internal logic — count-up on mount/remount, driven
-//  by delayMs. Home now remounts these (via key) whenever the
-//  stats row re-enters the viewport, so the count-up replays.
+//  COMPONENT: StatPill (unchanged)
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -356,7 +357,7 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 // ============================================================
-//  COMPONENT: ScanLine
+//  COMPONENT: ScanLine (unchanged)
 // ============================================================
 function ScanLine() {
   return (
@@ -367,9 +368,7 @@ function ScanLine() {
 }
 
 // ============================================================
-//  COMPONENT: TechBadge / TechStrip — "works with" trust strip.
-//  Purely presentational, reuses existing chip styling
-//  (--border-light / --bg-card / --accent-soft), no new logic.
+//  COMPONENT: TechBadge / TechStrip (unchanged)
 // ============================================================
 function TechBadge({ label }) {
   return (
@@ -397,18 +396,172 @@ function TechStrip() {
 }
 
 // ============================================================
-//  COMPONENT: CodeShowcase3D — layered scene: central floating
-//  terminal/editor window with three result badges floating
-//  around it at different depths. Pure markup/CSS; all motion
-//  (scroll entrance + cursor-tilt) lives in Home's useGSAP block.
+//  COMPONENT: CodeIntelligenceOrb replaces the old code-editor
+//  mockup with a real Three.js scene: a rotating wireframe
+//  icosahedron with a glowing solid core, orbited by a particle
+//  ring. Colors are read from --accent / --accent-secondary so the
+//  scene follows the active theme without any hardcoded hex.
+//  Mouse movement over the wrapper subtly steers the rotation
+//  (true 3D via Three.js, not a CSS transform), and the whole
+//  scene idles with a slow auto-rotation when the cursor isn't
+//  present. Three result badges float around it as HTML overlays,
+//  same as the previous version, for continuity with the app's
+//  "show a real audit" framing.
 // ============================================================
-function CodeShowcase3D({ badgeRefs }) {
+function CodeIntelligenceOrb({ badgeRefs }) {
+  const mountRef = useRef(null);
+  const stateRef = useRef({ target: { x: 0, y: 0 } });
+
+  useEffect(() => {
+    const mount = mountRef.current;
+    if (!mount) return;
+
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const accentColor = new THREE.Color(getCSSColor("--accent", "#22d3ee"));
+    const secondaryColor = new THREE.Color(getCSSColor("--accent-secondary", "#818cf8"));
+
+    let width = mount.clientWidth;
+    let height = mount.clientHeight;
+
+    const scene = new THREE.Scene();
+    const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
+    camera.position.z = 5.2;
+
+    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+    renderer.setSize(width, height);
+    renderer.setClearColor(0x000000, 0);
+    mount.appendChild(renderer.domElement);
+
+    // Ambient + core point light (colored, gives the inner shape
+    // its glow without needing post-processing bloom).
+    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
+    const coreLight = new THREE.PointLight(accentColor, 3.2, 8);
+    coreLight.position.set(0, 0, 0);
+    scene.add(coreLight);
+
+    const group = new THREE.Group();
+    scene.add(group);
+
+    // Outer wireframe shell
+    const shellGeo = new THREE.IcosahedronGeometry(1.7, 1);
+    const shellEdges = new THREE.EdgesGeometry(shellGeo);
+    const shellMat = new THREE.LineBasicMaterial({ color: accentColor, transparent: true, opacity: 0.45 });
+    const shell = new THREE.LineSegments(shellEdges, shellMat);
+    group.add(shell);
+
+    // Inner glowing core
+    const coreGeo = new THREE.IcosahedronGeometry(0.85, 1);
+    const coreMat = new THREE.MeshStandardMaterial({
+      color: accentColor,
+      emissive: accentColor,
+      emissiveIntensity: 0.9,
+      roughness: 0.3,
+      metalness: 0.1,
+      transparent: true,
+      opacity: 0.9,
+    });
+    const core = new THREE.Mesh(coreGeo, coreMat);
+    group.add(core);
+
+    // Orbiting particle ring
+    const particleCount = 140;
+    const positions = new Float32Array(particleCount * 3);
+    for (let i = 0; i < particleCount; i++) {
+      const angle = (i / particleCount) * Math.PI * 2;
+      const radius = 2.3 + Math.random() * 0.5;
+      const y = (Math.random() - 0.5) * 0.6;
+      positions[i * 3] = Math.cos(angle) * radius;
+      positions[i * 3 + 1] = y;
+      positions[i * 3 + 2] = Math.sin(angle) * radius;
+    }
+    const particleGeo = new THREE.BufferGeometry();
+    particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    const particleMat = new THREE.PointsMaterial({
+      color: secondaryColor,
+      size: 0.035,
+      transparent: true,
+      opacity: 0.85,
+      sizeAttenuation: true,
+    });
+    const particles = new THREE.Points(particleGeo, particleMat);
+    particles.rotation.x = 0.45;
+    scene.add(particles);
+
+    let animationFrame;
+
+    const render = () => {
+      renderer.render(scene, camera);
+    };
+
+    const animate = () => {
+      group.rotation.y += 0.0035;
+      group.rotation.x += (stateRef.current.target.x - group.rotation.x) * 0.04;
+      group.rotation.y += (stateRef.current.target.y - group.rotation.y) * 0.02;
+      particles.rotation.y -= 0.0018;
+      render();
+      animationFrame = requestAnimationFrame(animate);
+    };
+
+    if (reduceMotion) {
+      group.rotation.set(0.3, 0.6, 0);
+      particles.rotation.x = 0.45;
+      render();
+    } else {
+      animate();
+    }
+
+    const handleMouseMove = (e) => {
+      const rect = mount.getBoundingClientRect();
+      const nx = (e.clientX - rect.left) / rect.width - 0.5;
+      const ny = (e.clientY - rect.top) / rect.height - 0.5;
+      stateRef.current.target = { x: ny * 0.6, y: nx * 0.8 };
+    };
+    const handleMouseLeave = () => {
+      stateRef.current.target = { x: 0, y: stateRef.current.target.y };
+    };
+
+    if (!reduceMotion) {
+      mount.addEventListener("mousemove", handleMouseMove);
+      mount.addEventListener("mouseleave", handleMouseLeave);
+    }
+
+    const handleResize = () => {
+      width = mount.clientWidth;
+      height = mount.clientHeight;
+      if (!width || !height) return;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+      if (reduceMotion) render();
+    };
+    const resizeObserver = new ResizeObserver(handleResize);
+    resizeObserver.observe(mount);
+
+    return () => {
+      cancelAnimationFrame(animationFrame);
+      resizeObserver.disconnect();
+      mount.removeEventListener("mousemove", handleMouseMove);
+      mount.removeEventListener("mouseleave", handleMouseLeave);
+      shellGeo.dispose();
+      shellEdges.dispose();
+      shellMat.dispose();
+      coreGeo.dispose();
+      coreMat.dispose();
+      particleGeo.dispose();
+      particleMat.dispose();
+      renderer.dispose();
+      if (renderer.domElement.parentNode === mount) {
+        mount.removeChild(renderer.domElement);
+      }
+    };
+  }, []);
+
   return (
     <div className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
       <div
         ref={(el) => (badgeRefs.current[0] = el)}
-        className="absolute -top-6 -right-5 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
-        style={{ transformStyle: "preserve-3d" }}
+        className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -425,8 +578,7 @@ function CodeShowcase3D({ badgeRefs }) {
 
       <div
         ref={(el) => (badgeRefs.current[1] = el)}
-        className="absolute -bottom-7 -left-6 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
-        style={{ transformStyle: "preserve-3d" }}
+        className="absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
       >
         <div className="relative h-9 w-9 shrink-0">
           <svg viewBox="0 0 36 36" className="-rotate-90">
@@ -457,90 +609,19 @@ function CodeShowcase3D({ badgeRefs }) {
 
       <div
         ref={(el) => (badgeRefs.current[2] = el)}
-        className="absolute -top-4 left-8 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
-        style={{ transformStyle: "preserve-3d" }}
+        className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
       >
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
         <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
       </div>
 
-      <div className="relative z-10 overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_50px_100px_-30px_var(--accent-soft-strong)]">
-        <div className="flex items-center justify-between border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-3">
-          <div className="flex items-center gap-3">
-            <div className="flex gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-danger)]/60" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-warning)]/60" />
-              <span className="h-2.5 w-2.5 rounded-full bg-[var(--color-success)]/60" />
-            </div>
-            <span className="font-mono text-[10px] text-[var(--text-muted)]">analyzer.ts</span>
-          </div>
-          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
-            live scan
-          </span>
-        </div>
-
-        <div className="flex">
-          <div className="hidden select-none flex-col items-end gap-[7px] border-r border-[var(--border-light)] px-3 py-5 font-mono text-[10px] leading-[1.6] text-[var(--text-muted)]/50 sm:flex">
-            {Array.from({ length: 8 }, (_, i) => (
-              <span key={i}>{i + 1}</span>
-            ))}
-          </div>
-          <pre className="flex-1 overflow-hidden px-4 py-5 font-mono text-[11px] leading-[1.6]">
-            <code>
-              <span className="text-[var(--accent-secondary)]">function</span>{" "}
-              <span className="text-[var(--accent)]">auditRepository</span>
-              <span className="text-[var(--text-secondary)]">(repo) {"{"}</span>
-              {"\n"}
-              {"  "}
-              <span className="text-[var(--text-muted)]">// scan architecture &amp; deps</span>
-              {"\n"}
-              {"  "}
-              <span className="text-[var(--accent-secondary)]">const</span>{" "}
-              <span className="text-[var(--text-primary)]">issues</span>{" "}
-              <span className="text-[var(--text-secondary)]">= </span>
-              <span className="text-[var(--accent)]">scan</span>
-              <span className="text-[var(--text-secondary)]">(repo);</span>
-              {"\n"}
-              {"  "}
-              <span className="text-[var(--accent-secondary)]">if</span>{" "}
-              <span className="text-[var(--text-secondary)]">(issues.</span>
-              <span className="text-[var(--color-danger)]">critical</span>
-              <span className="text-[var(--text-secondary)]">) </span>
-              <span className="text-[var(--accent-secondary)]">return</span>{" "}
-              <span className="text-[var(--color-warning)]">"fail"</span>
-              <span className="text-[var(--text-secondary)]">;</span>
-              {"\n"}
-              {"  "}
-              <span className="text-[var(--accent-secondary)]">return</span>{" "}
-              <span className="text-[var(--color-success)]">"A+"</span>
-              <span className="text-[var(--text-secondary)]">;</span>
-              {"\n"}
-              <span className="text-[var(--text-secondary)]">{"}"}</span>
-              <span className="ml-0.5 inline-block h-[1em] w-[6px] translate-y-[2px] animate-pulse bg-[var(--accent)]" />
-            </code>
-          </pre>
-        </div>
-
-        <div className="flex items-center justify-between border-t border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2">
-          <span className="flex items-center gap-1.5 font-mono text-[9px] text-[var(--text-muted)]">
-            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M6 3v12" />
-              <circle cx="18" cy="6" r="3" />
-              <circle cx="6" cy="18" r="3" />
-              <path d="M18 9a9 9 0 0 1-9 9" />
-            </svg>
-            main
-          </span>
-          <span className="font-mono text-[9px] font-semibold text-[var(--color-success)]">0 errors · A+ grade</span>
-        </div>
-      </div>
+      <div ref={mountRef} className="relative z-0 h-[340px] w-full sm:h-[380px]" />
     </div>
   );
 }
 
 // ============================================================
-//  SECTION: How It Works
+//  SECTION: How It Works (unchanged)
 // ============================================================
 function HowItWorks() {
   const steps = [
@@ -584,7 +665,7 @@ function HowItWorks() {
             How it works
           </h2>
           <p className="text-sm text-[var(--text-secondary)]">
-            Repository in, report out — three steps.
+            Repository in, report out three steps.
           </p>
         </div>
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
@@ -618,7 +699,7 @@ function HowItWorks() {
 }
 
 // ============================================================
-//  SECTION: Testimonials
+//  SECTION: Testimonials (unchanged)
 // ============================================================
 function Testimonials() {
   const testimonials = [
@@ -628,7 +709,7 @@ function Testimonials() {
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote: "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.",
+      quote: "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full-stack Developer, OpenSource Collective",
     },
@@ -679,7 +760,7 @@ function Testimonials() {
 }
 
 // ============================================================
-//  SECTION: Pricing
+//  SECTION: Pricing (unchanged)
 // ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
@@ -773,7 +854,7 @@ function Pricing() {
           })}
         </div>
         <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">
-          All prices in INR. Yearly plans offer 20% off — see full pricing page.
+          All prices in INR. Yearly plans offer 20% off see full pricing page.
         </p>
       </div>
     </section>
@@ -781,7 +862,7 @@ function Pricing() {
 }
 
 // ============================================================
-//  SECTION: FAQ
+//  SECTION: FAQ (unchanged)
 // ============================================================
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
@@ -845,7 +926,7 @@ function FAQ() {
 }
 
 // ============================================================
-//  FOOTER (Dynamic based on login state)
+//  FOOTER (unchanged)
 // ============================================================
 function Footer({ isLoggedIn }) {
   return (
@@ -1005,22 +1086,14 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  // 3D showcase refs
-  const showcaseWrapperRef = useRef(null);
-  const showcaseCardRef = useRef(null);
-  const showcaseBadgeRefs = useRef([]);
-  const showcaseRevealedRef = useRef(false);
+  // Orb column refs outer wrapper gets a simple scroll-entrance
+  // fade/scale (the 3D rotation itself now lives inside
+  // CodeIntelligenceOrb's own Three.js render loop).
+  const orbWrapperRef = useRef(null);
+  const orbBadgeRefs = useRef([]);
 
-  // Scroll progress bar
   const progressRef = useRef(null);
-
-  // NEW — sticky mini-CTA bar, shown once the hero has scrolled
-  // out of view. Purely additive state + one ScrollTrigger.
   const [showStickyCta, setShowStickyCta] = useState(false);
-
-  // NEW — stat replay key. Incremented each time the stats row
-  // re-enters the viewport, forcing StatPill to remount (via key)
-  // so its count-up animation replays instead of only running once.
   const [statsReplayKey, setStatsReplayKey] = useState(0);
   const statsInViewRef = useRef(false);
 
@@ -1043,8 +1116,7 @@ export default function Home() {
           });
         }
 
-        // --- STICKY MINI-CTA: shows once the hero section has
-        // scrolled past, hides again if the user scrolls back up. ---
+        // --- STICKY MINI-CTA ---
         if (heroSectionRef.current) {
           ScrollTrigger.create({
             trigger: heroSectionRef.current,
@@ -1054,8 +1126,7 @@ export default function Home() {
           });
         }
 
-        // --- STATS REPLAY: re-trigger the count-up every time the
-        // stats row re-enters the viewport (not just once on mount). ---
+        // --- STATS REPLAY ---
         if (statsRef.current) {
           ScrollTrigger.create({
             trigger: statsRef.current,
@@ -1077,7 +1148,7 @@ export default function Home() {
           });
         }
 
-        // --- HERO ENTRANCE ANIMATION (unchanged) ---
+        // --- HERO ENTRANCE ---
         const tl = gsap.timeline({
           defaults: { ease: "power3.out", duration: 0.8 },
         });
@@ -1102,12 +1173,26 @@ export default function Home() {
             { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, "-=0.3")
           .fromTo(trustRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.4 }, "-=0.2")
-          .fromTo(statsRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5, stagger: 0.1 }, "-=0.2");
+            { opacity: 1, y: 0, duration: 0.4 }, "-=0.2");
 
-        // --- FEATURE CARDS SCROLLTRIGGER (unchanged) ---
+        // Orb column fades in alongside the hero text, slightly after
+        if (orbWrapperRef.current) {
+          gsap.fromTo(
+            orbWrapperRef.current,
+            { opacity: 0, y: 30, scale: 0.94 },
+            { opacity: 1, y: 0, scale: 1, duration: 0.9, ease: "power3.out", delay: 0.3 },
+          );
+        }
+
+        if (statsRef.current) {
+          gsap.fromTo(
+            statsRef.current,
+            { opacity: 0, y: 20 },
+            { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 },
+          );
+        }
+
+        // --- FEATURE CARDS ---
         ScrollTrigger.create({
           trigger: featureLabelRef.current,
           start: "top 85%",
@@ -1141,7 +1226,7 @@ export default function Home() {
           once: true,
         });
 
-        // --- SECTIONS SCROLLTRIGGER (unchanged) ---
+        // --- SECTIONS ---
         const sections = [
           { ref: howRef, start: "top 85%" },
           { ref: testimonialRef, start: "top 85%" },
@@ -1170,7 +1255,7 @@ export default function Home() {
           });
         });
 
-        // --- BACKGROUND PARALLAX (unchanged) ---
+        // --- BACKGROUND PARALLAX ---
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
@@ -1209,103 +1294,28 @@ export default function Home() {
           });
         }
 
-        // --- 3D SHOWCASE: scroll-driven entrance (angled/receded ->
-        // flat/close), same as before. Once fully revealed, hands off
-        // to cursor-based tilt (below) instead of an auto idle loop. ---
-        if (showcaseCardRef.current && showcaseWrapperRef.current) {
-          const startState = { rotateY: -32, rotateX: 14, y: 70, scale: 0.9, opacity: 0 };
-          gsap.set(showcaseCardRef.current, startState);
+        // --- ORB BADGES: fade/scale in with a stagger once the orb
+        // column enters view, then idle-float independently. ---
+        if (orbBadgeRefs.current.length) {
+          gsap.set(orbBadgeRefs.current, { opacity: 0, scale: 0.85 });
 
           ScrollTrigger.create({
-            trigger: showcaseWrapperRef.current,
-            start: "top 88%",
-            end: "top 40%",
-            scrub: 1,
-            onUpdate: (self) => {
-              const p = self.progress;
-              gsap.to(showcaseCardRef.current, {
-                rotateY: startState.rotateY + (0 - startState.rotateY) * p,
-                rotateX: startState.rotateX + (0 - startState.rotateX) * p,
-                y: startState.y + (0 - startState.y) * p,
-                scale: startState.scale + (1 - startState.scale) * p,
-                opacity: p,
-                duration: 0.1,
-                overwrite: true,
-              });
-              showcaseRevealedRef.current = p >= 0.98;
-            },
-            onLeaveBack: () => {
-              showcaseRevealedRef.current = false;
-              gsap.set(showcaseCardRef.current, startState);
-            },
-          });
-
-          // Gentle idle bob on Y only (not rotation) — keeps the
-          // panel feeling alive on touch devices with no cursor,
-          // and doesn't fight with the cursor-tilt rotation below
-          // since it animates a different property.
-          gsap.to(showcaseCardRef.current, {
-            y: "+=10",
-            duration: 3.5,
-            repeat: -1,
-            yoyo: true,
-            ease: "sine.inOut",
-            delay: 1.2,
-          });
-
-          // NEW — cursor-tilt: once revealed, the panel tilts toward
-          // the mouse position within its wrapper. Uses quickTo for
-          // smooth, cheap updates on every mousemove. Resets to flat
-          // on mouse leave. Only active while showcaseRevealedRef is
-          // true, so it never fights the scroll-entrance tween.
-          const rotateXTo = gsap.quickTo(showcaseCardRef.current, "rotateX", {
-            duration: 0.6,
-            ease: "power3.out",
-          });
-          const rotateYTo = gsap.quickTo(showcaseCardRef.current, "rotateY", {
-            duration: 0.6,
-            ease: "power3.out",
-          });
-
-          const handleMouseMove = (e) => {
-            if (!showcaseRevealedRef.current) return;
-            const rect = showcaseWrapperRef.current.getBoundingClientRect();
-            const normX = (e.clientX - rect.left) / rect.width - 0.5;
-            const normY = (e.clientY - rect.top) / rect.height - 0.5;
-            rotateYTo(normX * 16);
-            rotateXTo(-normY * 16);
-          };
-          const handleMouseLeave = () => {
-            rotateXTo(0);
-            rotateYTo(0);
-          };
-
-          showcaseWrapperRef.current.addEventListener("mousemove", handleMouseMove);
-          showcaseWrapperRef.current.addEventListener("mouseleave", handleMouseLeave);
-        }
-
-        // --- 3D SHOWCASE BADGES (unchanged) ---
-        if (showcaseBadgeRefs.current.length) {
-          gsap.set(showcaseBadgeRefs.current, { opacity: 0, scale: 0.85, z: -40 });
-
-          ScrollTrigger.create({
-            trigger: showcaseWrapperRef.current,
-            start: "top 80%",
+            trigger: orbWrapperRef.current,
+            start: "top 85%",
             onEnter: () => {
-              gsap.to(showcaseBadgeRefs.current, {
+              gsap.to(orbBadgeRefs.current, {
                 opacity: 1,
                 scale: 1,
-                z: 0,
                 duration: 0.7,
                 stagger: 0.15,
                 ease: "back.out(1.6)",
-                delay: 0.3,
+                delay: 0.5,
               });
             },
             once: true,
           });
 
-          showcaseBadgeRefs.current.forEach((el, i) => {
+          orbBadgeRefs.current.forEach((el, i) => {
             if (!el) return;
             gsap.to(el, {
               y: "+=8",
@@ -1330,9 +1340,9 @@ export default function Home() {
             descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
             featureLabelRef.current, featureCardsRef.current, howRef.current,
             testimonialRef.current, pricingRef.current, faqRef.current,
-            showcaseCardRef.current, ...(showcaseBadgeRefs.current || []),
+            orbWrapperRef.current, ...(orbBadgeRefs.current || []),
           ],
-          { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, z: 0, clearProps: "all" },
+          { opacity: 1, y: 0, scale: 1, clearProps: "all" },
         );
         setShowStickyCta(false);
       });
@@ -1355,8 +1365,8 @@ export default function Home() {
         featureGap: "gap-x-6 gap-y-8",
       }
     : {
-        container: "pt-32 pb-16",
-        heading: "text-4xl sm:text-5xl md:text-[3.8rem]",
+        container: "pt-28 pb-16",
+        heading: "text-4xl sm:text-5xl md:text-[3.6rem]",
         subheading: "text-lg sm:text-xl",
         description: "text-sm sm:text-base",
         brandMargin: "mb-6",
@@ -1378,8 +1388,7 @@ export default function Home() {
         aria-hidden="true"
       />
 
-      {/* NEW — sticky mini-CTA, fades/slides in once past the hero */}
-      <div
+      {/* <div
         className={`fixed bottom-0 left-0 right-0 z-[55] flex items-center justify-between gap-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]/95 px-4 py-3 backdrop-blur-md transition-all duration-300 sm:px-6 ${
           showStickyCta ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
         }`}
@@ -1401,7 +1410,7 @@ export default function Home() {
         >
           {token ? "Open Dashboard" : "Get Started Free"}
         </Link>
-      </div>
+      </div> */}
 
       <style dangerouslySetInnerHTML={{__html: `
         .stat-card {
@@ -1455,107 +1464,122 @@ export default function Home() {
 
       <NeuralNetworkBackground />
 
+      {/* ================================================================
+          HERO two-column on lg+: headline/CTA left, 3D orb right.
+          Single column, centered, on mobile.
+      ================================================================ */}
       <div
         ref={heroSectionRef}
-        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl items-center justify-center ${compactClasses.container}`}
+        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}
       >
-        <div className="w-full max-w-5xl text-center">
-          <div
-            ref={brandRef}
-            className={`flex items-center justify-center gap-3 ${compactClasses.brandMargin}`}
-          >
-            <CodeVerityLogo />
-            <div className="text-left">
-              <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)]">
-                CodeVerity
-              </p>
-              <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">
-                AI-powered repository intelligence
-              </p>
+        <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
+          {/* LEFT text column */}
+          <div className="text-center lg:text-left">
+            <div
+              ref={brandRef}
+              className={`flex items-center justify-center gap-3 lg:justify-start ${compactClasses.brandMargin}`}
+            >
+              <CodeVerityLogo />
+              <div className="text-left">
+                <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)]">
+                  CodeVerity
+                </p>
+                <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">
+                  AI-powered repository intelligence
+                </p>
+              </div>
+            </div>
+
+            <div
+              ref={badgeRef}
+              className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}
+            >
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
+              AI-powered GitHub code analysis
+            </div>
+
+            <h1
+              ref={headingRef}
+              className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
+            >
+              <span className="hero-title-glow">CodeVerity</span>
+            </h1>
+
+            <p
+              ref={typedRef}
+              className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
+            >
+              <TypedWord
+                words={[
+                  "Finds your bugs.",
+                  "Flags vulnerabilities.",
+                  "Generates tests.",
+                  "Ships confidence.",
+                ]}
+              />
+            </p>
+
+            <p
+              ref={descriptionRef}
+              className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}
+            >
+              Drop any public GitHub URL and get a complete AI-powered repository
+              audit architecture analysis, security findings, bug detection,
+              performance insights, and generated tests.
+            </p>
+
+            <div
+              ref={ctasRef}
+              className={`flex flex-wrap justify-center gap-3 lg:justify-start ${compactClasses.ctaMargin}`}
+            >
+              {token ? (
+                <Link
+                  to="/dashboard"
+                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+                  style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
+                >
+                  <ScanLine />
+                  <span className="relative z-10">Open Dashboard →</span>
+                </Link>
+              ) : (
+                <>
+                  <Link
+                    to="/login"
+                    className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+                    style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}
+                  >
+                    <ScanLine />
+                    <span className="relative z-10">Sign In</span>
+                  </Link>
+                  <Link
+                    to="/register"
+                    className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] active:scale-[0.98]"
+                  >
+                    Get Started Free →
+                  </Link>
+                </>
+              )}
+            </div>
+
+            <div
+              ref={trustRef}
+              className="flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)] lg:justify-start"
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
+              No credit card required
+              <span>•</span>
+              Works with public GitHub repositories
             </div>
           </div>
 
-          <div
-            ref={badgeRef}
-            className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}
-          >
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
-            AI-powered GitHub code analysis
+          {/* RIGHT 3D orb visual */}
+          <div ref={orbWrapperRef} className="mx-auto w-full max-w-md lg:mx-0">
+            <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
           </div>
+        </div>
 
-          <h1
-            ref={headingRef}
-            className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
-          >
-            <span className="hero-title-glow">CodeVerity</span>
-          </h1>
-
-          <p
-            ref={typedRef}
-            className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
-          >
-            <TypedWord
-              words={[
-                "Finds your bugs.",
-                "Flags vulnerabilities.",
-                "Generates tests.",
-                "Ships confidence.",
-              ]}
-            />
-          </p>
-
-          <p
-            ref={descriptionRef}
-            className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] ${compactClasses.description}`}
-          >
-            Drop any public GitHub URL and get a complete AI-powered repository
-            audit — architecture analysis, security findings, bug detection,
-            performance insights, and generated tests.
-          </p>
-
-          <div
-            ref={ctasRef}
-            className={`flex flex-wrap justify-center gap-3 ${compactClasses.ctaMargin}`}
-          >
-            {token ? (
-              <Link
-                to="/dashboard"
-                className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-                style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
-              >
-                <ScanLine />
-                <span className="relative z-10">Open Dashboard →</span>
-              </Link>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-                  style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}
-                >
-                  <ScanLine />
-                  <span className="relative z-10">Sign In</span>
-                </Link>
-                <Link
-                  to="/register"
-                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] active:scale-[0.98]"
-                >
-                  Get Started Free →
-                </Link>
-              </>
-            )}
-          </div>
-
-          <div
-            ref={trustRef}
-            className="mb-8 flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)]"
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
-            No credit card required
-            <span>•</span>
-            Works with public GitHub repositories
-          </div>
-
+        {/* BELOW HERO tech strip, stats, feature grid (full width) */}
+        <div className="mt-14 w-full max-w-5xl text-center">
           <TechStrip />
 
           <div
@@ -1567,10 +1591,7 @@ export default function Home() {
             <StatPill key={`time-${statsReplayKey}`} value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={400} />
           </div>
 
-          <div
-            ref={featureLabelRef}
-            className="mb-6 text-left"
-          >
+          <div ref={featureLabelRef} className="mb-6 text-left">
             <p className="text-sm font-semibold text-[var(--text-primary)]">
               What CodeVerity checks
             </p>
@@ -1589,32 +1610,6 @@ export default function Home() {
           </div>
         </div>
       </div>
-
-      {/* ================================================================
-          3D SHOWCASE — layered floating code editor with result badges.
-          Scroll-entrance unchanged; once revealed, tilts toward the
-          cursor instead of auto-rotating on a fixed loop.
-      ================================================================ */}
-      <section className="relative z-10 border-t border-[var(--border-light)] px-4 py-20 sm:px-6">
-        <div className="mx-auto max-w-2xl text-center">
-          <p className="mb-3 font-mono text-[11px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            See it in action
-          </p>
-          <h2 className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-            A real audit, not a demo screenshot
-          </h2>
-
-          <div
-            ref={showcaseWrapperRef}
-            className="mx-auto w-full max-w-md"
-            style={{ perspective: "1400px" }}
-          >
-            <div ref={showcaseCardRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
-              <CodeShowcase3D badgeRefs={showcaseBadgeRefs} />
-            </div>
-          </div>
-        </div>
-      </section>
 
       <div className="relative z-10 mx-auto max-w-7xl">
         <div ref={howRef}>

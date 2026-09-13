@@ -74,7 +74,7 @@ function CodeVerityLogo({ compact = false }) {
 
 function FeatureRow({ number, title, description }) {
   return (
-    <div className="group flex gap-4">
+    <div className="group flex gap-4 transition-transform duration-300 hover:translate-x-1">
       <div
         className="
           flex h-8 w-8 shrink-0 items-center justify-center
@@ -233,9 +233,8 @@ export default function AuthLayout({
     return () => ctx.revert();
   }, []);
 
-  // NEW — subtle shake when a new error appears, drawing attention to
-  // it instead of it silently popping into place. Purely presentational:
-  // doesn't touch the error prop, when it's set, or how it's displayed.
+  // Subtle shake when a new error appears, drawing attention to it
+  // instead of it silently popping into place.
   useEffect(() => {
     if (!error || !errorRef.current) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -370,6 +369,7 @@ export default function AuthLayout({
               ref={cardRef}
               className="
                 relative
+                overflow-hidden
                 rounded-2xl
                 border border-[var(--border-light)]
                 bg-[var(--bg-card)]
@@ -377,6 +377,15 @@ export default function AuthLayout({
                 backdrop-blur-xl
               "
             >
+              {/* Top hairline a small, considered detail that signals
+                  "premium card" rather than a plain bordered box, the
+                  same way Linear/Vercel-style auth cards use a subtle
+                  top accent instead of a flat uniform border. */}
+              <div
+                aria-hidden="true"
+                className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60"
+              />
+
               {/* Accent corners */}
 
               <div
@@ -476,7 +485,7 @@ export default function AuthLayout({
                         type="button"
                         onClick={() => onOAuth("github")}
                         className="
-                          group flex h-11 items-center justify-center gap-2.5
+                          group flex h-12 items-center justify-center gap-2.5
                           rounded-xl
                           border border-[var(--border-light)]
                           bg-[var(--bg-secondary)]
@@ -489,6 +498,7 @@ export default function AuthLayout({
                           hover:shadow-[0_8px_25px_color-mix(in_srgb,var(--accent)_8%,transparent)]
                           active:translate-y-0
                           active:scale-[0.98]
+                          sm:h-11
                         "
                       >
                         <GithubIcon />
@@ -500,7 +510,7 @@ export default function AuthLayout({
                         type="button"
                         onClick={() => onOAuth("google")}
                         className="
-                          group flex h-11 items-center justify-center gap-2.5
+                          group flex h-12 items-center justify-center gap-2.5
                           rounded-xl
                           border border-[var(--border-light)]
                           bg-[var(--bg-secondary)]
@@ -513,6 +523,7 @@ export default function AuthLayout({
                           hover:shadow-[0_8px_25px_color-mix(in_srgb,var(--accent)_8%,transparent)]
                           active:translate-y-0
                           active:scale-[0.98]
+                          sm:h-11
                         "
                       >
                         <GoogleIcon />
@@ -589,25 +600,32 @@ export default function AuthLayout({
             </div>
 
             {/* ------------------------------------------------------------ */}
-            {/* SECURITY FOOTNOTE                                             */}
+            {/* SECURITY FOOTNOTE now a pill/badge rather than plain
+                text, reads as a trust signal instead of a caption. */}
             {/* ------------------------------------------------------------ */}
 
-            <div
-              className="
-                mt-5 flex items-center justify-center gap-2
-                text-[10px]
-                text-[var(--text-muted)]
-              "
-            >
-              <span
+            <div className="mt-5 flex justify-center">
+              <div
                 className="
-                  h-1.5 w-1.5 rounded-full
-                  bg-[var(--accent)]
-                  shadow-[0_0_8px_var(--accent)]
+                  flex items-center gap-2
+                  rounded-full
+                  border border-[var(--border-light)]
+                  bg-[var(--bg-card)]/60
+                  px-3 py-1.5
+                  text-[10px]
+                  text-[var(--text-muted)]
                 "
-              />
+              >
+                <span
+                  className="
+                    h-1.5 w-1.5 rounded-full
+                    bg-[var(--accent)]
+                    shadow-[0_0_8px_var(--accent)]
+                  "
+                />
 
-              <span>Secure authentication · Your data stays protected</span>
+                <span>Secure authentication · Your data stays protected</span>
+              </div>
             </div>
           </div>
         </div>
@@ -660,7 +678,11 @@ export default function AuthLayout({
           "
         />
 
-        {/* Dot grid */}
+        {/* Dot grid the only ambient texture layer on this panel now;
+            the scanline layer that used to sit on top of it was dropped
+            since three overlapping textures (orbs + dots + scanline)
+            read as busy rather than premium. One restrained texture
+            reads more considered. */}
 
         <div
           aria-hidden="true"
@@ -669,18 +691,6 @@ export default function AuthLayout({
             opacity-[0.035]
             [background-image:radial-gradient(circle,var(--text-primary)_1px,transparent_1px)]
             [background-size:22px_22px]
-          "
-        />
-
-        {/* Scanline */}
-
-        <div
-          aria-hidden="true"
-          className="
-            pointer-events-none absolute inset-0
-            opacity-[0.018]
-            [background-image:linear-gradient(to_bottom,var(--text-primary)_1px,transparent_1px)]
-            [background-size:100%_5px]
           "
         />
 

@@ -275,7 +275,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
             onMount={(editor, monaco) => {
               // Build a Monaco theme from the app's real CSS variable
               // values (read once via getComputedStyle, since Monaco
-              // — like <canvas> — can't consume CSS custom properties
+              // like <canvas> can't consume CSS custom properties
               // directly). Falls back to vs-dark on first paint via the
               // `theme` prop above; this overrides it once mounted so
               // the editor follows the app's active light/dark theme
@@ -371,7 +371,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
 
       {/* Monaco decoration CSS. These classNames are applied by
           editor.deltaDecorations above but Monaco doesn't generate any
-          styling for them itself — without this block, error lines and
+          styling for them itself without this block, error lines and
           glyph markers render but are invisible. */}
       <style>{`
         .error-line {
