@@ -213,21 +213,22 @@ export default function Login() {
   /* STYLES                                                                   */
   /* ------------------------------------------------------------------------ */
 
-  const inputBase = `
-    w-full
-    border-0
-    bg-transparent
-    py-3
-    pl-11
-    pr-11
-    text-sm
-    text-[var(--text-primary)]
-    placeholder:text-[var(--text-muted)]
-    transition-all
-    duration-200
-    focus:outline-none
-    focus:ring-0
-  `;
+ const inputBase = `
+  w-full
+  border-0
+  bg-transparent
+  py-3
+  pl-11
+  pr-11
+  text-sm
+  text-[var(--text-primary)]
+  placeholder:text-[var(--text-muted)]
+  transition-all
+  duration-200
+  focus:outline-none
+  focus-visible:outline-none
+  focus:ring-0
+`;
 
   return (
     <AuthLayout
