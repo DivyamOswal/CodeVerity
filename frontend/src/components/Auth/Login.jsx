@@ -215,9 +215,8 @@ export default function Login() {
 
   const inputBase = `
     w-full
-    rounded-xl
-    border
-    bg-[var(--bg-input)]
+    border-0
+    bg-transparent
     py-3
     pl-11
     pr-11
@@ -226,16 +225,9 @@ export default function Login() {
     placeholder:text-[var(--text-muted)]
     transition-all
     duration-200
-    hover:border-[var(--border-medium)]
     focus:outline-none
-    focus:ring-2
-    focus:ring-[var(--accent)]/20
+    focus:ring-0
   `;
-
-  const getInputBorder = (invalid) =>
-    invalid
-      ? "border-[var(--color-danger)]/50 focus:border-[var(--color-danger)]"
-      : "border-[var(--border-light)] focus:border-[var(--accent)]";
 
   return (
     <AuthLayout
@@ -254,293 +246,198 @@ export default function Login() {
         className="space-y-5"
       >
         {/* ================================================================== */}
-        {/* EMAIL                                                              */}
+        {/* CREDENTIALS GROUP — email + password grouped into one bordered
+             fieldset with a hairline divider, so they read as a single
+             cohesive "credentials" block rather than two loose fields. */}
         {/* ================================================================== */}
 
         <div
-          className="animate-fadeUp space-y-2"
-          style={{ animationDelay: "120ms" }}
+          className="animate-fadeUp overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] transition-colors duration-200 focus-within:border-[var(--accent)]"
+          style={{ animationDelay: "100ms" }}
         >
-          <div className="flex items-center justify-between">
+          {/* EMAIL */}
+          <div className="px-1 pt-1">
             <label
               htmlFor="email"
-              className="
-                font-mono
-                text-[10px]
-                font-medium
-                uppercase
-                tracking-[0.16em]
-                text-[var(--text-muted)]
-              "
+              className="block px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
             >
               Email address
             </label>
 
-            <span
-              className="
-                font-mono
-                text-[9px]
-                uppercase
-                tracking-wider
-                text-[var(--text-muted)]
-                opacity-60
-              "
-            >
-              required
-            </span>
-          </div>
+            <div className="group relative">
+              <MailIcon
+                className={`
+                  pointer-events-none
+                  absolute
+                  left-3.5
+                  top-1/2
+                  h-[17px]
+                  w-[17px]
+                  -translate-y-1/2
+                  transition-colors
+                  duration-200
+                  ${
+                    emailInvalid
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+                  }
+                `}
+              />
 
-          <div className="group relative">
-            <MailIcon
-              className={`
-                pointer-events-none
-                absolute
-                left-3.5
-                top-1/2
-                h-[17px]
-                w-[17px]
-                -translate-y-1/2
-                transition-colors
-                duration-200
-                ${
-                  emailInvalid
-                    ? "text-[var(--color-danger)]"
-                    : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                onBlur={() =>
+                  setTouched((prev) => ({
+                    ...prev,
+                    email: true,
+                  }))
                 }
-              `}
-            />
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() =>
-                setTouched((prev) => ({
-                  ...prev,
-                  email: true,
-                }))
-              }
-              placeholder="you@example.com"
-              autoComplete="email"
-              autoCapitalize="none"
-              spellCheck="false"
-              disabled={loading}
-              aria-invalid={emailInvalid}
-              aria-describedby={
-                emailInvalid ? "email-error" : undefined
-              }
-              className={`${inputBase} ${getInputBorder(
-                emailInvalid
-              )}`}
-            />
+                placeholder="you@example.com"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck="false"
+                disabled={loading}
+                aria-invalid={emailInvalid}
+                aria-describedby={
+                  emailInvalid ? "email-error" : undefined
+                }
+                className={inputBase}
+              />
+            </div>
           </div>
 
-          {emailInvalid && (
-            <p
-              id="email-error"
-              className="
-                flex
-                items-center
-                gap-1.5
-                text-[10px]
-                text-[var(--color-danger)]
-              "
-            >
-              <span>•</span>
-              Enter a valid email address.
-            </p>
-          )}
+          <div className="h-px bg-[var(--border-light)]" />
+
+          {/* PASSWORD */}
+          <div className="px-1 pb-1">
+            <div className="flex items-center justify-between px-3 pt-2">
+              <label
+                htmlFor="password"
+                className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
+              >
+                Password
+              </label>
+
+              <NavLink
+                to="/forgot-password"
+                tabIndex={loading ? -1 : 0}
+                className="text-[10px] text-[var(--text-muted)] transition-colors duration-200 hover:text-[var(--accent)]"
+              >
+                Forgot password?
+              </NavLink>
+            </div>
+
+            <div className="group relative">
+              <LockIcon
+                className={`
+                  pointer-events-none
+                  absolute
+                  left-3.5
+                  top-1/2
+                  h-[17px]
+                  w-[17px]
+                  -translate-y-1/2
+                  transition-colors
+                  duration-200
+                  ${
+                    passwordInvalid
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+                  }
+                `}
+              />
+
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                onBlur={() =>
+                  setTouched((prev) => ({
+                    ...prev,
+                    password: true,
+                  }))
+                }
+                placeholder="Enter your password"
+                autoComplete="current-password"
+                disabled={loading}
+                aria-invalid={passwordInvalid}
+                aria-describedby={
+                  passwordInvalid ? "password-error" : undefined
+                }
+                className={inputBase}
+              />
+
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                disabled={loading}
+                aria-label={
+                  showPassword
+                    ? "Hide password"
+                    : "Show password"
+                }
+                className="
+                  absolute
+                  right-2
+                  top-1/2
+                  flex
+                  h-8
+                  w-8
+                  -translate-y-1/2
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-[var(--text-muted)]
+                  transition-all
+                  duration-200
+                  hover:bg-[var(--bg-secondary)]
+                  hover:text-[var(--text-primary)]
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-[var(--accent)]/30
+                "
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="h-4 w-4" />
+                ) : (
+                  <EyeIcon className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* ================================================================== */}
-        {/* PASSWORD                                                           */}
-        {/* ================================================================== */}
-
-        <div
-          className="animate-fadeUp space-y-2"
-          style={{ animationDelay: "190ms" }}
-        >
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="password"
-              className="
-                font-mono
-                text-[10px]
-                font-medium
-                uppercase
-                tracking-[0.16em]
-                text-[var(--text-muted)]
-              "
-            >
-              Password
-            </label>
-
-            <NavLink
-              to="/forgot-password"
-              tabIndex={loading ? -1 : 0}
-              className="
-                text-[11px]
-                text-[var(--text-muted)]
-                transition-colors
-                duration-200
-                hover:text-[var(--accent)]
-              "
-            >
-              Forgot password?
-            </NavLink>
-          </div>
-
-          <div className="group relative">
-            <LockIcon
-              className={`
-                pointer-events-none
-                absolute
-                left-3.5
-                top-1/2
-                h-[17px]
-                w-[17px]
-                -translate-y-1/2
-                transition-colors
-                duration-200
-                ${
-                  passwordInvalid
-                    ? "text-[var(--color-danger)]"
-                    : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
-                }
-              `}
-            />
-
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() =>
-                setTouched((prev) => ({
-                  ...prev,
-                  password: true,
-                }))
-              }
-              placeholder="Enter your password"
-              autoComplete="current-password"
-              disabled={loading}
-              aria-invalid={passwordInvalid}
-              aria-describedby={
-                passwordInvalid ? "password-error" : undefined
-              }
-              className={`${inputBase} ${getInputBorder(
-                passwordInvalid
-              )}`}
-            />
-
-            <button
-              type="button"
-              onClick={() => setShowPassword((prev) => !prev)}
-              disabled={loading}
-              aria-label={
-                showPassword
-                  ? "Hide password"
-                  : "Show password"
-              }
-              className="
-                absolute
-                right-2
-                top-1/2
-                flex
-                h-8
-                w-8
-                -translate-y-1/2
-                items-center
-                justify-center
-                rounded-lg
-                text-[var(--text-muted)]
-                transition-all
-                duration-200
-                hover:bg-[var(--bg-secondary)]
-                hover:text-[var(--text-primary)]
-                focus:outline-none
-                focus:ring-2
-                focus:ring-[var(--accent)]/30
-              "
-            >
-              {showPassword ? (
-                <EyeOffIcon className="h-4 w-4" />
-              ) : (
-                <EyeIcon className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-
-          {passwordInvalid && (
-            <p
-              id="password-error"
-              className="
-                flex
-                items-center
-                gap-1.5
-                text-[10px]
-                text-[var(--color-danger)]
-              "
-            >
-              <span>•</span>
-              Password is required.
-            </p>
-          )}
-        </div>
-
-        {/* ================================================================== */}
-        {/* SECURITY INFO                                                      */}
-        {/* ================================================================== */}
-
-        <div
-          className="
-            animate-fadeUp
-            flex
-            items-center
-            gap-2
-            rounded-lg
-            border
-            border-[var(--border-light)]
-            bg-[var(--bg-secondary)]/50
-            px-3
-            py-2.5
-          "
-          style={{ animationDelay: "225ms" }}
-        >
-          <span
-            className="
-              flex
-              h-5
-              w-5
-              shrink-0
-              items-center
-              justify-center
-              rounded-md
-              bg-[var(--accent)]/10
-              text-[var(--accent)]
-            "
+        {(emailInvalid || passwordInvalid) && (
+          <div
+            className="animate-fadeUp -mt-2 space-y-1"
+            style={{ animationDelay: "0ms" }}
           >
-            <svg
-              viewBox="0 0 24 24"
-              className="h-3 w-3"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <rect x="4" y="10" width="16" height="11" rx="2" />
-              <path d="M8 10V7a4 4 0 0 1 8 0v3" />
-            </svg>
-          </span>
-
-          <span className="text-[10px] leading-4 text-[var(--text-muted)]">
-            Your session is protected with secure authentication.
-          </span>
-        </div>
+            {emailInvalid && (
+              <p
+                id="email-error"
+                className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
+              >
+                <span>•</span>
+                Enter a valid email address.
+              </p>
+            )}
+            {passwordInvalid && (
+              <p
+                id="password-error"
+                className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
+              >
+                <span>•</span>
+                Password is required.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* ================================================================== */}
         {/* SUBMIT                                                             */}
@@ -578,7 +475,7 @@ export default function Login() {
             focus:ring-offset-2
             focus:ring-offset-[var(--bg-card)]
           "
-          style={{ animationDelay: "270ms" }}
+          style={{ animationDelay: "180ms" }}
         >
           {/* Shine */}
 

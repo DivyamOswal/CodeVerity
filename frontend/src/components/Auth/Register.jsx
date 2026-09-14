@@ -238,9 +238,8 @@ export default function Register() {
 
   const inputBase = `
     w-full
-    rounded-xl
-    border
-    bg-[var(--bg-input)]
+    border-0
+    bg-transparent
     py-3
     pl-11
     pr-11
@@ -249,16 +248,9 @@ export default function Register() {
     placeholder:text-[var(--text-muted)]
     transition-all
     duration-200
-    hover:border-[var(--border-medium)]
     focus:outline-none
-    focus:ring-2
-    focus:ring-[var(--accent)]/20
+    focus:ring-0
   `;
-
-  const getInputBorder = (invalid) =>
-    invalid
-      ? "border-[var(--color-danger)]/50 focus:border-[var(--color-danger)]"
-      : "border-[var(--border-light)] focus:border-[var(--accent)]";
 
   return (
     <AuthLayout
@@ -274,410 +266,318 @@ export default function Register() {
       <form
         onSubmit={handleSubmit}
         noValidate
-        className="space-y-4"
+        className="space-y-5"
       >
         {/* ================================================================== */}
-        {/* NAME                                                               */}
+        {/* CREDENTIALS GROUP — name + email + password grouped into one
+             bordered fieldset with hairline dividers, matching the
+             pattern used on the Login form. */}
         {/* ================================================================== */}
 
         <div
-          className="animate-fadeUp space-y-2"
-          style={{ animationDelay: "120ms" }}
+          className="animate-fadeUp overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] transition-colors duration-200 focus-within:border-[var(--accent)]"
+          style={{ animationDelay: "100ms" }}
         >
-          <div className="flex items-center justify-between">
+          {/* NAME */}
+          <div className="px-1 pt-1">
             <label
               htmlFor="name"
-              className="
-                font-mono
-                text-[10px]
-                font-medium
-                uppercase
-                tracking-[0.16em]
-                text-[var(--text-muted)]
-              "
+              className="block px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
             >
               Full name
             </label>
 
-            <span
-              className="
-                font-mono
-                text-[9px]
-                uppercase
-                tracking-wider
-                text-[var(--text-muted)]
-                opacity-60
-              "
-            >
-              required
-            </span>
-          </div>
+            <div className="group relative">
+              <UserIcon
+                className={`
+                  pointer-events-none
+                  absolute
+                  left-3.5
+                  top-1/2
+                  h-[17px]
+                  w-[17px]
+                  -translate-y-1/2
+                  transition-colors
+                  duration-200
+                  ${
+                    nameInvalid
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+                  }
+                `}
+              />
 
-          <div className="group relative">
-            <UserIcon
-              className={`
-                pointer-events-none
-                absolute
-                left-3.5
-                top-1/2
-                h-[17px]
-                w-[17px]
-                -translate-y-1/2
-                transition-colors
-                duration-200
-                ${
-                  nameInvalid
-                    ? "text-[var(--color-danger)]"
-                    : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+              <input
+                id="name"
+                name="name"
+                type="text"
+                value={form.name}
+                onChange={(e) => updateField("name", e.target.value)}
+                onBlur={() =>
+                  setTouched((prev) => ({
+                    ...prev,
+                    name: true,
+                  }))
                 }
-              `}
-            />
-
-            <input
-              id="name"
-              name="name"
-              type="text"
-              value={form.name}
-              onChange={(e) => updateField("name", e.target.value)}
-              onBlur={() =>
-                setTouched((prev) => ({
-                  ...prev,
-                  name: true,
-                }))
-              }
-              placeholder="Jane Doe"
-              autoComplete="name"
-              disabled={loading}
-              aria-invalid={nameInvalid}
-              aria-describedby={
-                nameInvalid ? "name-error" : undefined
-              }
-              className={`${inputBase} ${getInputBorder(
-                nameInvalid
-              )}`}
-            />
+                placeholder="Jane Doe"
+                autoComplete="name"
+                disabled={loading}
+                aria-invalid={nameInvalid}
+                aria-describedby={
+                  nameInvalid ? "name-error" : undefined
+                }
+                className={inputBase}
+              />
+            </div>
           </div>
 
-          {nameInvalid && (
-            <p
-              id="name-error"
-              className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
-            >
-              <span>•</span>
-              Please enter your name.
-            </p>
-          )}
-        </div>
+          <div className="h-px bg-[var(--border-light)]" />
 
-        {/* ================================================================== */}
-        {/* EMAIL                                                              */}
-        {/* ================================================================== */}
-
-        <div
-          className="animate-fadeUp space-y-2"
-          style={{ animationDelay: "180ms" }}
-        >
-          <div className="flex items-center justify-between">
+          {/* EMAIL */}
+          <div className="px-1">
             <label
               htmlFor="email"
-              className="
-                font-mono
-                text-[10px]
-                font-medium
-                uppercase
-                tracking-[0.16em]
-                text-[var(--text-muted)]
-              "
+              className="block px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
             >
               Email address
             </label>
 
-            <span
-              className="
-                font-mono
-                text-[9px]
-                uppercase
-                tracking-wider
-                text-[var(--text-muted)]
-                opacity-60
-              "
-            >
-              required
-            </span>
-          </div>
+            <div className="group relative">
+              <MailIcon
+                className={`
+                  pointer-events-none
+                  absolute
+                  left-3.5
+                  top-1/2
+                  h-[17px]
+                  w-[17px]
+                  -translate-y-1/2
+                  transition-colors
+                  duration-200
+                  ${
+                    emailInvalid
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+                  }
+                `}
+              />
 
-          <div className="group relative">
-            <MailIcon
-              className={`
-                pointer-events-none
-                absolute
-                left-3.5
-                top-1/2
-                h-[17px]
-                w-[17px]
-                -translate-y-1/2
-                transition-colors
-                duration-200
-                ${
-                  emailInvalid
-                    ? "text-[var(--color-danger)]"
-                    : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+              <input
+                id="email"
+                name="email"
+                type="email"
+                value={form.email}
+                onChange={(e) => updateField("email", e.target.value)}
+                onBlur={() =>
+                  setTouched((prev) => ({
+                    ...prev,
+                    email: true,
+                  }))
                 }
-              `}
-            />
-
-            <input
-              id="email"
-              name="email"
-              type="email"
-              value={form.email}
-              onChange={(e) => updateField("email", e.target.value)}
-              onBlur={() =>
-                setTouched((prev) => ({
-                  ...prev,
-                  email: true,
-                }))
-              }
-              placeholder="you@example.com"
-              autoComplete="email"
-              autoCapitalize="none"
-              spellCheck="false"
-              disabled={loading}
-              aria-invalid={emailInvalid}
-              aria-describedby={
-                emailInvalid ? "email-error" : undefined
-              }
-              className={`${inputBase} ${getInputBorder(
-                emailInvalid
-              )}`}
-            />
-          </div>
-
-          {emailInvalid && (
-            <p
-              id="email-error"
-              className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
-            >
-              <span>•</span>
-              Enter a valid email address.
-            </p>
-          )}
-        </div>
-
-        {/* ================================================================== */}
-        {/* PASSWORD                                                           */}
-        {/* ================================================================== */}
-
-        <div
-          className="animate-fadeUp space-y-2"
-          style={{ animationDelay: "240ms" }}
-        >
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="password"
-              className="
-                font-mono
-                text-[10px]
-                font-medium
-                uppercase
-                tracking-[0.16em]
-                text-[var(--text-muted)]
-              "
-            >
-              Password
-            </label>
-
-            <span
-              className={`
-                font-mono
-                text-[9px]
-                uppercase
-                tracking-wider
-                transition-colors
-                ${
-                  form.password.length === 0
-                    ? "text-[var(--text-muted)] opacity-60"
-                    : passwordLengthValid
-                    ? "text-[var(--accent)]"
-                    : "text-[var(--color-warning)]"
+                placeholder="you@example.com"
+                autoComplete="email"
+                autoCapitalize="none"
+                spellCheck="false"
+                disabled={loading}
+                aria-invalid={emailInvalid}
+                aria-describedby={
+                  emailInvalid ? "email-error" : undefined
                 }
-              `}
-            >
-              {form.password.length === 0
-                ? "8+ characters"
-                : passwordLengthValid
-                ? "valid"
-                : `${form.password.length}/8`}
-            </span>
+                className={inputBase}
+              />
+            </div>
           </div>
 
-          <div className="group relative">
-            <LockIcon
-              className={`
-                pointer-events-none
-                absolute
-                left-3.5
-                top-1/2
-                h-[17px]
-                w-[17px]
-                -translate-y-1/2
-                transition-colors
-                duration-200
-                ${
-                  passwordInvalid
-                    ? "text-[var(--color-danger)]"
-                    : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
-                }
-              `}
-            />
+          <div className="h-px bg-[var(--border-light)]" />
 
-            <input
-              id="password"
-              name="password"
-              type={showPassword ? "text" : "password"}
-              value={form.password}
-              onChange={(e) =>
-                updateField("password", e.target.value)
-              }
-              onBlur={() =>
-                setTouched((prev) => ({
-                  ...prev,
-                  password: true,
-                }))
-              }
-              placeholder="Create a secure password"
-              autoComplete="new-password"
-              disabled={loading}
-              aria-invalid={passwordInvalid}
-              aria-describedby="password-hint"
-              className={`${inputBase} ${getInputBorder(
-                passwordInvalid
-              )}`}
-            />
+          {/* PASSWORD */}
+          <div className="px-1 pb-1">
+            <div className="flex items-center justify-between px-3 pt-2">
+              <label
+                htmlFor="password"
+                className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
+              >
+                Password
+              </label>
 
-            <button
-              type="button"
-              onClick={() =>
-                setShowPassword((prev) => !prev)
-              }
-              disabled={loading}
-              aria-label={
-                showPassword
-                  ? "Hide password"
-                  : "Show password"
-              }
-              className="
-                absolute
-                right-2
-                top-1/2
-                flex
-                h-8
-                w-8
-                -translate-y-1/2
-                items-center
-                justify-center
-                rounded-lg
-                text-[var(--text-muted)]
-                transition-all
-                duration-200
-                hover:bg-[var(--bg-secondary)]
-                hover:text-[var(--text-primary)]
-                focus:outline-none
-                focus:ring-2
-                focus:ring-[var(--accent)]/30
-              "
-            >
-              {showPassword ? (
-                <EyeOffIcon className="h-4 w-4" />
-              ) : (
-                <EyeIcon className="h-4 w-4" />
-              )}
-            </button>
-          </div>
-
-          {/* Password strength */}
-
-          <div
-            id="password-hint"
-            className="space-y-1.5"
-          >
-            <div className="flex gap-1">
-              {[0, 1, 2, 3].map((segment) => {
-                const filled =
-                  form.password.length >=
-                  [1, 4, 8, 12][segment];
-
-                return (
-                  <div
-                    key={segment}
-                    className={`
-                      h-1
-                      flex-1
-                      rounded-full
-                      transition-all
-                      duration-300
-                      ${
-                        filled
-                          ? "bg-[var(--accent)]"
-                          : "bg-[var(--border-light)]"
-                      }
-                    `}
-                  />
-                );
-              })}
+              <span
+                className={`
+                  font-mono
+                  text-[9px]
+                  uppercase
+                  tracking-wider
+                  transition-colors
+                  ${
+                    form.password.length === 0
+                      ? "text-[var(--text-muted)] opacity-60"
+                      : passwordLengthValid
+                      ? "text-[var(--accent)]"
+                      : "text-[var(--color-warning)]"
+                  }
+                `}
+              >
+                {form.password.length === 0
+                  ? "8+ characters"
+                  : passwordLengthValid
+                  ? "valid"
+                  : `${form.password.length}/8`}
+              </span>
             </div>
 
-            <p className="text-[9px] text-[var(--text-muted)]">
-              Use at least 8 characters for your password.
-            </p>
-          </div>
+            <div className="group relative">
+              <LockIcon
+                className={`
+                  pointer-events-none
+                  absolute
+                  left-3.5
+                  top-1/2
+                  h-[17px]
+                  w-[17px]
+                  -translate-y-1/2
+                  transition-colors
+                  duration-200
+                  ${
+                    passwordInvalid
+                      ? "text-[var(--color-danger)]"
+                      : "text-[var(--text-muted)] group-focus-within:text-[var(--accent)]"
+                  }
+                `}
+              />
 
-          {passwordInvalid && (
-            <p className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]">
-              <span>•</span>
-              Password is required.
-            </p>
-          )}
+              <input
+                id="password"
+                name="password"
+                type={showPassword ? "text" : "password"}
+                value={form.password}
+                onChange={(e) =>
+                  updateField("password", e.target.value)
+                }
+                onBlur={() =>
+                  setTouched((prev) => ({
+                    ...prev,
+                    password: true,
+                  }))
+                }
+                placeholder="Create a secure password"
+                autoComplete="new-password"
+                disabled={loading}
+                aria-invalid={passwordInvalid}
+                aria-describedby="password-hint"
+                className={inputBase}
+              />
+
+              <button
+                type="button"
+                onClick={() =>
+                  setShowPassword((prev) => !prev)
+                }
+                disabled={loading}
+                aria-label={
+                  showPassword
+                    ? "Hide password"
+                    : "Show password"
+                }
+                className="
+                  absolute
+                  right-2
+                  top-1/2
+                  flex
+                  h-8
+                  w-8
+                  -translate-y-1/2
+                  items-center
+                  justify-center
+                  rounded-lg
+                  text-[var(--text-muted)]
+                  transition-all
+                  duration-200
+                  hover:bg-[var(--bg-secondary)]
+                  hover:text-[var(--text-primary)]
+                  focus:outline-none
+                  focus:ring-2
+                  focus:ring-[var(--accent)]/30
+                "
+              >
+                {showPassword ? (
+                  <EyeOffIcon className="h-4 w-4" />
+                ) : (
+                  <EyeIcon className="h-4 w-4" />
+                )}
+              </button>
+            </div>
+          </div>
         </div>
 
-        {/* ================================================================== */}
-        {/* SECURITY INFO                                                      */}
-        {/* ================================================================== */}
+        {/* Field errors — combined below the group, same pattern as
+             the Login form, so the fieldset itself stays visually
+             clean regardless of which field is invalid. */}
+
+        {(nameInvalid || emailInvalid || passwordInvalid) && (
+          <div className="-mt-2 space-y-1">
+            {nameInvalid && (
+              <p
+                id="name-error"
+                className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
+              >
+                <span>•</span>
+                Please enter your name.
+              </p>
+            )}
+            {emailInvalid && (
+              <p
+                id="email-error"
+                className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
+              >
+                <span>•</span>
+                Enter a valid email address.
+              </p>
+            )}
+            {passwordInvalid && (
+              <p className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]">
+                <span>•</span>
+                Password is required.
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* Password strength — kept outside the fieldset as
+             supplementary guidance rather than validation error. */}
 
         <div
-          className="
-            animate-fadeUp
-            flex
-            items-center
-            gap-2
-            rounded-lg
-            border
-            border-[var(--border-light)]
-            bg-[var(--bg-secondary)]/50
-            px-3
-            py-2.5
-          "
-          style={{ animationDelay: "290ms" }}
+          id="password-hint"
+          className="animate-fadeUp -mt-2 space-y-1.5"
+          style={{ animationDelay: "160ms" }}
         >
-          <span
-            className="
-              flex
-              h-5
-              w-5
-              shrink-0
-              items-center
-              justify-center
-              rounded-md
-              bg-[var(--accent)]/10
-              text-[var(--accent)]
-            "
-          >
-            <LockIcon className="h-3 w-3" />
-          </span>
+          <div className="flex gap-1">
+            {[0, 1, 2, 3].map((segment) => {
+              const filled =
+                form.password.length >=
+                [1, 4, 8, 12][segment];
 
-          <span className="text-[10px] leading-4 text-[var(--text-muted)]">
-            Your account credentials are securely protected.
-          </span>
+              return (
+                <div
+                  key={segment}
+                  className={`
+                    h-1
+                    flex-1
+                    rounded-full
+                    transition-all
+                    duration-300
+                    ${
+                      filled
+                        ? "bg-[var(--accent)]"
+                        : "bg-[var(--border-light)]"
+                    }
+                  `}
+                />
+              );
+            })}
+          </div>
+
+          <p className="text-[9px] text-[var(--text-muted)]">
+            Use at least 8 characters for your password.
+          </p>
         </div>
 
         {/* ================================================================== */}
@@ -716,7 +616,7 @@ export default function Register() {
             focus:ring-offset-2
             focus:ring-offset-[var(--bg-card)]
           "
-          style={{ animationDelay: "330ms" }}
+          style={{ animationDelay: "220ms" }}
         >
           {/* Button shine */}
 
