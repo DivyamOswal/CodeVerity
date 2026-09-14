@@ -6,10 +6,8 @@ import { gsap, useGSAP } from "../lib/gsap";
 import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
-// Built on the existing Indigo Slate theme (same CSS vars as Navbar):
-// --bg-primary / --bg-card / --bg-hover / --border-light / --accent /
-// --accent-hover / --accent-soft / --accent-contrast / --text-*.
-// No gradients – flat accent fills only, matching the rest of the app.
+// Theme-driven throughout — no hardcoded palette values here, so this
+// page follows whatever theme is active (see index.css) without edits.
 // -----------------------------------------------------------------
 
 function CheckIcon({ className = "" }) {
@@ -51,6 +49,32 @@ function TokenIcon({ className = "" }) {
   );
 }
 
+// Small per-tier glyphs — purely visual, differentiates the three
+// plan names at a glance instead of relying on text alone.
+function TierIcon({ tier, className = "" }) {
+  const icons = {
+    free: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+      </svg>
+    ),
+    pro: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
+      </svg>
+    ),
+    team: (
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+        <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+        <circle cx="9" cy="7" r="4" />
+        <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
+        <path d="M16 3.13a4 4 0 0 1 0 7.75" />
+      </svg>
+    ),
+  };
+  return icons[tier] ?? icons.free;
+}
+
 function Toggle({ options, value, onChange }) {
   return (
     <div className="inline-flex items-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] p-1 font-mono text-[11px] sm:text-[12px]">
@@ -61,7 +85,7 @@ function Toggle({ options, value, onChange }) {
           onClick={() => onChange(opt.value)}
           className={`whitespace-nowrap rounded-full px-3 py-1.5 transition-colors duration-150 sm:px-4 ${
             value === opt.value
-              ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)]"
+              ? "bg-[var(--accent)] text-[var(--accent-contrast)]"
               : "text-[var(--text-muted)] hover:text-[var(--text-primary)]"
           }`}
         >
@@ -88,11 +112,6 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
   const isFree = price === 0;
   const priceRef = useRef(null);
 
-  // Interaction-driven GSAP: Reveal above only handles scroll-entrance —
-  // this handles the moment the user actually flips monthly/yearly or
-  // INR/USD, which previously just snapped to the new number with no
-  // motion. Skips the animation for prefers-reduced-motion, same
-  // pattern as Reveal.jsx.
   useGSAP(
     () => {
       if (!priceRef.current) return;
@@ -120,7 +139,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
     <div
       className={`relative flex h-full flex-col overflow-hidden rounded-xl border bg-[var(--bg-card)] p-5 transition-all duration-200 sm:p-6 ${
         plan.highlight
-          ? "border-[var(--accent)] shadow-[0_20px_45px_-20px_var(--accent-soft-strong)]"
+          ? "border-[var(--accent)] shadow-[var(--shadow-lg)] lg:scale-105"
           : "border-[var(--border-light)] hover:-translate-y-1 hover:border-[var(--accent)]/30"
       }`}
     >
@@ -129,9 +148,14 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
       )}
 
       <div className="flex flex-wrap items-center justify-between gap-2">
-        <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">
-          {plan.name}
-        </h3>
+        <div className="flex items-center gap-2">
+          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+            <TierIcon tier={plan.id} />
+          </span>
+          <h3 className="font-mono text-sm font-bold uppercase tracking-wider text-[var(--text-primary)]">
+            {plan.name}
+          </h3>
+        </div>
         {plan.highlight && (
           <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[9px] font-bold uppercase tracking-wider text-[var(--accent)]">
             Most popular
@@ -186,7 +210,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
         onClick={() => onSelect(plan)}
         className={`mt-8 w-full rounded-lg px-4 py-2.5 text-center text-[13px] font-semibold transition-all duration-200 active:scale-[0.98] ${
           plan.highlight
-            ? "bg-[var(--accent)] text-[var(--accent-contrast,#ffffff)] hover:bg-[var(--accent-hover)]"
+            ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_8px_24px_-6px_var(--accent-soft-strong)] hover:bg-[var(--accent-hover)]"
             : "border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
         }`}
       >
@@ -254,7 +278,13 @@ export default function Pricing() {
           Analyze more repos.
           <br className="hidden sm:block" />
           Pay for what you{" "}
-          <span className="text-[var(--accent)]">actually</span> use.
+          <span
+            className="bg-gradient-to-r from-[var(--text-primary)] via-[var(--accent)] to-[var(--text-primary)] bg-clip-text text-transparent"
+            style={{ backgroundSize: "200% 100%" }}
+          >
+            actually
+          </span>{" "}
+          use.
         </h1>
         <p className="mx-auto mt-4 max-w-xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
           Start free with a handful of scans a month. Upgrade once CodeVerity
@@ -297,7 +327,7 @@ export default function Pricing() {
       </Reveal>
 
       {/* Plan cards */}
-      <section className="mx-auto mt-10 grid max-w-5xl gap-4 px-4 sm:grid-cols-2 sm:gap-6 sm:px-6 lg:grid-cols-3">
+      <section className="mx-auto mt-10 grid max-w-5xl gap-4 px-4 sm:grid-cols-2 sm:gap-6 sm:px-6 lg:grid-cols-3 lg:items-center lg:gap-8">
         {PRICING_PLANS.map((plan, i) => (
           <Reveal
             key={plan.id}
@@ -330,8 +360,8 @@ export default function Pricing() {
             compliance needs.
           </p>
         </div>
-        <a
-          href="mailto:sales@codeverity.dev"
+        
+          <a href="mailto:sales@codeverity.dev"
           className="w-full shrink-0 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-center text-[13px] font-semibold text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] sm:w-auto"
         >
           Contact sales
@@ -355,8 +385,8 @@ export default function Pricing() {
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="mt-0.5 shrink-0 font-mono text-[11px] text-[var(--accent)]">
-                    Q.
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
+                    {String(i + 1).padStart(2, "0")}
                   </span>
                   <div className="min-w-0">
                     <p className="text-[14px] font-semibold text-[var(--text-primary)]">
