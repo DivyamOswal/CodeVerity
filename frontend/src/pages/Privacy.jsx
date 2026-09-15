@@ -376,7 +376,7 @@ export default function Privacy() {
                 If you have questions about this Privacy Policy or how your data is
                 handled, reach out to{" "}
                 
-                  href="mailto:support@codeverity.dev"
+                <a  href="mailto:support@codeverity.dev"
                   className="text-[var(--accent)] hover:text-[var(--accent-hover)]"
                 >
                   support@codeverity.dev

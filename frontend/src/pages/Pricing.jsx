@@ -1,6 +1,10 @@
 import { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
+import {
+  PRICING_PLANS,
+  formatPrice,
+  formatTokens,
+} from "../components/PricingPlans";
 import Reveal from "../components/Reveal";
 import { gsap, useGSAP } from "../lib/gsap";
 import { useToast } from "../hooks/useToast";
@@ -54,17 +58,47 @@ function TokenIcon({ className = "" }) {
 function TierIcon({ tier, className = "" }) {
   const icons = {
     free: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+      >
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       </svg>
     ),
     pro: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+      >
         <path d="M13 2 3 14h7l-1 8 10-12h-7l1-8z" />
       </svg>
     ),
     team: (
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <svg
+        width="16"
+        height="16"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        className={className}
+      >
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
         <circle cx="9" cy="7" r="4" />
         <path d="M23 21v-2a4 4 0 0 0-3-3.87" />
@@ -122,7 +156,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
         gsap.fromTo(
           priceRef.current,
           { opacity: 0, y: -6, scale: 0.96 },
-          { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power2.out" }
+          { opacity: 1, y: 0, scale: 1, duration: 0.35, ease: "power2.out" },
         );
       });
 
@@ -132,7 +166,7 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
 
       return () => mm.revert();
     },
-    { dependencies: [price], scope: priceRef }
+    { dependencies: [price], scope: priceRef },
   );
 
   return (
@@ -347,7 +381,7 @@ export default function Pricing() {
 
       {/* Enterprise / contact strip */}
       <Reveal
-        className="mx-auto mt-6 flex max-w-5xl flex-col items-center justify-between gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-5 text-center sm:mx-6 sm:flex-row sm:px-6 sm:text-left"
+        className="mx-auto mt-6 flex max-w-5xl flex-col items-center justify-between gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-5 text-center sm:flex-row sm:px-6 sm:text-left"
         delay={0.35}
         duration={0.5}
       >
@@ -360,7 +394,8 @@ export default function Pricing() {
             compliance needs.
           </p>
         </div>
-        
+
+        <a
           href="mailto:sales@codeverity.dev"
           className="w-full shrink-0 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-center text-[13px] font-semibold text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] sm:w-auto"
         >
