@@ -62,7 +62,7 @@ export default function Privacy() {
         headerMargin: "mb-4",
         heading: "text-lg sm:text-xl",
         subHeading: "text-[10px]",
-        sidebarWidth: "md:w-56",
+        sidebarWidth: "md:w-60",
         sidebarButton: "px-3 py-2 text-xs",
         contentPadding: "p-4 sm:p-5",
         sectionGap: "space-y-4",
@@ -73,7 +73,7 @@ export default function Privacy() {
         headerMargin: "mb-6",
         heading: "text-xl sm:text-2xl",
         subHeading: "text-xs",
-        sidebarWidth: "md:w-64",
+        sidebarWidth: "md:w-72",
         sidebarButton: "px-4 py-2.5 text-sm",
         contentPadding: "p-6 sm:p-8",
         sectionGap: "space-y-5",
@@ -100,24 +100,35 @@ export default function Privacy() {
 
         {/* LAYOUT */}
         <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
-          {/* SIDEBAR NAV sticky, with scroll-spy active state */}
+          {/* SIDEBAR NAV — sticky, with scroll-spy active state and a
+              numbered index per item for easier scanning across 13
+              sections. */}
           <nav
             className={`${compactClasses.sidebarWidth} shrink-0`}
             aria-label="Privacy policy sections"
           >
             <div className="sticky top-20 flex flex-col gap-1 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-2 max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
-              {SECTIONS.map((s) => (
+              {SECTIONS.map((s, i) => (
                 <button
                   key={s.id}
                   onClick={() => scrollToSection(s.id)}
-                  className={`${compactClasses.sidebarButton} rounded-xl text-left font-medium transition-all ${
+                  className={`relative flex items-center gap-2.5 ${compactClasses.sidebarButton} rounded-xl text-left font-medium transition-all ${
                     activeSection === s.id
-                      ? "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30"
-                      : "border border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                      ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                   }`}
                   aria-current={activeSection === s.id ? "true" : undefined}
                 >
-                  {s.label}
+                  {activeSection === s.id && (
+                    <span
+                      aria-hidden="true"
+                      className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--accent)]"
+                    />
+                  )}
+                  <span className="font-mono text-[9px] opacity-60">
+                    {String(i + 1).padStart(2, "0")}
+                  </span>
+                  <span className="min-w-0 truncate">{s.label}</span>
                 </button>
               ))}
             </div>
@@ -125,10 +136,18 @@ export default function Privacy() {
 
           {/* CONTENT */}
           <div
-            className={`flex-1 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.contentPadding} ${compactClasses.sectionGap}`}
+            className={`relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.contentPadding} ${compactClasses.sectionGap}`}
           >
+            {/* Top hairline — same "premium card" detail used on the
+                Auth pages, for visual consistency across the app. */}
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+            />
+
             <PolicySection
               id="overview"
+              index={1}
               title="Overview"
               refCallback={(el) => (sectionRefs.current.overview = el)}
             >
@@ -146,6 +165,7 @@ export default function Privacy() {
 
             <PolicySection
               id="information-we-collect"
+              index={2}
               title="Information We Collect"
               refCallback={(el) => (sectionRefs.current["information-we-collect"] = el)}
             >
@@ -175,6 +195,7 @@ export default function Privacy() {
 
             <PolicySection
               id="repository-code"
+              index={3}
               title="Repository & Code Data"
               refCallback={(el) => (sectionRefs.current["repository-code"] = el)}
             >
@@ -200,6 +221,7 @@ export default function Privacy() {
 
             <PolicySection
               id="how-we-use-it"
+              index={4}
               title="How We Use Information"
               refCallback={(el) => (sectionRefs.current["how-we-use-it"] = el)}
             >
@@ -219,6 +241,7 @@ export default function Privacy() {
 
             <PolicySection
               id="sharing"
+              index={5}
               title="Data Sharing"
               refCallback={(el) => (sectionRefs.current.sharing = el)}
             >
@@ -236,6 +259,7 @@ export default function Privacy() {
 
             <PolicySection
               id="cookies"
+              index={6}
               title="Cookies & Tracking"
               refCallback={(el) => (sectionRefs.current.cookies = el)}
             >
@@ -248,6 +272,7 @@ export default function Privacy() {
 
             <PolicySection
               id="security"
+              index={7}
               title="Data Security"
               refCallback={(el) => (sectionRefs.current.security = el)}
             >
@@ -263,6 +288,7 @@ export default function Privacy() {
 
             <PolicySection
               id="retention"
+              index={8}
               title="Data Retention"
               refCallback={(el) => (sectionRefs.current.retention = el)}
             >
@@ -278,6 +304,7 @@ export default function Privacy() {
 
             <PolicySection
               id="your-rights"
+              index={9}
               title="Your Rights & Choices"
               refCallback={(el) => (sectionRefs.current["your-rights"] = el)}
             >
@@ -299,6 +326,7 @@ export default function Privacy() {
 
             <PolicySection
               id="children"
+              index={10}
               title="Children's Privacy"
               refCallback={(el) => (sectionRefs.current.children = el)}
             >
@@ -312,6 +340,7 @@ export default function Privacy() {
 
             <PolicySection
               id="international"
+              index={11}
               title="International Users"
               refCallback={(el) => (sectionRefs.current.international = el)}
             >
@@ -325,6 +354,7 @@ export default function Privacy() {
 
             <PolicySection
               id="changes"
+              index={12}
               title="Changes to This Policy"
               refCallback={(el) => (sectionRefs.current.changes = el)}
             >
@@ -338,6 +368,7 @@ export default function Privacy() {
 
             <PolicySection
               id="contact"
+              index={13}
               title="Contact Us"
               refCallback={(el) => (sectionRefs.current.contact = el)}
             >
@@ -347,7 +378,7 @@ export default function Privacy() {
                 
                   href="mailto:support@codeverity.dev"
                   className="text-[var(--accent)] hover:text-[var(--accent-hover)]"
-                <a>
+                >
                   support@codeverity.dev
                 </a>
                 , or visit our{" "}
@@ -379,11 +410,16 @@ export default function Privacy() {
    HELPERS
 ========================================================= */
 
-function PolicySection({ id, title, children, refCallback }) {
+function PolicySection({ id, index, title, children, refCallback }) {
   return (
     <section id={id} ref={refCallback} className="scroll-mt-20">
-      <h2 className="text-base font-semibold text-[var(--text-primary)] sm:text-lg">{title}</h2>
-      <div className="mt-2 space-y-3 text-sm leading-relaxed text-[var(--text-secondary)]">
+      <div className="flex items-center gap-2.5">
+        <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
+          {String(index).padStart(2, "0")}
+        </span>
+        <h2 className="text-base font-semibold text-[var(--text-primary)] sm:text-lg">{title}</h2>
+      </div>
+      <div className="mt-3 space-y-3 pl-[34px] text-sm leading-relaxed text-[var(--text-secondary)]">
         {children}
       </div>
     </section>
