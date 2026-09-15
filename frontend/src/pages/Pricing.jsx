@@ -361,7 +361,7 @@ export default function Pricing() {
           </p>
         </div>
         
-          <a href="mailto:sales@codeverity.dev"
+          href="mailto:sales@codeverity.dev"
           className="w-full shrink-0 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-2.5 text-center text-[13px] font-semibold text-[var(--text-primary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] sm:w-auto"
         >
           Contact sales
