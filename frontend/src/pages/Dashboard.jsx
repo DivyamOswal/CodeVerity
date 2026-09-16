@@ -5,7 +5,6 @@ import { useNavigate } from "react-router-dom";
 import Result from "../components/Result";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
-import { useAuth } from "../App";
 import { Search } from "lucide-react";
 import { getReport } from "../api/report";
 import { useToast } from "../hooks/useToast";
@@ -31,7 +30,6 @@ export default function Dashboard() {
   const [currentRepoUrl, setCurrentRepoUrl] = useState("");
 
   const navigate = useNavigate();
-  const { logout } = useAuth();
 
   const mainContainerRef = useRef(null);
   const statsContainerRef = useRef(null);
@@ -41,6 +39,10 @@ export default function Dashboard() {
 
   const { compact } = usePreferences();
 
+  // Note: `logout` was previously destructured from useAuth() here and
+  // listed as a dependency, but never called — the catch below clears
+  // the token and redirects manually. Removed to avoid depending on
+  // auth context this component doesn't actually use.
   const loadDashboard = useCallback(
     () =>
       fetchDashboard()
@@ -53,7 +55,7 @@ export default function Dashboard() {
           localStorage.removeItem("token");
           navigate("/login");
         }),
-    [navigate, logout]
+    [navigate]
   );
 
   useEffect(() => {
@@ -183,7 +185,6 @@ export default function Dashboard() {
       setReportId(res.data.reportId);
       const a = res.data.analysis || {};
 
-      // ── Map ALL fields (mirrors the logic in openResult) ──
       setAnalysis({
         summary: a.summary ?? "",
         architecture: a.architecture ?? [],
@@ -196,7 +197,6 @@ export default function Dashboard() {
         finalVerdict: a.finalVerdict ?? "",
         _sourceCode: a._sourceCode ?? "",
         repoUrl: repoUrl,
-        // ── Detailed fields (now included) ──
         healthScore: a.healthScore,
         securityVulnerabilities: a.securityVulnerabilities,
         dependencyVulnerabilities: a.dependencyVulnerabilities,
@@ -218,7 +218,6 @@ export default function Dashboard() {
           `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
         );
       } else {
-        // For other errors, show a toast and also display inline for visibility
         toastError(errorMsg);
         setError(errorMsg);
       }
@@ -229,7 +228,6 @@ export default function Dashboard() {
 
   const openResult = async (report) => {
     try {
-      // If report already has enhanced fields, use it directly
       if (report.healthScore || report.securityVulnerabilities?.length) {
         setAnalysis({
           summary: report.summary ?? "",
@@ -258,7 +256,6 @@ export default function Dashboard() {
         return;
       }
 
-      // Otherwise fetch the full report
       const res = await getReport(report._id);
       const full = res.data.report;
       setAnalysis({
@@ -292,7 +289,7 @@ export default function Dashboard() {
   };
 
   if (!data) {
-    return <LoadingScreen />;
+    return <DashboardSkeleton compact={compact} />;
   }
 
   const avgQuality = data.recentReports?.length
@@ -390,7 +387,7 @@ export default function Dashboard() {
             data={analysis}
             onDownload={downloadPDF}
             generateTestsFn={generateTests}
-            repoUrl={currentRepoUrl} // 👈 pass repoUrl for Auto‑Fix
+            repoUrl={currentRepoUrl}
             reportId={reportId}
           />
         </div>
@@ -402,7 +399,7 @@ export default function Dashboard() {
           className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
         >
           <div className="space-y-5">
-            {/* HEADER – Token‑only, no scan limit */}
+            {/* HEADER */}
             <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
               <div className="flex items-center gap-2 flex-wrap">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
@@ -455,8 +452,12 @@ export default function Dashboard() {
             {/* ANALYZER */}
             <div
               ref={analyzerRef}
-              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_25px_50px_-30px_var(--accent-soft-strong)]"
+              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)]"
             >
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+              />
               <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
@@ -477,14 +478,17 @@ export default function Dashboard() {
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2.5 sm:flex-row">
+                {/* Input + button joined into a single command bar on
+                    desktop, matching the terminal identity used across
+                    the app; stacks on mobile. */}
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-[var(--border-light)] sm:bg-[var(--bg-input)] sm:transition-colors sm:focus-within:border-[var(--accent)]/60">
                   <div className="relative min-w-0 flex-1">
-                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-xs text-[var(--text-muted)]">
+                    <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">
                       $
                     </span>
                     <input
                       aria-label="GitHub repository URL"
-                      className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition-colors focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
+                      className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition-colors focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 sm:rounded-none sm:border-0 sm:focus:ring-0 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
                       placeholder="https://github.com/username/repository"
                       value={repoUrl}
                       onChange={(e) => {
@@ -497,10 +501,10 @@ export default function Dashboard() {
                   <button
                     onClick={generateReport}
                     disabled={loading}
-                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 ${
+                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 sm:m-1 sm:rounded-lg ${
                       loading
                         ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)]"
-                        : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] hover:scale-[1.01] active:scale-95"
+                        : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_8px_24px_-8px_var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] active:scale-95"
                     } ${compactClasses.buttonPadding}`}
                   >
                     {loading ? (
@@ -551,14 +555,19 @@ export default function Dashboard() {
 
             {/* RECENT REPORTS */}
             {data.recentReports?.length > 0 && (
-              <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_20px_45px_-30px_var(--accent-soft-strong)]">
+              <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
                 <div
                   className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compactClasses.recentHeaderPadding}`}
                 >
                   <div>
-                    <h2 className={`font-semibold text-[var(--text-primary)] ${compactClasses.recentTitle}`}>
-                      Recent reports
-                    </h2>
+                    <div className="flex items-center gap-2">
+                      <h2 className={`font-semibold text-[var(--text-primary)] ${compactClasses.recentTitle}`}>
+                        Recent reports
+                      </h2>
+                      <span className="rounded-md bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono text-[9px] font-bold text-[var(--accent)]">
+                        {data.recentReports.length}
+                      </span>
+                    </div>
                     <p className={`mt-1 text-[var(--text-muted)] ${compactClasses.recentSub}`}>
                       Your latest repository analysis results
                     </p>
@@ -640,7 +649,7 @@ export default function Dashboard() {
 }
 
 /* =========================================================
-   SUB-COMPONENTS (unchanged)
+   SUB-COMPONENTS
 ========================================================= */
 
 function CodeVerityLogo() {
@@ -674,8 +683,12 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[0_15px_35px_-20px_var(--accent-soft-strong)] ${statPaddingClass}`}
+      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${statPaddingClass}`}
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40"
+      />
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start justify-between">
         <div>
@@ -840,14 +853,83 @@ function useCountUp(target, duration = 800) {
   return value;
 }
 
-function LoadingScreen() {
+/* Skeleton dashboard — mirrors the real layout's shape so the page
+   structure is visible immediately on load, instead of a bare spinner
+   that jumps to a full dashboard once data arrives. */
+function DashboardSkeleton({ compact }) {
+  const mainPadding = compact ? "px-4 py-4 sm:px-4 lg:px-6" : "px-4 py-6 sm:px-6 lg:px-8";
+  const topPadding = compact ? "pt-14" : "pt-16";
+  const statsGap = compact ? "gap-2" : "gap-3";
+  const statPad = compact ? "p-3" : "p-4";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
-      <div className="flex flex-col items-center gap-4">
-        <CodeVerityLogo />
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
-        <p className="font-mono text-[10px] text-[var(--text-muted)]">loading dashboard…</p>
-      </div>
+    <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
+      <main className={`mx-auto w-full max-w-7xl ${mainPadding} ${topPadding}`}>
+        <div className="animate-pulse space-y-5">
+          {/* Header */}
+          <div className="space-y-2">
+            <div className="h-2 w-28 rounded bg-[var(--bg-hover)]" />
+            <div className="h-6 w-56 rounded bg-[var(--bg-hover)]" />
+            <div className="h-2.5 w-80 max-w-full rounded bg-[var(--bg-hover)]" />
+          </div>
+
+          {/* Stats */}
+          <div className={`grid grid-cols-1 ${statsGap} sm:grid-cols-3`}>
+            {Array.from({ length: 3 }, (_, i) => (
+              <div
+                key={i}
+                className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${statPad}`}
+              >
+                <div className="flex items-start justify-between">
+                  <div className="space-y-2">
+                    <div className="h-2 w-20 rounded bg-[var(--bg-hover)]" />
+                    <div className="h-6 w-16 rounded bg-[var(--bg-hover)]" />
+                    <div className="h-2 w-24 rounded bg-[var(--bg-hover)]" />
+                  </div>
+                  <div className="h-8 w-8 rounded-lg bg-[var(--bg-hover)]" />
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {/* Analyzer */}
+          <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 sm:p-6">
+            <div className="flex items-start gap-3">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-[var(--bg-hover)]" />
+              <div className="flex-1 space-y-2">
+                <div className="h-3 w-52 max-w-full rounded bg-[var(--bg-hover)]" />
+                <div className="h-2.5 w-72 max-w-full rounded bg-[var(--bg-hover)]" />
+              </div>
+            </div>
+            <div className="mt-5 h-12 w-full rounded-xl bg-[var(--bg-hover)]" />
+            <div className="mt-4 flex flex-wrap gap-2">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="h-6 w-24 rounded-lg bg-[var(--bg-hover)]" />
+              ))}
+            </div>
+          </div>
+
+          {/* Recent reports */}
+          <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+            <div className="border-b border-[var(--border-dark)] px-5 py-4">
+              <div className="h-3 w-32 rounded bg-[var(--bg-hover)]" />
+              <div className="mt-2 h-2 w-48 rounded bg-[var(--bg-hover)]" />
+            </div>
+            <div className="space-y-1.5 p-2">
+              {Array.from({ length: 4 }, (_, i) => (
+                <div key={i} className="flex items-center gap-3 px-3 py-3">
+                  <div className="h-8 w-8 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
+                  <div className="flex-1 space-y-1.5">
+                    <div className="h-2.5 w-44 max-w-full rounded bg-[var(--bg-hover)]" />
+                    <div className="h-2 w-28 rounded bg-[var(--bg-hover)]" />
+                  </div>
+                  <div className="h-6 w-14 rounded-lg bg-[var(--bg-hover)]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </main>
     </div>
   );
 }
