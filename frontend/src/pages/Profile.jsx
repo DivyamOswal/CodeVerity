@@ -85,7 +85,7 @@ function SectionKicker({ icon, title, subtitle, compact, right }) {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { token, logout } = useAuth();
+  const { token } = useAuth();
   const { compact } = usePreferences();
   const { error: toastError } = useToast();
 
@@ -146,9 +146,13 @@ export default function Profile() {
   }, [token]);
 
   if (loading && !user) {
-    return <LoadingScreen />;
+    return <ProfileSkeleton compact={compact} />;
   }
 
+  // NOTE: `error`/`setError` is currently dead — both catch blocks
+  // above call toastError() instead of setError(), so this branch
+  // never renders. Left in place pending a decision on whether to
+  // wire it up (full-page error state on true failures) or remove it.
   if (error) {
     return (
       <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-[var(--text-primary)] px-4">
@@ -310,7 +314,7 @@ export default function Profile() {
           </div>
 
           {/* HERO – User Profile Card */}
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
             <span className="absolute inset-x-0 top-0 h-[2px] bg-[var(--accent)]" />
             <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
             <div className="pointer-events-none absolute -bottom-24 -left-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
@@ -635,8 +639,12 @@ function StatCard({
 }) {
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 ${padding}`}
+      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-md)] ${padding}`}
     >
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40"
+      />
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative">
         <div
@@ -703,18 +711,62 @@ function gradeStyle(letter) {
 }
 
 /* =========================================================
-   LOADING SCREEN
+   SKELETON — mirrors the real layout's shape (hero, stats,
+   grade breakdown) for an immediate sense of structure on
+   load, matching the pattern used on History and Dashboard.
 ========================================================= */
 
-function LoadingScreen() {
+function ProfileSkeleton({ compact }) {
+  const container = compact ? "px-3 py-4 sm:px-4" : "px-4 py-6 sm:px-6 lg:px-8";
+  const topPadding = compact ? "pt-14" : "pt-16";
+  const statsGap = compact ? "gap-2" : "gap-3";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[var(--bg-primary)]">
-      <div className="flex flex-col items-center gap-4">
-        <CodeVerityLogo />
-        <div className="h-5 w-5 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
-        <p className="font-mono text-[10px] text-[var(--text-muted)]">
-          Loading CodeVerity profile…
-        </p>
+    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${topPadding}`}>
+      <div className={`mx-auto w-full max-w-7xl ${container}`}>
+        <div className="animate-pulse space-y-5">
+          <div className="space-y-2">
+            <div className="h-2 w-16 rounded bg-[var(--bg-hover)]" />
+            <div className="h-6 w-32 rounded bg-[var(--bg-hover)]" />
+            <div className="h-2.5 w-64 max-w-full rounded bg-[var(--bg-hover)]" />
+          </div>
+
+          <div className="flex flex-col gap-4 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 sm:flex-row sm:items-center sm:p-6">
+            <div className="h-20 w-20 shrink-0 rounded-2xl bg-[var(--bg-hover)]" />
+            <div className="flex-1 space-y-2">
+              <div className="h-4 w-40 rounded bg-[var(--bg-hover)]" />
+              <div className="h-2.5 w-56 max-w-full rounded bg-[var(--bg-hover)]" />
+              <div className="flex gap-2">
+                <div className="h-5 w-24 rounded-md bg-[var(--bg-hover)]" />
+                <div className="h-5 w-20 rounded-md bg-[var(--bg-hover)]" />
+              </div>
+            </div>
+            <div className="h-9 w-full shrink-0 rounded-lg bg-[var(--bg-hover)] sm:w-28" />
+          </div>
+
+          <div className={`grid grid-cols-2 ${statsGap} md:grid-cols-4`}>
+            {Array.from({ length: 4 }, (_, i) => (
+              <div key={i} className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+                <div className="h-8 w-8 rounded-lg bg-[var(--bg-hover)]" />
+                <div className="mt-3 h-6 w-12 rounded bg-[var(--bg-hover)]" />
+                <div className="mt-1.5 h-2 w-20 rounded bg-[var(--bg-hover)]" />
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5">
+            <div className="mb-4 h-3 w-32 rounded bg-[var(--bg-hover)]" />
+            <div className="space-y-3">
+              {Array.from({ length: 5 }, (_, i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="h-7 w-7 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
+                  <div className="h-1.5 flex-1 rounded-full bg-[var(--bg-hover)]" />
+                  <div className="h-2 w-10 shrink-0 rounded bg-[var(--bg-hover)]" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
