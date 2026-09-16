@@ -23,6 +23,49 @@ function ScanLine() {
 }
 
 // -----------------------------------------------------------------
+// Skeleton report card – matches ReportCard's real shape so the
+// grid's structure is visible immediately on load instead of a
+// spinner that jumps to a full grid once data arrives.
+// -----------------------------------------------------------------
+function SkeletonCard({ compact }) {
+  const headerPadding = compact ? "p-3" : "p-4";
+  const cardPadding = compact ? "p-3" : "p-4";
+  return (
+    <div className="animate-pulse overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+      <div className={`border-b border-[var(--border-dark)] ${headerPadding}`}>
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2.5">
+            <div className="h-8 w-8 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
+            <div className="space-y-1.5">
+              <div className="h-2 w-14 rounded bg-[var(--bg-hover)]" />
+              <div className="h-3 w-28 rounded bg-[var(--bg-hover)]" />
+            </div>
+          </div>
+          <div className="h-5 w-8 shrink-0 rounded-md bg-[var(--bg-hover)]" />
+        </div>
+        <div className="mt-3 space-y-1.5">
+          <div className="h-2.5 w-full rounded bg-[var(--bg-hover)]" />
+          <div className="h-2.5 w-2/3 rounded bg-[var(--bg-hover)]" />
+        </div>
+      </div>
+      <div className={cardPadding}>
+        <div className="flex items-center justify-between">
+          <div className="space-y-1.5">
+            <div className="h-2 w-16 rounded bg-[var(--bg-hover)]" />
+            <div className="h-6 w-12 rounded bg-[var(--bg-hover)]" />
+          </div>
+          <div className="h-10 w-10 rounded-full bg-[var(--bg-hover)]" />
+        </div>
+        <div className="mt-4 flex items-center justify-between border-t border-[var(--border-dark)] pt-3">
+          <div className="h-3 w-20 rounded bg-[var(--bg-hover)]" />
+          <div className="h-6 w-16 rounded-md bg-[var(--bg-hover)]" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// -----------------------------------------------------------------
 // Main History Component
 // -----------------------------------------------------------------
 export default function History() {
@@ -183,8 +226,14 @@ export default function History() {
               </p>
             </div>
 
-            {/* Total Reviews Badge */}
-            <div className="flex w-fit items-center gap-3 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_10px_25px_-18px_var(--accent-soft-strong)]">
+            {/* Total Reviews Badge — top hairline for consistency
+                with the "premium card" treatment used across Auth
+                and the legal pages. */}
+            <div className="relative flex w-fit items-center gap-3 overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[var(--shadow-md)]">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+              />
               <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
                 <svg
                   width="16"
@@ -212,11 +261,11 @@ export default function History() {
           </div>
         </div>
 
-        {/* GRADE SUMMARY */}
+        {/* GRADE SUMMARY — jumps from 2 to 5 columns directly, so 5
+            cards never wrap into an orphaned 3-then-2 split at
+            intermediate widths. */}
         {reports.length > 0 && (
-          <div
-            className={`mb-4 grid grid-cols-2 ${gradeGap} sm:grid-cols-3 lg:grid-cols-5`}
-          >
+          <div className={`mb-4 grid grid-cols-2 ${gradeGap} sm:grid-cols-5`}>
             {["A", "B", "C", "D", "F"].map((g) => {
               const count = reports.filter(
                 (r) => (r.grade ?? "N/A")[0] === g,
@@ -238,7 +287,7 @@ export default function History() {
                   onClick={() => setFilterGrade(filterGrade === g ? "all" : g)}
                   className={`group rounded-xl border p-2 text-left transition-all duration-200 active:scale-[0.98] sm:p-3 ${
                     filterGrade === g
-                      ? `${style.border} ${style.background} shadow-[0_10px_25px_-18px_var(--accent-soft-strong)]`
+                      ? `${style.border} ${style.background} shadow-[var(--shadow-md)]`
                       : "border-[var(--border-light)] bg-[var(--bg-card)] hover:-translate-y-0.5 hover:border-[var(--border-medium)]"
                   } ${compact ? "p-2" : ""}`}
                 >
@@ -267,8 +316,12 @@ export default function History() {
         {/* TOOLBAR */}
         {reports.length > 0 && (
           <div
-            className={`mb-4 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${toolbarPadding}`}
+            className={`relative overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${toolbarPadding} mb-4`}
           >
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40"
+            />
             <div className="flex flex-col gap-2 lg:flex-row">
               <div className="relative flex-1">
                 <svg
@@ -291,12 +344,12 @@ export default function History() {
                   className="h-10 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] pl-10 pr-4 text-[13px] text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 />
               </div>
-              <div className="flex gap-2 flex-col sm:flex-row">
+              <div className="flex gap-2 flex-col sm:flex-row lg:w-[340px]">
                 <select
                   aria-label="Filter by grade"
                   value={filterGrade}
                   onChange={(e) => setFilterGrade(e.target.value)}
-                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="all">All grades</option>
                   {["A", "B", "C", "D", "F"].map((g) => (
@@ -309,7 +362,7 @@ export default function History() {
                   aria-label="Sort reports"
                   value={sortBy}
                   onChange={(e) => setSortBy(e.target.value)}
-                  className="h-10 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                  className="h-10 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3 text-[13px] text-[var(--text-secondary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
                 >
                   <option value="date">Newest</option>
                   <option value="score">Highest Score</option>
@@ -344,19 +397,14 @@ export default function History() {
           </div>
         )}
 
-        {/* LOADING */}
+        {/* LOADING — skeleton cards matching the real grid's shape,
+            so the page's structure is visible immediately instead
+            of a spinner-then-jump-to-full-grid transition. */}
         {loading && (
-          <div className="flex min-h-[360px] flex-col items-center justify-center">
-            <div className="relative">
-              <div className="h-10 w-10 rounded-full border-2 border-[var(--border-light)]" />
-              <div className="absolute inset-0 h-10 w-10 animate-spin rounded-full border-2 border-transparent border-t-[var(--accent)]" />
-            </div>
-            <p className="mt-4 text-sm font-medium text-[var(--text-secondary)]">
-              Loading your reviews
-            </p>
-            <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-              Fetching your CodeVerity audit history...
-            </p>
+          <div className={`grid grid-cols-1 ${reportGridGap} md:grid-cols-2 xl:grid-cols-3`}>
+            {Array.from({ length: 6 }, (_, i) => (
+              <SkeletonCard key={i} compact={compact} />
+            ))}
           </div>
         )}
 
@@ -498,7 +546,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   return (
     <div
       onClick={onView}
-      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-2xl hover:shadow-[var(--accent)]/10`}
+      className={`group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-lg)]`}
     >
       <div className={`border-b border-[var(--border-dark)] ${headerPadding}`}>
         <div className="flex items-start justify-between gap-3">
@@ -702,8 +750,7 @@ function ScoreBar({ label, value, compact }) {
 // -----------------------------------------------------------------
 // Grade Styles – now sourced from index.css semantic tokens instead
 // of hardcoded Tailwind colors. A→success, B→info, C→warning,
-// D→caution, F→danger. --color-info and --color-caution are new
-// additions to index.css (see chat note above).
+// D→caution, F→danger.
 // -----------------------------------------------------------------
 function gradeStyle(letter) {
   const map = {
