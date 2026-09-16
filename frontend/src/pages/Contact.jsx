@@ -58,19 +58,25 @@ function ContactIcon({ name }) {
   );
 }
 
-function Field({ label, ...props }) {
-  return (
-    <label className="block">
-      <span className="mb-1.5 block font-mono text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
-        {label}
-      </span>
-      <input
-        {...props}
-        className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
-      />
-    </label>
-  );
-}
+// Borderless input used inside a grouped fieldset — the container
+// owns the border and focus state, same pattern as Login/Register.
+// focus-visible:outline-none is required because index.css applies a
+// global *:focus-visible outline that would otherwise double up with
+// the container's focus-within border.
+const groupedInput = `
+  w-full
+  border-0
+  bg-transparent
+  px-3.5
+  py-2.5
+  text-sm
+  text-[var(--text-primary)]
+  outline-none
+  placeholder:text-[var(--text-muted)]
+  focus:outline-none
+  focus-visible:outline-none
+  focus:ring-0
+`;
 
 const contactInfo = [
   {
@@ -153,7 +159,7 @@ export default function Contact() {
 
       <div className="relative z-10 mx-auto max-w-5xl px-6 py-20">
         {/* HERO */}
-        <div className="text-center" style={{ animation: "fadeDown 0.6s ease both" }}>
+        <div className="animate-fadeDown text-center">
           <div className="mb-5 flex items-center justify-center gap-3">
             <CodeVerityLogo />
           </div>
@@ -172,61 +178,160 @@ export default function Contact() {
         </div>
 
         {/* CONTENT */}
-        <div className="mt-14 grid gap-6 lg:grid-cols-[1fr_320px]" style={{ animation: "fadeUp 0.6s 0.1s ease both" }}>
+        <div className="animate-fadeUp mt-14 grid gap-6 lg:grid-cols-[1fr_320px]" style={{ animationDelay: "100ms" }}>
           {/* FORM */}
-          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[0_20px_45px_-25px_var(--accent-soft-strong)] sm:p-8">
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[var(--shadow-lg)] sm:p-8">
             <span className="absolute -top-px -left-px h-4 w-4 rounded-tl-2xl border-l-2 border-t-2 border-[var(--accent)]/50" />
             <span className="absolute -top-px -right-px h-4 w-4 rounded-tr-2xl border-r-2 border-t-2 border-[var(--accent)]/50" />
             <span className="absolute -bottom-px -left-px h-4 w-4 rounded-bl-2xl border-b-2 border-l-2 border-[var(--accent)]/50" />
             <span className="absolute -bottom-px -right-px h-4 w-4 rounded-br-2xl border-b-2 border-r-2 border-[var(--accent)]/50" />
 
             <form onSubmit={handleSubmit} noValidate className="space-y-5">
-              <div className="grid gap-5 sm:grid-cols-2">
-                <div>
-                  <Field label="Name" value={form.name} onChange={update("name")} placeholder="Your name" />
-                  {errors.name && <p className="mt-1.5 text-xs text-red-400">{errors.name}</p>}
-                </div>
-                <div>
-                  <Field
-                    label="Email"
-                    type="email"
-                    value={form.email}
-                    onChange={update("email")}
-                    placeholder="you@example.com"
-                  />
-                  {errors.email && <p className="mt-1.5 text-xs text-red-400">{errors.email}</p>}
+              {/* Name + Email — grouped fieldset, same pattern as the
+                  Auth forms so the app's form language stays consistent. */}
+              <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] transition-colors duration-200 focus-within:border-[var(--accent)]">
+                <div className="grid sm:grid-cols-2 sm:divide-x sm:divide-[var(--border-light)]">
+                  <div className="border-b border-[var(--border-light)] px-1 pt-1 sm:border-b-0">
+                    <label
+                      htmlFor="contact-name"
+                      className="block px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
+                    >
+                      Name
+                    </label>
+                    <input
+                      id="contact-name"
+                      value={form.name}
+                      onChange={update("name")}
+                      placeholder="Your name"
+                      aria-invalid={Boolean(errors.name)}
+                      aria-describedby={errors.name ? "contact-name-error" : undefined}
+                      className={groupedInput}
+                    />
+                  </div>
+                  <div className="px-1 pb-1 sm:pb-0 sm:pt-1">
+                    <label
+                      htmlFor="contact-email"
+                      className="block px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
+                    >
+                      Email
+                    </label>
+                    <input
+                      id="contact-email"
+                      type="email"
+                      value={form.email}
+                      onChange={update("email")}
+                      placeholder="you@example.com"
+                      autoCapitalize="none"
+                      spellCheck="false"
+                      aria-invalid={Boolean(errors.email)}
+                      aria-describedby={errors.email ? "contact-email-error" : undefined}
+                      className={groupedInput}
+                    />
+                  </div>
                 </div>
               </div>
 
-              <Field
-                label="Subject (optional)"
-                value={form.subject}
-                onChange={update("subject")}
-                placeholder="What's this about?"
-              />
+              {(errors.name || errors.email) && (
+                <div className="-mt-2 space-y-1">
+                  {errors.name && (
+                    <p id="contact-name-error" className="flex items-center gap-1.5 text-xs text-[var(--color-danger)]">
+                      <span>•</span>
+                      {errors.name}
+                    </p>
+                  )}
+                  {errors.email && (
+                    <p id="contact-email-error" className="flex items-center gap-1.5 text-xs text-[var(--color-danger)]">
+                      <span>•</span>
+                      {errors.email}
+                    </p>
+                  )}
+                </div>
+              )}
 
-              <div>
-                <label className="block">
-                  <span className="mb-1.5 block font-mono text-[11px] uppercase tracking-wide text-[var(--text-muted)]">
-                    Message
-                  </span>
+              {/* Subject + Message — second grouped block */}
+              <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] transition-colors duration-200 focus-within:border-[var(--accent)]">
+                <div className="px-1 pt-1">
+                  <label
+                    htmlFor="contact-subject"
+                    className="block px-3 pt-2 font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
+                  >
+                    Subject <span className="opacity-60">(optional)</span>
+                  </label>
+                  <input
+                    id="contact-subject"
+                    value={form.subject}
+                    onChange={update("subject")}
+                    placeholder="What's this about?"
+                    className={groupedInput}
+                  />
+                </div>
+
+                <div className="h-px bg-[var(--border-light)]" />
+
+                <div className="px-1 pb-1">
+                  <div className="flex items-center justify-between px-3 pt-2">
+                    <label
+                      htmlFor="contact-message"
+                      className="font-mono text-[9px] uppercase tracking-[0.16em] text-[var(--text-muted)]"
+                    >
+                      Message
+                    </label>
+                    {/* Character counter — the 10-char minimum was
+                        previously invisible until submit. */}
+                    <span
+                      className={`font-mono text-[9px] uppercase tracking-wider transition-colors ${
+                        form.message.trim().length === 0
+                          ? "text-[var(--text-muted)] opacity-60"
+                          : form.message.trim().length >= 10
+                            ? "text-[var(--accent)]"
+                            : "text-[var(--color-warning)]"
+                      }`}
+                    >
+                      {form.message.trim().length === 0
+                        ? "10+ characters"
+                        : form.message.trim().length >= 10
+                          ? "ok"
+                          : `${form.message.trim().length}/10`}
+                    </span>
+                  </div>
                   <textarea
+                    id="contact-message"
                     value={form.message}
                     onChange={update("message")}
                     rows={6}
                     placeholder="Tell us what's going on..."
-                    className="w-full resize-none rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-3.5 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-1 focus:ring-[var(--accent)]"
+                    aria-invalid={Boolean(errors.message)}
+                    aria-describedby={errors.message ? "contact-message-error" : undefined}
+                    className={`${groupedInput} resize-none`}
                   />
-                </label>
-                {errors.message && <p className="mt-1.5 text-xs text-red-400">{errors.message}</p>}
+                </div>
               </div>
+
+              {errors.message && (
+                <p id="contact-message-error" className="-mt-2 flex items-center gap-1.5 text-xs text-[var(--color-danger)]">
+                  <span>•</span>
+                  {errors.message}
+                </p>
+              )}
 
               <button
                 type="submit"
                 disabled={submitting}
-                className="w-full rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast,#ffffff)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:w-auto sm:px-8"
+                className="group relative w-full overflow-hidden rounded-lg bg-[var(--accent)] py-3 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_8px_24px_-6px_var(--accent-soft-strong)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-[var(--accent-hover)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:w-auto sm:px-8"
               >
-                {submitting ? "Sending..." : "Send message"}
+                <span className="relative z-10 flex items-center justify-center gap-2">
+                  {submitting ? (
+                    <>
+                      <span
+                        className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
+                        style={{ borderColor: "var(--accent-contrast)", borderTopColor: "transparent", opacity: 0.85 }}
+                      />
+                      Sending…
+                    </>
+                  ) : (
+                    "Send message"
+                  )}
+                </span>
               </button>
             </form>
           </div>
