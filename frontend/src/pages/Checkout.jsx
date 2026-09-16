@@ -98,6 +98,13 @@ export default function Checkout() {
   const totalDisplay = formatPrice(total, currency);
   const gstDisplay = currency === "INR" ? formatPrice(gst, currency) : null;
 
+  // Effective per-month rate on yearly billing — display-only math
+  // from the existing price, so the saving is visible at the moment
+  // of purchase rather than only on the pricing page.
+  const perMonthDisplay = !isMonthly
+    ? formatPrice(Math.round(price / 12), currency)
+    : null;
+
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] px-3 py-8 sm:px-6 sm:py-12 lg:px-8">
       <div className="mx-auto max-w-6xl">
@@ -128,47 +135,43 @@ export default function Checkout() {
         </div>
 
         {/* ─── Layout ─────────────────────────────────────────── */}
+        {/* Left = the action (confirm + pay). Right = the receipt
+            (line items + total). Previously both columns repeated the
+            full pricing breakdown, which reads as a double-charge on a
+            payment page. */}
         <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1fr_400px] lg:gap-8">
-          {/* ─── LEFT – Checkout Form ─────────────────────────── */}
+          {/* ─── LEFT – Confirm & Pay ─────────────────────────── */}
           <div className="min-w-0">
-            {/* Payment card */}
-            <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-[0_25px_55px_-35px_var(--accent-soft-strong)] transition-shadow hover:shadow-[0_30px_65px_-35px_var(--accent-soft-strong)] sm:p-6">
-              <div className="space-y-5">
-                {/* Plan summary */}
-                <div className="flex flex-col gap-3 border-b border-[var(--border-dark)] pb-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="min-w-0">
-                    <p className="text-sm font-semibold text-[var(--text-primary)] sm:text-base">
-                      {plan.name} Plan
-                    </p>
-                    <p className="mt-0.5 text-xs text-[var(--text-muted)]">
-                      {formatTokens(plan.tokensPerMonth)} tokens / mo · {cycle}
-                    </p>
-                  </div>
-                  <div className="flex items-baseline gap-2 sm:flex-col sm:items-end sm:gap-0">
-                    <p className="text-lg font-bold text-[var(--text-primary)] sm:text-xl">
-                      {priceDisplay}
-                    </p>
-                    <p className="text-[10px] text-[var(--text-muted)]">
-                      {isMonthly ? "per month" : "per year"}
-                    </p>
-                  </div>
-                </div>
+            <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-[var(--shadow-lg)] sm:p-6">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+              />
 
-                {/* Order breakdown */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
-                    <span>Subtotal</span>
-                    <span className="font-mono tabular-nums">{priceDisplay}</span>
-                  </div>
-                  {gstDisplay && (
-                    <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
-                      <span>GST (18%)</span>
-                      <span className="font-mono tabular-nums">{gstDisplay}</span>
+              <div className="space-y-5">
+                {/* Plan confirmation */}
+                <div>
+                  <p className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--text-muted)]">
+                    You're subscribing to
+                  </p>
+                  <div className="mt-3 flex items-center gap-3 rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)]">
+                      <ShieldIcon className="h-[18px] w-[18px]" />
                     </div>
-                  )}
-                  <div className="flex items-center justify-between gap-3 border-t border-[var(--border-dark)] pt-3 text-base font-bold text-[var(--text-primary)]">
-                    <span>Total</span>
-                    <span className="font-mono tabular-nums">{totalDisplay}</span>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-[var(--text-primary)] sm:text-base">
+                        {plan.name} Plan
+                      </p>
+                      <p className="mt-0.5 font-mono text-[11px] text-[var(--accent)]">
+                        {formatTokens(plan.tokensPerMonth)} tokens / mo · billed {cycle}
+                      </p>
+                    </div>
+                    <Link
+                      to="/pricing"
+                      className="shrink-0 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-2.5 py-1.5 text-[10px] font-medium text-[var(--text-secondary)] transition-colors hover:border-[var(--accent)]/40 hover:text-[var(--text-primary)]"
+                    >
+                      Change
+                    </Link>
                   </div>
                 </div>
 
@@ -176,7 +179,7 @@ export default function Checkout() {
                 <button
                   onClick={handleCheckout}
                   disabled={loading}
-                  className="group relative w-full overflow-hidden rounded-xl bg-[var(--accent)] py-3.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.01] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 disabled:active:scale-100 sm:text-[15px]"
+                  className="group relative w-full overflow-hidden rounded-xl bg-[var(--accent)] py-3.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_10px_30px_-8px_var(--accent-soft-strong)] transition-all duration-200 hover:-translate-y-[1px] hover:bg-[var(--accent-hover)] active:translate-y-0 active:scale-[0.98] disabled:cursor-not-allowed disabled:translate-y-0 disabled:opacity-60 disabled:active:scale-100 sm:text-[15px]"
                 >
                   <span className="relative z-10 flex items-center justify-center gap-2">
                     {loading ? (
@@ -192,7 +195,7 @@ export default function Checkout() {
                       </>
                     ) : (
                       <>
-                        Proceed to Payment
+                        Pay {totalDisplay}
                         <span className="transition-transform group-hover:translate-x-1">
                           →
                         </span>
@@ -207,50 +210,54 @@ export default function Checkout() {
                   <LockIcon className="shrink-0 text-[var(--text-muted)]" />
                   <span>Secured by Stripe – your payment details are encrypted.</span>
                 </div>
-              </div>
-            </div>
 
-            {/* Trust signals */}
-            <div className="mt-6 grid grid-cols-1 gap-2 sm:mt-8 sm:grid-cols-3 sm:gap-4">
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
-                <ShieldIcon className="shrink-0 text-[var(--accent)]" />
-                <span>256‑bit SSL</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
-                <SparklesIcon className="shrink-0 text-[var(--accent)]" />
-                <span>AI‑powered audit</span>
-              </div>
-              <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
-                <CheckIcon className="shrink-0 text-[var(--accent)]" />
-                <span>Cancel anytime</span>
+                {/* Trust signals — directly under the action, where
+                    they're most persuasive, rather than in a detached
+                    row below the card. */}
+                <div className="grid grid-cols-1 gap-2 border-t border-[var(--border-dark)] pt-4 sm:grid-cols-3">
+                  <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                    <ShieldIcon className="shrink-0 text-[var(--accent)]" />
+                    <span>256‑bit SSL</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                    <SparklesIcon className="shrink-0 text-[var(--accent)]" />
+                    <span>AI‑powered audit</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
+                    <CheckIcon className="shrink-0 text-[var(--accent)]" />
+                    <span>Cancel anytime</span>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* ─── RIGHT – Order Summary Card ───────────────────── */}
-          <aside className="h-fit rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 shadow-[0_20px_45px_-30px_var(--accent-soft-strong)] transition-shadow hover:shadow-[0_25px_55px_-30px_var(--accent-soft-strong)] sm:p-6 lg:sticky lg:top-24">
-            <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--text-muted)] sm:text-[11px]">
-              Order Summary
-            </h2>
+          {/* ─── RIGHT – Order Summary (the single source of pricing) ─── */}
+          <aside className="h-fit overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)] lg:sticky lg:top-24">
+            <div className="border-b border-[var(--border-dark)] px-4 py-3 sm:px-6 sm:py-4">
+              <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--text-muted)] sm:text-[11px]">
+                Order Summary
+              </h2>
+            </div>
 
-            <div className="mt-4 space-y-4">
-              <div>
-                <p className="text-sm font-semibold text-[var(--text-primary)]">
-                  {plan.name} Plan
-                </p>
-                <p className="text-[12px] text-[var(--text-muted)]">
-                  billed {cycle}
-                </p>
-                <p className="mt-1 font-mono text-[11px] text-[var(--accent)]">
-                  {formatTokens(plan.tokensPerMonth)} tokens / mo
-                </p>
-              </div>
-
-              <div className="space-y-2 border-t border-[var(--border-light)] pt-4 text-[13px]">
-                <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
-                  <span>Subtotal</span>
-                  <span className="font-mono tabular-nums">{priceDisplay}</span>
+            <div className="space-y-4 p-4 sm:p-6">
+              {/* Line items */}
+              <div className="space-y-2.5 text-[13px]">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="font-medium text-[var(--text-primary)]">
+                      {plan.name} Plan
+                    </p>
+                    <p className="text-[11px] text-[var(--text-muted)]">
+                      billed {cycle}
+                      {perMonthDisplay && ` · ${perMonthDisplay}/mo effective`}
+                    </p>
+                  </div>
+                  <span className="shrink-0 font-mono tabular-nums text-[var(--text-secondary)]">
+                    {priceDisplay}
+                  </span>
                 </div>
+
                 {gstDisplay && (
                   <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
                     <span>GST (18%)</span>
@@ -259,34 +266,47 @@ export default function Checkout() {
                 )}
               </div>
 
-              <div className="flex items-center justify-between gap-3 border-t border-[var(--border-light)] pt-4">
-                <span className="text-sm font-semibold text-[var(--text-primary)]">
-                  Total due today
-                </span>
-                <span className="font-mono text-lg font-bold tabular-nums text-[var(--text-primary)] sm:text-xl">
-                  {totalDisplay}
-                </span>
+              {/* Total — visually dominant, since it's the single most
+                  important number on a checkout page. */}
+              <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-4">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">
+                    Total due today
+                  </span>
+                  <span className="font-mono text-xl font-bold tabular-nums text-[var(--text-primary)] sm:text-2xl">
+                    {totalDisplay}
+                  </span>
+                </div>
+                {!isMonthly && (
+                  <p className="mt-1.5 text-right font-mono text-[10px] text-[var(--accent)]">
+                    one payment · covers 12 months
+                  </p>
+                )}
               </div>
 
-              <ul className="mt-4 space-y-1.5 text-xs text-[var(--text-secondary)]">
-                {plan.features.slice(0, 4).map((f, i) => (
-                  <li key={i} className="flex items-start gap-2">
-                    <span className="mt-0.5 shrink-0 text-[var(--accent)]">✓</span>
-                    <span className="min-w-0">{f}</span>
-                  </li>
-                ))}
-                {plan.features.length > 4 && (
-                  <li className="text-[var(--text-muted)]">
-                    +{plan.features.length - 4} more
-                  </li>
-                )}
-              </ul>
+              {/* What's included */}
+              <div className="border-t border-[var(--border-light)] pt-4">
+                <p className="mb-2.5 font-mono text-[9px] uppercase tracking-[0.15em] text-[var(--text-muted)]">
+                  What's included
+                </p>
+                <ul className="space-y-1.5 text-xs text-[var(--text-secondary)]">
+                  {plan.features.slice(0, 4).map((f, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <CheckIcon className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]" />
+                      <span className="min-w-0">{f}</span>
+                    </li>
+                  ))}
+                  {plan.features.length > 4 && (
+                    <li className="pl-5 text-[var(--text-muted)]">
+                      +{plan.features.length - 4} more
+                    </li>
+                  )}
+                </ul>
+              </div>
 
               {/* Payment method note */}
-              <div className="mt-4 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center text-xs text-[var(--text-muted)]">
-                <span className="block">
-                  💳 All major credit &amp; debit cards accepted
-                </span>
+              <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3 text-center text-[11px] text-[var(--text-muted)]">
+                All major credit &amp; debit cards accepted
               </div>
             </div>
           </aside>
