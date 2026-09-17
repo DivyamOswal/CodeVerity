@@ -1,14 +1,28 @@
 // frontend/src/pages/Checkout.jsx
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
-import { PRICING_PLANS, formatPrice, formatTokens } from "../components/PricingPlans";
+import {
+  PRICING_PLANS,
+  formatPrice,
+  formatTokens,
+} from "../components/PricingPlans";
 import axios from "../api/axios";
 import { useToast } from "../hooks/useToast";
 
 // ─── Icons ──────────────────────────────────────────────────────
 function ArrowLeftIcon() {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
       <path d="M19 12H5" />
       <path d="m12 19-7-7 7-7" />
     </svg>
@@ -17,7 +31,18 @@ function ArrowLeftIcon() {
 
 function LockIcon({ className = "" }) {
   return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      width="12"
+      height="12"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <rect x="4" y="10.5" width="16" height="10" rx="2" />
       <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" />
     </svg>
@@ -26,7 +51,18 @@ function LockIcon({ className = "" }) {
 
 function CheckIcon({ className = "" }) {
   return (
-    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      width="16"
+      height="16"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <polyline points="20 6 9 17 4 12" />
     </svg>
   );
@@ -34,7 +70,18 @@ function CheckIcon({ className = "" }) {
 
 function SparklesIcon({ className = "" }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M12 2v4" />
       <path d="M12 18v4" />
       <path d="m4.93 4.93 2.83 2.83" />
@@ -49,7 +96,18 @@ function SparklesIcon({ className = "" }) {
 
 function ShieldIcon({ className = "" }) {
   return (
-    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className={className}>
+    <svg
+      width="14"
+      height="14"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+      className={className}
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
@@ -68,11 +126,13 @@ export default function Checkout() {
 
   const plan = useMemo(
     () => PRICING_PLANS.find((p) => p.id === planId) ?? PRICING_PLANS[1],
-    [planId]
+    [planId],
   );
   const price = plan[cycle][currency];
-  const gst = currency === "INR" ? Math.round(price * 0.18) : 0;
-  const total = price + gst;
+
+const gst = Math.round(price * 0.18 * 100) / 100;
+
+const total = price + gst;
 
   const [loading, setLoading] = useState(false);
 
@@ -96,7 +156,7 @@ export default function Checkout() {
   const isMonthly = cycle === "monthly";
   const priceDisplay = formatPrice(price, currency);
   const totalDisplay = formatPrice(total, currency);
-  const gstDisplay = currency === "INR" ? formatPrice(gst, currency) : null;
+  const gstDisplay = formatPrice(gst, currency);
 
   // Effective per-month rate on yearly billing — display-only math
   // from the existing price, so the saving is visible at the moment
@@ -163,7 +223,8 @@ export default function Checkout() {
                         {plan.name} Plan
                       </p>
                       <p className="mt-0.5 font-mono text-[11px] text-[var(--accent)]">
-                        {formatTokens(plan.tokensPerMonth)} tokens / mo · billed {cycle}
+                        {formatTokens(plan.tokensPerMonth)} tokens / mo · billed{" "}
+                        {cycle}
                       </p>
                     </div>
                     <Link
@@ -208,7 +269,9 @@ export default function Checkout() {
                 {/* Security badge */}
                 <div className="flex items-center justify-center gap-2 text-center text-[10px] text-[var(--text-muted)] sm:text-[11px]">
                   <LockIcon className="shrink-0 text-[var(--text-muted)]" />
-                  <span>Secured by Stripe – your payment details are encrypted.</span>
+                  <span>
+                    Secured by Stripe – your payment details are encrypted.
+                  </span>
                 </div>
 
                 {/* Trust signals — directly under the action, where
@@ -259,8 +322,14 @@ export default function Checkout() {
                 </div>
 
                 {gstDisplay && (
-                  <div className="flex items-center justify-between gap-3 text-[var(--text-secondary)]">
-                    <span>GST (18%)</span>
+                  <div className="flex items-center justify-between gap-3 text-emerald-500">
+                    <span className="flex items-center gap-1.5">
+                      <span>GST (18%)</span>
+                      <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium">
+                        Included
+                      </span>
+                    </span>
+
                     <span className="font-mono tabular-nums">{gstDisplay}</span>
                   </div>
                 )}
