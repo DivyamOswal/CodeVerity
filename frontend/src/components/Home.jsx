@@ -16,7 +16,9 @@ import {
 // ============================================================
 function getCSSColor(varName, fallbackHex) {
   if (typeof window === "undefined") return fallbackHex;
-  const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
+  const val = getComputedStyle(document.documentElement)
+    .getPropertyValue(varName)
+    .trim();
   return val || fallbackHex;
 }
 
@@ -166,10 +168,7 @@ function NeuralNetworkBackground() {
   }, []);
 
   return (
-    <canvas
-      ref={canvasRef}
-      className="pointer-events-none fixed inset-0 z-0"
-    />
+    <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />
   );
 }
 
@@ -276,16 +275,37 @@ function Feature({ icon, title, desc, index }) {
 // ============================================================
 function BugIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-      <path d="M18 13h-2" /><path d="M8 13H6" /><path d="M10 4 8 2" />
-      <path d="M14 4 16 2" /><path d="M12 22v-4" />
+      <path d="M18 13h-2" />
+      <path d="M8 13H6" />
+      <path d="M10 4 8 2" />
+      <path d="M14 4 16 2" />
+      <path d="M12 22v-4" />
     </svg>
   );
 }
 function ShieldIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
@@ -293,7 +313,16 @@ function ShieldIcon() {
 }
 function FlaskIcon() {
   return (
-    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
       <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
       <path d="M8 2h8" />
     </svg>
@@ -330,7 +359,13 @@ function StatPill({ value, label, delayMs = 0 }) {
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(num * eased);
-      let output = isPct ? `${current}%` : isPlus ? `${current}+` : isLt ? `<${current}s` : String(current);
+      let output = isPct
+        ? `${current}%`
+        : isPlus
+          ? `${current}+`
+          : isLt
+            ? `<${current}s`
+            : String(current);
       setDisplay(output);
       if (progress < 1) {
         rafRef.current = requestAnimationFrame(tick);
@@ -373,7 +408,10 @@ function ScanLine() {
 function TechBadge({ label }) {
   return (
     <span className="flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
-      <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent-soft)]" style={{ boxShadow: "0 0 0 1px var(--accent)" }} />
+      <span
+        className="h-1.5 w-1.5 rounded-full bg-[var(--accent-soft)]"
+        style={{ boxShadow: "0 0 0 1px var(--accent)" }}
+      />
       {label}
     </span>
   );
@@ -416,9 +454,13 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const mount = mountRef.current;
     if (!mount) return;
 
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
     const accentColor = new THREE.Color(getCSSColor("--accent", "#22d3ee"));
-    const secondaryColor = new THREE.Color(getCSSColor("--accent-secondary", "#818cf8"));
+    const secondaryColor = new THREE.Color(
+      getCSSColor("--accent-secondary", "#818cf8"),
+    );
 
     let width = mount.clientWidth;
     let height = mount.clientHeight;
@@ -446,7 +488,11 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     // Outer wireframe shell
     const shellGeo = new THREE.IcosahedronGeometry(1.7, 1);
     const shellEdges = new THREE.EdgesGeometry(shellGeo);
-    const shellMat = new THREE.LineBasicMaterial({ color: accentColor, transparent: true, opacity: 0.45 });
+    const shellMat = new THREE.LineBasicMaterial({
+      color: accentColor,
+      transparent: true,
+      opacity: 0.45,
+    });
     const shell = new THREE.LineSegments(shellEdges, shellMat);
     group.add(shell);
 
@@ -476,7 +522,10 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       positions[i * 3 + 2] = Math.sin(angle) * radius;
     }
     const particleGeo = new THREE.BufferGeometry();
-    particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    particleGeo.setAttribute(
+      "position",
+      new THREE.BufferAttribute(positions, 3),
+    );
     const particleMat = new THREE.PointsMaterial({
       color: secondaryColor,
       size: 0.035,
@@ -558,21 +607,40 @@ function CodeIntelligenceOrb({ badgeRefs }) {
   }, []);
 
   return (
-    <div className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
+    <div
+      className="relative mx-auto w-full max-w-md"
+      style={{ transformStyle: "preserve-3d" }}
+    >
       <div
         ref={(el) => (badgeRefs.current[0] = el)}
         className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
             <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-            <path d="M18 13h-2" /><path d="M8 13H6" /><path d="M10 4 8 2" />
-            <path d="M14 4 16 2" /><path d="M12 22v-4" />
+            <path d="M18 13h-2" />
+            <path d="M8 13H6" />
+            <path d="M10 4 8 2" />
+            <path d="M14 4 16 2" />
+            <path d="M12 22v-4" />
           </svg>
         </span>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Bugs found</p>
-          <p className="font-mono text-sm font-bold text-[var(--text-primary)]">0 critical</p>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
+            Bugs found
+          </p>
+          <p className="font-mono text-sm font-bold text-[var(--text-primary)]">
+            0 critical
+          </p>
         </div>
       </div>
 
@@ -602,8 +670,12 @@ function CodeIntelligenceOrb({ badgeRefs }) {
           </span>
         </div>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Grade</p>
-          <p className="font-mono text-xs font-semibold text-[var(--color-success)]">92 / 100</p>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
+            Grade
+          </p>
+          <p className="font-mono text-xs font-semibold text-[var(--color-success)]">
+            92 / 100
+          </p>
         </div>
       </div>
 
@@ -612,11 +684,333 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
       >
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
-        <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
+        <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">
+          12 tests generated
+        </span>
       </div>
 
-      <div ref={mountRef} className="relative z-0 h-[340px] w-full sm:h-[380px]" />
+      <div
+        ref={mountRef}
+        className="relative z-0 h-[340px] w-full sm:h-[380px]"
+      />
     </div>
+  );
+}
+
+
+function ScrollFeatureCards() {
+  const sectionRef = useRef(null);
+  const cardsRef = useRef([]);
+
+  const cards = [
+    {
+      number: "01",
+      value: "AI",
+      label: "Bug Detection",
+      title: "No Blind Spots in Your Code",
+      description:
+        "Identify logic errors, edge cases, and anti-patterns across your repository with AI-powered analysis.",
+      className: "scroll-card-accent",
+    },
+    {
+      number: "02",
+      value: "360°",
+      label: "Security Analysis",
+      title: "Professional Code Intelligence",
+      description:
+        "Analyze vulnerabilities, exposed secrets, and security risks with actionable insights for developers.",
+      className: "scroll-card-primary",
+    },
+    {
+      number: "03",
+      value: "AI+",
+      label: "Smart Test Generation",
+      title: "Where Code Quality Gets Tested",
+      description:
+        "Generate useful test cases and discover potential regressions to improve code reliability.",
+      className: "scroll-card-dark",
+    },
+  ];
+
+  useGSAP(
+    () => {
+      const reduceMotion = window.matchMedia(
+        "(prefers-reduced-motion: reduce)"
+      ).matches;
+
+      const section = sectionRef.current;
+      const cardElements = cardsRef.current.filter(Boolean);
+      if (!section || !cardElements.length) return;
+
+      // Scoped lookups
+      const headerBadge = section.querySelector(".scroll-header-badge");
+      const titleLines = gsap.utils.toArray(".scroll-header-line", section);
+      const headerCopy = section.querySelector(".scroll-header-copy");
+      const scrollHint = section.querySelector(".scroll-hint");
+
+      const cardContents = cardElements.map((card) =>
+        gsap.utils.toArray(".scroll-card-content > *", card)
+      );
+      const glows = cardElements
+        .map((card) => card.querySelector(".scroll-card-glow"))
+        .filter(Boolean);
+
+      // ---------- Reduced motion / mobile: render statically ----------
+      if (reduceMotion || window.innerWidth < 768) {
+        gsap.set(
+          [
+            headerBadge,
+            headerCopy,
+            scrollHint,
+            ...titleLines,
+            ...cardElements,
+            ...cardContents.flat(),
+          ].filter(Boolean),
+          { clearProps: "all", opacity: 1, x: 0, y: 0 }
+        );
+        gsap.set(cardElements, {
+          clearProps: "all",
+          opacity: 1,
+          x: 0,
+          y: 0,
+          rotationX: 0,
+          rotationY: 0,
+          rotationZ: 0,
+          scale: 1,
+        });
+        return;
+      }
+
+      // ---------- 3D setup ----------
+      gsap.set(cardElements, {
+        transformPerspective: 1600,
+        transformOrigin: "center center",
+        force3D: true,
+      });
+
+      // Initial off-screen state for cards
+      gsap.set(cardElements[0], {
+        x: -40, y: 40, rotationY: -18, rotationX: 6, rotationZ: -2,
+        scale: 0.94, opacity: 0,
+      });
+      gsap.set(cardElements[1], {
+        x: 0, y: 60, rotationY: 0, rotationX: 8, rotationZ: 0,
+        scale: 0.96, opacity: 0,
+      });
+      gsap.set(cardElements[2], {
+        x: 40, y: 40, rotationY: 18, rotationX: 6, rotationZ: 2,
+        scale: 0.94, opacity: 0,
+      });
+
+      // Initial content state (staggered reveal)
+      cardContents.forEach((items) => {
+        gsap.set(items, { y: 24, opacity: 0 });
+      });
+
+      // Initial header state
+      if (headerBadge) gsap.set(headerBadge, { y: 20, opacity: 0 });
+      if (titleLines.length) gsap.set(titleLines, { y: 40, opacity: 0 });
+      if (headerCopy) gsap.set(headerCopy, { y: 20, opacity: 0 });
+      if (scrollHint) gsap.set(scrollHint, { y: 12, opacity: 0 });
+
+      // ---------- Master timeline ----------
+      const tl = gsap.timeline({
+        defaults: { ease: "power3.out" },
+        scrollTrigger: {
+          trigger: section,
+          start: "top top",
+          end: "+=2000",
+          scrub: 1,
+          pin: true,
+          anticipatePin: 1,
+          invalidateOnRefresh: true,
+        },
+      });
+
+      // Stage 1 — Header badge
+      if (headerBadge) {
+        tl.to(headerBadge, { y: 0, opacity: 1, duration: 0.4 }, 0);
+      }
+
+      // Stage 2 — Title lines cascade
+      if (titleLines.length) {
+        tl.to(
+          titleLines,
+          { y: 0, opacity: 1, duration: 0.6, stagger: 0.12 },
+          0.1
+        );
+      }
+
+      // Stage 3 — Supporting copy
+      if (headerCopy) {
+        tl.to(headerCopy, { y: 0, opacity: 1, duration: 0.5 }, 0.35);
+      }
+
+      // Stage 4 — Cards fly in and align
+      tl.to(
+        cardElements,
+        {
+          x: 0, y: 0,
+          rotationY: 0, rotationX: 0, rotationZ: 0,
+          scale: 1, opacity: 1,
+          duration: 1,
+          ease: "power3.inOut",
+          stagger: 0.1,
+        },
+        0.75
+      );
+
+      // Stage 5 — Card contents cascade (value → label → title → description)
+      tl.to(
+        cardContents.flat(),
+        {
+          y: 0, opacity: 1,
+          duration: 0.55,
+          ease: "power2.out",
+          stagger: 0.045,
+        },
+        "-=0.45"
+      );
+
+      // Stage 6 — Final composition: subtle fan, middle card lifted
+      tl.to(
+        cardElements,
+        {
+          x: (i) => (i === 0 ? -14 : i === 2 ? 14 : 0),
+          y: (i) => (i === 1 ? -8 : 0),
+          rotationY: (i) => (i === 0 ? -5 : i === 2 ? 5 : 0),
+          rotationX: 0,
+          rotationZ: 0,
+          scale: (i) => (i === 1 ? 1.02 : 0.99),
+          duration: 1,
+          ease: "power3.inOut",
+          stagger: 0.06,
+        },
+        "+=0.2"
+      );
+
+      // Stage 7 — Scroll hint fades in
+      if (scrollHint) {
+        tl.to(scrollHint, { y: 0, opacity: 1, duration: 0.5 }, "-=0.4");
+      }
+
+      // ---------- Ambient glow drift (runs independently) ----------
+      const glowTweens = glows.map((glow, i) =>
+        gsap.to(glow, {
+          x: i % 2 === 0 ? 25 : -25,
+          y: -18,
+          scale: 1.08,
+          duration: 6 + i * 1.2,
+          repeat: -1,
+          yoyo: true,
+          ease: "sine.inOut",
+          delay: i * 0.4,
+        })
+      );
+
+      return () => {
+        glowTweens.forEach((t) => t.kill());
+        tl.scrollTrigger?.kill();
+        tl.kill();
+      };
+    },
+    { scope: sectionRef, dependencies: [] }
+  );
+
+  return (
+    <section
+      ref={sectionRef}
+      className="relative z-10 flex min-h-[100svh] items-center overflow-hidden border-y border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-12 sm:px-6"
+    >
+      <div className="mx-auto w-full max-w-7xl">
+        {/* Section Header */}
+        <div className="mx-auto mb-14 max-w-2xl text-center">
+          <span className="scroll-header-badge mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--accent)]/[0.06] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--accent)]">
+            <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
+            Built for developers
+          </span>
+
+          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--text-primary)] sm:text-4xl lg:text-5xl">
+            <span className="scroll-header-line block">
+              Code intelligence.
+            </span>
+            <span className="scroll-header-line block text-[var(--accent)]">
+              Without the guesswork.
+            </span>
+          </h2>
+
+          <p className="scroll-header-copy mx-auto mt-5 max-w-xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-base">
+            Discover bugs, security risks, and actionable insights with
+            AI-powered repository analysis.
+          </p>
+        </div>
+
+        {/* Feature Cards */}
+        <div
+          className="relative mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-3 md:gap-6"
+          style={{ perspective: "1600px" }}
+        >
+          {cards.map((card, index) => (
+            <div
+              key={card.number}
+              ref={(el) => (cardsRef.current[index] = el)}
+              className={`scroll-feature-card group relative flex min-h-[400px] flex-col overflow-hidden rounded-3xl border border-[var(--border-light)] p-7 transition-colors duration-500 hover:border-[var(--accent)]/40 sm:min-h-[440px] sm:p-9 ${card.className}`}
+              style={{
+                backfaceVisibility: "hidden",
+                transformStyle: "preserve-3d",
+              }}
+            >
+              {/* Top accent line — reveals on hover */}
+              <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
+
+              {/* Top row: index + status dot */}
+              <div className="relative z-10 flex items-center justify-between">
+                <span className="font-mono text-[11px] font-medium tracking-[0.15em] text-[var(--text-muted)]">
+                  {card.number}
+                </span>
+                <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] ring-4 ring-[var(--accent)]/10 transition-all duration-300 group-hover:ring-[var(--accent)]/25" />
+              </div>
+
+              {/* Spacer pushes content to the bottom */}
+              <div className="flex-1" />
+
+              {/* Content block — children stagger on scroll */}
+              <div className="scroll-card-content relative z-10">
+                <span className="block text-6xl font-extrabold leading-none tracking-tighter text-[var(--text-primary)] sm:text-7xl">
+                  {card.value}
+                </span>
+
+                <p className="mt-6 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--accent)]">
+                  {card.label}
+                </p>
+
+                <h3 className="mt-3 max-w-[18ch] text-lg font-semibold leading-snug tracking-tight text-[var(--text-primary)] sm:text-xl">
+                  {card.title}
+                </h3>
+
+                <p className="mt-4 text-[13px] leading-relaxed text-[var(--text-secondary)]">
+                  {card.description}
+                </p>
+              </div>
+
+              {/* Decorative glow — drifts on a loop */}
+              <div className="scroll-card-glow pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] opacity-20 blur-3xl transition-opacity duration-500 group-hover:opacity-40" />
+
+              {/* Hover sheen */}
+              <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/[0.04] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+            </div>
+          ))}
+        </div>
+
+        {/* Scroll indicator */}
+        <div className="scroll-hint mt-12 flex flex-col items-center gap-2">
+          <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
+            Scroll to explore
+          </span>
+          <span className="h-8 w-px bg-gradient-to-b from-[var(--text-muted)]/60 to-transparent" />
+        </div>
+      </div>
+    </section>
   );
 }
 
@@ -627,7 +1021,14 @@ function HowItWorks() {
   const steps = [
     {
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+        >
           <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
           <path d="m9 12 2 2 4-4" />
         </svg>
@@ -637,7 +1038,14 @@ function HowItWorks() {
     },
     {
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+        >
           <circle cx="12" cy="12" r="10" />
           <path d="M12 6v6l4 2" />
         </svg>
@@ -647,7 +1055,14 @@ function HowItWorks() {
     },
     {
       icon: (
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+        <svg
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="1.75"
+        >
           <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
           <polyline points="22 4 12 14.01 9 11.01" />
         </svg>
@@ -704,17 +1119,20 @@ function HowItWorks() {
 function Testimonials() {
   const testimonials = [
     {
-      quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
+      quote:
+        "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
       author: "Sarah Chen",
       role: "Lead Engineer, Finlytics",
     },
     {
-      quote: "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.",
+      quote:
+        "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full-stack Developer, OpenSource Collective",
     },
     {
-      quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
+      quote:
+        "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
       author: "Dr. Aisha Patel",
       role: "CTO, DevSafe",
     },
@@ -740,7 +1158,11 @@ function Testimonials() {
               </p>
               <div className="mt-5 flex items-center gap-2.5 border-t border-[var(--border-light)] pt-4">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
-                  {t.author.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                  {t.author
+                    .split(" ")
+                    .map((n) => n[0])
+                    .join("")
+                    .slice(0, 2)}
                 </span>
                 <div>
                   <p className="text-xs font-semibold text-[var(--text-primary)]">
@@ -952,17 +1374,73 @@ function Footer({ isLoggedIn }) {
             <ul className="space-y-2">
               {isLoggedIn ? (
                 <>
-                  <li><Link to="/dashboard" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Dashboard</Link></li>
-                  <li><Link to="/workspace" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Workspace</Link></li>
-                  <li><Link to="/history" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">History</Link></li>
-                  <li><Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Pricing</Link></li>
+                  <li>
+                    <Link
+                      to="/dashboard"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      Dashboard
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/workspace"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      Workspace
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/history"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      History
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/pricing"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      Pricing
+                    </Link>
+                  </li>
                 </>
               ) : (
                 <>
-                  <li><Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Pricing</Link></li>
-                  <li><Link to="/login" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Sign In</Link></li>
-                  <li><Link to="/register" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Get Started</Link></li>
-                  <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
+                  <li>
+                    <Link
+                      to="/pricing"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      Pricing
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/login"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      Sign In
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/register"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      Get Started
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      to="/about"
+                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                    >
+                      About
+                    </Link>
+                  </li>
                 </>
               )}
             </ul>
@@ -973,10 +1451,38 @@ function Footer({ isLoggedIn }) {
               Resources
             </h4>
             <ul className="space-y-2">
-              <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
-              <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
-              <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
-              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
+              <li>
+                <Link
+                  to="/about"
+                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                >
+                  About
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/support"
+                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                >
+                  Support
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/privacy"
+                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                >
+                  Privacy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/terms"
+                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                >
+                  Terms
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -985,9 +1491,27 @@ function Footer({ isLoggedIn }) {
               Company
             </h4>
             <ul className="space-y-2">
-              <li><a href="mailto:support@codeverity.dev" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Contact</a></li>
-              <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About Us</Link></li>
-              <li><span className="text-[12px] text-[var(--accent-contrast)]/60">© {new Date().getFullYear()}</span></li>
+              <li>
+                <a
+                  href="mailto:support@codeverity.dev"
+                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                >
+                  Contact
+                </a>
+              </li>
+              <li>
+                <Link
+                  to="/about"
+                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                >
+                  About Us
+                </Link>
+              </li>
+              <li>
+                <span className="text-[12px] text-[var(--accent-contrast)]/60">
+                  © {new Date().getFullYear()}
+                </span>
+              </li>
             </ul>
           </div>
         </div>
@@ -997,9 +1521,24 @@ function Footer({ isLoggedIn }) {
             Built with ❤️ for developers everywhere.
           </p>
           <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
-            <Link to="/privacy" className="transition hover:text-[var(--accent-contrast)]">Privacy</Link>
-            <Link to="/terms" className="transition hover:text-[var(--accent-contrast)]">Terms</Link>
-            <Link to="/support" className="transition hover:text-[var(--accent-contrast)]">Support</Link>
+            <Link
+              to="/privacy"
+              className="transition hover:text-[var(--accent-contrast)]"
+            >
+              Privacy
+            </Link>
+            <Link
+              to="/terms"
+              className="transition hover:text-[var(--accent-contrast)]"
+            >
+              Terms
+            </Link>
+            <Link
+              to="/support"
+              className="transition hover:text-[var(--accent-contrast)]"
+            >
+              Support
+            </Link>
           </div>
         </div>
       </div>
@@ -1011,8 +1550,10 @@ function Footer({ isLoggedIn }) {
         <div
           className="pointer-events-none w-full overflow-hidden text-center"
           style={{
-            maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
-            WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)",
+            maskImage:
+              "linear-gradient(to bottom, black 60%, transparent 100%)",
+            WebkitMaskImage:
+              "linear-gradient(to bottom, black 60%, transparent 100%)",
           }}
         >
           <span
@@ -1047,7 +1588,8 @@ export default function Home() {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/stats/public`);
         const text = await res.text();
         if (!res.ok) throw new Error(`Stats API failed: ${res.status}`);
-        if (!text.trim()) throw new Error("Stats API returned an empty response");
+        if (!text.trim())
+          throw new Error("Stats API returned an empty response");
         const data = JSON.parse(text);
         if (data.success) {
           setStats({
@@ -1137,14 +1679,18 @@ export default function Home() {
                 setStatsReplayKey((k) => k + 1);
               }
             },
-            onLeave: () => { statsInViewRef.current = false; },
+            onLeave: () => {
+              statsInViewRef.current = false;
+            },
             onEnterBack: () => {
               if (!statsInViewRef.current) {
                 statsInViewRef.current = true;
                 setStatsReplayKey((k) => k + 1);
               }
             },
-            onLeaveBack: () => { statsInViewRef.current = false; },
+            onLeaveBack: () => {
+              statsInViewRef.current = false;
+            },
           });
         }
 
@@ -1153,34 +1699,61 @@ export default function Home() {
           defaults: { ease: "power3.out", duration: 0.8 },
         });
 
-        tl.fromTo(brandRef.current,
+        tl.fromTo(
+          brandRef.current,
           { opacity: 0, y: 30 },
-          { opacity: 1, y: 0, duration: 0.6 })
-          .fromTo(badgeRef.current,
+          { opacity: 1, y: 0, duration: 0.6 },
+        )
+          .fromTo(
+            badgeRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
-          .fromTo(headingRef.current,
+            { opacity: 1, y: 0, duration: 0.5 },
+            "-=0.3",
+          )
+          .fromTo(
+            headingRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6 }, "-=0.3")
-          .fromTo(typedRef.current,
+            { opacity: 1, y: 0, duration: 0.6 },
+            "-=0.3",
+          )
+          .fromTo(
+            typedRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5 }, "-=0.4")
-          .fromTo(descriptionRef.current,
+            { opacity: 1, y: 0, duration: 0.5 },
+            "-=0.4",
+          )
+          .fromTo(
+            descriptionRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
-          .fromTo(ctasRef.current,
+            { opacity: 1, y: 0, duration: 0.5 },
+            "-=0.3",
+          )
+          .fromTo(
+            ctasRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, "-=0.3")
-          .fromTo(trustRef.current,
+            { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 },
+            "-=0.3",
+          )
+          .fromTo(
+            trustRef.current,
             { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.4 }, "-=0.2");
+            { opacity: 1, y: 0, duration: 0.4 },
+            "-=0.2",
+          );
 
         // Orb column fades in alongside the hero text, slightly after
         if (orbWrapperRef.current) {
           gsap.fromTo(
             orbWrapperRef.current,
             { opacity: 0, y: 30, scale: 0.94 },
-            { opacity: 1, y: 0, scale: 1, duration: 0.9, ease: "power3.out", delay: 0.3 },
+            {
+              opacity: 1,
+              y: 0,
+              scale: 1,
+              duration: 0.9,
+              ease: "power3.out",
+              delay: 0.3,
+            },
           );
         }
 
@@ -1267,7 +1840,11 @@ export default function Home() {
             end: "bottom top",
             scrub: true,
             onUpdate: (self) => {
-              gsap.to(bgGlow1, { y: self.progress * 200, duration: 0.1, overwrite: true });
+              gsap.to(bgGlow1, {
+                y: self.progress * 200,
+                duration: 0.1,
+                overwrite: true,
+              });
             },
           });
         }
@@ -1278,7 +1855,11 @@ export default function Home() {
             end: "bottom top",
             scrub: true,
             onUpdate: (self) => {
-              gsap.to(bgGlow2, { y: -self.progress * 150, duration: 0.1, overwrite: true });
+              gsap.to(bgGlow2, {
+                y: -self.progress * 150,
+                duration: 0.1,
+                overwrite: true,
+              });
             },
           });
         }
@@ -1289,7 +1870,11 @@ export default function Home() {
             end: "bottom top",
             scrub: true,
             onUpdate: (self) => {
-              gsap.to(bgGrid, { y: self.progress * 50, duration: 0.1, overwrite: true });
+              gsap.to(bgGrid, {
+                y: self.progress * 50,
+                duration: 0.1,
+                overwrite: true,
+              });
             },
           });
         }
@@ -1336,11 +1921,22 @@ export default function Home() {
       mm.add("(prefers-reduced-motion: reduce)", () => {
         gsap.set(
           [
-            brandRef.current, badgeRef.current, headingRef.current, typedRef.current,
-            descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
-            featureLabelRef.current, featureCardsRef.current, howRef.current,
-            testimonialRef.current, pricingRef.current, faqRef.current,
-            orbWrapperRef.current, ...(orbBadgeRefs.current || []),
+            brandRef.current,
+            badgeRef.current,
+            headingRef.current,
+            typedRef.current,
+            descriptionRef.current,
+            ctasRef.current,
+            trustRef.current,
+            statsRef.current,
+            featureLabelRef.current,
+            featureCardsRef.current,
+            howRef.current,
+            testimonialRef.current,
+            pricingRef.current,
+            faqRef.current,
+            orbWrapperRef.current,
+            ...(orbBadgeRefs.current || []),
           ],
           { opacity: 1, y: 0, scale: 1, clearProps: "all" },
         );
@@ -1412,7 +2008,9 @@ export default function Home() {
         </Link>
       </div> */}
 
-      <style dangerouslySetInnerHTML={{__html: `
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
         .stat-card {
           box-shadow: 0 0 20px -5px var(--accent-soft-strong), inset 0 0 10px var(--accent-soft);
         }
@@ -1443,7 +2041,65 @@ export default function Home() {
           50% { background-position: 100% 50%; }
           100% { background-position: 0% 50%; }
         }
-      `}} />
+
+        
+        .scroll-feature-card {
+          transform-style: preserve-3d;
+          backface-visibility: hidden;
+          will-change: transform;
+          box-shadow:
+            0 20px 60px -25px var(--accent-soft-strong),
+            inset 0 0 30px var(--accent-soft);
+        }
+
+        .scroll-card-accent {
+          background: var(--bg-card);
+        }
+
+        .scroll-card-primary {
+          background: var(--accent);
+          border-color: var(--accent);
+        }
+
+        .scroll-card-primary h3,
+        .scroll-card-primary span {
+          color: var(--accent-contrast);
+        }
+
+        .scroll-card-primary p {
+          color: var(--accent-contrast);
+        }
+
+        .scroll-card-dark {
+          background: var(--bg-secondary);
+        }
+
+              @media (min-width: 768px) {
+          .scroll-feature-card {
+            min-height: 0;
+          }
+        }
+
+        @media (max-width: 767px) {
+          .scroll-feature-card {
+            min-height: 360px;
+            height: auto;
+            transform: none !important;
+            will-change: auto;
+          }
+        }
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .scroll-feature-card {
+            transform: none !important;
+            transition: none !important;
+          }
+        }
+
+              `,
+        }}
+      />
 
       <div
         ref={bgGlow1Ref}
@@ -1457,7 +2113,8 @@ export default function Home() {
         ref={bgGridRef}
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -1523,9 +2180,9 @@ export default function Home() {
               ref={descriptionRef}
               className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}
             >
-              Drop any public GitHub URL and get a complete AI-powered repository
-              audit architecture analysis, security findings, bug detection,
-              performance insights, and generated tests.
+              Drop any public GitHub URL and get a complete AI-powered
+              repository audit architecture analysis, security findings, bug
+              detection, performance insights, and generated tests.
             </p>
 
             <div
@@ -1546,7 +2203,9 @@ export default function Home() {
                   <Link
                     to="/login"
                     className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
-                    style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}
+                    style={{
+                      boxShadow: "0 8px 24px -6px var(--accent-soft-strong)",
+                    }}
                   >
                     <ScanLine />
                     <span className="relative z-10">Sign In</span>
@@ -1586,9 +2245,24 @@ export default function Home() {
             ref={statsRef}
             className={`mx-auto flex w-fit flex-wrap justify-center gap-4 ${compactClasses.statsMargin}`}
           >
-            <StatPill key={`scans-${statsReplayKey}`} value={statsLoading ? "..." : `${stats.totalScans}+`} label="Repos Scanned" delayMs={200} />
-            <StatPill key={`quality-${statsReplayKey}`} value={statsLoading ? "..." : `${stats.avgQuality}%`} label="Issue Accuracy" delayMs={300} />
-            <StatPill key={`time-${statsReplayKey}`} value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={400} />
+            <StatPill
+              key={`scans-${statsReplayKey}`}
+              value={statsLoading ? "..." : `${stats.totalScans}+`}
+              label="Repos Scanned"
+              delayMs={200}
+            />
+            <StatPill
+              key={`quality-${statsReplayKey}`}
+              value={statsLoading ? "..." : `${stats.avgQuality}%`}
+              label="Issue Accuracy"
+              delayMs={300}
+            />
+            <StatPill
+              key={`time-${statsReplayKey}`}
+              value={statsLoading ? "..." : stats.avgTime}
+              label="Avg Audit Time"
+              delayMs={400}
+            />
           </div>
 
           <div ref={featureLabelRef} className="mb-6 text-left">
@@ -1597,21 +2271,40 @@ export default function Home() {
             </p>
           </div>
 
-          <div className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}>
+          <div
+            className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}
+          >
             <div ref={(el) => (featureCardsRef.current[0] = el)}>
-              <Feature icon={<BugIcon />} title="AI Bug Detection" desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase." index={0} />
+              <Feature
+                icon={<BugIcon />}
+                title="AI Bug Detection"
+                desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
+                index={0}
+              />
             </div>
             <div ref={(el) => (featureCardsRef.current[1] = el)}>
-              <Feature icon={<ShieldIcon />} title="Security Analysis" desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly." index={1} />
+              <Feature
+                icon={<ShieldIcon />}
+                title="Security Analysis"
+                desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
+                index={1}
+              />
             </div>
             <div ref={(el) => (featureCardsRef.current[2] = el)}>
-              <Feature icon={<FlaskIcon />} title="Smart Test Generation" desc="Creates useful test cases from your repository to help verify fixes and prevent regressions." index={2} />
+              <Feature
+                icon={<FlaskIcon />}
+                title="Smart Test Generation"
+                desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
+                index={2}
+              />
             </div>
           </div>
         </div>
       </div>
 
       <div className="relative z-10 mx-auto max-w-7xl">
+        <ScrollFeatureCards />
+
         <div ref={howRef}>
           <HowItWorks />
         </div>
