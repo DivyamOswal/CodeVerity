@@ -28,7 +28,9 @@ function CodeVerityLogo() {
           <path d="m9 12 2 2 4-4" />
         </svg>
         <div className="absolute -bottom-1 -right-1 flex h-4 w-4 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-          <span className="font-mono text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+          <span className="font-mono text-[6px] font-bold text-[var(--accent)]">
+            &lt;/&gt;
+          </span>
         </div>
         <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
       </div>
@@ -56,6 +58,7 @@ export default function GithubAnalyzer({ setData }) {
   const [repo, setRepo] = useState("");
   const [loading, setLoading] = useState(false);
   const [analysis, setAnalysis] = useState(null);
+  const [reportId, setReportId] = useState(null);
   const { success, error } = useToast();
   const { compact } = usePreferences();
 
@@ -68,12 +71,20 @@ export default function GithubAnalyzer({ setData }) {
     try {
       setLoading(true);
       setAnalysis(null);
+      setReportId(null);
 
       const res = await analyzeGithub({ repoUrl: repo });
-      const data = res.data.analysis;
+      const data = res.data?.analysis;
+      const newReportId = res.data?.reportId || null;
+
+      if (!data) {
+        error("Analysis returned no data");
+        return;
+      }
 
       if (setData) setData(data);
       setAnalysis(data);
+      setReportId(newReportId);
       success("Repository analysis completed successfully!");
     } catch (err) {
       const msg = err.response?.data?.error || "Analysis failed";
@@ -85,6 +96,7 @@ export default function GithubAnalyzer({ setData }) {
 
   const handleReset = () => {
     setAnalysis(null);
+    setReportId(null);
     setRepo("");
     if (setData) setData(null);
   };
@@ -120,13 +132,22 @@ export default function GithubAnalyzer({ setData }) {
             onClick={handleReset}
             className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition flex items-center gap-2"
           >
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg
+              width="14"
+              height="14"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+            >
               <path d="M19 12H5" />
               <path d="M12 19l-7-7 7-7" />
             </svg>
             New Analysis
           </button>
-          <span className="font-mono text-xs text-[var(--text-muted)] truncate max-w-xs">{repo}</span>
+          <span className="font-mono text-xs text-[var(--text-muted)] truncate max-w-xs">
+            {repo}
+          </span>
           <span className="ml-auto flex items-center gap-2 font-mono text-xs text-[var(--accent)]">
             <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] animate-pulse" />
             Analyzed
@@ -136,6 +157,7 @@ export default function GithubAnalyzer({ setData }) {
         <div className="animate-fadeUp">
           <Result
             data={analysis}
+            reportId={reportId}
             generateTestsFn={generateTests}
             onDownload={() => {
               const blob = new Blob([JSON.stringify(analysis, null, 2)], {
@@ -166,7 +188,8 @@ export default function GithubAnalyzer({ setData }) {
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
@@ -176,9 +199,18 @@ export default function GithubAnalyzer({ setData }) {
           {/* Corner brackets with a subtle CSS-only breathing pulse,
               same treatment as CodeInput's editor card. */}
           <span className="cv-corner absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
-          <span className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" style={{ animationDelay: "0.4s" }} />
-          <span className="cv-corner absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" style={{ animationDelay: "0.8s" }} />
-          <span className="cv-corner absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" style={{ animationDelay: "1.2s" }} />
+          <span
+            className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10"
+            style={{ animationDelay: "0.4s" }}
+          />
+          <span
+            className="cv-corner absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10"
+            style={{ animationDelay: "0.8s" }}
+          />
+          <span
+            className="cv-corner absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10"
+            style={{ animationDelay: "1.2s" }}
+          />
 
           <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]">
             <div
@@ -187,16 +219,24 @@ export default function GithubAnalyzer({ setData }) {
             >
               <CodeVerityLogo />
               <div>
-                <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">CODEVERITY</p>
-                <p className="font-mono text-xs text-[var(--text-secondary)]">GitHub Repository Intelligence</p>
+                <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">
+                  CODEVERITY
+                </p>
+                <p className="font-mono text-xs text-[var(--text-secondary)]">
+                  GitHub Repository Intelligence
+                </p>
               </div>
             </div>
 
             <div className={compactClasses.cardBody}>
-              <h2 className={`font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
+              <h2
+                className={`font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+              >
                 GitHub Repository Analyzer
               </h2>
-              <p className={`text-[var(--text-secondary)] mt-1 ${compactClasses.subHeading}`}>
+              <p
+                className={`text-[var(--text-secondary)] mt-1 ${compactClasses.subHeading}`}
+              >
                 Analyze any public repo with AI insights ⚡
               </p>
 
@@ -209,7 +249,9 @@ export default function GithubAnalyzer({ setData }) {
                   onChange={(e) => setRepo(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && analyze()}
                 />
-                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">🔗</span>
+                <span className="absolute right-4 top-1/2 -translate-y-1/2 text-[var(--text-muted)]">
+                  🔗
+                </span>
               </div>
 
               {/* Error is now handled via toast – inline error removed */}
@@ -238,16 +280,22 @@ export default function GithubAnalyzer({ setData }) {
                       <ScanLine />
                       <span className="relative z-10 flex items-center gap-2">
                         Generate Report
-                        <span className="text-[var(--accent-contrast)]/50 transition-transform group-hover:translate-x-0.5">→</span>
+                        <span className="text-[var(--accent-contrast)]/50 transition-transform group-hover:translate-x-0.5">
+                          →
+                        </span>
                       </span>
                     </>
                   )}
                 </button>
               </div>
 
-              <div className={`font-mono text-xs text-[var(--text-muted)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}>
+              <div
+                className={`font-mono text-xs text-[var(--text-muted)] border-t border-[var(--border-light)] pt-4 ${compactClasses.footer}`}
+              >
                 💡 Tip: Try popular repos like{" "}
-                <span className="text-[var(--accent)]">https://github.com/facebook/react</span>
+                <span className="text-[var(--accent)]">
+                  https://github.com/facebook/react
+                </span>
               </div>
             </div>
           </div>
@@ -258,7 +306,9 @@ export default function GithubAnalyzer({ setData }) {
           style={{ animationDelay: "150ms" }}
         >
           <span>Powered by</span>
-          <span className="font-semibold text-[var(--text-secondary)]">CodeVerity AI</span>
+          <span className="font-semibold text-[var(--text-secondary)]">
+            CodeVerity AI
+          </span>
           <span>•</span>
           <span>Built for developers</span>
         </div>

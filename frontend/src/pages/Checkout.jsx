@@ -130,9 +130,10 @@ export default function Checkout() {
   );
   const price = plan[cycle][currency];
 
-const gst = Math.round(price * 0.18 * 100) / 100;
-
-const total = price + gst;
+  // Note: Stripe Checkout is configured without automatic tax, so the
+  // amount shown here must match the Stripe Price exactly. No local
+  // tax math is applied — the Price amount is the total.
+  const total = price;
 
   const [loading, setLoading] = useState(false);
 
@@ -156,7 +157,6 @@ const total = price + gst;
   const isMonthly = cycle === "monthly";
   const priceDisplay = formatPrice(price, currency);
   const totalDisplay = formatPrice(total, currency);
-  const gstDisplay = formatPrice(gst, currency);
 
   // Effective per-month rate on yearly billing — display-only math
   // from the existing price, so the saving is visible at the moment
@@ -195,10 +195,6 @@ const total = price + gst;
         </div>
 
         {/* ─── Layout ─────────────────────────────────────────── */}
-        {/* Left = the action (confirm + pay). Right = the receipt
-            (line items + total). Previously both columns repeated the
-            full pricing breakdown, which reads as a double-charge on a
-            payment page. */}
         <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1fr_400px] lg:gap-8">
           {/* ─── LEFT – Confirm & Pay ─────────────────────────── */}
           <div className="min-w-0">
@@ -274,9 +270,7 @@ const total = price + gst;
                   </span>
                 </div>
 
-                {/* Trust signals — directly under the action, where
-                    they're most persuasive, rather than in a detached
-                    row below the card. */}
+                {/* Trust signals */}
                 <div className="grid grid-cols-1 gap-2 border-t border-[var(--border-dark)] pt-4 sm:grid-cols-3">
                   <div className="flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2.5 text-xs text-[var(--text-secondary)]">
                     <ShieldIcon className="shrink-0 text-[var(--accent)]" />
@@ -295,7 +289,7 @@ const total = price + gst;
             </div>
           </div>
 
-          {/* ─── RIGHT – Order Summary (the single source of pricing) ─── */}
+          {/* ─── RIGHT – Order Summary ─────────────────────────── */}
           <aside className="h-fit overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)] lg:sticky lg:top-24">
             <div className="border-b border-[var(--border-dark)] px-4 py-3 sm:px-6 sm:py-4">
               <h2 className="font-mono text-[10px] uppercase tracking-[0.15em] text-[var(--text-muted)] sm:text-[11px]">
@@ -304,7 +298,7 @@ const total = price + gst;
             </div>
 
             <div className="space-y-4 p-4 sm:p-6">
-              {/* Line items */}
+              {/* Line item */}
               <div className="space-y-2.5 text-[13px]">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -320,23 +314,9 @@ const total = price + gst;
                     {priceDisplay}
                   </span>
                 </div>
-
-                {gstDisplay && (
-                  <div className="flex items-center justify-between gap-3 text-emerald-500">
-                    <span className="flex items-center gap-1.5">
-                      <span>GST (18%)</span>
-                      <span className="rounded-full bg-emerald-500/10 px-1.5 py-0.5 text-[9px] font-medium">
-                        Included
-                      </span>
-                    </span>
-
-                    <span className="font-mono tabular-nums">{gstDisplay}</span>
-                  </div>
-                )}
               </div>
 
-              {/* Total — visually dominant, since it's the single most
-                  important number on a checkout page. */}
+              {/* Total */}
               <div className="rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] p-4">
                 <div className="flex items-baseline justify-between gap-3">
                   <span className="text-xs font-semibold uppercase tracking-wide text-[var(--text-secondary)]">

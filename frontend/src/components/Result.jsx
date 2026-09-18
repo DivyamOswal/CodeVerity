@@ -41,12 +41,18 @@ function gradeGlow(grade) {
 // ── Severity → color mapping ──
 function severityColor(severity) {
   const map = {
-    critical: "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/30",
+    critical:
+      "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border-[var(--color-danger)]/30",
     high: "bg-[var(--color-caution-soft)] text-[var(--color-caution)] border-[var(--color-caution)]/30",
-    medium: "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/30",
+    medium:
+      "bg-[var(--color-warning-soft)] text-[var(--color-warning)] border-[var(--color-warning)]/30",
     low: "bg-[var(--color-info-soft)] text-[var(--color-info)] border-[var(--color-info)]/30",
+    info: "bg-[var(--bg-hover)] text-[var(--text-muted)] border-[var(--border-light)]",
   };
-  return map[severity?.toLowerCase()] ?? "bg-[var(--bg-hover)] text-[var(--text-muted)] border-[var(--border-light)]";
+  return (
+    map[severity?.toLowerCase()] ??
+    "bg-[var(--bg-hover)] text-[var(--text-muted)] border-[var(--border-light)]"
+  );
 }
 
 // ── Main Component ──
@@ -107,7 +113,33 @@ export default function Result({
     },
     cveList = [],
     readmeScore = { score: 0, details: {} },
+    // ── New structured fields (from groq.js + githubController) ──
+    findings = [],
+    findingsSummary = null,
+    strengths = [],
+    risks = [],
+    topPriority = "",
+    actionPlan = [],
   } = data;
+
+  // ── Compute sorted + grouped findings for display ──
+  const SEVERITY_RANK = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
+  const sortedFindings = [...findings].sort(
+    (a, b) =>
+      (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9) ||
+      (a.file || "").localeCompare(b.file || "") ||
+      (a.line || 0) - (b.line || 0),
+  );
+
+  const severityCounts =
+    findingsSummary?.bySeverity ||
+    (() => {
+      const counts = { critical: 0, high: 0, medium: 0, low: 0, info: 0 };
+      for (const f of findings) {
+        if (counts[f.severity] !== undefined) counts[f.severity] += 1;
+      }
+      return counts;
+    })();
 
   const chartData = [
     { metric: "Code Quality", value: scores.codeQuality || 0 },
@@ -169,7 +201,8 @@ export default function Result({
 
       const filePath = issue.file || issue.location || issue.filePath || "";
       const lineNumber = issue.line || issue.lineNumber || "";
-      const description = issue.title || issue.issue || issue.description || "Fix issue";
+      const description =
+        issue.title || issue.issue || issue.description || "Fix issue";
       const suggestedFix = issue.suggestedFix || issue.fix || "";
 
       const response = await fetch("/api/github/auto-fix", {
@@ -196,7 +229,9 @@ export default function Result({
       } else {
         error(result.error || "Failed to create fix PR.");
         if (result.action === "connect_github") {
-          error("Please connect your GitHub account in settings to use Auto‑Fix.");
+          error(
+            "Please connect your GitHub account in settings to use Auto‑Fix.",
+          );
         }
       }
     } catch (err) {
@@ -212,11 +247,15 @@ export default function Result({
     ? "px-3 py-4 sm:px-5 lg:px-6"
     : "px-3 py-5 sm:px-6 lg:px-8";
   const headerMargin = compact ? "pb-3" : "pb-5";
-  const headingSize = compact ? "text-lg sm:text-xl md:text-2xl" : "text-xl sm:text-2xl md:text-3xl";
+  const headingSize = compact
+    ? "text-lg sm:text-xl md:text-2xl"
+    : "text-xl sm:text-2xl md:text-3xl";
   const gradeBoxPadding = compact ? "px-3 py-2" : "px-4 py-2.5";
   const gradeTextSize = compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl";
   const scoreCardGap = compact ? "gap-2" : "gap-3";
-  const tabPadding = compact ? "px-2 py-2 text-[10px] sm:px-3" : "px-3 py-2.5 text-[10px] sm:px-4 sm:text-xs";
+  const tabPadding = compact
+    ? "px-2 py-2 text-[10px] sm:px-3"
+    : "px-3 py-2.5 text-[10px] sm:px-4 sm:text-xs";
   const buttonPadding = compact ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]";
   const testFilePadding = compact ? "px-2 py-1.5" : "px-3 py-2";
   const testFileFont = compact ? "text-[10px]" : "text-[11px]";
@@ -287,13 +326,15 @@ export default function Result({
       <div
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
-          background: "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 65%)",
+          background:
+            "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 65%)",
         }}
       />
       <div
         className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
         style={{
-          background: "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 70%)",
+          background:
+            "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 70%)",
         }}
       />
 
@@ -367,7 +408,10 @@ export default function Result({
         </div>
 
         {/* SCORE CARDS */}
-        <div className={`result-panel grid grid-cols-2 ${scoreCardGap} md:grid-cols-4`} style={{ animationDelay: "0.05s" }}>
+        <div
+          className={`result-panel grid grid-cols-2 ${scoreCardGap} md:grid-cols-4`}
+          style={{ animationDelay: "0.05s" }}
+        >
           <ScoreCard
             label="Code Quality"
             value={scores.codeQuality}
@@ -437,13 +481,134 @@ export default function Result({
         {/* ─────────────────────────── AUDIT TAB ─────────────────────────── */}
         {activeTab === "audit" && (
           <div className="space-y-4">
+            {/* ─── Top Priority Callout ─────────────────── */}
+            {topPriority && (
+              <div className="result-panel rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] p-4 shadow-[0_0_28px_-14px_var(--accent-soft-strong)]">
+                <div className="flex items-start gap-3">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)]">
+                    ★
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
+                      Top Priority
+                    </p>
+                    <p
+                      className={`mt-1 leading-6 text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}
+                    >
+                      {topPriority}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <GlassCard title="Executive Summary" icon="◈" compact={compact}>
               <p
                 className={`leading-6 text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}
               >
                 {summary}
               </p>
+
+              {/* Strengths / Risks two-column */}
+              {(strengths.length > 0 || risks.length > 0) && (
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {strengths.length > 0 && (
+                    <div className="rounded-lg border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 p-3">
+                      <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-success)]">
+                        <span>✓</span> Strengths
+                      </p>
+                      <ul className="space-y-1.5">
+                        {strengths.map((s, i) => (
+                          <li
+                            key={i}
+                            className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                          >
+                            • {s}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  {risks.length > 0 && (
+                    <div className="rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] p-3">
+                      <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-danger)]">
+                        <span>⚠</span> Risks
+                      </p>
+                      <ul className="space-y-1.5">
+                        {risks.map((r, i) => (
+                          <li
+                            key={i}
+                            className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                          >
+                            • {r}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              )}
             </GlassCard>
+
+            {/* ─── Findings (structured review) ─────────── */}
+            {sortedFindings.length > 0 && (
+              <GlassCard
+                title={`Findings (${sortedFindings.length})`}
+                icon="!"
+                compact={compact}
+              >
+                {/* Severity rollup */}
+                <div className="mb-4 flex flex-wrap items-center gap-2">
+                  {["critical", "high", "medium", "low", "info"].map((sev) =>
+                    severityCounts[sev] > 0 ? (
+                      <span
+                        key={sev}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${severityColor(sev)}`}
+                      >
+                        <span className="h-1.5 w-1.5 rounded-full bg-current" />
+                        {severityCounts[sev]} {sev}
+                      </span>
+                    ) : null,
+                  )}
+                </div>
+
+                {/* Findings list */}
+                <div className="space-y-2">
+                  {sortedFindings.map((finding, i) => (
+                    <FindingRow
+                      key={finding.id || `finding-${i}`}
+                      finding={finding}
+                      onFix={handleAutoFix}
+                      fixing={fixing}
+                      compact={compact}
+                    />
+                  ))}
+                </div>
+              </GlassCard>
+            )}
+
+            {/* ─── Action Plan ─────────────────────── */}
+            {actionPlan.length > 0 && (
+              <GlassCard title="Action Plan" icon="→" compact={compact}>
+                <ol className="space-y-2">
+                  {actionPlan.map((step, i) => (
+                    <li
+                      key={i}
+                      className={`flex gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] p-3 ${compact ? "p-2" : ""}`}
+                    >
+                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[10px] font-bold text-[var(--accent)]">
+                        {i + 1}
+                      </span>
+                      <span
+                        className={`leading-6 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                      >
+                        {step}
+                      </span>
+                    </li>
+                  ))}
+                </ol>
+              </GlassCard>
+            )}
 
             <div className="grid gap-4 lg:grid-cols-2">
               <GlassCard title="Quality Score Analysis" icon="◎" compact={compact}>
@@ -550,7 +715,10 @@ export default function Result({
                   ))}
                 </div>
               ) : (
-                <EmptyState text="No architecture insights provided." compact={compact} />
+                <EmptyState
+                  text="No architecture insights provided."
+                  compact={compact}
+                />
               )}
             </GlassCard>
 
@@ -668,7 +836,10 @@ export default function Result({
                   })}
                 </div>
               ) : (
-                <EmptyState text="No critical security issues reported." compact={compact} />
+                <EmptyState
+                  text="No critical security issues reported."
+                  compact={compact}
+                />
               )}
             </GlassCard>
 
@@ -783,7 +954,8 @@ export default function Result({
                         strokeLinecap="round"
                         transform="rotate(-90 60 60)"
                         style={{
-                          filter: "drop-shadow(0 0 6px var(--accent-soft-strong))",
+                          filter:
+                            "drop-shadow(0 0 6px var(--accent-soft-strong))",
                         }}
                       />
                       <text
@@ -862,7 +1034,9 @@ export default function Result({
                     </p>
                   </div>
                   <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
-                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">Average</p>
+                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
+                      Average
+                    </p>
                     <p className="result-metric-glow text-lg font-bold sm:text-xl">
                       {complexity.averageComplexity}
                     </p>
@@ -901,7 +1075,11 @@ export default function Result({
 
             {/* ─── CVE List ────────────────────────────────── */}
             {cveList && cveList.length > 0 && (
-              <GlassCard title={`Dependency Vulnerabilities (CVEs)`} icon="◇" compact={compact}>
+              <GlassCard
+                title={`Dependency Vulnerabilities (CVEs)`}
+                icon="◇"
+                compact={compact}
+              >
                 <div className="space-y-2">
                   {cveList.map((cve, i) => (
                     <div
@@ -990,7 +1168,7 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── Existing sections ─────────────────────────────── */}
+            {/* ─── Security Vulnerabilities table ───────────────── */}
             {securityVulnerabilities.length > 0 && (
               <GlassCard
                 title={`Security Vulnerabilities (${securityVulnerabilities.length})`}
@@ -1233,7 +1411,10 @@ export default function Result({
                             {edges.map((edge, i) => {
                               const fromIdx = nodeMap[edge.from];
                               const toIdx = nodeMap[edge.to];
-                              if (fromIdx === undefined || toIdx === undefined)
+                              if (
+                                fromIdx === undefined ||
+                                toIdx === undefined
+                              )
                                 return null;
                               return (
                                 <line
@@ -1673,8 +1854,10 @@ function GlassCard({ title, children, icon, compact }) {
 
 function AlertCard({ children, type, compact }) {
   const styles = {
-    error: "border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] border-l-2 border-l-[var(--color-danger)]",
-    warning: "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] border-l-2 border-l-[var(--color-warning)]",
+    error:
+      "border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] border-l-2 border-l-[var(--color-danger)]",
+    warning:
+      "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] border-l-2 border-l-[var(--color-warning)]",
   };
   return (
     <div
@@ -1742,8 +1925,10 @@ function ScoreCard({ label, value, icon, compact }) {
 
 function Badge({ children, color = "accent", compact }) {
   const colors = {
-    accent: "border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)]",
-    warning: "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
+    accent:
+      "border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)]",
+    warning:
+      "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
   };
   return (
     <span
@@ -1868,6 +2053,194 @@ function ScoreMini({ label, value, compact }) {
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+// ─── FindingRow: expandable finding card ──────────────────────
+function FindingRow({ finding, onFix, fixing, compact }) {
+  const [expanded, setExpanded] = useState(false);
+
+  const {
+    id,
+    severity = "medium",
+    category = "general",
+    file,
+    line,
+    endLine,
+    title,
+    description,
+    whyItMatters,
+    suggestedFix,
+    references = [],
+    source,
+  } = finding;
+
+  const issueId = id || title;
+  const isFixing = fixing?.[issueId];
+
+  const hasFix = Boolean(suggestedFix);
+  const hasRefs = references.length > 0;
+
+  const catIcon =
+    {
+      security: "◇",
+      bug: "!",
+      performance: "↗",
+      maintainability: "◎",
+      style: "◈",
+      test: "◇",
+      docs: "◈",
+      architecture: "⌘",
+      general: "•",
+    }[category] || "•";
+
+  return (
+    <div
+      className={`overflow-hidden rounded-lg border transition-colors duration-150 ${severityColor(severity)}`}
+    >
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="flex w-full items-start gap-3 p-3 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/30"
+      >
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-black/10 text-xs">
+          {catIcon}
+        </span>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="rounded border border-current/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+              {severity}
+            </span>
+            <span className="rounded border border-[var(--border-light)] bg-[var(--bg-card)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+              {category}
+            </span>
+            {source && (
+              <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                {source}
+              </span>
+            )}
+          </div>
+
+          <p
+            className={`mt-1.5 font-semibold text-[var(--text-primary)] ${compact ? "text-[11px]" : "text-xs"}`}
+          >
+            {title}
+          </p>
+
+          {file && (
+            <p
+              className={`mt-0.5 font-mono text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+            >
+              {file}
+              {line ? `:${line}` : ""}
+              {endLine && endLine !== line ? `–${endLine}` : ""}
+            </p>
+          )}
+        </div>
+
+        <span className="mt-1 shrink-0 text-[var(--text-muted)]">
+          {expanded ? "▾" : "▸"}
+        </span>
+      </button>
+
+      {expanded && (
+        <div className="space-y-3 border-t border-current/20 bg-[var(--bg-primary)]/40 p-3">
+          {description && (
+            <div>
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                Description
+              </p>
+              <p
+                className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+              >
+                {description}
+              </p>
+            </div>
+          )}
+
+          {whyItMatters && (
+            <div>
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                Why it matters
+              </p>
+              <p
+                className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+              >
+                {whyItMatters}
+              </p>
+            </div>
+          )}
+
+          {hasFix && (
+            <div>
+              <div className="mb-1 flex items-center justify-between">
+                <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--accent)]">
+                  Suggested fix
+                </p>
+              </div>
+              <pre
+                className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-card)] p-3 text-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+              >
+                <code>{suggestedFix}</code>
+              </pre>
+            </div>
+          )}
+
+          {hasRefs && (
+            <div>
+              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+                References
+              </p>
+              <ul className="space-y-1">
+                {references.map((ref, i) => (
+                  <li key={i}>
+                    <a
+                      href={ref}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`break-all text-[var(--accent)] underline decoration-[var(--accent)]/40 underline-offset-2 hover:decoration-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                    >
+                      {ref}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {file && (
+            <button
+              onClick={() =>
+                onFix(
+                  {
+                    _id: issueId,
+                    title,
+                    description,
+                    file,
+                    line,
+                    suggestedFix,
+                  },
+                  category,
+                )
+              }
+              disabled={isFixing}
+              className={`flex items-center gap-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+            >
+              {isFixing ? (
+                <>
+                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white" />
+                  Creating PR…
+                </>
+              ) : (
+                <>
+                  <span>⚡</span> Auto-Fix this issue
+                </>
+              )}
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

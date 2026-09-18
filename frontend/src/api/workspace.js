@@ -9,20 +9,23 @@ export const leaveWorkspace = () => axios.post("/workspace/leave");
 // ─── Members ────────────────────────────────────────────────────
 export const getMembers = () => axios.get("/workspace/members");
 export const addMember = (data) => axios.post("/workspace/members", data);
-export const removeMember = (userId) => axios.delete(`/workspace/members/${userId}`);
+export const removeMember = (userId) =>
+  axios.delete(`/workspace/members/${userId}`);
+// NOTE: backend route is PUT /members/:userId — no /role suffix.
+// Role goes in the request body.
 export const updateMemberRole = (userId, role) =>
-  axios.put(`/workspace/members/${userId}/role`, { role });
+  axios.put(`/workspace/members/${userId}`, { role });
 
 // ─── API Keys ──────────────────────────────────────────────────
 export const getApiKeys = () => axios.get("/workspace/api-keys");
 export const createApiKey = (data) => axios.post("/workspace/api-keys", data);
-export const deleteApiKey = (keyId) => axios.delete(`/workspace/api-keys/${keyId}`);
+export const deleteApiKey = (keyId) =>
+  axios.delete(`/workspace/api-keys/${keyId}`);
 
 // ─── Integrations ──────────────────────────────────────────────
 export const updateIntegrations = (data) =>
   axios.put("/workspace/integrations", data);
 
-// ─── Audit Log ──────────────────────────────────────────────────
 // ─── Audit Log (paginated) ──────────────────────────────────────
 export const getAuditLogs = (page = 1, limit = 20) =>
   axios.get(`/workspace/audit-logs?page=${page}&limit=${limit}`);
@@ -45,22 +48,30 @@ export const updateBranding = (data) => axios.put("/workspace/branding", data);
 
 // ─── Schedules ──────────────────────────────────────────────────
 export const getSchedules = () => axios.get("/workspace/schedules");
-export const createSchedule = (data) => axios.post("/workspace/schedules", data);
-export const deleteSchedule = (id) => axios.delete(`/workspace/schedules/${id}`);
+export const createSchedule = (data) =>
+  axios.post("/workspace/schedules", data);
+export const deleteSchedule = (id) =>
+  axios.delete(`/workspace/schedules/${id}`);
 
 // ─── Invitations ──────────────────────────────────────────────
-export const createInvitation = (data) => axios.post("/workspace/invitations", data);
-export const acceptInvitation = (data) => axios.post("/workspace/invitations/accept", data);
+export const createInvitation = (data) =>
+  axios.post("/workspace/invitations", data);
+export const acceptInvitation = (data) =>
+  axios.post("/workspace/invitations/accept", data);
 export const getPendingInvites = () => axios.get("/workspace/invitations");
-export const cancelInvitation = (token) => axios.delete(`/workspace/invitations/${token}`);
+// Cancels by invitation _id (the backend no longer accepts the raw token).
+export const cancelInvitation = (invitationId) =>
+  axios.delete(`/workspace/invitations/${invitationId}`);
 
 // ─── Ownership ──────────────────────────────────────────────────
-export const transferOwnership = (userId) => axios.post("/workspace/transfer-ownership", { userId });
+export const transferOwnership = (userId) =>
+  axios.post("/workspace/transfer-ownership", { userId });
 
-// ─── Workspace Delete ──────────────────────────────────────────
+// ─── Workspace Delete / Restore ────────────────────────────────
 export const deleteWorkspace = () => axios.delete("/workspace");
+export const restoreWorkspace = (workspaceId) =>
+  axios.post(`/workspace/restore/${workspaceId}`);
 
-// ─── Activity ──────────────────────────────────────────────────
 // ─── Activity (paginated) ──────────────────────────────────────
 export const getMemberActivity = (page = 1, limit = 10) =>
   axios.get(`/workspace/activity?page=${page}&limit=${limit}`);

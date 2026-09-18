@@ -6,6 +6,7 @@ import { usePreferences } from "../context/PreferencesContext";
 import { useToast } from "../hooks/useToast";
 
 const API = import.meta.env.VITE_API_URL;
+const PAGE_SIZE = 20;
 
 // -----------------------------------------------------------------
 // ScanLine – reuses the global .animate-scanline utility from
@@ -23,9 +24,7 @@ function ScanLine() {
 }
 
 // -----------------------------------------------------------------
-// Skeleton report card – matches ReportCard's real shape so the
-// grid's structure is visible immediately on load instead of a
-// spinner that jumps to a full grid once data arrives.
+// Skeleton report card
 // -----------------------------------------------------------------
 function SkeletonCard({ compact }) {
   const headerPadding = compact ? "p-3" : "p-4";
@@ -70,8 +69,12 @@ function SkeletonCard({ compact }) {
 // -----------------------------------------------------------------
 export default function History() {
   const [reports, setReports] = useState([]);
+  const [pagination, setPagination] = useState(null);
+  const [page, setPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [pageLoading, setPageLoading] = useState(false);
   const [selected, setSelected] = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
   const [search, setSearch] = useState("");
   const [sortBy, setSortBy] = useState("date");
   const [filterGrade, setFilterGrade] = useState("all");
@@ -79,20 +82,54 @@ export default function History() {
   const { compact, showScores } = usePreferences();
   const { success, error } = useToast();
 
-  useEffect(() => {
+  // ── Load a page ─────────────────────────────────────────
+  const loadPage = async (nextPage = 1, { initial = false } = {}) => {
     const token = localStorage.getItem("token");
     if (!token) {
       setLoading(false);
       return;
     }
-    axios
-      .get(`${API}/report`, {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-      .then((res) => setReports(res.data.reports || []))
-      .catch(() => error("Failed to load history"))
-      .finally(() => setLoading(false));
+
+    if (initial) setLoading(true);
+    else setPageLoading(true);
+
+    try {
+      const res = await axios.get(
+        `${API}/report?page=${nextPage}&limit=${PAGE_SIZE}`,
+        { headers: { Authorization: `Bearer ${token}` } },
+      );
+      setReports(res.data.reports || []);
+      setPagination(res.data.pagination || null);
+      setPage(nextPage);
+    } catch {
+      error("Failed to load history");
+    } finally {
+      setLoading(false);
+      setPageLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadPage(1, { initial: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // ── Fetch full report (with _sourceCode) before viewing ─
+  const viewReport = async (report) => {
+    if (viewLoading) return;
+    setViewLoading(true);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await axios.get(`${API}/report/${report._id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSelected(res.data.report);
+    } catch {
+      error("Failed to load report");
+    } finally {
+      setViewLoading(false);
+    }
+  };
 
   const downloadPDF = async (id, e) => {
     e?.stopPropagation();
@@ -149,6 +186,11 @@ export default function History() {
     return list;
   }, [reports, search, sortBy, filterGrade]);
 
+  const totalReports = pagination?.total ?? reports.length;
+  const totalPages = pagination?.totalPages ?? 1;
+  const hasPrev = pagination?.hasPrev ?? page > 1;
+  const hasNext = pagination?.hasNext ?? page < totalPages;
+
   // ---- Full Report View ----
   if (selected) {
     return (
@@ -157,7 +199,8 @@ export default function History() {
           <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setSelected(null)}
-             className="group flex items-center gap-2 rounded-lg px-2 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] sm:px-3">
+              className="group flex items-center gap-2 rounded-lg px-2 py-2 text-[11px] font-medium text-[var(--text-secondary)] transition-colors duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] sm:px-3"
+            >
               <span className="transition-transform group-hover:-translate-x-1">
                 ←
               </span>
@@ -194,9 +237,9 @@ export default function History() {
     );
   }
 
-  // ---- Main History View with compact overrides ----
+  // ---- Main History View ----
   const containerPadding = compact ? "py-3" : "py-5";
-  const topPadding = compact ? "pt-14" : "pt-16"; // Account for sticky navbar
+  const topPadding = compact ? "pt-14" : "pt-16";
   const headerMargin = compact ? "mb-3" : "mb-5";
   const toolbarPadding = compact ? "p-1.5" : "p-2";
   const gradeGap = compact ? "gap-1.5" : "gap-2";
@@ -226,9 +269,6 @@ export default function History() {
               </p>
             </div>
 
-            {/* Total Reviews Badge — top hairline for consistency
-                with the "premium card" treatment used across Auth
-                and the legal pages. */}
             <div className="relative flex w-fit items-center gap-3 overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[var(--shadow-md)]">
               <div
                 aria-hidden="true"
@@ -254,16 +294,14 @@ export default function History() {
                   Total Reviews
                 </p>
                 <p className="font-mono text-base font-semibold text-[var(--text-primary)]">
-                  {reports.length}
+                  {totalReports}
                 </p>
               </div>
             </div>
           </div>
         </div>
 
-        {/* GRADE SUMMARY — jumps from 2 to 5 columns directly, so 5
-            cards never wrap into an orphaned 3-then-2 split at
-            intermediate widths. */}
+        {/* GRADE SUMMARY — counts are per current page */}
         {reports.length > 0 && (
           <div className={`mb-4 grid grid-cols-2 ${gradeGap} sm:grid-cols-5`}>
             {["A", "B", "C", "D", "F"].map((g) => {
@@ -377,11 +415,16 @@ export default function History() {
                   <span className="font-mono font-medium text-[var(--text-secondary)]">
                     {filtered.length}
                   </span>{" "}
-                  of{" "}
-                  <span className="font-mono font-medium text-[var(--text-secondary)]">
-                    {reports.length}
-                  </span>{" "}
-                  reports
+                  on this page
+                  {totalPages > 1 && (
+                    <>
+                      {" "}
+                      ·{" "}
+                      <span className="font-mono text-[var(--text-muted)]">
+                        {totalReports} total
+                      </span>
+                    </>
+                  )}
                 </p>
                 <button
                   onClick={() => {
@@ -397,11 +440,11 @@ export default function History() {
           </div>
         )}
 
-        {/* LOADING — skeleton cards matching the real grid's shape,
-            so the page's structure is visible immediately instead
-            of a spinner-then-jump-to-full-grid transition. */}
-        {loading && (
-          <div className={`grid grid-cols-1 ${reportGridGap} md:grid-cols-2 xl:grid-cols-3`}>
+        {/* LOADING */}
+        {(loading || pageLoading) && (
+          <div
+            className={`grid grid-cols-1 ${reportGridGap} md:grid-cols-2 xl:grid-cols-3`}
+          >
             {Array.from({ length: 6 }, (_, i) => (
               <SkeletonCard key={i} compact={compact} />
             ))}
@@ -409,7 +452,7 @@ export default function History() {
         )}
 
         {/* EMPTY STATE */}
-        {!loading && reports.length === 0 && (
+        {!loading && !pageLoading && reports.length === 0 && (
           <div className="flex min-h-[420px] items-center justify-center">
             <div className="max-w-md text-center">
               <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
@@ -440,41 +483,44 @@ export default function History() {
         )}
 
         {/* NO FILTER RESULTS */}
-        {!loading && reports.length > 0 && filtered.length === 0 && (
-          <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] py-12 text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[var(--text-muted)]">
-              <svg
-                width="22"
-                height="22"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
+        {!loading &&
+          !pageLoading &&
+          reports.length > 0 &&
+          filtered.length === 0 && (
+            <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] py-12 text-center">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[var(--text-muted)]">
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-4-4" />
+                </svg>
+              </div>
+              <p className="text-sm font-medium text-[var(--text-primary)]">
+                No matching reports
+              </p>
+              <p className="mt-1 text-[10px] text-[var(--text-muted)]">
+                Try changing your search or filters.
+              </p>
+              <button
+                onClick={() => {
+                  setSearch("");
+                  setFilterGrade("all");
+                }}
+                className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft-strong)] active:scale-[0.97]"
               >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m20 20-4-4" />
-              </svg>
+                Clear filters
+              </button>
             </div>
-            <p className="text-sm font-medium text-[var(--text-primary)]">
-              No matching reports
-            </p>
-            <p className="mt-1 text-[10px] text-[var(--text-muted)]">
-              Try changing your search or filters.
-            </p>
-            <button
-              onClick={() => {
-                setSearch("");
-                setFilterGrade("all");
-              }}
-              className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft-strong)] active:scale-[0.97]"
-            >
-              Clear filters
-            </button>
-          </div>
-        )}
+          )}
 
         {/* REPORT GRID */}
-        {!loading && filtered.length > 0 && (
+        {!loading && !pageLoading && filtered.length > 0 && (
           <div
             className={`grid grid-cols-1 ${reportGridGap} md:grid-cols-2 xl:grid-cols-3`}
           >
@@ -482,12 +528,7 @@ export default function History() {
               <ReportCard
                 key={r._id}
                 report={r}
-                onView={() =>
-                  setSelected({
-                    ...r,
-                    _sourceCode: r._sourceCode ?? "",
-                  })
-                }
+                onView={() => viewReport(r)}
                 onDownload={(e) => downloadPDF(r._id, e)}
                 compact={compact}
                 showScores={showScores}
@@ -495,6 +536,42 @@ export default function History() {
             ))}
           </div>
         )}
+
+        {/* PAGINATION */}
+        {!loading &&
+          !pageLoading &&
+          reports.length > 0 &&
+          totalPages > 1 && (
+            <div className="mt-6 flex flex-col items-center justify-between gap-3 border-t border-[var(--border-dark)] pt-4 sm:flex-row">
+              <p className="text-[11px] text-[var(--text-muted)]">
+                Page{" "}
+                <span className="font-mono font-medium text-[var(--text-secondary)]">
+                  {page}
+                </span>{" "}
+                of{" "}
+                <span className="font-mono font-medium text-[var(--text-secondary)]">
+                  {totalPages}
+                </span>{" "}
+                · {totalReports} total
+              </p>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => loadPage(page - 1)}
+                  disabled={!hasPrev}
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
+                >
+                  ← Previous
+                </button>
+                <button
+                  onClick={() => loadPage(page + 1)}
+                  disabled={!hasNext}
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
+                >
+                  Next →
+                </button>
+              </div>
+            </div>
+          )}
 
         {/* FOOTER */}
         {!loading && reports.length > 0 && (
@@ -507,6 +584,16 @@ export default function History() {
           </div>
         )}
       </div>
+
+      {/* View loading overlay */}
+      {viewLoading && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
+          <div className="flex flex-col items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-6 py-5 shadow-xl">
+            <div className="h-8 w-8 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+            <p className="text-xs text-[var(--text-muted)]">Loading report…</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -541,7 +628,6 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   const headerPadding = compact ? "p-3" : "p-4";
   const titleSize = "text-sm";
   const scoreSize = compact ? "text-xl" : "text-2xl";
-  const gap = compact ? "gap-2" : "gap-2.5";
 
   return (
     <div
@@ -695,7 +781,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
               className={`group relative overflow-hidden rounded-md bg-[var(--accent)] px-2.5 py-1.5 text-[11px] font-semibold text-[var(--accent-contrast)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.96] ${compact ? "px-2 py-1" : ""}`}
             >
               <ScanLine />
-               <span className="relative z-10 flex items-center gap-1 whitespace-nowrap">
+              <span className="relative z-10 flex items-center gap-1 whitespace-nowrap">
                 View Report
                 <span className="transition-transform group-hover:translate-x-0.5">
                   →
@@ -710,7 +796,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 }
 
 // -----------------------------------------------------------------
-// ScoreBar – flat fill, now using semantic status tokens
+// ScoreBar
 // -----------------------------------------------------------------
 function ScoreBar({ label, value, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
@@ -721,17 +807,13 @@ function ScoreBar({ label, value, compact }) {
         ? "bg-[var(--color-warning)]"
         : "bg-[var(--color-danger)]";
 
-  const labelSize = "text-[9px]";
-  const valueSize = "text-[9px]";
   const barHeight = compact ? "h-0.5" : "h-1";
 
   return (
     <div>
       <div className="mb-1 flex items-center justify-between">
-        <span className={`${labelSize} text-[var(--text-muted)]`}>{label}</span>
-        <span
-          className={`${valueSize} font-mono font-medium text-[var(--text-secondary)]`}
-        >
+        <span className="text-[9px] text-[var(--text-muted)]">{label}</span>
+        <span className="text-[9px] font-mono font-medium text-[var(--text-secondary)]">
           {typeof value === "number" ? `${val}%` : "N/A"}
         </span>
       </div>
@@ -748,9 +830,7 @@ function ScoreBar({ label, value, compact }) {
 }
 
 // -----------------------------------------------------------------
-// Grade Styles – now sourced from index.css semantic tokens instead
-// of hardcoded Tailwind colors. A→success, B→info, C→warning,
-// D→caution, F→danger.
+// Grade Styles
 // -----------------------------------------------------------------
 function gradeStyle(letter) {
   const map = {

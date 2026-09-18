@@ -904,6 +904,9 @@ export const triggerWebhook = async (workspaceId, report, user) => {
         }),
       },
       body: JSON.stringify(payload),
+      // Same 5s cap as testWebhook — a hanging target must not block
+      // the scan completion flow.
+      signal: AbortSignal.timeout(5000),
     });
 
     // Log webhook attempt (store in audit log with result)
@@ -1226,6 +1229,10 @@ export const testWebhook = async (req, res) => {
         }),
       },
       body: JSON.stringify(payload),
+      // Cap at 5s. Without this, a hanging webhook target holds the
+      // Express worker until Render's request timeout kills it, which
+      // blocks other users' requests during the wait.
+      signal: AbortSignal.timeout(5000),
     });
 
     const status = response.status;
@@ -1245,7 +1252,11 @@ export const testWebhook = async (req, res) => {
     });
   } catch (err) {
     console.error("Test webhook error:", err);
-    res.status(500).json({ error: "Failed to test webhook" });
+    const message =
+      err.name === "TimeoutError"
+        ? "Webhook target did not respond within 5 seconds."
+        : "Failed to test webhook";
+    res.status(500).json({ error: message });
   }
 };
 
@@ -1496,7 +1507,7 @@ export const getPendingInvites = async (req, res) => {
       return res.status(403).json({ error: "Permission denied." });
     }
 
-        const pending = (workspace.invitations || [])
+    const pending = (workspace.invitations || [])
       .filter((i) => i.status === "pending")
       .map((i) => ({
         _id: i._id,
