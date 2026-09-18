@@ -38,7 +38,10 @@ export const analyzeCode = async (req, res) => {
     const response = await analyzeWithGroq(code);
     const tokensUsed = response.usage?.total_tokens ?? estimateTokens(code);
 
-    // 2. Deduct tokens
+    // 2. Deduct tokens (atomic — see User.deductTokens).
+    //    This only touches tokensRemaining and totalTokensUsed via $inc,
+    //    so it can never rewrite plan / subscription fields from a
+    //    stale in-memory document.
     const deducted = await user.deductTokens(tokensUsed);
     if (!deducted) {
       if (user.workspaceId) {
@@ -47,13 +50,21 @@ export const analyzeCode = async (req, res) => {
           user._id,
           "scan_failed",
           `Insufficient tokens (needed ${tokensUsed}, have ${user.tokensRemaining})`,
-          { repoUrl: repoUrl || "unknown", tokensNeeded: tokensUsed }
+          { repoUrl: repoUrl || "unknown", tokensNeeded: tokensUsed },
         );
       }
       return res.status(402).json({
         error: `Insufficient tokens. You have ${user.tokensRemaining} tokens, need ${tokensUsed}.`,
       });
     }
+
+    // Reload the authoritative balance straight from the DB. `user`
+    // reflects the deduction in memory, but a fresh read is the
+    // source of truth for the response and audit log.
+    const freshUser = await User.findById(user._id).select(
+      "tokensRemaining totalTokensUsed",
+    );
+    const tokensRemaining = freshUser?.tokensRemaining ?? user.tokensRemaining;
 
     // 3. Save report to database
     const reportData = {
@@ -73,7 +84,8 @@ export const analyzeCode = async (req, res) => {
       // Enhanced fields if present
       healthScore: response.result?.healthScore || null,
       securityVulnerabilities: response.result?.securityVulnerabilities || [],
-      dependencyVulnerabilities: response.result?.dependencyVulnerabilities || [],
+      dependencyVulnerabilities:
+        response.result?.dependencyVulnerabilities || [],
       secrets: response.result?.secrets || [],
       techDebt: response.result?.techDebt || null,
       architectureGraph: response.result?.architectureGraph || null,
@@ -94,7 +106,12 @@ export const analyzeCode = async (req, res) => {
         user._id,
         "scan",
         `Scanned repository: ${repoUrl || "unknown"}`,
-        { repoUrl: repoUrl || "unknown", tokensUsed, tokensRemaining: user.tokensRemaining, reportId: report._id }
+        {
+          repoUrl: repoUrl || "unknown",
+          tokensUsed,
+          tokensRemaining,
+          reportId: report._id,
+        },
       );
     }
 
@@ -103,10 +120,9 @@ export const analyzeCode = async (req, res) => {
       ...response.result,
       _sourceCode: code,
       tokensUsed,
-      tokensRemaining: user.tokensRemaining,
+      tokensRemaining,
       reportId: report._id,
     });
-
   } catch (err) {
     console.error("analyzeCode error:", err);
 
@@ -119,10 +135,12 @@ export const analyzeCode = async (req, res) => {
           user._id,
           "scan_failed",
           `Analysis failed: ${err.message}`,
-          { error: err.message }
+          { error: err.message },
         );
       }
-    } catch (_) { /* ignore audit failure */ }
+    } catch (_) {
+      /* ignore audit failure */
+    }
 
     return res.status(500).json({ error: err.message });
   }
@@ -145,7 +163,7 @@ export const generateTestCases = async (req, res) => {
     console.log(`📥 /api/generate-tests received ${code.length} chars`);
 
     const result = await generateTests(code);
-    let tokensUsed = result?.usage?.total_tokens ?? estimateTokens(code);
+    const tokensUsed = result?.usage?.total_tokens ?? estimateTokens(code);
     console.log(`🔢 Tokens used: ${tokensUsed}`);
 
     const deducted = await user.deductTokens(tokensUsed);
@@ -156,13 +174,19 @@ export const generateTestCases = async (req, res) => {
           user._id,
           "test_failed",
           `Insufficient tokens for test generation (needed ${tokensUsed}, have ${user.tokensRemaining})`,
-          { repoUrl: repoUrl || "unknown", tokensNeeded: tokensUsed }
+          { repoUrl: repoUrl || "unknown", tokensNeeded: tokensUsed },
         );
       }
       return res.status(402).json({
         error: `Insufficient tokens. You have ${user.tokensRemaining} tokens, need ${tokensUsed}.`,
       });
     }
+
+    // Authoritative balance for the response / audit log.
+    const freshUser = await User.findById(user._id).select(
+      "tokensRemaining totalTokensUsed",
+    );
+    const tokensRemaining = freshUser?.tokensRemaining ?? user.tokensRemaining;
 
     // Audit log: successful test generation
     if (user.workspaceId) {
@@ -171,16 +195,19 @@ export const generateTestCases = async (req, res) => {
         user._id,
         "test_generate",
         `Generated tests${repoUrl ? ` for ${repoUrl}` : ""}`,
-        { repoUrl: repoUrl || "unknown", tokensUsed, tokensRemaining: user.tokensRemaining }
+        {
+          repoUrl: repoUrl || "unknown",
+          tokensUsed,
+          tokensRemaining,
+        },
       );
     }
 
     return res.status(200).json({
       ...result,
       tokensUsed,
-      tokensRemaining: user.tokensRemaining,
+      tokensRemaining,
     });
-
   } catch (err) {
     console.error("❌ generateTestCases error:", err.message);
 
@@ -192,11 +219,15 @@ export const generateTestCases = async (req, res) => {
           user._id,
           "test_failed",
           `Test generation failed: ${err.message}`,
-          { error: err.message }
+          { error: err.message },
         );
       }
-    } catch (_) { /* ignore audit failure */ }
+    } catch (_) {
+      /* ignore audit failure */
+    }
 
-    return res.status(500).json({ error: err.message ?? "Test generation failed." });
+    return res.status(500).json({
+      error: err.message ?? "Test generation failed.",
+    });
   }
 };

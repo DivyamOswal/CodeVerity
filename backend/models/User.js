@@ -94,10 +94,18 @@ userSchema.pre("save", async function () {
 
 // ─── Instance methods ───────────────────────────────────────
 userSchema.methods.deductTokens = async function (amount) {
-  if (this.tokensRemaining < amount) return false;
+  // Atomic decrement — only touches these two fields, can't overwrite
+  // plan, subscriptionStatus, or anything else on the document.
+  const result = await this.constructor.updateOne(
+    { _id: this._id, tokensRemaining: { $gte: amount } },
+    { $inc: { tokensRemaining: -amount, totalTokensUsed: amount } },
+  );
+
+  if (result.modifiedCount === 0) return false;
+
+  // Keep the in-memory doc consistent for callers that read it after.
   this.tokensRemaining -= amount;
   this.totalTokensUsed += amount;
-  await this.save();
   return true;
 };
 
