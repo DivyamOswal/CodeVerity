@@ -26,6 +26,18 @@ function gradeAccent(grade) {
   return map[grade?.[0]] ?? "text-[var(--text-muted)]";
 }
 
+// ── Grade → glow shadow mapping (for accent cards) ──
+function gradeGlow(grade) {
+  const map = {
+    A: "shadow-[0_0_24px_-8px_var(--color-success)]",
+    B: "shadow-[0_0_24px_-8px_var(--color-info)]",
+    C: "shadow-[0_0_24px_-8px_var(--color-warning)]",
+    D: "shadow-[0_0_24px_-8px_var(--color-caution)]",
+    F: "shadow-[0_0_24px_-8px_var(--color-danger)]",
+  };
+  return map[grade?.[0]] ?? "";
+}
+
 // ── Severity → color mapping ──
 function severityColor(severity) {
   const map = {
@@ -215,6 +227,55 @@ export default function Result({
     <div
       className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${containerPadding}`}
     >
+      <style
+        dangerouslySetInnerHTML={{
+          __html: `
+        @keyframes result-fade-up {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes result-shimmer {
+          0% { background-position: 200% 0; }
+          100% { background-position: -200% 0; }
+        }
+        .result-panel {
+          animation: result-fade-up 0.45s ease-out both;
+        }
+        .result-metric-glow {
+          background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+          -webkit-background-clip: text;
+          -webkit-text-fill-color: transparent;
+          background-clip: text;
+          color: transparent;
+        }
+        .result-glass-card {
+          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+        }
+        .result-glass-card:hover {
+          border-color: var(--accent);
+          box-shadow: 0 14px 32px -22px var(--accent-soft-strong);
+        }
+        .result-cta-shine {
+          position: relative;
+          overflow: hidden;
+        }
+        .result-cta-shine::after {
+          content: "";
+          position: absolute;
+          inset: 0;
+          background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
+          background-size: 200% 100%;
+          animation: result-shimmer 3.2s linear infinite;
+          pointer-events: none;
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .result-panel { animation: none; }
+          .result-cta-shine::after { animation: none; display: none; }
+        }
+      `,
+        }}
+      />
+
       {/* Background effects */}
       <div
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
@@ -247,14 +308,15 @@ export default function Result({
 
         {/* HEADER */}
         <div
-          className={`flex flex-col gap-4 border-b border-[var(--border-dark)] ${headerMargin} md:flex-row md:items-center md:justify-between`}
+          className={`result-panel flex flex-col gap-4 border-b border-[var(--border-dark)] ${headerMargin} md:flex-row md:items-center md:justify-between`}
         >
           <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2">
               <div
-                className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-sm shadow-lg shadow-[var(--accent-soft-strong)] ${compact ? "h-6 w-6" : "h-8 w-8"}`}
+                className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-sm shadow-lg shadow-[var(--accent-soft-strong)] ${compact ? "h-6 w-6" : "h-8 w-8"}`}
               >
                 <span className="text-[var(--accent-contrast)]">⌘</span>
+                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg-primary)]" />
               </div>
               <span
                 className={`font-semibold uppercase tracking-[0.2em] text-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}
@@ -268,15 +330,16 @@ export default function Result({
               AI Code Analysis Report
             </h1>
             <p
-              className={`mt-1 text-xs text-[var(--text-muted)] ${compact ? "text-[10px]" : ""}`}
+              className={`mt-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)] ${compact ? "text-[10px]" : ""}`}
             >
+              <span className="h-1 w-1 rounded-full bg-[var(--color-success)]" />
               Detailed analysis of your GitHub repository.
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div
-              className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_10px_25px_-18px_var(--accent-soft-strong)] ${gradeBoxPadding}`}
+              className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_10px_25px_-18px_var(--accent-soft-strong)] transition-shadow duration-300 ${gradeGlow(grade)} ${gradeBoxPadding}`}
             >
               <p
                 className={`font-medium uppercase tracking-wider text-[var(--text-muted)] text-[9px]`}
@@ -292,7 +355,7 @@ export default function Result({
             {onDownload && (
               <button
                 onClick={onDownload}
-                className={`group relative overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-semibold text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] active:scale-[0.97] ${compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs"}`}
+                className={`result-cta-shine group relative overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-semibold text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] active:scale-[0.97] ${compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs"}`}
               >
                 <span className="relative z-10 flex items-center gap-2">
                   <span>↓</span>
@@ -304,7 +367,7 @@ export default function Result({
         </div>
 
         {/* SCORE CARDS */}
-        <div className={`grid grid-cols-2 ${scoreCardGap} md:grid-cols-4`}>
+        <div className={`result-panel grid grid-cols-2 ${scoreCardGap} md:grid-cols-4`} style={{ animationDelay: "0.05s" }}>
           <ScoreCard
             label="Code Quality"
             value={scores.codeQuality}
@@ -355,7 +418,7 @@ export default function Result({
                 </span>
                 {tab.label}
                 {activeTab === tab.id && (
-                  <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-[var(--accent)]" />
+                  <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent-soft-strong)]" />
                 )}
               </button>
             ))}
@@ -431,7 +494,7 @@ export default function Result({
                       className={`flex items-center gap-3 ${compact ? "mb-3" : "mb-5"}`}
                     >
                       <div
-                        className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-8 w-8" : "h-10 w-10"}`}
+                        className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_20px_-6px_var(--accent-soft-strong)] ${compact ? "h-8 w-8" : "h-10 w-10"}`}
                       >
                         ✓
                       </div>
@@ -464,11 +527,11 @@ export default function Result({
                   {architecture.map((a, i) => (
                     <div
                       key={i}
-                      className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--border-light)] ${compact ? "p-2" : "p-3"}`}
+                      className={`group rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-all duration-150 hover:border-[var(--accent)]/30 hover:bg-[var(--bg-hover)]/40 ${compact ? "p-2" : "p-3"}`}
                     >
                       <div className="mb-1 flex items-center gap-2">
                         <span
-                          className={`flex shrink-0 items-center justify-center rounded bg-[var(--accent-soft)] text-[10px] text-[var(--accent)] ${compact ? "h-4 w-4 text-[9px]" : "h-5 w-5"}`}
+                          className={`flex shrink-0 items-center justify-center rounded bg-[var(--accent-soft)] text-[10px] text-[var(--accent)] transition-colors duration-150 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] ${compact ? "h-4 w-4 text-[9px]" : "h-5 w-5"}`}
                         >
                           {i + 1}
                         </span>
@@ -527,7 +590,7 @@ export default function Result({
                             <button
                               onClick={() => handleAutoFix(b, "bug")}
                               disabled={fixing[issueId]}
-                              className={`mt-2 flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+                              className={`mt-2 flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] hover:shadow-[0_6px_18px_-6px_var(--accent-soft-strong)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
                             >
                               {fixing[issueId] ? (
                                 <>
@@ -585,7 +648,7 @@ export default function Result({
                             <button
                               onClick={() => handleAutoFix(s, "security")}
                               disabled={fixing[issueId]}
-                              className={`mt-2 flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
+                              className={`mt-2 flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] hover:shadow-[0_6px_18px_-6px_var(--accent-soft-strong)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
                             >
                               {fixing[issueId] ? (
                                 <>
@@ -615,7 +678,7 @@ export default function Result({
                   {futureRoadmap.map((f, i) => (
                     <div
                       key={i}
-                      className={`flex gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] sm:gap-3 ${compact ? "p-2" : "p-3"}`}
+                      className={`flex gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/20 sm:gap-3 ${compact ? "p-2" : "p-3"}`}
                     >
                       <div
                         className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[10px]"}`}
@@ -719,6 +782,9 @@ export default function Result({
                         strokeDashoffset="0"
                         strokeLinecap="round"
                         transform="rotate(-90 60 60)"
+                        style={{
+                          filter: "drop-shadow(0 0 6px var(--accent-soft-strong))",
+                        }}
                       />
                       <text
                         x="60"
@@ -742,7 +808,7 @@ export default function Result({
                     </svg>
                   </div>
                   <div
-                    className={`mt-2 flex items-center gap-2 rounded-lg border px-3 py-1 font-bold ${gradeAccent(healthScore.grade)} ${compact ? "text-sm" : "text-base"}`}
+                    className={`mt-2 flex items-center gap-2 rounded-lg border border-[var(--border-light)] px-3 py-1 font-bold ${gradeAccent(healthScore.grade)} ${compact ? "text-sm" : "text-base"}`}
                   >
                     Grade: {healthScore.grade}
                   </div>
@@ -783,29 +849,29 @@ export default function Result({
               </div>
             </GlassCard>
 
-            {/* ─── NEW: Complexity ─────────────────────────────── */}
+            {/* ─── Complexity ─────────────────────────────── */}
             {complexity.functions && complexity.functions.length > 0 && (
               <GlassCard title="Cyclomatic Complexity" icon="◈" compact={compact}>
                 <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-                  <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                  <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
                     <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
                       Max Complexity
                     </p>
-                    <p className="text-lg font-bold text-[var(--accent)] sm:text-xl">
+                    <p className="result-metric-glow text-lg font-bold sm:text-xl">
                       {complexity.maxComplexity}
                     </p>
                   </div>
-                  <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                  <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
                     <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">Average</p>
-                    <p className="text-lg font-bold text-[var(--accent)] sm:text-xl">
+                    <p className="result-metric-glow text-lg font-bold sm:text-xl">
                       {complexity.averageComplexity}
                     </p>
                   </div>
-                  <div className="rounded border border-[var(--border-light)] p-2 text-center">
+                  <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
                     <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
                       Maintainability
                     </p>
-                    <p className="text-lg font-bold text-[var(--accent)] sm:text-xl">
+                    <p className="result-metric-glow text-lg font-bold sm:text-xl">
                       {complexity.maintainability}%
                     </p>
                   </div>
@@ -833,14 +899,14 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── NEW: CVE List ────────────────────────────────── */}
+            {/* ─── CVE List ────────────────────────────────── */}
             {cveList && cveList.length > 0 && (
               <GlassCard title={`Dependency Vulnerabilities (CVEs)`} icon="◇" compact={compact}>
                 <div className="space-y-2">
                   {cveList.map((cve, i) => (
                     <div
                       key={i}
-                      className={`flex flex-col gap-2 rounded border border-[var(--border-light)] p-2 sm:flex-row sm:items-center sm:justify-between ${severityColor(cve.severity)}`}
+                      className={`flex flex-col gap-2 rounded-lg border p-2 transition-transform duration-150 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between ${severityColor(cve.severity)}`}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="break-words font-mono text-xs sm:text-sm">
@@ -866,7 +932,7 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── NEW: README Quality ──────────────────────────── */}
+            {/* ─── README Quality ──────────────────────────── */}
             {readmeScore && readmeScore.score > 0 && (
               <GlassCard title="README Quality" icon="◈" compact={compact}>
                 <div className="flex flex-col items-center gap-4 sm:flex-row">
@@ -1094,11 +1160,11 @@ export default function Result({
             <GlassCard title="Technical Debt" icon="◇" compact={compact}>
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-                  <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-2">
+                  <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-2 shadow-[0_0_20px_-10px_var(--accent-soft-strong)]">
                     <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
                       Estimated Hours
                     </p>
-                    <p className="text-2xl font-bold text-[var(--accent)]">
+                    <p className="result-metric-glow text-2xl font-bold">
                       {techDebt.estimatedHours}
                     </p>
                   </div>
@@ -1114,7 +1180,7 @@ export default function Result({
                     {techDebt.issues.map((issue, i) => (
                       <div
                         key={i}
-                        className="flex items-center gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs sm:gap-3"
+                        className="flex items-center gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs transition-colors duration-150 hover:border-[var(--border-light)] sm:gap-3"
                       >
                         <span
                           className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium ${issue.severity === "critical" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]" : issue.severity === "major" ? "bg-[var(--color-caution-soft)] text-[var(--color-caution)]" : "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"}`}
@@ -1242,8 +1308,12 @@ export default function Result({
                 <div
                   className={`flex flex-col items-center gap-4 ${compact ? "py-8" : "py-12"}`}
                 >
-                  <div className="relative">
-                    <div className="h-10 w-10 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+                  <div className="relative flex h-12 w-12 items-center justify-center">
+                    <div className="absolute inset-0 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
+                    <div
+                      className="absolute inset-2 rounded-full border-2 border-transparent border-b-[var(--accent)]/40"
+                      style={{ animation: "spin 1s linear infinite reverse" }}
+                    />
                   </div>
                   <div className="text-center">
                     <p
@@ -1318,14 +1388,14 @@ export default function Result({
                           Estimated Coverage
                         </span>
                         <span
-                          className={`font-bold text-[var(--accent)] ${compact ? "text-xs" : "text-sm"}`}
+                          className={`result-metric-glow font-bold ${compact ? "text-xs" : "text-sm"}`}
                         >
                           {testData.coverageSummary.estimatedCoverage}%
                         </span>
                       </div>
                       <div className="h-2 overflow-hidden rounded-full bg-[var(--border-dark)]">
                         <div
-                          className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
+                          className="h-full rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent-soft-strong)] transition-all duration-700"
                           style={{
                             width: `${testData.coverageSummary.estimatedCoverage}%`,
                           }}
@@ -1366,7 +1436,7 @@ export default function Result({
                       {testData.testFiles.map((file, i) => (
                         <div
                           key={i}
-                          className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)]"
+                          className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/30"
                         >
                           <div
                             className={`flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-dark)] bg-[var(--bg-card)] ${testFilePadding}`}
@@ -1477,7 +1547,7 @@ export default function Result({
                       {testData.integrationTests.map((t, i) => (
                         <div
                           key={i}
-                          className={`rounded-xl border border-[var(--border-dark)] bg-[var(--bg-primary)] ${compact ? "p-3" : "p-4"}`}
+                          className={`rounded-xl border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/20 ${compact ? "p-3" : "p-4"}`}
                         >
                           <p
                             className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}
@@ -1563,7 +1633,8 @@ export default function Result({
         {/* ─── Quick Fix Editor ─────────────────────────── */}
         {data && data.repoUrl && reportId && (
           <div className="mt-6">
-            <h3 className="mb-3 text-sm font-semibold text-[var(--text-primary)]">
+            <h3 className="mb-3 flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
               Quick Fix Editor
             </h3>
             <RepoEditor repoUrl={data.repoUrl} reportId={reportId} />
@@ -1575,12 +1646,12 @@ export default function Result({
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUB‑COMPONENTS (unchanged)
+// SUB‑COMPONENTS
 // ═══════════════════════════════════════════════════════════════
 
 function GlassCard({ title, children, icon, compact }) {
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
+    <div className="result-glass-card overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
       <div
         className={`flex items-center gap-2 border-b border-[var(--border-dark)] ${compact ? "px-3 py-2" : "px-4 py-3"}`}
       >
@@ -1590,7 +1661,7 @@ function GlassCard({ title, children, icon, compact }) {
           {icon}
         </span>
         <h2
-          className={`font-semibold text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+          className={`font-semibold uppercase tracking-wide text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
         >
           {title}
         </h2>
@@ -1602,12 +1673,12 @@ function GlassCard({ title, children, icon, compact }) {
 
 function AlertCard({ children, type, compact }) {
   const styles = {
-    error: "border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)]",
-    warning: "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)]",
+    error: "border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] border-l-2 border-l-[var(--color-danger)]",
+    warning: "border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] border-l-2 border-l-[var(--color-warning)]",
   };
   return (
     <div
-      className={`rounded-lg border ${compact ? "p-2" : "p-3"} ${styles[type] || "border-[var(--border-light)] bg-[var(--bg-card)]"}`}
+      className={`rounded-lg border transition-colors duration-150 ${compact ? "p-2" : "p-3"} ${styles[type] || "border-[var(--border-light)] bg-[var(--bg-card)]"}`}
     >
       {children}
     </div>
@@ -1618,11 +1689,15 @@ function ScoreCard({ label, value, icon, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
   return (
     <div
-      className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--border-medium)] ${compact ? "p-2.5" : "p-3.5"}`}
+      className={`group relative overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[0_14px_30px_-20px_var(--accent-soft-strong)] ${compact ? "p-2.5" : "p-3.5"}`}
     >
-      <div className="flex items-center justify-between">
+      <div
+        className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-60"
+        aria-hidden="true"
+      />
+      <div className="relative flex items-center justify-between">
         <div
-          className={`flex items-center justify-center rounded-lg text-xs bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}
+          className={`flex items-center justify-center rounded-lg text-xs bg-[var(--accent-soft)] text-[var(--accent)] transition-colors duration-200 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}
         >
           {icon}
         </div>
@@ -1633,7 +1708,7 @@ function ScoreCard({ label, value, icon, compact }) {
         </span>
       </div>
       <div
-        className={`flex items-end justify-between ${compact ? "mt-2" : "mt-3"}`}
+        className={`relative flex items-end justify-between ${compact ? "mt-2" : "mt-3"}`}
       >
         <div className="min-w-0">
           <p
@@ -1642,7 +1717,7 @@ function ScoreCard({ label, value, icon, compact }) {
             {label}
           </p>
           <p
-            className={`mt-0.5 font-bold text-[var(--accent)] ${compact ? "text-lg" : "text-xl"}`}
+            className={`result-metric-glow mt-0.5 font-bold ${compact ? "text-lg" : "text-xl"}`}
           >
             {val || "N/A"}
           </p>
@@ -1654,10 +1729,10 @@ function ScoreCard({ label, value, icon, compact }) {
         </span>
       </div>
       <div
-        className={`overflow-hidden rounded-full bg-[var(--border-dark)] ${compact ? "mt-1.5 h-0.5" : "mt-2 h-1"}`}
+        className={`relative overflow-hidden rounded-full bg-[var(--border-dark)] ${compact ? "mt-1.5 h-0.5" : "mt-2 h-1"}`}
       >
         <div
-          className="h-full rounded-full bg-[var(--accent)] transition-all duration-700"
+          className="h-full rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-soft-strong)] transition-all duration-700"
           style={{ width: `${val}%` }}
         />
       </div>
@@ -1693,7 +1768,7 @@ function TestCaseRow({
   };
   return (
     <div
-      className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] ${compact ? "p-2" : "p-3"}`}
+      className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--border-light)] ${compact ? "p-2" : "p-3"}`}
     >
       <div className={`flex items-center gap-2 ${compact ? "mb-1.5" : "mb-2"}`}>
         <TypeBadge type={c.type} compact={compact} />
@@ -1764,12 +1839,12 @@ function TypeBadge({ type, compact }) {
 function EmptyState({ text, compact }) {
   return (
     <div
-      className={`flex items-center gap-2 rounded-lg border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "px-2 py-2" : "px-3 py-4"}`}
+      className={`flex items-center gap-2.5 rounded-lg border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "px-2 py-2" : "px-3 py-4"}`}
     >
       <span
-        className={`shrink-0 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-xs"}`}
+        className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] ${compact ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-xs"}`}
       >
-        ○
+        ✓
       </span>
       <p
         className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-xs"}`}
@@ -1782,14 +1857,14 @@ function EmptyState({ text, compact }) {
 
 function ScoreMini({ label, value, compact }) {
   return (
-    <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center">
+    <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
       <p
         className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
       >
         {label}
       </p>
       <p
-        className={`font-bold text-[var(--accent)] ${compact ? "text-sm" : "text-base"}`}
+        className={`result-metric-glow font-bold ${compact ? "text-sm" : "text-base"}`}
       >
         {value}
       </p>
