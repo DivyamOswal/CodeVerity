@@ -1,7 +1,7 @@
 // backend/controllers/billingController.js
 import Stripe from "stripe";
 import User from "../models/User.js";
-import { addAuditLog } from "./workspaceController.js";  // 👈 import audit log helper
+import { addAuditLog } from "./workspaceController.js"; // 👈 import audit log helper
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -76,7 +76,7 @@ export const createCheckoutSession = async (req, res) => {
       cancel_url: process.env.STRIPE_CANCEL_URL,
       metadata: { userId: userId, plan, cycle, currency },
       allow_promotion_codes: true,
-      automatic_tax: { enabled: true },
+      // automatic_tax intentionally disabled until GST registration is in place
     });
 
     res.json({ sessionId: session.id, url: session.url });
@@ -90,7 +90,7 @@ export const createCheckoutSession = async (req, res) => {
 export const getSubscription = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select(
-      "plan stripeCustomerId stripeSubscriptionId subscriptionStatus subscriptionEndsAt tokensRemaining"
+      "plan stripeCustomerId stripeSubscriptionId subscriptionStatus subscriptionEndsAt tokensRemaining",
     );
     res.json({ subscription: user });
   } catch (err) {
@@ -109,11 +109,11 @@ export const cancelSubscription = async (req, res) => {
         .json({ error: "No active subscription to cancel." });
     }
 
-    await stripe.subscriptions.update(user.stripeSubscriptionId, {
+        await stripe.subscriptions.update(user.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
 
-    user.subscriptionStatus = "canceled";
+    user.subscriptionStatus = "canceling";
     await user.save();
 
     // ── Audit log: subscription canceled ─────────────────────
@@ -122,7 +122,7 @@ export const cancelSubscription = async (req, res) => {
         user.workspaceId,
         user._id,
         "plan_cancel",
-        `Canceled ${user.plan} subscription (will end at period)`
+        `Canceled ${user.plan} subscription (will end at period)`,
       );
     }
 
@@ -176,25 +176,39 @@ export const handleWebhook = async (req, res) => {
             user._id,
             "plan_change",
             `Subscription ${oldPlan !== plan ? `upgraded from ${oldPlan} to` : "started"} ${plan} (${cycle})`,
-            { oldPlan, newPlan: plan, cycle }
+            { oldPlan, newPlan: plan, cycle },
           );
         }
         break;
       }
 
-      case "invoice.paid": {
+            case "invoice.paid": {
         const invoice = event.data.object;
-        const subscription = await stripe.subscriptions.retrieve(
-          invoice.subscription,
-        );
+        const subscriptionId =
+          invoice.parent?.subscription_details?.subscription;
+
+        if (!subscriptionId) {
+          console.warn("invoice.paid: no subscriptionId on invoice", invoice.id);
+          break;
+        }
+
+        const subscription =
+          await stripe.subscriptions.retrieve(subscriptionId);
+
         const user = await User.findOne({
-          stripeSubscriptionId: invoice.subscription,
+          stripeSubscriptionId: subscriptionId,
         });
+
         if (user) {
           user.subscriptionStatus = "active";
-          user.subscriptionEndsAt = new Date(
-            subscription.current_period_end * 1000,
-          );
+
+          const periodEnd =
+            subscription.items?.data?.[0]?.current_period_end ??
+            subscription.current_period_end;
+          if (periodEnd) {
+            user.subscriptionEndsAt = new Date(periodEnd * 1000);
+          }
+
           await user.save();
 
           // ── Audit log: successful renewal ──────────────────
@@ -203,17 +217,25 @@ export const handleWebhook = async (req, res) => {
               user.workspaceId,
               user._id,
               "payment_success",
-              `Subscription renewed (${user.plan}) – payment succeeded`
+              `Subscription renewed (${user.plan}) – payment succeeded`,
             );
           }
         }
         break;
       }
 
-      case "invoice.payment_failed": {
+            case "invoice.payment_failed": {
         const invoice = event.data.object;
+        const subscriptionId =
+          invoice.parent?.subscription_details?.subscription;
+
+        if (!subscriptionId) {
+          console.warn("invoice.payment_failed: no subscriptionId", invoice.id);
+          break;
+        }
+
         const user = await User.findOne({
-          stripeSubscriptionId: invoice.subscription,
+          stripeSubscriptionId: subscriptionId,
         });
         if (user) {
           user.subscriptionStatus = "past_due";
@@ -225,7 +247,7 @@ export const handleWebhook = async (req, res) => {
               user.workspaceId,
               user._id,
               "payment_failed",
-              `Payment failed for ${user.plan} subscription`
+              `Payment failed for ${user.plan} subscription`,
             );
           }
         }
@@ -254,7 +276,7 @@ export const handleWebhook = async (req, res) => {
               user.workspaceId,
               user._id,
               "plan_cancel",
-              `Subscription ${oldPlan} canceled – downgraded to Starter`
+              `Subscription ${oldPlan} canceled – downgraded to Starter`,
             );
           }
         }
@@ -263,8 +285,14 @@ export const handleWebhook = async (req, res) => {
     }
 
     res.json({ received: true });
-  } catch (err) {
-    console.error("Webhook processing error:", err);
+    } catch (err) {
+    console.error("Webhook processing error:", {
+      eventType: event?.type,
+      eventId: event?.id,
+      code: err.code,
+      message: err.message,
+      requestId: err.requestId,
+    });
     res.status(500).json({ error: "Webhook processing failed." });
   }
 };
