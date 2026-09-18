@@ -261,6 +261,108 @@ video {
   100% { background-position: -200% 0; }
 }
 
+/* =====================================================
+   INVITE MEMBER MODAL — moved from InviteMemberModal.jsx
+======================================================== */
+@keyframes invite-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes invite-row-in {
+  from { opacity: 0; transform: translateX(-4px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+.invite-modal-panel {
+  animation: invite-modal-in 0.22s ease-out;
+}
+.invite-result-row {
+  animation: invite-row-in 0.18s ease-out both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .invite-modal-panel,
+  .invite-result-row { animation: none; }
+}
+
+/* =====================================================
+   MEMBER ACTIVITY — moved from MemberActivity.jsx
+======================================================== */
+@keyframes activity-fade-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes activity-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.activity-row {
+  animation: activity-fade-in 0.25s ease-out both;
+}
+.activity-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-hover) 25%,
+    var(--accent-soft) 50%,
+    var(--bg-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: activity-shimmer 1.6s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .activity-row { animation: none; }
+  .activity-skeleton { animation: none; }
+}
+
+/* =====================================================
+   PENDING INVITES — moved from PendingInvites.jsx
+======================================================== */
+@keyframes invite-row-fade {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes invite-shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+@keyframes invite-confirm-in {
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
+}
+.pending-invite-row {
+  animation: invite-row-fade 0.25s ease-out both;
+}
+.pending-invite-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-hover) 25%,
+    var(--accent-soft) 50%,
+    var(--bg-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: invite-shimmer 1.6s ease-in-out infinite;
+}
+.pending-invite-confirm {
+  animation: invite-confirm-in 0.15s ease-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .pending-invite-row,
+  .pending-invite-confirm { animation: none; }
+  .pending-invite-skeleton { animation: none; }
+}
+
+/* =====================================================
+   WORKSPACE SETTINGS — modal + skeleton animations
+======================================================== */
+@keyframes ws-modal-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.ws-modal-panel {
+  animation: ws-modal-in 0.22s ease-in-out;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ws-modal-panel { animation: none; }
+}
+
 .result-panel {
   animation: result-fade-up 0.45s ease-out both;
 }

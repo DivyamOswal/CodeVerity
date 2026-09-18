@@ -1,8 +1,38 @@
-import { useState } from "react";
+// src/components/Workspace/InviteMemberModal.jsx
+import { useState, useRef, useEffect } from "react";
+import {
+  UserPlus,
+  Mail,
+  ArrowRight,
+  Check,
+  X,
+  Crown,
+  Users,
+  Eye,
+  Loader2,
+} from "lucide-react";
 import { useToast } from "../../hooks/useToast";
 import { createInvitation } from "../../api/workspace";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+const ROLE_INFO = {
+  admin: {
+    Icon: Crown,
+    label: "Admin",
+    desc: "Full access, including workspace settings",
+  },
+  member: {
+    Icon: Users,
+    label: "Member",
+    desc: "Can create and manage repository scans",
+  },
+  viewer: {
+    Icon: Eye,
+    label: "Viewer",
+    desc: "Read-only access to reports",
+  },
+};
 
 export default function InviteMemberModal({ onClose, onSuccess }) {
   const [input, setInput] = useState("");
@@ -10,6 +40,26 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState(null);
   const { success, error } = useToast();
+
+  const textareaRef = useRef(null);
+
+  // Auto-focus the textarea when the modal mounts
+  useEffect(() => {
+    if (textareaRef.current) {
+      textareaRef.current.focus();
+    }
+  }, []);
+
+  // Escape key closes the modal (unless a request is in flight)
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape" && !loading) {
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [loading, onClose]);
 
   const parseEmails = (raw) =>
     Array.from(
@@ -64,45 +114,29 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
     }
   };
 
-  const emailCount = input.trim() ? parseEmails(input).length : 0;
-
-  const roleInfo = {
-    admin: { icon: "◆", desc: "Full access, including workspace settings" },
-    member: { icon: "◈", desc: "Can create and manage repository scans" },
-    viewer: { icon: "◇", desc: "Read-only access to reports" },
+  const handleBackdropClick = (e) => {
+    if (e.target === e.currentTarget && !loading) {
+      onClose();
+    }
   };
 
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes invite-modal-in {
-          from { opacity: 0; transform: translateY(10px) scale(0.98); }
-          to { opacity: 1; transform: translateY(0) scale(1); }
-        }
-        @keyframes invite-row-in {
-          from { opacity: 0; transform: translateX(-4px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .invite-modal-panel {
-          animation: invite-modal-in 0.22s ease-out;
-        }
-        .invite-result-row {
-          animation: invite-row-in 0.18s ease-out both;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .invite-modal-panel,
-          .invite-result-row { animation: none; }
-        }
-      `,
-        }}
-      />
+  const emailCount = input.trim() ? parseEmails(input).length : 0;
+  const CurrentRoleIcon = ROLE_INFO[role].Icon;
 
-      <div className="invite-modal-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-[var(--accent-soft-strong)]">
-        {/* Corner brackets, consistent with Result.jsx / Home.jsx accents */}
-        <span className="pointer-events-none absolute -top-px -left-px z-10 h-4 w-4 rounded-tl-2xl border-l-2 border-t-2 border-[var(--accent)]/50" />
-        <span className="pointer-events-none absolute -top-px -right-px z-10 h-4 w-4 rounded-tr-2xl border-r-2 border-t-2 border-[var(--accent)]/50" />
+  return (
+    <div
+      onClick={handleBackdropClick}
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm"
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="invite-modal-title"
+        className="invite-modal-panel relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl shadow-[var(--accent-soft-strong)]"
+      >
+        {/* Corner brackets */}
+        <span className="pointer-events-none absolute -left-px -top-px z-10 h-4 w-4 rounded-tl-2xl border-l-2 border-t-2 border-[var(--accent)]/50" />
+        <span className="pointer-events-none absolute -right-px -top-px z-10 h-4 w-4 rounded-tr-2xl border-r-2 border-t-2 border-[var(--accent)]/50" />
 
         {/* Ambient accent glow */}
         <div
@@ -113,24 +147,13 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
         <div className="relative p-6">
           <div className="flex items-start gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)]">
-              <svg
-                width="18"
-                height="18"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" />
-                <circle cx="9" cy="7" r="4" />
-                <path d="M22 21v-2a4 4 0 0 0-3-3.87" />
-                <path d="M16 3.13a4 4 0 0 1 0 7.75" />
-              </svg>
+              <UserPlus size={18} strokeWidth={2} aria-hidden="true" />
             </div>
             <div className="min-w-0">
-              <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+              <h3
+                id="invite-modal-title"
+                className="text-lg font-semibold text-[var(--text-primary)]"
+              >
                 Invite Members
               </h3>
               <p className="mt-0.5 text-sm text-[var(--text-muted)]">
@@ -142,15 +165,21 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
           <form onSubmit={handleSubmit} className="mt-5 space-y-4">
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                <span className="text-[var(--accent)]">✉</span>
+                <Mail
+                  size={12}
+                  strokeWidth={2.2}
+                  aria-hidden="true"
+                  className="text-[var(--accent)]"
+                />
                 Emails
               </label>
               <textarea
+                ref={textareaRef}
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 rows={4}
                 placeholder={"alice@company.com, bob@company.com\ncharlie@company.com"}
-                className="mt-1.5 w-full resize-y rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors duration-150 placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                className="mt-1.5 w-full resize-y rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors duration-150 placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                 required
               />
               {input.trim() && (
@@ -163,25 +192,30 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
 
             <div>
               <label className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-[var(--text-muted)]">
-                <span className="text-[var(--accent)]">{roleInfo[role].icon}</span>
+                <CurrentRoleIcon
+                  size={12}
+                  strokeWidth={2.2}
+                  aria-hidden="true"
+                  className="text-[var(--accent)]"
+                />
                 Role
               </label>
               <select
                 value={role}
                 onChange={(e) => setRole(e.target.value)}
-                className="mt-1.5 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors duration-150 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                className="mt-1.5 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2.5 text-sm text-[var(--text-primary)] outline-none transition-colors duration-150 focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
               >
                 <option value="member">Member</option>
                 <option value="viewer">Viewer</option>
                 <option value="admin">Admin</option>
               </select>
               <p className="mt-1.5 text-xs text-[var(--text-muted)]">
-                {roleInfo[role].desc}
+                {ROLE_INFO[role].desc}
               </p>
             </div>
 
             {results && (
-              <div className="max-h-48 overflow-y-auto rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3">
+              <div className="no-scrollbar max-h-48 overflow-y-auto rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-3">
                 <p className="mb-2 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
                   <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
                   Results
@@ -194,13 +228,17 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
                       style={{ animationDelay: `${i * 0.04}s` }}
                     >
                       <span
-                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold ${
+                        className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full ${
                           r.status === "sent"
                             ? "bg-[var(--color-success)]/15 text-[var(--color-success)]"
                             : "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
                         }`}
                       >
-                        {r.status === "sent" ? "✓" : "✕"}
+                        {r.status === "sent" ? (
+                          <Check size={9} strokeWidth={3} aria-hidden="true" />
+                        ) : (
+                          <X size={9} strokeWidth={3} aria-hidden="true" />
+                        )}
                       </span>
                       <span className="min-w-0 flex-1 truncate font-mono text-[var(--text-primary)]">
                         {r.email}
@@ -220,16 +258,21 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_8px_20px_-8px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-sm font-semibold text-[var(--accent-contrast)] shadow-[0_8px_20px_-8px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
               >
                 {loading ? (
                   <>
-                    <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--accent-contrast)]/40 border-t-[var(--accent-contrast)]" />
+                    <Loader2
+                      size={14}
+                      strokeWidth={2.4}
+                      aria-hidden="true"
+                      className="animate-spin"
+                    />
                     Sending…
                   </>
                 ) : (
                   <>
-                    <span aria-hidden="true">→</span>
+                    <ArrowRight size={14} strokeWidth={2} aria-hidden="true" />
                     Send Invites
                   </>
                 )}
@@ -237,7 +280,8 @@ export default function InviteMemberModal({ onClose, onSuccess }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98]"
+                disabled={loading}
+                className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-sm font-medium text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100"
               >
                 {results ? "Close" : "Cancel"}
               </button>
