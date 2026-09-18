@@ -81,7 +81,7 @@ async function processJob(job) {
 // ─────────────────────────────────────────────────────────────
 // One pass: claim and process up to BATCH_SIZE jobs.
 // ─────────────────────────────────────────────────────────────
-async function processQueue() {
+export async function processQueue() {
   if (isProcessing) return;
   isProcessing = true;
 
