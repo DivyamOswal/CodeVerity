@@ -51,6 +51,8 @@ function CodeVerityLogo({ compact = false }) {
             strokeLinecap="round"
           />
         </svg>
+
+        <span className="absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg-card)]" />
       </div>
 
       {!compact && (
@@ -72,23 +74,23 @@ function CodeVerityLogo({ compact = false }) {
 /*                              FEATURE ROW                                   */
 /* -------------------------------------------------------------------------- */
 
-function FeatureRow({ number, title, description }) {
+function FeatureRow({ icon, title, description }) {
   return (
     <div className="group flex gap-4 transition-transform duration-300 hover:translate-x-1">
       <div
         className="
-          flex h-8 w-8 shrink-0 items-center justify-center
+          flex h-9 w-9 shrink-0 items-center justify-center
           rounded-lg
           border border-[var(--border-light)]
           bg-[var(--bg-card)]
-          font-mono text-[10px]
           text-[var(--accent)]
           transition-all duration-300
           group-hover:border-[var(--accent)]
+          group-hover:bg-[var(--accent-soft)]
           group-hover:shadow-[0_0_18px_color-mix(in_srgb,var(--accent)_15%,transparent)]
         "
       >
-        {number}
+        {icon}
       </div>
 
       <div className="min-w-0">
@@ -100,6 +102,34 @@ function FeatureRow({ number, title, description }) {
           {description}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              METRIC CARD                                   */
+/* -------------------------------------------------------------------------- */
+
+function MetricCard({ label, value, accent = false }) {
+  return (
+    <div
+      className={`
+        rounded-lg border px-3 py-2.5
+        ${
+          accent
+            ? "border-[var(--accent)]/25 bg-[var(--accent-soft)]"
+            : "border-[var(--border-light)] bg-[var(--bg-card)]"
+        }
+      `}
+    >
+      <p className="font-mono text-[8px] uppercase tracking-[0.14em] text-[var(--text-muted)]">
+        {label}
+      </p>
+      <p
+        className={`mt-1 text-sm font-semibold ${accent ? "text-[var(--accent)]" : "text-[var(--text-primary)]"}`}
+      >
+        {value}
+      </p>
     </div>
   );
 }
@@ -121,6 +151,7 @@ export default function AuthLayout({
   const orb1Ref = useRef(null);
   const orb2Ref = useRef(null);
   const cardRef = useRef(null);
+  const cardGlowRef = useRef(null);
   const rightPanelRef = useRef(null);
   const errorRef = useRef(null);
 
@@ -208,29 +239,67 @@ export default function AuthLayout({
       }
 
       /* ------------------------------------------------------------------ */
-      /* Right panel entrance                                                */
+      /* Card cursor-follow glow (desktop pointer only)                      */
       /* ------------------------------------------------------------------ */
 
-      if (rightPanelRef.current) {
-        gsap.fromTo(
-          rightPanelRef.current.children,
-          {
-            opacity: 0,
-            x: 18,
-          },
-          {
-            opacity: 1,
-            x: 0,
-            duration: 0.65,
-            stagger: 0.08,
-            ease: "power3.out",
-            delay: 0.1,
-          },
-        );
+      if (cardRef.current && cardGlowRef.current) {
+        const card = cardRef.current;
+        const glow = cardGlowRef.current;
+        const quickX = gsap.quickTo(glow, "left", {
+          duration: 0.5,
+          ease: "power3.out",
+        });
+        const quickY = gsap.quickTo(glow, "top", {
+          duration: 0.5,
+          ease: "power3.out",
+        });
+
+        const handleMove = (e) => {
+          const rect = card.getBoundingClientRect();
+          quickX(e.clientX - rect.left);
+          quickY(e.clientY - rect.top);
+        };
+        const handleEnter = () => gsap.to(glow, { opacity: 1, duration: 0.3 });
+        const handleLeave = () => gsap.to(glow, { opacity: 0, duration: 0.4 });
+
+        if (window.matchMedia("(pointer: fine)").matches) {
+          card.addEventListener("mousemove", handleMove);
+          card.addEventListener("mouseenter", handleEnter);
+          card.addEventListener("mouseleave", handleLeave);
+        }
+
+        return () => {
+          card.removeEventListener("mousemove", handleMove);
+          card.removeEventListener("mouseenter", handleEnter);
+          card.removeEventListener("mouseleave", handleLeave);
+        };
       }
     });
 
     return () => ctx.revert();
+  }, []);
+
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      return;
+    }
+    if (rightPanelRef.current) {
+      gsap.fromTo(
+        rightPanelRef.current.children,
+        {
+          opacity: 0,
+          x: 18,
+        },
+        {
+          opacity: 1,
+          x: 0,
+          duration: 0.65,
+          stagger: 0.08,
+          ease: "power3.out",
+          delay: 0.1,
+        },
+      );
+    }
   }, []);
 
   // Subtle shake when a new error appears, drawing attention to it
@@ -292,16 +361,31 @@ export default function AuthLayout({
           "
         />
 
-        {/* Mobile logo */}
+        {/* Mobile header */}
 
-        <div className="relative z-10 flex px-6 pt-6 lg:hidden">
+        <div
+          className="
+            relative z-10 flex items-center justify-between
+            border-b border-[var(--border-light)]/60
+            bg-[var(--bg-primary)]/80 px-6 py-4
+            backdrop-blur-md
+            lg:hidden
+          "
+        >
           <Link
             to="/"
             aria-label="CodeVerity home"
             className="transition-opacity hover:opacity-80"
           >
-            <CodeVerityLogo />
+            <CodeVerityLogo compact />
           </Link>
+
+          <div className="flex items-center gap-1.5 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-2.5 py-1">
+            <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
+            <span className="font-mono text-[9px] uppercase tracking-[0.14em] text-[var(--text-muted)]">
+              Secure
+            </span>
+          </div>
         </div>
 
         {/* Centered content */}
@@ -375,15 +459,29 @@ export default function AuthLayout({
                 bg-[var(--bg-card)]
                 shadow-[var(--shadow-xl)]
                 backdrop-blur-xl
+                transition-shadow duration-300
               "
             >
+              {/* Cursor-follow glow, desktop only, pointer-events disabled */}
+              <div
+                ref={cardGlowRef}
+                aria-hidden="true"
+                className="pointer-events-none absolute z-0 h-[280px] w-[280px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-0"
+                style={{
+                  left: "50%",
+                  top: "0%",
+                  background:
+                    "radial-gradient(circle, color-mix(in srgb, var(--accent) 10%, transparent) 0%, transparent 70%)",
+                }}
+              />
+
               {/* Top hairline a small, considered detail that signals
                   "premium card" rather than a plain bordered box, the
                   same way Linear/Vercel-style auth cards use a subtle
                   top accent instead of a flat uniform border. */}
               <div
                 aria-hidden="true"
-                className="absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60"
+                className="absolute inset-x-0 top-0 z-10 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60"
               />
 
               {/* Accent corners */}
@@ -391,7 +489,7 @@ export default function AuthLayout({
               <div
                 ref={cornersRef}
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-0"
+                className="pointer-events-none absolute inset-0 z-10"
               >
                 <span
                   className="
@@ -430,7 +528,7 @@ export default function AuthLayout({
                 />
               </div>
 
-              <div className="relative p-6 sm:p-7">
+              <div className="relative z-10 p-6 sm:p-7">
                 {/* -------------------------------------------------------- */}
                 {/* ERROR                                                       */}
                 {/* -------------------------------------------------------- */}
@@ -565,14 +663,14 @@ export default function AuthLayout({
                 {footer && (
                   <div
                     className="
-      mt-6
-      border-t
-      border-[var(--border-light)]
-      pt-5
-      text-center
-      text-xs
-      text-[var(--text-muted)]
-    "
+                      mt-6
+                      border-t
+                      border-[var(--border-light)]
+                      pt-5
+                      text-center
+                      text-xs
+                      text-[var(--text-muted)]
+                    "
                   >
                     {typeof footer === "object" ? (
                       <div className="flex items-center justify-center gap-1.5">
@@ -581,12 +679,12 @@ export default function AuthLayout({
                         <Link
                           to={footer.linkTo}
                           className="
-            font-medium
-            text-[var(--accent)]
-            transition-colors
-            duration-200
-            hover:text-[var(--accent-hover)]
-          "
+                            font-medium
+                            text-[var(--accent)]
+                            transition-colors
+                            duration-200
+                            hover:text-[var(--accent-hover)]
+                          "
                         >
                           {footer.linkText}
                         </Link>
@@ -600,11 +698,11 @@ export default function AuthLayout({
             </div>
 
             {/* ------------------------------------------------------------ */}
-            {/* SECURITY FOOTNOTE now a pill/badge rather than plain
+            {/* SECURITY FOOTNOTE a pill/badge rather than plain
                 text, reads as a trust signal instead of a caption. */}
             {/* ------------------------------------------------------------ */}
 
-            <div className="mt-5 flex justify-center">
+            <div className="mt-5 flex flex-col items-center gap-3">
               <div
                 className="
                   flex items-center gap-2
@@ -626,6 +724,20 @@ export default function AuthLayout({
 
                 <span>Secure authentication · Your data stays protected</span>
               </div>
+
+              <Link
+                to="/"
+                className="
+                  flex items-center gap-1.5
+                  text-[11px] font-medium
+                  text-[var(--text-muted)]
+                  transition-colors duration-200
+                  hover:text-[var(--accent)]
+                "
+              >
+                <span aria-hidden="true">←</span>
+                Back to home
+              </Link>
             </div>
           </div>
         </div>
@@ -678,11 +790,8 @@ export default function AuthLayout({
           "
         />
 
-        {/* Dot grid the only ambient texture layer on this panel now;
-            the scanline layer that used to sit on top of it was dropped
-            since three overlapping textures (orbs + dots + scanline)
-            read as busy rather than premium. One restrained texture
-            reads more considered. */}
+        {/* Dot grid the only ambient texture layer on this panel;
+            kept restrained rather than layering multiple textures. */}
 
         <div
           aria-hidden="true"
@@ -782,19 +891,19 @@ export default function AuthLayout({
 
           <div className="mt-12 space-y-7">
             <FeatureRow
-              number="01"
+              icon={<BugScanIcon />}
               title="AI-powered analysis"
               description="Get intelligent insights into code quality, architecture, bugs, and potential improvements."
             />
 
             <FeatureRow
-              number="02"
+              icon={<WorkflowIcon />}
               title="Developer-first workflow"
               description="Keep analysis, history, repositories, and development context connected in one workspace."
             />
 
             <FeatureRow
-              number="03"
+              icon={<SparkIcon />}
               title="Actionable intelligence"
               description="Turn complex code insights into practical recommendations you can actually implement."
             />
@@ -842,18 +951,13 @@ export default function AuthLayout({
               </span>
             </div>
 
-            <div
-              className="
-                mt-4 flex items-center justify-between
-                text-[9px]
-                text-[var(--text-muted)]
-              "
-            >
-              <span>AI ENGINE</span>
-              <span className="text-[var(--accent)]">READY</span>
+            <div className="mt-4 grid grid-cols-3 gap-2">
+              <MetricCard label="AI Engine" value="Ready" accent />
+              <MetricCard label="Uptime" value="99.9%" />
+              <MetricCard label="Response" value="&lt; 2s" />
             </div>
 
-            <div className="mt-2 h-[2px] overflow-hidden rounded-full bg-[var(--border-light)]">
+            <div className="mt-3 h-[2px] overflow-hidden rounded-full bg-[var(--border-light)]">
               <div
                 className="
                   h-full w-[72%]
@@ -871,12 +975,26 @@ export default function AuthLayout({
 
           <div
             className="
-              mt-8
+              mt-8 flex items-center justify-between
               font-mono text-[9px]
               text-[var(--text-muted)]
             "
           >
-            © {new Date().getFullYear()} CodeVerity
+            <span>© {new Date().getFullYear()} CodeVerity</span>
+            <div className="flex items-center gap-3">
+              <Link
+                to="/privacy"
+                className="transition-colors hover:text-[var(--text-secondary)]"
+              >
+                Privacy
+              </Link>
+              <Link
+                to="/terms"
+                className="transition-colors hover:text-[var(--text-secondary)]"
+              >
+                Terms
+              </Link>
+            </div>
           </div>
         </div>
       </aside>
@@ -929,6 +1047,57 @@ function GoogleIcon() {
         fill="#EA4335"
         d="M12 6.37c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.82 3.48 14.63 2.5 12 2.5a9.71 9.71 0 0 0-8.7 5.37l3.25 2.51c.77-2.3 2.92-4.01 5.45-4.01Z"
       />
+    </svg>
+  );
+}
+
+function BugScanIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
+      <path d="M18 13h-2M8 13H6M10 4 8 2M14 4l2-2" />
+    </svg>
+  );
+}
+
+function WorkflowIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+      <path d="M10 6.5h5a2 2 0 0 1 2 2V14M6.5 10v5a2 2 0 0 0 2 2H10" />
+    </svg>
+  );
+}
+
+function SparkIcon() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="h-4 w-4"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+    >
+      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
     </svg>
   );
 }
