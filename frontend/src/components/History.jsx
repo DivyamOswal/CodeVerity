@@ -4,7 +4,6 @@ import axios from "axios";
 import {
   Search,
   FileText,
-  Github,
   Download,
   ArrowRight,
   ArrowLeft,
@@ -34,6 +33,23 @@ function ScanLine() {
         style={{ opacity: 0.35 }}
       />
     </div>
+  );
+}
+
+// GitHub brand mark — custom SVG because lucide-react no longer
+// exports the Github icon.
+function GithubIcon({ size = 14, className = "" }) {
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 24 24"
+      fill="currentColor"
+      className={className}
+      aria-hidden="true"
+    >
+      <path d="M12 2C6.48 2 2 6.58 2 12.25c0 4.53 2.87 8.37 6.84 9.73.5.1.68-.22.68-.49 0-.24-.01-1.04-.01-1.89-2.78.61-3.37-1.34-3.37-1.34-.46-1.18-1.11-1.5-1.11-1.5-.91-.63.07-.62.07-.62 1 .07 1.53 1.05 1.53 1.05.89 1.55 2.34 1.1 2.91.84.09-.66.35-1.1.63-1.36-2.22-.26-4.56-1.13-4.56-5.02 0-1.11.39-2.02 1.03-2.73-.1-.26-.45-1.3.1-2.72 0 0 .84-.27 2.75 1.04a9.3 9.3 0 0 1 5 0c1.91-1.31 2.75-1.04 2.75-1.04.55 1.42.2 2.46.1 2.72.64.71 1.03 1.62 1.03 2.73 0 3.9-2.34 4.76-4.57 5.01.36.32.68.94.68 1.9 0 1.37-.01 2.47-.01 2.81 0 .27.18.6.69.49A10.02 10.02 0 0 0 22 12.25C22 6.58 17.52 2 12 2Z" />
+    </svg>
   );
 }
 
@@ -246,12 +262,7 @@ export default function History() {
             </button>
             <div className="h-5 w-px bg-[var(--border-light)]" />
             <div className="flex min-w-0 items-center gap-2">
-              <Github
-                size={14}
-                strokeWidth={1.8}
-                aria-hidden="true"
-                className="shrink-0 text-[var(--text-muted)]"
-              />
+              <GithubIcon size={14} className="shrink-0 text-[var(--text-muted)]" />
               <span className="truncate font-mono text-[11px] text-[var(--text-muted)]">
                 {selected.repoUrl}
               </span>
@@ -656,7 +667,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
             <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-primary)] text-[var(--text-muted)] transition-colors duration-150 group-hover:text-[var(--accent)]">
-              <Github size={16} strokeWidth={1.8} aria-hidden="true" />
+              <GithubIcon size={14} className="shrink-0 text-[var(--text-muted)]" />
             </div>
             <div className="min-w-0">
               <p className="mb-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
