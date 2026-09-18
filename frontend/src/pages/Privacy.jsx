@@ -1,4 +1,4 @@
-// frontend/src/pages/Privacy.jsx
+// src/pages/Privacy.jsx
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { usePreferences } from "../context/PreferencesContext";
@@ -52,23 +52,31 @@ export default function Privacy() {
     if (!el) return;
     const navOffset = compact ? 64 : 76;
     const top = el.getBoundingClientRect().top + window.scrollY - navOffset;
-    window.scrollTo({ top, behavior: "smooth" });
+    const reduceMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+    window.scrollTo({
+      top,
+      behavior: reduceMotion ? "auto" : "smooth",
+    });
   };
 
   const compactClasses = compact
     ? {
-        topPadding: "pt-14",
+        topPadding: "pt-20",
         container: "px-3 py-4 sm:px-4",
         headerMargin: "mb-4",
         heading: "text-lg sm:text-xl",
-        subHeading: "text-[10px]",
+        subHeading: "text-[11px]",
         sidebarWidth: "md:w-60",
         sidebarButton: "px-3 py-2 text-xs",
         contentPadding: "p-4 sm:p-5",
         sectionGap: "space-y-4",
+        footerMargin: "mt-4",
+        footerText: "text-[10px]",
       }
     : {
-        topPadding: "pt-16",
+        topPadding: "pt-24",
         container: "px-4 py-6 sm:px-6 lg:px-8",
         headerMargin: "mb-6",
         heading: "text-xl sm:text-2xl",
@@ -77,60 +85,69 @@ export default function Privacy() {
         sidebarButton: "px-4 py-2.5 text-sm",
         contentPadding: "p-6 sm:p-8",
         sectionGap: "space-y-5",
+        footerMargin: "mt-6",
+        footerText: "text-[11px]",
       };
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}>
+    <div
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}
+    >
       <div className={`mx-auto w-full max-w-7xl ${compactClasses.container}`}>
         {/* HEADER */}
         <div className={compactClasses.headerMargin}>
           <div className="flex items-center gap-2">
-            <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-            <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-success)]" />
+            <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
               Legal
             </span>
           </div>
-          <h1 className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
+          <h1
+            className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+          >
             Privacy Policy
           </h1>
           <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>
-            Last updated: {LAST_UPDATED} · How CodeVerity collects, uses, and protects your data.
+            Last updated: {LAST_UPDATED} · How CodeVerity collects, uses, and
+            protects your data.
           </p>
         </div>
 
         {/* LAYOUT */}
         <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
-          {/* SIDEBAR NAV — sticky, with scroll-spy active state and a
-              numbered index per item for easier scanning across 13
-              sections. */}
+          {/* SIDEBAR NAV */}
           <nav
             className={`${compactClasses.sidebarWidth} shrink-0`}
             aria-label="Privacy policy sections"
           >
-            <div className="sticky top-20 flex flex-col gap-1 rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-2 max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
-              {SECTIONS.map((s, i) => (
-                <button
-                  key={s.id}
-                  onClick={() => scrollToSection(s.id)}
-                  className={`relative flex items-center gap-2.5 ${compactClasses.sidebarButton} rounded-xl text-left font-medium transition-all ${
-                    activeSection === s.id
-                      ? "bg-[var(--accent-soft)] text-[var(--accent)]"
-                      : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                  }`}
-                  aria-current={activeSection === s.id ? "true" : undefined}
-                >
-                  {activeSection === s.id && (
-                    <span
-                      aria-hidden="true"
-                      className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--accent)]"
-                    />
-                  )}
-                  <span className="font-mono text-[9px] opacity-60">
-                    {String(i + 1).padStart(2, "0")}
-                  </span>
-                  <span className="min-w-0 truncate">{s.label}</span>
-                </button>
-              ))}
+            <div className="no-scrollbar sticky top-20 flex max-h-[calc(100vh-6rem)] flex-col gap-1 overflow-y-auto rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-2">
+              {SECTIONS.map((s, i) => {
+                const active = activeSection === s.id;
+                return (
+                  <button
+                    key={s.id}
+                    type="button"
+                    onClick={() => scrollToSection(s.id)}
+                    aria-current={active ? "location" : undefined}
+                    className={`relative flex items-center gap-2.5 ${compactClasses.sidebarButton} rounded-xl text-left font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] ${
+                      active
+                        ? "bg-[var(--accent-soft)] text-[var(--accent)]"
+                        : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                    }`}
+                  >
+                    {active && (
+                      <span
+                        aria-hidden="true"
+                        className="absolute left-0 top-1/2 h-4 w-[2px] -translate-y-1/2 rounded-full bg-[var(--accent)]"
+                      />
+                    )}
+                    <span className="font-mono text-[10px] opacity-60">
+                      {String(i + 1).padStart(2, "0")}
+                    </span>
+                    <span className="min-w-0 truncate">{s.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </nav>
 
@@ -138,8 +155,6 @@ export default function Privacy() {
           <div
             className={`relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.contentPadding} ${compactClasses.sectionGap}`}
           >
-            {/* Top hairline — same "premium card" detail used on the
-                Auth pages, for visual consistency across the app. */}
             <div
               aria-hidden="true"
               className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
@@ -152,14 +167,16 @@ export default function Privacy() {
               refCallback={(el) => (sectionRefs.current.overview = el)}
             >
               <p>
-                CodeVerity ("we," "our," "us") provides AI-powered analysis of GitHub
-                repositories, including bug detection, security review, and test
-                generation. This policy explains what information we collect when you
-                use CodeVerity, how we use it, and the choices available to you.
+                CodeVerity ("we," "our," "us") provides AI-powered analysis of
+                GitHub repositories, including bug detection, security review,
+                and test generation. This policy explains what information we
+                collect when you use CodeVerity, how we use it, and the choices
+                available to you.
               </p>
               <p>
-                By creating an account or using CodeVerity, you agree to the practices
-                described here. If you don't agree, please don't use the service.
+                By creating an account or using CodeVerity, you agree to the
+                practices described here. If you don't agree, please don't use
+                the service.
               </p>
             </PolicySection>
 
@@ -167,7 +184,9 @@ export default function Privacy() {
               id="information-we-collect"
               index={2}
               title="Information We Collect"
-              refCallback={(el) => (sectionRefs.current["information-we-collect"] = el)}
+              refCallback={(el) =>
+                (sectionRefs.current["information-we-collect"] = el)
+              }
             >
               <SubHeading>Account information</SubHeading>
               <List
@@ -187,9 +206,9 @@ export default function Privacy() {
               />
               <SubHeading>Payment information</SubHeading>
               <p>
-                If you upgrade to a paid plan, payment is handled by a third-party
-                payment processor. CodeVerity does not store your full card details on
-                our own servers.
+                If you upgrade to a paid plan, payment is handled by a
+                third-party payment processor. CodeVerity does not store your
+                full card details on our own servers.
               </p>
             </PolicySection>
 
@@ -200,22 +219,22 @@ export default function Privacy() {
               refCallback={(el) => (sectionRefs.current["repository-code"] = el)}
             >
               <p>
-                When you submit a public GitHub repository for analysis, CodeVerity
-                fetches the repository contents to run AI-powered analysis. Source code
-                is processed in memory for the duration of the analysis and is not
-                retained afterward.
+                When you submit a public GitHub repository for analysis,
+                CodeVerity fetches the repository contents to run AI-powered
+                analysis. Source code is processed in memory for the duration of
+                the analysis and is not retained afterward.
               </p>
               <p>
-                What <em>is</em> retained is the output of that analysis: your report
-                (summary, scores, identified issues, generated tests) tied to your
-                account, so you can revisit it later from your History page. If you
-                delete a report or clear your history from Settings, that stored output
-                is permanently removed.
+                What <em>is</em> retained is the output of that analysis: your
+                report (summary, scores, identified issues, generated tests)
+                tied to your account, so you can revisit it later from your
+                History page. If you delete a report or clear your history from
+                Settings, that stored output is permanently removed.
               </p>
               <p>
-                Private repository scanning (available on paid plans) uses OAuth-scoped,
-                short-lived access tokens issued by GitHub, used only to fetch the
-                repository you explicitly requested.
+                Private repository scanning (available on paid plans) uses
+                OAuth-scoped, short-lived access tokens issued by GitHub, used
+                only to fetch the repository you explicitly requested.
               </p>
             </PolicySection>
 
@@ -234,8 +253,8 @@ export default function Privacy() {
                 ]}
               />
               <p>
-                We do not use your submitted source code to train AI models, and we do
-                not sell your personal information.
+                We do not use your submitted source code to train AI models, and
+                we do not sell your personal information.
               </p>
             </PolicySection>
 
@@ -264,9 +283,10 @@ export default function Privacy() {
               refCallback={(el) => (sectionRefs.current.cookies = el)}
             >
               <p>
-                CodeVerity uses essential cookies/local storage to keep you signed in
-                (session tokens) and to remember display preferences such as compact
-                mode and theme. We do not use third-party advertising trackers.
+                CodeVerity uses essential cookies/local storage to keep you
+                signed in (session tokens) and to remember display preferences
+                such as compact mode and theme. We do not use third-party
+                advertising trackers.
               </p>
             </PolicySection>
 
@@ -277,12 +297,12 @@ export default function Privacy() {
               refCallback={(el) => (sectionRefs.current.security = el)}
             >
               <p>
-                We use industry-standard measures to protect your data, including
-                encrypted connections (HTTPS), hashed password storage, and
-                access-scoped OAuth tokens for repository access. No method of
-                transmission or storage is 100% secure, and we can't guarantee absolute
-                security, but we work to protect your information and to respond
-                quickly to any issue.
+                We use industry-standard measures to protect your data,
+                including encrypted connections (HTTPS), hashed password
+                storage, and access-scoped OAuth tokens for repository access.
+                No method of transmission or storage is 100% secure, and we
+                can't guarantee absolute security, but we work to protect your
+                information and to respond quickly to any issue.
               </p>
             </PolicySection>
 
@@ -319,8 +339,8 @@ export default function Privacy() {
                 ]}
               />
               <p>
-                To exercise any right not directly available in your account settings,
-                contact us using the details below.
+                To exercise any right not directly available in your account
+                settings, contact us using the details below.
               </p>
             </PolicySection>
 
@@ -332,9 +352,9 @@ export default function Privacy() {
             >
               <p>
                 CodeVerity is not directed to children under 16, and we do not
-                knowingly collect personal information from children under 16. If you
-                believe a child has provided us with personal information, please
-                contact us and we will delete it.
+                knowingly collect personal information from children under 16.
+                If you believe a child has provided us with personal
+                information, please contact us and we will delete it.
               </p>
             </PolicySection>
 
@@ -345,10 +365,11 @@ export default function Privacy() {
               refCallback={(el) => (sectionRefs.current.international = el)}
             >
               <p>
-                CodeVerity may process and store information on servers located outside
-                your country of residence. By using the service, you consent to your
-                information being processed in these locations, which may have data
-                protection laws different from those in your jurisdiction.
+                CodeVerity may process and store information on servers located
+                outside your country of residence. By using the service, you
+                consent to your information being processed in these locations,
+                which may have data protection laws different from those in your
+                jurisdiction.
               </p>
             </PolicySection>
 
@@ -360,9 +381,9 @@ export default function Privacy() {
             >
               <p>
                 We may update this policy from time to time. If we make material
-                changes, we'll notify you by email or through a notice in the app
-                before the changes take effect. The "Last updated" date at the top of
-                this page reflects the most recent revision.
+                changes, we'll notify you by email or through a notice in the
+                app before the changes take effect. The "Last updated" date at
+                the top of this page reflects the most recent revision.
               </p>
             </PolicySection>
 
@@ -373,16 +394,19 @@ export default function Privacy() {
               refCallback={(el) => (sectionRefs.current.contact = el)}
             >
               <p>
-                If you have questions about this Privacy Policy or how your data is
-                handled, reach out to{" "}
-                
-                <a  href="mailto:support@codeverity.dev"
-                  className="text-[var(--accent)] hover:text-[var(--accent-hover)]"
+                If you have questions about this Privacy Policy or how your data
+                is handled, reach out to{" "}
+                <a
+                  href="mailto:support@codeverity.dev"
+                  className="rounded text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
                 >
                   support@codeverity.dev
                 </a>
                 , or visit our{" "}
-                <Link to="/contact" className="text-[var(--accent)] hover:text-[var(--accent-hover)]">
+                <Link
+                  to="/contact"
+                  className="rounded text-[var(--accent)] transition-colors hover:text-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+                >
                   Contact page
                 </Link>
                 .
@@ -392,12 +416,17 @@ export default function Privacy() {
         </div>
 
         {/* FOOTER */}
-        <div className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] text-[9px] ${compact ? "mt-4" : "mt-6"}`}>
+        <div
+          className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
+        >
           <span>CodeVerity</span>
           <span>•</span>
           <span>AI Repository Intelligence</span>
           <span>•</span>
-          <Link to="/terms" className="hover:text-[var(--text-primary)] transition-colors">
+          <Link
+            to="/terms"
+            className="rounded transition-colors hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+          >
             Terms
           </Link>
         </div>
@@ -412,12 +441,14 @@ export default function Privacy() {
 
 function PolicySection({ id, index, title, children, refCallback }) {
   return (
-    <section id={id} ref={refCallback} className="scroll-mt-20">
+    <section id={id} ref={refCallback} className="scroll-mt-24">
       <div className="flex items-center gap-2.5">
         <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
           {String(index).padStart(2, "0")}
         </span>
-        <h2 className="text-base font-semibold text-[var(--text-primary)] sm:text-lg">{title}</h2>
+        <h2 className="text-base font-semibold text-[var(--text-primary)] sm:text-lg">
+          {title}
+        </h2>
       </div>
       <div className="mt-3 space-y-3 pl-[34px] text-sm leading-relaxed text-[var(--text-secondary)]">
         {children}
@@ -439,7 +470,10 @@ function List({ items }) {
     <ul className="space-y-2">
       {items.map((item, i) => (
         <li key={i} className="flex gap-2.5">
-          <span className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--accent)]" />
+          <span
+            aria-hidden="true"
+            className="mt-1.5 h-1 w-1 shrink-0 rounded-full bg-[var(--accent)]"
+          />
           <span>{item}</span>
         </li>
       ))}

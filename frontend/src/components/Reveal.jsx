@@ -39,25 +39,25 @@ export default function Reveal({
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const yFrom = from === "up" ? -y : from === "down" ? y : 0;
+  const yFrom = from === "up" ? -y : from === "down" ? y : 0;
 
-        gsap.fromTo(
-          el,
-          { autoAlpha: 0, y: yFrom },
-          {
-            autoAlpha: 1,
-            y: 0,
-            duration,
-            delay,
-            ease: "power2.out",
-            scrollTrigger: {
-              trigger: el,
-              start,
-              toggleActions: "play none none none",
-            },
-          }
-        );
-      });
+  // Set the "from" state synchronously to avoid a 1-frame flash
+  // on elements that are already in the viewport on first paint.
+  gsap.set(el, { autoAlpha: 0, y: yFrom });
+
+  gsap.to(el, {
+    autoAlpha: 1,
+    y: 0,
+    duration,
+    delay,
+    ease: "power2.out",
+    scrollTrigger: {
+      trigger: el,
+      start,
+      toggleActions: "play none none none",
+    },
+  });
+});
 
       // Reduced motion: skip straight to the final visible state, no
       // fade, no movement, no scroll listener at all.

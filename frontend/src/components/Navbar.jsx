@@ -19,8 +19,6 @@ import { usePreferences } from "../context/PreferencesContext";
 import { gsap, useGSAP } from "../lib/gsap";
 
 // ─── Icon map (Lucide) ─────────────────────────────────────────
-// Central map so `name` strings stay the same as before — no need
-// to update call sites if icons ever change again.
 const ICONS = {
   dashboard: LayoutGrid,
   history: HistoryIcon,
@@ -83,7 +81,6 @@ function getUserInfo(token) {
 }
 
 // ─── Sizing (single source of truth) ───────────────────────────
-// Replaces the 14-ternary matrix. One function, one place to edit.
 function sizeFor(isScrolled, compact) {
   const s = isScrolled;
   const c = compact;
@@ -100,19 +97,19 @@ function sizeFor(isScrolled, compact) {
         : "text-[15px]",
     brandSub: s
       ? c
-        ? "text-[7px]"
-        : "text-[8px]"
-      : c
         ? "text-[8px]"
-        : "text-[9px]",
+        : "text-[9px]"
+      : c
+        ? "text-[9px]"
+        : "text-[10px]",
     navItem: s ? (c ? "h-7" : "h-8") : c ? "h-8" : "h-9",
     navItemFont: s
       ? c
-        ? "text-[10.5px]"
-        : "text-[11.5px]"
+        ? "text-[11px]"
+        : "text-[12px]"
       : c
-        ? "text-[11.5px]"
-        : "text-[12.5px]",
+        ? "text-[12px]"
+        : "text-[13px]",
     avatar: s ? (c ? "h-6 w-6" : "h-7 w-7") : c ? "h-7 w-7" : "h-8 w-8",
     avatarFont: s
       ? c
@@ -169,7 +166,7 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
     <button
       type="button"
       onClick={onClick}
-      className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors duration-150 ${
+      className={`group flex w-full items-center gap-3 px-4 py-2.5 text-left text-[13px] transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-inset ${
         danger
           ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
           : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
@@ -189,13 +186,13 @@ function DropdownItem({ icon, label, onClick, danger = false }) {
   );
 }
 
-// ─── Desktop nav item (extracted — was remounting on every scroll) ─
+// ─── Desktop nav item ──────────────────────────────────────────
 function NavigationItem({ to, label, icon, navItemH, navItemFont, iconSize }) {
   return (
     <NavLink
       to={to}
       className={({ isActive }) =>
-        `group relative flex items-center gap-1.5 rounded-lg px-3 font-mono transition-all duration-200 ${navItemH} ${navItemFont} ${
+        `group relative flex items-center gap-1.5 rounded-lg px-3 font-mono transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${navItemH} ${navItemFont} ${
           isActive
             ? "bg-[var(--accent-soft)] text-[var(--accent)]"
             : "text-[var(--text-muted)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
@@ -224,14 +221,14 @@ function NavigationItem({ to, label, icon, navItemH, navItemFont, iconSize }) {
   );
 }
 
-// ─── Mobile nav item (extracted — was 9x copy-paste) ────────────
+// ─── Mobile nav item ───────────────────────────────────────────
 function MobileNavItem({ to, label, icon, iconSize, danger = false, onClick }) {
   return (
     <NavLink
       to={to}
       onClick={onClick}
       className={({ isActive }) =>
-        `group flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 font-mono text-sm transition-all duration-200 ${
+        `group flex items-center gap-3 rounded-lg border-l-2 px-4 py-3 font-mono text-sm transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-inset ${
           danger
             ? "border-transparent text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)]"
             : isActive
@@ -304,7 +301,7 @@ export default function Navbar() {
     };
   }, [menuOpen]);
 
-  // ─── GSAP entrance (unchanged behavior) ──────────────────────
+  // ─── GSAP entrance ───────────────────────────────────────────
   useGSAP(() => {
     const mm = gsap.matchMedia();
 
@@ -319,7 +316,7 @@ export default function Navbar() {
             navContentRef.current,
           ].forEach(
             (el) =>
-              el && gsap.set(el, { clearProps: "opacity,visibility,transform" }),
+              el && gsap.set(el, { clearProps: "opacity,visibility,transform" })
           );
         },
       });
@@ -331,21 +328,21 @@ export default function Navbar() {
         tl.from(
           logoRef.current,
           { scale: 0.85, autoAlpha: 0, duration: 0.4, ease: "back.out(1.5)" },
-          "-=0.3",
+          "-=0.3"
         );
       }
       if (navItemsRef.current?.length) {
         tl.from(
           navItemsRef.current,
           { y: -8, autoAlpha: 0, duration: 0.35, stagger: 0.055 },
-          "-=0.25",
+          "-=0.25"
         );
       }
       if (navContentRef.current) {
         tl.from(
           navContentRef.current,
           { x: 8, autoAlpha: 0, duration: 0.35 },
-          "-=0.25",
+          "-=0.25"
         );
       }
     });
@@ -361,7 +358,7 @@ export default function Navbar() {
     };
   });
 
-  // ─── GSAP mobile menu open/close (GPU-accelerated) ───────────
+  // ─── GSAP mobile menu open/close ─────────────────────────────
   useGSAP(
     () => {
       const el = mobileMenuRef.current;
@@ -386,16 +383,17 @@ export default function Navbar() {
 
       return () => mm.revert();
     },
-    { dependencies: [menuOpen], scope: navRef },
+    { dependencies: [menuOpen], scope: navRef }
   );
 
   const handleLogout = () => {
     setDropOpen(false);
+    setMenuOpen(false);
     logout();
     navigate("/login");
   };
 
-  // Scrolled surface: real change, not just shadow
+  // Scrolled surface
   const bgClass = isScrolled
     ? "bg-[var(--bg-secondary)]/85 backdrop-blur-md shadow-lg shadow-black/20"
     : "bg-[var(--bg-primary)]";
@@ -414,10 +412,11 @@ export default function Navbar() {
           <NavLink
             ref={logoRef}
             to="/"
-            className="group flex min-w-0 items-center gap-2.5 transition-all duration-200"
+            aria-label="CodeVerity home"
+            className="group flex min-w-0 items-center gap-2.5 rounded-lg transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
           >
             <div
-              className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] group-hover:scale-[1.03] ${s.logo}`}
+              className={`relative flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 ease-out group-hover:scale-[1.03] group-hover:border-[var(--accent)]/50 group-hover:shadow-[0_0_0_3px_var(--accent-soft)] ${s.logo}`}
             >
               <Icon
                 name="shield"
@@ -450,7 +449,7 @@ export default function Navbar() {
           </NavLink>
         </div>
 
-        {/* CENTER — nav (flex-1, no absolute positioning) */}
+        {/* CENTER — nav */}
         <div className="hidden flex-1 justify-center md:flex">
           <div className="flex items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm transition-colors duration-200 hover:border-[var(--accent)]/25">
             {isAuth && (
@@ -530,10 +529,8 @@ export default function Navbar() {
                 aria-haspopup="true"
                 aria-expanded={dropOpen}
                 aria-label="Open user menu"
-                className={`flex items-center gap-2 rounded-lg px-1.5 transition-all duration-150 focus-visible:ring-2 focus-visible:ring-[var(--accent)]/60 ${s.triggerH} ${
-                  dropOpen
-                    ? "bg-[var(--bg-hover)]"
-                    : "hover:bg-[var(--bg-hover)]"
+                className={`flex items-center gap-2 rounded-lg px-1.5 transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${s.triggerH} ${
+                  dropOpen ? "bg-[var(--bg-hover)]" : "hover:bg-[var(--bg-hover)]"
                 }`}
               >
                 <div
@@ -633,13 +630,13 @@ export default function Navbar() {
             <div className="hidden items-center gap-2 sm:flex">
               <NavLink
                 to="/login"
-                className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] ${s.button}`}
+                className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] ${s.button}`}
               >
                 Sign in
               </NavLink>
               <NavLink
                 to="/register"
-                className={`whitespace-nowrap rounded-lg bg-[var(--accent)] font-semibold tracking-tight text-[var(--accent-contrast)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:shadow-md hover:scale-[1.02] active:scale-95 ${s.button}`}
+                className={`whitespace-nowrap rounded-lg bg-[var(--accent)] font-semibold tracking-tight text-[var(--accent-contrast)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--accent-hover)] hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-95 ${s.button}`}
               >
                 Get started
               </NavLink>
@@ -652,7 +649,7 @@ export default function Navbar() {
             aria-label={menuOpen ? "Close menu" : "Open menu"}
             aria-expanded={menuOpen}
             onClick={() => setMenuOpen((p) => !p)}
-            className={`relative ml-1 flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:ring-2 focus-visible:ring-[var(--accent)]/60 md:hidden ${s.hamburger}`}
+            className={`relative ml-1 flex shrink-0 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 md:hidden ${s.hamburger}`}
           >
             <span className="relative flex h-3.5 w-4 flex-col justify-between">
               <span
@@ -675,7 +672,7 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ─── Mobile menu (GSAP-animated) ──────────────────────── */}
+      {/* ─── Mobile menu ──────────────────────────────────────── */}
       <div
         ref={mobileMenuRef}
         style={{ height: 0, opacity: 0 }}
@@ -748,7 +745,7 @@ export default function Navbar() {
               <button
                 type="button"
                 onClick={handleLogout}
-                className="group flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent px-4 py-3 text-left font-mono text-sm text-[var(--color-danger)] transition-all duration-200 hover:border-[var(--color-danger)]/40 hover:bg-[var(--color-danger-soft)]"
+                className="group flex w-full items-center gap-3 rounded-lg border-l-2 border-transparent px-4 py-3 text-left font-mono text-sm text-[var(--color-danger)] transition-all duration-200 hover:border-[var(--color-danger)]/40 hover:bg-[var(--color-danger-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]/50 focus-visible:ring-inset"
               >
                 <Icon
                   name="logout"
@@ -762,13 +759,13 @@ export default function Navbar() {
             <div className="flex flex-col gap-2 pt-2">
               <NavLink
                 to="/login"
-                className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-center text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-center text-sm font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
               >
                 Sign in
               </NavLink>
               <NavLink
                 to="/register"
-                className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-center text-sm font-semibold tracking-tight text-[var(--accent-contrast)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95"
+                className="rounded-lg bg-[var(--accent)] px-4 py-2.5 text-center text-sm font-semibold tracking-tight text-[var(--accent-contrast)] shadow-sm shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:scale-[1.02] hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-95"
               >
                 Get started
               </NavLink>
