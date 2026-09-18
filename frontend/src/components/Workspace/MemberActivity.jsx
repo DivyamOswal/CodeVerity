@@ -170,7 +170,7 @@ export default function MemberActivity() {
             <tbody className="divide-y divide-[var(--border-dark)]">
               {activity.map((a, i) => {
                 const uniqueActions = Array.from(
-                  new Set(a.actions.map((act) => act.action))
+                  new Set(a.actions.map((act) => act.action)),
                 );
                 const shown = uniqueActions.slice(0, 3);
                 const overflow = uniqueActions.length - shown.length;
@@ -201,7 +201,7 @@ export default function MemberActivity() {
                         <span
                           className={`h-1.5 w-1.5 shrink-0 rounded-full ${
                             a.lastActive &&
-                            Date.now() - new Date(a.lastActive).getTime() 
+                            Date.now() - new Date(a.lastActive).getTime() <
                               24 * 60 * 60 * 1000
                               ? "bg-[var(--color-success)]"
                               : "bg-[var(--text-muted)]"
