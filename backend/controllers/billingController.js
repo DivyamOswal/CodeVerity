@@ -205,16 +205,14 @@ export const handleWebhook = async (req, res) => {
         if (!user) break;
 
         const oldPlan = user.plan || "starter";
-        user.plan = plan;
+
+        // setPlan grants the plan's token allowance and resets usage.
+        user.setPlan(plan);
         user.stripeSubscriptionId = session.subscription;
         user.subscriptionStatus = "active";
         user.subscriptionEndsAt = new Date(
           Date.now() + (cycle === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000,
         );
-
-        // ← BUG FIX #1: tokens were never updated on upgrade.
-        const config = User.getPlanConfig(plan);
-        user.tokensRemaining = config.tokens;
 
         await user.save();
 
@@ -263,7 +261,7 @@ export const handleWebhook = async (req, res) => {
             user.subscriptionEndsAt = new Date(periodEnd * 1000);
           }
 
-          // ← BUG FIX #2: record payment so revenue shows up on dashboard.
+          // Record payment so revenue shows up on dashboard.
           // Skip zero-amount invoices (e.g. trial start, 100%-off coupon).
           if ((invoice.amount_paid ?? 0) > 0) {
             await recordPayment(invoice, user, subscriptionId);
@@ -320,12 +318,12 @@ export const handleWebhook = async (req, res) => {
         });
         if (user) {
           const oldPlan = user.plan;
-          user.plan = "starter";
+
+          user.setPlan("starter"); // grants starter tokens, resets usage
           user.stripeSubscriptionId = null;
           user.subscriptionStatus = "canceled";
           user.subscriptionEndsAt = null;
-          const config = User.getPlanConfig("starter");
-          user.tokensRemaining = config.tokens;
+
           await user.save();
 
           if (user.workspaceId) {

@@ -3,9 +3,9 @@ import mongoose from "mongoose";
 import crypto from "crypto"; // ✅ built-in, no install needed
 
 const PLAN_CONFIG = {
-  starter: { tokens: 5000, label: "Starter" },
-  pro: { tokens: 150000, label: "Pro" },
-  team: { tokens: 400000, label: "Team" },
+  starter: { tokens: 15000, label: "Starter" },
+  pro: { tokens: 25000, label: "Pro" },
+  team: { tokens: 50000, label: "Team" },
 };
 
 // ─── Encryption helpers ──────────────────────────────────────
@@ -34,7 +34,7 @@ function decrypt(text) {
   if (!text) return text;
   try {
     const parts = text.split(":");
-    if (parts.length !== 2) return text; // Not encrypted (legacy plain-text token)
+    if (parts.length !== 2) return text;
     const iv = Buffer.from(parts[0], "hex");
     const encryptedText = parts[1];
     const decipher = crypto.createDecipheriv(
@@ -47,10 +47,9 @@ function decrypt(text) {
     return decrypted;
   } catch (err) {
     console.error("Decryption failed:", err.message);
-    return null; // Return null on failure so the user is prompted to reconnect
+    return null;
   }
 }
-// ────────────────────────────────────────────────────────────
 
 const userSchema = new mongoose.Schema({
   name: String,
@@ -64,7 +63,7 @@ const userSchema = new mongoose.Schema({
   },
   plan: { type: String, enum: ["starter", "pro", "team"], default: "starter" },
   isGlobalAdmin: { type: Boolean, default: false },
-    githubId: { type: String },
+  githubId: { type: String },
   githubAccessToken: { type: String, select: false },
 
   // Billing / Stripe
@@ -74,22 +73,16 @@ const userSchema = new mongoose.Schema({
   subscriptionEndsAt: Date,
 
   // ── Token system ──────────────────────────────────────────
-  tokensRemaining: { type: Number, default: 5000 },
+  tokensRemaining: { type: Number, default: 15000 },
   totalTokensUsed: { type: Number, default: 0 },
   tokensLastReset: { type: Date, default: Date.now },
 });
 
-// ─── Pre-save: tokens + encryption ──────────────────────────
+// ─── Pre-save: encryption only. Token grants are handled
+// explicitly wherever `plan` changes (webhook, register, etc.)
+// so that mid-cycle usage can never be reset by an unrelated save.
 userSchema.pre("save", async function () {
-  // Reset tokens on plan change / new user
-  const plan = PLAN_CONFIG[this.plan] || PLAN_CONFIG.starter;
-  if (this.isNew || this.isModified("plan")) {
-    this.tokensRemaining = plan.tokens;
-  }
-
-  // Encrypt GitHub token only if it changed AND isn't already encrypted
   if (this.isModified("githubAccessToken") && this.githubAccessToken) {
-    // Detect if already encrypted (hex:hex format)
     const looksEncrypted = /^[a-f0-9]{32}:[a-f0-9]+$/i.test(
       this.githubAccessToken
     );
@@ -108,9 +101,21 @@ userSchema.methods.deductTokens = async function (amount) {
   return true;
 };
 
-// ✅ Returns the decrypted GitHub token for API calls
 userSchema.methods.getGithubToken = function () {
   return decrypt(this.githubAccessToken);
+};
+
+/**
+ * Set plan + grant the plan's token allowance.
+ * Use this everywhere you change a user's plan (webhook,
+ * admin action, downgrade, etc.) instead of `user.plan = x; save()`.
+ */
+userSchema.methods.setPlan = function (planName) {
+  const config = PLAN_CONFIG[planName] || PLAN_CONFIG.starter;
+  this.plan = planName;
+  this.tokensRemaining = config.tokens;
+  this.totalTokensUsed = 0;
+  this.tokensLastReset = new Date();
 };
 
 // ─── Static methods ─────────────────────────────────────────
@@ -121,9 +126,6 @@ userSchema.statics.getPlanConfig = function (plan) {
 // ─── Indexes ────────────────────────────────────────────────
 userSchema.index({ workspaceId: 1 });
 
-// Only enforce uniqueness when githubId is actually a string.
-// Documents with githubId: null are excluded, so multiple disconnected
-// users can coexist without E11000 duplicate-key errors.
 userSchema.index(
   { githubId: 1 },
   {
