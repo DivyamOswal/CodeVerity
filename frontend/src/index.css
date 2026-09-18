@@ -300,6 +300,144 @@ video {
   .result-cta-shine::after { animation: none; display: none; }
 }
 
+/* =====================================================
+   HOME / LANDING VIEW — moved from Home.jsx inline <style>
+======================================================== */
+
+/* ─── Stat pill cards in the hero ─── */
+.stat-card {
+  box-shadow: 0 0 20px -5px var(--accent-soft-strong),
+    inset 0 0 10px var(--accent-soft);
+}
+.stat-card:hover {
+  box-shadow: 0 0 30px -5px var(--accent),
+    inset 0 0 15px var(--accent-soft-strong);
+  border-color: var(--accent);
+  transform: translateY(-2px);
+}
+.stat-number {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 8px var(--accent-soft-strong));
+}
+
+/* ─── Hero title gradient ─── */
+.hero-title-glow {
+  background: linear-gradient(
+    135deg,
+    var(--text-primary) 0%,
+    var(--accent) 50%,
+    var(--text-primary) 100%
+  );
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 20px var(--accent-soft-strong));
+  animation: gradient-shift 5s ease infinite;
+}
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* ─── Orb halo pulse ─── */
+.orb-halo {
+  animation: orb-halo-pulse 5s ease-in-out infinite;
+}
+@keyframes orb-halo-pulse {
+  0%, 100% { opacity: 0.06; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 0.12; transform: translate(-50%, -50%) scale(1.08); }
+}
+
+/* ─── Pinned scroll feature cards ─── */
+.scroll-feature-card {
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  will-change: transform;
+  box-shadow:
+    0 20px 60px -25px var(--accent-soft-strong),
+    inset 0 0 30px var(--accent-soft);
+}
+.scroll-card-accent {
+  background: var(--bg-card);
+}
+.scroll-card-primary {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.scroll-card-primary h3,
+.scroll-card-primary span,
+.scroll-card-primary p {
+  color: var(--accent-contrast);
+}
+.scroll-card-dark {
+  background: var(--bg-secondary);
+}
+
+@media (min-width: 768px) {
+  .scroll-feature-card {
+    min-height: 0;
+  }
+}
+@media (max-width: 767px) {
+  .scroll-feature-card {
+    min-height: 360px;
+    height: auto;
+    transform: none !important;
+    will-change: auto;
+  }
+}
+
+/* ─── Ambient radar sweep + drifting orbs (always-on, CSS-driven) ─── */
+.scroll-radar-sweep {
+  background: conic-gradient(
+    from 0deg,
+    transparent 0deg,
+    var(--accent) 8deg,
+    transparent 40deg,
+    transparent 360deg
+  );
+  animation: scroll-radar-spin 6s linear infinite;
+}
+@keyframes scroll-radar-spin {
+  to { transform: translate(-50%, -50%) rotate(360deg); }
+}
+.scroll-orb-a {
+  animation: scroll-orb-drift-a 9s ease-in-out infinite;
+}
+.scroll-orb-b {
+  animation: scroll-orb-drift-b 11s ease-in-out infinite;
+}
+@keyframes scroll-orb-drift-a {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(30px, 20px); }
+}
+@keyframes scroll-orb-drift-b {
+  0%, 100% { transform: translate(0, 0); }
+  50% { transform: translate(-25px, -15px); }
+}
+
+/* ─── Reduced-motion overrides for these classes ─── */
+@media (prefers-reduced-motion: reduce) {
+  .scroll-feature-card {
+    transform: none !important;
+    transition: none !important;
+  }
+  .orb-halo,
+  .scroll-radar-sweep,
+  .scroll-orb-a,
+  .scroll-orb-b,
+  .hero-title-glow {
+    animation: none !important;
+  }
+}
+
 .animate-fadeUp { animation: fadeUp 0.6s ease both; }
 .animate-fadeDown { animation: fadeDown 0.6s ease both; }
 .animate-float { animation: float 4s ease-in-out infinite; }

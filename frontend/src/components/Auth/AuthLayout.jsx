@@ -1,5 +1,7 @@
+// src/components/Auth/AuthLayout.jsx
 import { Link } from "react-router-dom";
 import { useEffect, useRef } from "react";
+import { ShieldCheck, Bug, Workflow, Sparkles, AlertCircle } from "lucide-react";
 import gsap from "gsap";
 
 /* -------------------------------------------------------------------------- */
@@ -25,32 +27,12 @@ function CodeVerityLogo({ compact = false }) {
           "
         />
 
-        <svg
-          viewBox="0 0 32 32"
-          className="relative z-10 h-5 w-5 text-[var(--accent)]"
-          fill="none"
-        >
-          <path
-            d="M8 7.5L4.5 11v10l3.5 3.5"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M24 7.5l3.5 3.5v10L24 24.5"
-            stroke="currentColor"
-            strokeWidth="2.2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          />
-          <path
-            d="M18.5 5.5L13.5 26.5"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-          />
-        </svg>
+        <ShieldCheck
+          size={20}
+          strokeWidth={2.2}
+          aria-hidden="true"
+          className="relative z-10 text-[var(--accent)]"
+        />
 
         <span className="absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg-card)]" />
       </div>
@@ -186,7 +168,7 @@ export default function AuthLayout({
           duration: 0.55,
           repeat: -1,
           yoyo: true,
-          ease: "steps(1)",
+          ease: "none",
         });
       }
 
@@ -234,7 +216,7 @@ export default function AuthLayout({
             scale: 1,
             duration: 0.65,
             ease: "power3.out",
-          },
+          }
         );
       }
 
@@ -297,13 +279,11 @@ export default function AuthLayout({
           stagger: 0.08,
           ease: "power3.out",
           delay: 0.1,
-        },
+        }
       );
     }
   }, []);
 
-  // Subtle shake when a new error appears, drawing attention to it
-  // instead of it silently popping into place.
   useEffect(() => {
     if (!error || !errorRef.current) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
@@ -311,7 +291,7 @@ export default function AuthLayout({
     gsap.fromTo(
       errorRef.current,
       { x: -6 },
-      { x: 0, duration: 0.4, ease: "elastic.out(1, 0.4)" },
+      { x: 0, duration: 0.4, ease: "elastic.out(1, 0.4)" }
     );
   }, [error]);
 
@@ -334,8 +314,6 @@ export default function AuthLayout({
           lg:w-1/2
         "
       >
-        {/* Background grid */}
-
         <div
           aria-hidden="true"
           className="
@@ -345,8 +323,6 @@ export default function AuthLayout({
             [background-size:36px_36px]
           "
         />
-
-        {/* Top ambient glow */}
 
         <div
           aria-hidden="true"
@@ -362,7 +338,6 @@ export default function AuthLayout({
         />
 
         {/* Mobile header */}
-
         <div
           className="
             relative z-10 flex items-center justify-between
@@ -375,7 +350,7 @@ export default function AuthLayout({
           <Link
             to="/"
             aria-label="CodeVerity home"
-            className="transition-opacity hover:opacity-80"
+            className="rounded transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
           >
             <CodeVerityLogo compact />
           </Link>
@@ -389,7 +364,6 @@ export default function AuthLayout({
         </div>
 
         {/* Centered content */}
-
         <div
           className="
             relative z-10
@@ -402,13 +376,8 @@ export default function AuthLayout({
           "
         >
           <div className="w-full max-w-[470px]">
-            {/* ------------------------------------------------------------ */}
-            {/* HEADER                                                         */}
-            {/* ------------------------------------------------------------ */}
-
+            {/* HEADER */}
             <div className="mb-7">
-              {/* Terminal prompt */}
-
               <div
                 className="
                   mb-4 flex items-center gap-2
@@ -429,8 +398,6 @@ export default function AuthLayout({
                 />
               </div>
 
-              {/* Heading */}
-
               <h1
                 className="
                   text-2xl font-semibold
@@ -445,10 +412,7 @@ export default function AuthLayout({
               <div className="mt-2 h-px w-10 bg-[var(--accent)] opacity-70" />
             </div>
 
-            {/* ------------------------------------------------------------ */}
-            {/* AUTH CARD                                                      */}
-            {/* ------------------------------------------------------------ */}
-
+            {/* AUTH CARD */}
             <div
               ref={cardRef}
               className="
@@ -462,7 +426,6 @@ export default function AuthLayout({
                 transition-shadow duration-300
               "
             >
-              {/* Cursor-follow glow, desktop only, pointer-events disabled */}
               <div
                 ref={cardGlowRef}
                 aria-hidden="true"
@@ -475,64 +438,24 @@ export default function AuthLayout({
                 }}
               />
 
-              {/* Top hairline a small, considered detail that signals
-                  "premium card" rather than a plain bordered box, the
-                  same way Linear/Vercel-style auth cards use a subtle
-                  top accent instead of a flat uniform border. */}
               <div
                 aria-hidden="true"
                 className="absolute inset-x-0 top-0 z-10 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-60"
               />
-
-              {/* Accent corners */}
 
               <div
                 ref={cornersRef}
                 aria-hidden="true"
                 className="pointer-events-none absolute inset-0 z-10"
               >
-                <span
-                  className="
-                    absolute left-0 top-0
-                    h-5 w-5
-                    rounded-tl-xl
-                    border-l border-t border-[var(--accent)]
-                  "
-                />
-
-                <span
-                  className="
-                    absolute right-0 top-0
-                    h-5 w-5
-                    rounded-tr-xl
-                    border-r border-t border-[var(--accent)]
-                  "
-                />
-
-                <span
-                  className="
-                    absolute bottom-0 left-0
-                    h-5 w-5
-                    rounded-bl-xl
-                    border-b border-l border-[var(--accent)]
-                  "
-                />
-
-                <span
-                  className="
-                    absolute bottom-0 right-0
-                    h-5 w-5
-                    rounded-br-xl
-                    border-b border-r border-[var(--accent)]
-                  "
-                />
+                <span className="absolute left-0 top-0 h-5 w-5 rounded-tl-xl border-l border-t border-[var(--accent)]" />
+                <span className="absolute right-0 top-0 h-5 w-5 rounded-tr-xl border-r border-t border-[var(--accent)]" />
+                <span className="absolute bottom-0 left-0 h-5 w-5 rounded-bl-xl border-b border-l border-[var(--accent)]" />
+                <span className="absolute bottom-0 right-0 h-5 w-5 rounded-br-xl border-b border-r border-[var(--accent)]" />
               </div>
 
               <div className="relative z-10 p-6 sm:p-7">
-                {/* -------------------------------------------------------- */}
-                {/* ERROR                                                       */}
-                {/* -------------------------------------------------------- */}
-
+                {/* ERROR */}
                 {error && (
                   <div
                     ref={errorRef}
@@ -552,12 +475,10 @@ export default function AuthLayout({
                         items-center justify-center
                         rounded-full
                         bg-[var(--color-danger)]/10
-                        text-[10px]
-                        font-semibold
                         text-[var(--color-danger)]
                       "
                     >
-                      !
+                      <AlertCircle size={12} strokeWidth={2.4} aria-hidden="true" />
                     </div>
 
                     <div className="min-w-0">
@@ -565,17 +486,20 @@ export default function AuthLayout({
                         Something went wrong
                       </div>
 
-                      <div className="mt-0.5 text-xs leading-5 text-[var(--color-danger)]/70">
+                      <div
+                        className="mt-0.5 text-xs leading-5"
+                        style={{
+                          color:
+                            "color-mix(in srgb, var(--color-danger) 70%, transparent)",
+                        }}
+                      >
                         {error}
                       </div>
                     </div>
                   </div>
                 )}
 
-                {/* -------------------------------------------------------- */}
-                {/* OAUTH                                                       */}
-                {/* -------------------------------------------------------- */}
-
+                {/* OAUTH */}
                 {onOAuth && (
                   <>
                     <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2">
@@ -590,17 +514,21 @@ export default function AuthLayout({
                           text-sm font-medium
                           text-[var(--text-primary)]
                           transition-all duration-200
-                          hover:-translate-y-[1px]
+                          hover:-translate-y-0.5
                           hover:border-[var(--accent)]
                           hover:bg-[var(--bg-primary)]
                           hover:shadow-[0_8px_25px_color-mix(in_srgb,var(--accent)_8%,transparent)]
+                          focus-visible:outline-none
+                          focus-visible:ring-2
+                          focus-visible:ring-[var(--accent)]/50
+                          focus-visible:ring-offset-2
+                          focus-visible:ring-offset-[var(--bg-card)]
                           active:translate-y-0
                           active:scale-[0.98]
                           sm:h-11
                         "
                       >
                         <GithubIcon />
-
                         <span>GitHub</span>
                       </button>
 
@@ -615,22 +543,24 @@ export default function AuthLayout({
                           text-sm font-medium
                           text-[var(--text-primary)]
                           transition-all duration-200
-                          hover:-translate-y-[1px]
+                          hover:-translate-y-0.5
                           hover:border-[var(--accent)]
                           hover:bg-[var(--bg-primary)]
                           hover:shadow-[0_8px_25px_color-mix(in_srgb,var(--accent)_8%,transparent)]
+                          focus-visible:outline-none
+                          focus-visible:ring-2
+                          focus-visible:ring-[var(--accent)]/50
+                          focus-visible:ring-offset-2
+                          focus-visible:ring-offset-[var(--bg-card)]
                           active:translate-y-0
                           active:scale-[0.98]
                           sm:h-11
                         "
                       >
                         <GoogleIcon />
-
                         <span>Google</span>
                       </button>
                     </div>
-
-                    {/* Divider */}
 
                     <div className="my-6 flex items-center gap-3">
                       <div className="h-px flex-1 bg-[var(--border-light)]" />
@@ -650,16 +580,10 @@ export default function AuthLayout({
                   </>
                 )}
 
-                {/* -------------------------------------------------------- */}
-                {/* FORM CONTENT                                                */}
-                {/* -------------------------------------------------------- */}
+                {/* FORM CONTENT */}
+                <div>{children}</div>
 
-                <div className="auth-form-content">{children}</div>
-
-                {/* -------------------------------------------------------- */}
-                {/* FOOTER                                                      */}
-                {/* -------------------------------------------------------- */}
-
+                {/* FOOTER */}
                 {footer && (
                   <div
                     className="
@@ -679,11 +603,13 @@ export default function AuthLayout({
                         <Link
                           to={footer.linkTo}
                           className="
-                            font-medium
+                            rounded font-medium
                             text-[var(--accent)]
-                            transition-colors
-                            duration-200
+                            transition-colors duration-200
                             hover:text-[var(--accent-hover)]
+                            focus-visible:outline-none
+                            focus-visible:ring-2
+                            focus-visible:ring-[var(--accent)]/50
                           "
                         >
                           {footer.linkText}
@@ -697,11 +623,7 @@ export default function AuthLayout({
               </div>
             </div>
 
-            {/* ------------------------------------------------------------ */}
-            {/* SECURITY FOOTNOTE a pill/badge rather than plain
-                text, reads as a trust signal instead of a caption. */}
-            {/* ------------------------------------------------------------ */}
-
+            {/* SECURITY FOOTNOTE */}
             <div className="mt-5 flex flex-col items-center gap-3">
               <div
                 className="
@@ -729,10 +651,14 @@ export default function AuthLayout({
                 to="/"
                 className="
                   flex items-center gap-1.5
+                  rounded
                   text-[11px] font-medium
                   text-[var(--text-muted)]
                   transition-colors duration-200
                   hover:text-[var(--accent)]
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-[var(--accent)]/50
                 "
               >
                 <span aria-hidden="true">←</span>
@@ -758,8 +684,6 @@ export default function AuthLayout({
           lg:justify-center
         "
       >
-        {/* Ambient orb 1 */}
-
         <div
           ref={orb1Ref}
           aria-hidden="true"
@@ -774,8 +698,6 @@ export default function AuthLayout({
           "
         />
 
-        {/* Ambient orb 2 */}
-
         <div
           ref={orb2Ref}
           aria-hidden="true"
@@ -789,9 +711,6 @@ export default function AuthLayout({
             blur-[100px]
           "
         />
-
-        {/* Dot grid the only ambient texture layer on this panel;
-            kept restrained rather than layering multiple textures. */}
 
         <div
           aria-hidden="true"
@@ -812,26 +731,23 @@ export default function AuthLayout({
             xl:px-14
           "
         >
-          {/* -------------------------------------------------------------- */}
-          {/* BRAND                                                           */}
-          {/* -------------------------------------------------------------- */}
-
+          {/* BRAND */}
           <Link
             to="/"
             aria-label="CodeVerity home"
             className="
-              inline-flex
+              inline-flex rounded
               transition-opacity
               hover:opacity-80
+              focus-visible:outline-none
+              focus-visible:ring-2
+              focus-visible:ring-[var(--accent)]/50
             "
           >
             <CodeVerityLogo />
           </Link>
 
-          {/* -------------------------------------------------------------- */}
-          {/* HERO                                                            */}
-          {/* -------------------------------------------------------------- */}
-
+          {/* HERO */}
           <div className="mt-16">
             <div
               className="
@@ -885,34 +801,28 @@ export default function AuthLayout({
             </p>
           </div>
 
-          {/* -------------------------------------------------------------- */}
-          {/* FEATURES                                                        */}
-          {/* -------------------------------------------------------------- */}
-
+          {/* FEATURES */}
           <div className="mt-12 space-y-7">
             <FeatureRow
-              icon={<BugScanIcon />}
+              icon={<Bug size={16} strokeWidth={1.75} aria-hidden="true" />}
               title="AI-powered analysis"
               description="Get intelligent insights into code quality, architecture, bugs, and potential improvements."
             />
 
             <FeatureRow
-              icon={<WorkflowIcon />}
+              icon={<Workflow size={16} strokeWidth={1.75} aria-hidden="true" />}
               title="Developer-first workflow"
               description="Keep analysis, history, repositories, and development context connected in one workspace."
             />
 
             <FeatureRow
-              icon={<SparkIcon />}
+              icon={<Sparkles size={16} strokeWidth={1.75} aria-hidden="true" />}
               title="Actionable intelligence"
               description="Turn complex code insights into practical recommendations you can actually implement."
             />
           </div>
 
-          {/* -------------------------------------------------------------- */}
-          {/* SYSTEM STATUS                                                   */}
-          {/* -------------------------------------------------------------- */}
-
+          {/* SYSTEM STATUS */}
           <div className="mt-14">
             <div
               className="
@@ -956,23 +866,9 @@ export default function AuthLayout({
               <MetricCard label="Uptime" value="99.9%" />
               <MetricCard label="Response" value="&lt; 2s" />
             </div>
-
-            <div className="mt-3 h-[2px] overflow-hidden rounded-full bg-[var(--border-light)]">
-              <div
-                className="
-                  h-full w-[72%]
-                  rounded-full
-                  bg-[var(--accent)]
-                  opacity-60
-                "
-              />
-            </div>
           </div>
 
-          {/* -------------------------------------------------------------- */}
-          {/* COPYRIGHT                                                       */}
-          {/* -------------------------------------------------------------- */}
-
+          {/* COPYRIGHT */}
           <div
             className="
               mt-8 flex items-center justify-between
@@ -984,13 +880,13 @@ export default function AuthLayout({
             <div className="flex items-center gap-3">
               <Link
                 to="/privacy"
-                className="transition-colors hover:text-[var(--text-secondary)]"
+                className="rounded transition-colors hover:text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
               >
                 Privacy
               </Link>
               <Link
                 to="/terms"
-                className="transition-colors hover:text-[var(--text-secondary)]"
+                className="rounded transition-colors hover:text-[var(--text-secondary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
               >
                 Terms
               </Link>
@@ -1047,57 +943,6 @@ function GoogleIcon() {
         fill="#EA4335"
         d="M12 6.37c1.43 0 2.71.49 3.72 1.45l2.79-2.79C16.82 3.48 14.63 2.5 12 2.5a9.71 9.71 0 0 0-8.7 5.37l3.25 2.51c.77-2.3 2.92-4.01 5.45-4.01Z"
       />
-    </svg>
-  );
-}
-
-function BugScanIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-      <path d="M18 13h-2M8 13H6M10 4 8 2M14 4l2-2" />
-    </svg>
-  );
-}
-
-function WorkflowIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="7" height="7" rx="1.5" />
-      <rect x="14" y="14" width="7" height="7" rx="1.5" />
-      <path d="M10 6.5h5a2 2 0 0 1 2 2V14M6.5 10v5a2 2 0 0 0 2 2H10" />
-    </svg>
-  );
-}
-
-function SparkIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      className="h-4 w-4"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 3v4M12 17v4M3 12h4M17 12h4M5.6 5.6l2.8 2.8M15.6 15.6l2.8 2.8M18.4 5.6l-2.8 2.8M8.4 15.6l-2.8 2.8" />
     </svg>
   );
 }

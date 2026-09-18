@@ -1,6 +1,19 @@
+// src/pages/Home.jsx
 import { Link } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
+import {
+  ShieldCheck,
+  Bug,
+  FlaskConical,
+  Cpu,
+  CheckCircle2,
+  Check,
+  Award,
+  Heart,
+  Plus,
+  ChevronDown,
+} from "lucide-react";
 import { usePreferences } from "../context/PreferencesContext";
 import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
 import {
@@ -11,8 +24,8 @@ import {
 
 // ============================================================
 //  Reads the current --accent token and converts it to an "r,g,b"
-//  string for use in canvas fillStyle/strokeStyle (NeuralNetworkBackground)
-//  or as a hex string for THREE.Color (CodeIntelligenceOrb).
+//  string for canvas fillStyle/strokeStyle, or to a hex string for
+//  THREE.Color.
 // ============================================================
 function getCSSColor(varName, fallbackHex) {
   if (typeof window === "undefined") return fallbackHex;
@@ -23,9 +36,9 @@ function getCSSColor(varName, fallbackHex) {
 }
 
 function getAccentRGB() {
-  const hex = getCSSColor("--accent", "#22d3ee").replace("#", "");
+  const hex = getCSSColor("--accent", "#c084fc").replace("#", "");
   const bigint = parseInt(hex, 16);
-  if (isNaN(bigint)) return "34,211,238";
+  if (isNaN(bigint)) return "192,132,252";
   return `${(bigint >> 16) & 255},${(bigint >> 8) & 255},${bigint & 255}`;
 }
 
@@ -40,7 +53,7 @@ function NeuralNetworkBackground() {
     const ctx = canvas.getContext("2d");
     const accentRGB = getAccentRGB();
     const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
+      "(prefers-reduced-motion: reduce)"
     ).matches;
 
     let width, height;
@@ -203,7 +216,7 @@ function TypedWord({ words }) {
           }
         }
       },
-      isDeleting ? 30 : 80,
+      isDeleting ? 30 : 80
     );
 
     return () => clearTimeout(timeout);
@@ -224,20 +237,12 @@ function CodeVerityLogo() {
   return (
     <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
       <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <ShieldCheck
+        size={18}
+        strokeWidth={2}
+        aria-hidden="true"
         className="relative text-[var(--accent)]"
-      >
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
+      />
       <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
         <span className="text-[6px] font-bold text-[var(--accent)]">
           &lt;/&gt;
@@ -249,9 +254,7 @@ function CodeVerityLogo() {
 }
 
 // ============================================================
-//  COMPONENT: Feature enhanced with a subtle hover-glow icon
-//  chip and a bottom accent line that grows in on hover, instead
-//  of a flat top border. Same props/API as before.
+//  COMPONENT: Feature
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   return (
@@ -276,66 +279,7 @@ function Feature({ icon, title, desc, index }) {
 }
 
 // ============================================================
-//  ICON COMPONENTS (unchanged)
-// ============================================================
-function BugIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-      <path d="M18 13h-2" />
-      <path d="M8 13H6" />
-      <path d="M10 4 8 2" />
-      <path d="M14 4 16 2" />
-      <path d="M12 22v-4" />
-    </svg>
-  );
-}
-function ShieldIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-      <path d="m9 12 2 2 4-4" />
-    </svg>
-  );
-}
-function FlaskIcon() {
-  return (
-    <svg
-      width="20"
-      height="20"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
-      <path d="M8 2h8" />
-    </svg>
-  );
-}
-
-// ============================================================
-//  COMPONENT: StatPill (unchanged logic, added glow ring pulse)
+//  COMPONENT: StatPill (unchanged logic)
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -439,9 +383,8 @@ function TechStrip() {
 }
 
 // ============================================================
-//  COMPONENT: CodeIntelligenceOrb (unchanged logic — Three.js scene,
-//  mouse-follow rotation, badge refs — only badge markup polished
-//  with a live-pulse dot + tighter shadow language)
+//  COMPONENT: CodeIntelligenceOrb — inline SVGs replaced with
+//  Lucide (Bug, Award, FlaskConical). Three.js logic untouched.
 // ============================================================
 function CodeIntelligenceOrb({ badgeRefs }) {
   const mountRef = useRef(null);
@@ -452,11 +395,11 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     if (!mount) return;
 
     const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
+      "(prefers-reduced-motion: reduce)"
     ).matches;
-    const accentColor = new THREE.Color(getCSSColor("--accent", "#22d3ee"));
+    const accentColor = new THREE.Color(getCSSColor("--accent", "#c084fc"));
     const secondaryColor = new THREE.Color(
-      getCSSColor("--accent-secondary", "#818cf8"),
+      getCSSColor("--accent-secondary", "#818cf8")
     );
 
     let width = mount.clientWidth;
@@ -516,7 +459,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const particleGeo = new THREE.BufferGeometry();
     particleGeo.setAttribute(
       "position",
-      new THREE.BufferAttribute(positions, 3),
+      new THREE.BufferAttribute(positions, 3)
     );
     const particleMat = new THREE.PointsMaterial({
       color: secondaryColor,
@@ -603,8 +546,6 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       className="relative mx-auto w-full max-w-md"
       style={{ transformStyle: "preserve-3d" }}
     >
-      {/* Soft halo behind the whole orb column — reads as ambient
-          glow rather than a static disc */}
       <div
         aria-hidden="true"
         className="orb-halo pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)] opacity-[0.08] blur-[80px]"
@@ -615,23 +556,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-sm"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
-            <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-            <path d="M18 13h-2" />
-            <path d="M8 13H6" />
-            <path d="M10 4 8 2" />
-            <path d="M14 4 16 2" />
-            <path d="M12 22v-4" />
-          </svg>
+          <Bug size={14} strokeWidth={2} aria-hidden="true" />
         </span>
         <div>
           <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
@@ -697,10 +622,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 }
 
 // ============================================================
-//  COMPONENT: ScrollFeatureCards fixed dead-scroll gap (shorter
-//  pin distance + earlier card entrance) and added an always-on
-//  ambient radar-sweep + drifting orb layer so no part of the
-//  pinned sequence ever reads as blank/dead space.
+//  COMPONENT: ScrollFeatureCards (unchanged logic)
 // ============================================================
 function ScrollFeatureCards() {
   const sectionRef = useRef(null);
@@ -758,7 +680,6 @@ function ScrollFeatureCards() {
         .map((card) => card.querySelector(".scroll-card-glow"))
         .filter(Boolean);
 
-      // ---------- Reduced motion: render fully static, no animation ----------
       if (reduceMotion) {
         gsap.set(
           [
@@ -900,9 +821,6 @@ function ScrollFeatureCards() {
       if (headerCopy) gsap.set(headerCopy, { y: 20, opacity: 0 });
       if (scrollHint) gsap.set(scrollHint, { y: 12, opacity: 0 });
 
-      // NOTE: pinned scroll distance shortened (2000 → 1400) and the
-      // card fly-in moved earlier (0.75 → 0.4) so it overlaps the tail
-      // of the header animation instead of leaving a blank scroll gap.
       const tl = gsap.timeline({
         defaults: { ease: "power3.out" },
         scrollTrigger: {
@@ -1003,8 +921,6 @@ function ScrollFeatureCards() {
       ref={sectionRef}
       className="relative z-10 flex min-h-[100svh] items-center overflow-hidden border-y border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-12 sm:px-6"
     >
-      {/* Always-on ambient layer, CSS-driven (not scroll-tied) so the
-          pinned section never shows blank/dead space mid-scroll */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
@@ -1028,7 +944,6 @@ function ScrollFeatureCards() {
       <span className="pointer-events-none absolute bottom-4 right-4 z-10 h-4 w-4 border-b-2 border-r-2 border-[var(--accent)]/40 sm:bottom-6 sm:right-6" />
 
       <div className="relative z-10 mx-auto w-full max-w-7xl">
-        {/* Section Header */}
         <div className="mx-auto mb-14 max-w-2xl text-center">
           <span className="scroll-header-badge mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--accent)]/[0.06] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--accent)]">
             <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
@@ -1050,7 +965,6 @@ function ScrollFeatureCards() {
           </p>
         </div>
 
-        {/* Feature Cards */}
         <div
           className="relative mx-auto grid max-w-6xl grid-cols-1 gap-5 md:grid-cols-3 md:gap-6"
           style={{ perspective: "1600px" }}
@@ -1101,7 +1015,6 @@ function ScrollFeatureCards() {
           ))}
         </div>
 
-        {/* Scroll indicator */}
         <div className="scroll-hint mt-12 flex flex-col items-center gap-2">
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Scroll to explore
@@ -1114,59 +1027,22 @@ function ScrollFeatureCards() {
 }
 
 // ============================================================
-//  SECTION: How It Works enhanced with icon glow chips and a
-//  connecting line between steps for a more "pipeline" feel
+//  SECTION: How It Works
 // ============================================================
 function HowItWorks() {
   const steps = [
     {
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-      ),
+      Icon: ShieldCheck,
       title: "Paste your GitHub URL",
       desc: "Enter any public repository link. CodeVerity immediately reads the codebase structure.",
     },
     {
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
-      ),
+      Icon: Cpu,
       title: "AI scans every file",
       desc: "Our engine examines architecture, dependencies, security, and potential bugs in seconds.",
     },
     {
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-        >
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
+      Icon: CheckCircle2,
       title: "Get actionable insights",
       desc: "Receive a clear report with test suggestions, vulnerability fixes, and performance tips.",
     },
@@ -1186,16 +1062,15 @@ function HowItWorks() {
             </h2>
           </div>
           <p className="text-sm text-[var(--text-secondary)]">
-            Repository in, report out three steps.
+            Repository in, report out — three steps.
           </p>
         </div>
         <div className="relative grid grid-cols-1 gap-0 sm:grid-cols-3">
-          {/* Connecting line across the row, desktop only */}
           <div
             aria-hidden="true"
             className="pointer-events-none absolute left-0 right-0 top-[18px] hidden h-px bg-gradient-to-r from-transparent via-[var(--border-light)] to-transparent sm:block"
           />
-          {steps.map((step, idx) => (
+          {steps.map(({ Icon, title, desc }, idx) => (
             <div
               key={idx}
               className={`group relative px-0 py-6 transition-transform duration-300 hover:-translate-y-1 sm:px-6 sm:py-0 ${
@@ -1204,17 +1079,17 @@ function HowItWorks() {
             >
               <div className="flex items-center gap-3">
                 <span className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-all duration-300 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] group-hover:shadow-[0_0_22px_-4px_var(--accent-soft-strong)]">
-                  {step.icon}
+                  <Icon size={20} strokeWidth={1.75} aria-hidden="true" />
                 </span>
                 <span className="font-mono text-xs text-[var(--text-muted)]">
                   0{idx + 1}
                 </span>
               </div>
               <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">
-                {step.title}
+                {title}
               </h3>
               <p className="mt-1.5 max-w-[26ch] text-xs leading-relaxed text-[var(--text-secondary)]">
-                {step.desc}
+                {desc}
               </p>
             </div>
           ))}
@@ -1225,7 +1100,7 @@ function HowItWorks() {
 }
 
 // ============================================================
-//  SECTION: Testimonials polished with hover-lift + accent glow
+//  SECTION: Testimonials
 // ============================================================
 function Testimonials() {
   const testimonials = [
@@ -1237,7 +1112,7 @@ function Testimonials() {
     },
     {
       quote:
-        "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.",
+        "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.",
       author: "Marcus Rivera",
       role: "Full-stack Developer, OpenSource Collective",
     },
@@ -1265,8 +1140,11 @@ function Testimonials() {
               key={i}
               className="group flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--accent)]/30 hover:shadow-[0_18px_40px_-24px_var(--accent-soft-strong)]"
             >
-              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)] transition-transform duration-300 group-hover:scale-110">
-                "
+              <span
+                aria-hidden="true"
+                className="mb-3 font-serif text-4xl leading-none text-[var(--accent)] transition-transform duration-300 group-hover:scale-110"
+              >
+                &ldquo;
               </span>
               <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">
                 {t.quote}
@@ -1297,7 +1175,7 @@ function Testimonials() {
 }
 
 // ============================================================
-//  SECTION: Pricing (unchanged data/logic, hover-lift added)
+//  SECTION: Pricing
 // ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
@@ -1363,15 +1241,12 @@ function Pricing() {
                 <ul className="mt-5 space-y-2.5 text-xs text-[var(--text-secondary)]">
                   {plan.features.map((f, fi) => (
                     <li key={fi} className="flex items-start gap-2">
-                      <svg
-                        className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
-                        <polyline points="20 6 9 17 4 12" />
-                      </svg>
+                      <Check
+                        size={12}
+                        strokeWidth={3}
+                        aria-hidden="true"
+                        className="mt-0.5 shrink-0 text-[var(--accent)]"
+                      />
                       {f}
                     </li>
                   ))}
@@ -1382,7 +1257,7 @@ function Pricing() {
                       ? "/register"
                       : `/checkout?plan=${plan.id}&cycle=monthly&currency=INR`
                   }
-                  className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200 ${
+                  className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] ${
                     plan.highlight
                       ? "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
                       : "border border-[var(--border-light)] text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
@@ -1395,7 +1270,7 @@ function Pricing() {
           })}
         </div>
         <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">
-          All prices in INR. Yearly plans offer 20% off see full pricing page.
+          All prices in INR. Yearly plans offer 20% off — see full pricing page.
         </p>
       </div>
     </section>
@@ -1403,7 +1278,7 @@ function Pricing() {
 }
 
 // ============================================================
-//  SECTION: FAQ (unchanged logic, chevron replaces plus + icon chip)
+//  SECTION: FAQ
 // ============================================================
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
@@ -1419,7 +1294,7 @@ function FAQ() {
     },
     {
       q: "Can I use CodeVerity for private repositories?",
-      a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security.",
+      a: "Yes — with the Pro or Enterprise plan you can scan private repositories with full OAuth security.",
     },
     {
       q: "How accurate is the AI bug detection?",
@@ -1442,40 +1317,52 @@ function FAQ() {
           </h2>
         </div>
         <div className="divide-y divide-[var(--border-light)] rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-          {faqs.map((faq, idx) => (
-            <div key={idx}>
-              <button
-                onClick={() => toggle(idx)}
-                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50"
-              >
-                <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {faq.q}
-                </span>
-                <span
-                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-sm transition-all duration-300 ${
-                    openIndex === idx
-                      ? "rotate-45 border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]"
-                      : "border-[var(--border-light)] text-[var(--accent)]"
+          {faqs.map((faq, idx) => {
+            const isOpen = openIndex === idx;
+            return (
+              <div key={idx}>
+                <button
+                  type="button"
+                  onClick={() => toggle(idx)}
+                  aria-expanded={isOpen}
+                  className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-inset"
+                >
+                  <span className="text-sm font-medium text-[var(--text-primary)]">
+                    {faq.q}
+                  </span>
+                  <span
+                    className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border transition-all duration-300 ${
+                      isOpen
+                        ? "border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]"
+                        : "border-[var(--border-light)] text-[var(--accent)]"
+                    }`}
+                  >
+                    <ChevronDown
+                      size={12}
+                      strokeWidth={2.4}
+                      aria-hidden="true"
+                      className={`transition-transform duration-300 ${
+                        isOpen ? "rotate-180" : "rotate-0"
+                      }`}
+                    />
+                  </span>
+                </button>
+                <div
+                  className={`grid transition-all duration-300 ease-out ${
+                    isOpen
+                      ? "grid-rows-[1fr] opacity-100"
+                      : "grid-rows-[0fr] opacity-0"
                   }`}
                 >
-                  +
-                </span>
-              </button>
-              <div
-                className={`grid transition-all duration-300 ease-out ${
-                  openIndex === idx
-                    ? "grid-rows-[1fr] opacity-100"
-                    : "grid-rows-[0fr] opacity-0"
-                }`}
-              >
-                <div className="overflow-hidden">
-                  <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
-                    {faq.a}
+                  <div className="overflow-hidden">
+                    <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+                      {faq.a}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
     </section>
@@ -1483,105 +1370,129 @@ function FAQ() {
 }
 
 // ============================================================
-//  FOOTER (unchanged)
+//  FOOTER
+// ============================================================
+// ============================================================
+//  FOOTER
 // ============================================================
 function Footer({ isLoggedIn }) {
+  // Hardcoded values that work regardless of theme, because the
+  // footer always sits on `var(--accent)`. We can't rely on
+  // `--accent-contrast` + opacity modifiers to render consistently
+  // across Tailwind v4 arbitrary-value + var() + /opacity combos.
+  const linkStyle = {
+    color: "var(--accent-contrast)",
+    opacity: 0.9,
+  };
+  const linkHoverStyle = {
+    color: "var(--accent-contrast)",
+    opacity: 1,
+  };
+
+  const handleEnter = (e) => Object.assign(e.currentTarget.style, linkHoverStyle);
+  const handleLeave = (e) => Object.assign(e.currentTarget.style, linkStyle);
+
+  const LinkItem = ({ to, children, external }) => {
+    if (external) {
+      return (
+        <a
+          href={to}
+          style={linkStyle}
+          onMouseEnter={handleEnter}
+          onMouseLeave={handleLeave}
+          className="text-[12px] transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--accent)] rounded"
+        >
+          {children}
+        </a>
+      );
+    }
+    return (
+      <Link
+        to={to}
+        style={linkStyle}
+        onMouseEnter={handleEnter}
+        onMouseLeave={handleLeave}
+        className="text-[12px] transition-opacity duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-current/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--accent)] rounded"
+      >
+        {children}
+      </Link>
+    );
+  };
+
+  const ColumnHeading = ({ children }) => (
+    <h4
+      className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em]"
+      style={{ color: "var(--accent-contrast)", opacity: 0.6 }}
+    >
+      {children}
+    </h4>
+  );
+
   return (
-    <footer className="relative overflow-hidden border-t border-[var(--border-light)] bg-[var(--accent)] px-4 pt-16 pb-8 sm:px-6">
-      {/* Subtle top hairline, consistent with the accent-line detail
-          used on the auth card / hero elsewhere */}
+    <footer
+      className="relative overflow-hidden border-t border-[var(--border-light)] px-4 pt-16 pb-8 sm:px-6"
+      style={{ backgroundColor: "var(--accent)" }}
+    >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-contrast)]/40 to-transparent"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px"
+        style={{
+          background:
+            "linear-gradient(to right, transparent, color-mix(in srgb, var(--accent-contrast) 40%, transparent), transparent)",
+        }}
       />
 
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <h3 className="text-2xl font-extrabold leading-tight text-[var(--accent-contrast)] sm:text-3xl">
+            <h3
+              className="text-2xl font-extrabold leading-tight sm:text-3xl"
+              style={{ color: "var(--accent-contrast)" }}
+            >
               AI-powered code
               <br />
               intelligence.
             </h3>
-            <p className="mt-3 max-w-[220px] text-[12px] leading-relaxed text-[var(--accent-contrast)]/70">
+            <p
+              className="mt-3 max-w-[220px] text-[12px] leading-relaxed"
+              style={{ color: "var(--accent-contrast)", opacity: 0.7 }}
+            >
               One repo. Every insight. Built by developers who care about
               quality.
             </p>
           </div>
 
           <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Product
-            </h4>
+            <ColumnHeading>Product</ColumnHeading>
             <ul className="space-y-2">
               {isLoggedIn ? (
                 <>
                   <li>
-                    <Link
-                      to="/dashboard"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Dashboard
-                    </Link>
+                    <LinkItem to="/dashboard">Dashboard</LinkItem>
                   </li>
                   <li>
-                    <Link
-                      to="/workspace"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Workspace
-                    </Link>
+                    <LinkItem to="/workspace">Workspace</LinkItem>
                   </li>
                   <li>
-                    <Link
-                      to="/history"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      History
-                    </Link>
+                    <LinkItem to="/history">History</LinkItem>
                   </li>
                   <li>
-                    <Link
-                      to="/pricing"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Pricing
-                    </Link>
+                    <LinkItem to="/pricing">Pricing</LinkItem>
                   </li>
                 </>
               ) : (
                 <>
                   <li>
-                    <Link
-                      to="/pricing"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Pricing
-                    </Link>
+                    <LinkItem to="/pricing">Pricing</LinkItem>
                   </li>
                   <li>
-                    <Link
-                      to="/login"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Sign In
-                    </Link>
+                    <LinkItem to="/login">Sign In</LinkItem>
                   </li>
                   <li>
-                    <Link
-                      to="/register"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Get Started
-                    </Link>
+                    <LinkItem to="/register">Get Started</LinkItem>
                   </li>
                   <li>
-                    <Link
-                      to="/about"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      About
-                    </Link>
+                    <LinkItem to="/about">About</LinkItem>
                   </li>
                 </>
               )}
@@ -1589,68 +1500,39 @@ function Footer({ isLoggedIn }) {
           </div>
 
           <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Resources
-            </h4>
+            <ColumnHeading>Resources</ColumnHeading>
             <ul className="space-y-2">
               <li>
-                <Link
-                  to="/about"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  About
-                </Link>
+                <LinkItem to="/about">About</LinkItem>
               </li>
               <li>
-                <Link
-                  to="/support"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  Support
-                </Link>
+                <LinkItem to="/support">Support</LinkItem>
               </li>
               <li>
-                <Link
-                  to="/privacy"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  Privacy
-                </Link>
+                <LinkItem to="/privacy">Privacy</LinkItem>
               </li>
               <li>
-                <Link
-                  to="/terms"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  Terms
-                </Link>
+                <LinkItem to="/terms">Terms</LinkItem>
               </li>
             </ul>
           </div>
 
           <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Company
-            </h4>
+            <ColumnHeading>Company</ColumnHeading>
             <ul className="space-y-2">
               <li>
-                
-                  <a href="mailto:support@codeverity.dev"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
+                <LinkItem to="mailto:support@codeverity.dev" external>
                   Contact
-                </a>
+                </LinkItem>
               </li>
               <li>
-                <Link
-                  to="/about"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
+                <LinkItem to="/about">About Us</LinkItem>
+              </li>
+              <li>
+                <span
+                  className="text-[12px]"
+                  style={{ color: "var(--accent-contrast)", opacity: 0.6 }}
                 >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <span className="text-[12px] text-[var(--accent-contrast)]/60">
                   © {new Date().getFullYear()}
                 </span>
               </li>
@@ -1658,50 +1540,58 @@ function Footer({ isLoggedIn }) {
           </div>
         </div>
 
-        <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--accent-contrast)]/15 pt-6 sm:flex-row">
-          <p className="flex items-center gap-1.5 text-[10px] text-[var(--accent-contrast)]/60">
-            <span className="h-1 w-1 rounded-full bg-[var(--accent-contrast)]/60" />
-            Built with ❤️ for developers everywhere.
+        <div
+          className="mt-12 flex flex-col items-center justify-between gap-3 border-t pt-6 sm:flex-row"
+          style={{
+            borderColor: "color-mix(in srgb, var(--accent-contrast) 15%, transparent)",
+          }}
+        >
+          <p
+            className="flex items-center gap-1.5 text-[10px]"
+            style={{ color: "var(--accent-contrast)", opacity: 0.6 }}
+          >
+            <Heart
+              size={10}
+              strokeWidth={2.4}
+              fill="currentColor"
+              aria-hidden="true"
+            />
+            Built for developers everywhere.
           </p>
-          <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
-            <Link
-              to="/privacy"
-              className="transition hover:text-[var(--accent-contrast)]"
-            >
-              Privacy
-            </Link>
-            <Link
-              to="/terms"
-              className="transition hover:text-[var(--accent-contrast)]"
-            >
-              Terms
-            </Link>
-            <Link
-              to="/support"
-              className="transition hover:text-[var(--accent-contrast)]"
-            >
-              Support
-            </Link>
+          <div
+            className="flex items-center gap-4 text-[10px]"
+            style={{ color: "var(--accent-contrast)", opacity: 0.7 }}
+          >
+            <LinkItem to="/privacy">Privacy</LinkItem>
+            <LinkItem to="/terms">Terms</LinkItem>
+            <LinkItem to="/support">Support</LinkItem>
           </div>
         </div>
       </div>
 
-      <div className="relative z-10 mt-16 flex select-none flex-col items-center gap-4">
-        <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20 transition-transform duration-300 hover:scale-105">
+      <div className="relative z-10 mt-12 flex select-none flex-col items-center gap-4">
+        <div className="rounded-2xl p-1 shadow-2xl transition-transform duration-300 hover:scale-105"
+          style={{ backgroundColor: "var(--bg-primary)" }}
+        >
           <CodeVerityLogo />
         </div>
         <div
           className="pointer-events-none w-full overflow-hidden text-center"
           style={{
             maskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
+              "linear-gradient(to bottom, black 30%, transparent 90%)",
             WebkitMaskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
+              "linear-gradient(to bottom, black 30%, transparent 90%)",
+            height: "clamp(4rem, 12vw, 9rem)",
           }}
         >
           <span
-            className="block whitespace-nowrap font-extrabold leading-none tracking-tight text-[var(--accent-contrast)]/10"
-            style={{ fontSize: "clamp(3.5rem, 15vw, 10rem)" }}
+            className="block whitespace-nowrap font-extrabold leading-[0.85] tracking-tight"
+            style={{
+              fontSize: "clamp(4rem, 12vw, 9rem)",
+              color: "var(--accent-contrast)",
+              opacity: 0.12,
+            }}
           >
             CodeVerity
           </span>
@@ -1711,8 +1601,9 @@ function Footer({ isLoggedIn }) {
   );
 }
 
+
 // ============================================================
-//  MAIN HOME COMPONENT (all logic/state/refs unchanged)
+//  MAIN HOME COMPONENT
 // ============================================================
 export default function Home() {
   const token = localStorage.getItem("token");
@@ -1784,10 +1675,12 @@ export default function Home() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
+        const triggers = [];
+
         // --- SCROLL PROGRESS BAR ---
         if (progressRef.current) {
           gsap.set(progressRef.current, { scaleX: 0 });
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: document.documentElement,
             start: "top top",
             end: "bottom bottom",
@@ -1796,21 +1689,23 @@ export default function Home() {
               gsap.set(progressRef.current, { scaleX: self.progress });
             },
           });
+          triggers.push(st);
         }
 
         // --- STICKY MINI-CTA ---
         if (heroSectionRef.current) {
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: heroSectionRef.current,
             start: "bottom top",
             onEnter: () => setShowStickyCta(true),
             onLeaveBack: () => setShowStickyCta(false),
           });
+          triggers.push(st);
         }
 
         // --- STATS REPLAY ---
         if (statsRef.current) {
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: statsRef.current,
             start: "top 90%",
             onEnter: () => {
@@ -1832,6 +1727,7 @@ export default function Home() {
               statsInViewRef.current = false;
             },
           });
+          triggers.push(st);
         }
 
         // --- HERO ENTRANCE ---
@@ -1842,43 +1738,43 @@ export default function Home() {
         tl.fromTo(
           brandRef.current,
           { opacity: 0, y: 30 },
-          { opacity: 1, y: 0, duration: 0.6 },
+          { opacity: 1, y: 0, duration: 0.6 }
         )
           .fromTo(
             badgeRef.current,
             { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5 },
-            "-=0.3",
+            "-=0.3"
           )
           .fromTo(
             headingRef.current,
             { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.6 },
-            "-=0.3",
+            "-=0.3"
           )
           .fromTo(
             typedRef.current,
             { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5 },
-            "-=0.4",
+            "-=0.4"
           )
           .fromTo(
             descriptionRef.current,
             { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5 },
-            "-=0.3",
+            "-=0.3"
           )
           .fromTo(
             ctasRef.current,
             { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 },
-            "-=0.3",
+            "-=0.3"
           )
           .fromTo(
             trustRef.current,
             { opacity: 0, y: 30 },
             { opacity: 1, y: 0, duration: 0.4 },
-            "-=0.2",
+            "-=0.2"
           );
 
         if (orbWrapperRef.current) {
@@ -1892,7 +1788,7 @@ export default function Home() {
               duration: 0.9,
               ease: "power3.out",
               delay: 0.3,
-            },
+            }
           );
         }
 
@@ -1900,43 +1796,49 @@ export default function Home() {
           gsap.fromTo(
             statsRef.current,
             { opacity: 0, y: 20 },
-            { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 },
+            { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 }
           );
         }
 
         // --- FEATURE CARDS ---
-        ScrollTrigger.create({
-          trigger: featureLabelRef.current,
-          start: "top 85%",
-          onEnter: () => {
-            gsap.fromTo(
-              featureLabelRef.current,
-              { opacity: 0, y: 20 },
-              { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
-            );
-          },
-          once: true,
-        });
+        if (featureLabelRef.current) {
+          const st = ScrollTrigger.create({
+            trigger: featureLabelRef.current,
+            start: "top 85%",
+            onEnter: () => {
+              gsap.fromTo(
+                featureLabelRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }
+              );
+            },
+            once: true,
+          });
+          triggers.push(st);
+        }
 
-        ScrollTrigger.create({
-          trigger: featureCardsRef.current,
-          start: "top 85%",
-          onEnter: () => {
-            gsap.fromTo(
-              featureCardsRef.current,
-              { opacity: 0, y: 40 },
-              {
-                opacity: 1,
-                y: 0,
-                duration: 0.7,
-                stagger: 0.15,
-                ease: "power2.out",
-                clearProps: "opacity, transform",
-              },
-            );
-          },
-          once: true,
-        });
+        if (featureCardsRef.current.length) {
+          const st = ScrollTrigger.create({
+            trigger: featureCardsRef.current,
+            start: "top 85%",
+            onEnter: () => {
+              gsap.fromTo(
+                featureCardsRef.current,
+                { opacity: 0, y: 40 },
+                {
+                  opacity: 1,
+                  y: 0,
+                  duration: 0.7,
+                  stagger: 0.15,
+                  ease: "power2.out",
+                  clearProps: "opacity, transform",
+                }
+              );
+            },
+            once: true,
+          });
+          triggers.push(st);
+        }
 
         // --- SECTIONS ---
         const sections = [
@@ -1947,7 +1849,7 @@ export default function Home() {
         ];
         sections.forEach(({ ref, start }) => {
           if (!ref.current) return;
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: ref.current,
             start,
             onEnter: () => {
@@ -1960,11 +1862,12 @@ export default function Home() {
                   duration: 0.8,
                   ease: "power2.out",
                   clearProps: "opacity, transform",
-                },
+                }
               );
             },
             once: true,
           });
+          triggers.push(st);
         });
 
         // --- BACKGROUND PARALLAX ---
@@ -1973,7 +1876,7 @@ export default function Home() {
         const bgGrid = bgGridRef.current;
 
         if (bgGlow1) {
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: containerRef.current,
             start: "top top",
             end: "bottom top",
@@ -1986,9 +1889,10 @@ export default function Home() {
               });
             },
           });
+          triggers.push(st);
         }
         if (bgGlow2) {
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: containerRef.current,
             start: "top top",
             end: "bottom top",
@@ -2001,9 +1905,10 @@ export default function Home() {
               });
             },
           });
+          triggers.push(st);
         }
         if (bgGrid) {
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: containerRef.current,
             start: "top top",
             end: "bottom top",
@@ -2016,13 +1921,14 @@ export default function Home() {
               });
             },
           });
+          triggers.push(st);
         }
 
         // --- ORB BADGES ---
         if (orbBadgeRefs.current.length) {
           gsap.set(orbBadgeRefs.current, { opacity: 0, scale: 0.85 });
 
-          ScrollTrigger.create({
+          const st = ScrollTrigger.create({
             trigger: orbWrapperRef.current,
             start: "top 85%",
             onEnter: () => {
@@ -2037,6 +1943,7 @@ export default function Home() {
             },
             once: true,
           });
+          triggers.push(st);
 
           orbBadgeRefs.current.forEach((el, i) => {
             if (!el) return;
@@ -2052,7 +1959,7 @@ export default function Home() {
         }
 
         return () => {
-          ScrollTrigger.getAll().forEach((st) => st.kill());
+          triggers.forEach((st) => st.kill());
         };
       });
 
@@ -2076,14 +1983,14 @@ export default function Home() {
             orbWrapperRef.current,
             ...(orbBadgeRefs.current || []),
           ],
-          { opacity: 1, y: 0, scale: 1, clearProps: "all" },
+          { opacity: 1, y: 0, scale: 1, clearProps: "all" }
         );
         setShowStickyCta(false);
       });
 
       return () => mm.revert();
     },
-    { scope: containerRef, dependencies: [] },
+    { scope: containerRef, dependencies: [] }
   );
 
   const compactClasses = compact
@@ -2122,143 +2029,6 @@ export default function Home() {
         aria-hidden="true"
       />
 
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        .stat-card {
-          box-shadow: 0 0 20px -5px var(--accent-soft-strong), inset 0 0 10px var(--accent-soft);
-        }
-        .stat-card:hover {
-          box-shadow: 0 0 30px -5px var(--accent), inset 0 0 15px var(--accent-soft-strong);
-          border-color: var(--accent);
-          transform: translateY(-2px);
-        }
-        .stat-number {
-          background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          color: transparent;
-          filter: drop-shadow(0 0 8px var(--accent-soft-strong));
-        }
-        .hero-title-glow {
-          background: linear-gradient(135deg, var(--text-primary) 0%, var(--accent) 50%, var(--text-primary) 100%);
-          background-size: 200% 200%;
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          color: transparent;
-          filter: drop-shadow(0 0 20px var(--accent-soft-strong));
-          animation: gradient-shift 5s ease infinite;
-        }
-        @keyframes gradient-shift {
-          0% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
-          100% { background-position: 0% 50%; }
-        }
-
-        .orb-halo {
-          animation: orb-halo-pulse 5s ease-in-out infinite;
-        }
-        @keyframes orb-halo-pulse {
-          0%, 100% { opacity: 0.06; transform: translate(-50%, -50%) scale(1); }
-          50% { opacity: 0.12; transform: translate(-50%, -50%) scale(1.08); }
-        }
-
-        .scroll-feature-card {
-          transform-style: preserve-3d;
-          backface-visibility: hidden;
-          will-change: transform;
-          box-shadow:
-            0 20px 60px -25px var(--accent-soft-strong),
-            inset 0 0 30px var(--accent-soft);
-        }
-
-        .scroll-card-accent {
-          background: var(--bg-card);
-        }
-
-        .scroll-card-primary {
-          background: var(--accent);
-          border-color: var(--accent);
-        }
-
-        .scroll-card-primary h3,
-        .scroll-card-primary span {
-          color: var(--accent-contrast);
-        }
-
-        .scroll-card-primary p {
-          color: var(--accent-contrast);
-        }
-
-        .scroll-card-dark {
-          background: var(--bg-secondary);
-        }
-
-        @media (min-width: 768px) {
-          .scroll-feature-card {
-            min-height: 0;
-          }
-        }
-
-        @media (max-width: 767px) {
-          .scroll-feature-card {
-            min-height: 360px;
-            height: auto;
-            transform: none !important;
-            will-change: auto;
-          }
-        }
-
-        /* Ambient radar sweep + orb drift for ScrollFeatureCards
-           purely CSS-driven so it animates continuously regardless
-           of scroll position, keeping the pinned section alive even
-           between scroll-triggered keyframes. */
-        .scroll-radar-sweep {
-          background: conic-gradient(
-            from 0deg,
-            transparent 0deg,
-            var(--accent) 8deg,
-            transparent 40deg,
-            transparent 360deg
-          );
-          animation: scroll-radar-spin 6s linear infinite;
-        }
-        @keyframes scroll-radar-spin {
-          to { transform: translate(-50%, -50%) rotate(360deg); }
-        }
-        .scroll-orb-a {
-          animation: scroll-orb-drift-a 9s ease-in-out infinite;
-        }
-        .scroll-orb-b {
-          animation: scroll-orb-drift-b 11s ease-in-out infinite;
-        }
-        @keyframes scroll-orb-drift-a {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(30px, 20px); }
-        }
-        @keyframes scroll-orb-drift-b {
-          0%, 100% { transform: translate(0, 0); }
-          50% { transform: translate(-25px, -15px); }
-        }
-
-        @media (prefers-reduced-motion: reduce) {
-          .scroll-feature-card {
-            transform: none !important;
-            transition: none !important;
-          }
-          .orb-halo,
-          .scroll-radar-sweep,
-          .scroll-orb-a,
-          .scroll-orb-b {
-            animation: none !important;
-          }
-        }
-      `,
-        }}
-      />
-
       <div
         ref={bgGlow1Ref}
         className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl"
@@ -2279,16 +2049,12 @@ export default function Home() {
 
       <NeuralNetworkBackground />
 
-      {/* ================================================================
-          HERO two-column on lg+: headline/CTA left, 3D orb right.
-          Single column, centered, on mobile.
-      ================================================================ */}
+      {/* HERO */}
       <div
         ref={heroSectionRef}
         className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}
       >
         <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
-          {/* LEFT text column */}
           <div className="text-center lg:text-left">
             <div
               ref={brandRef}
@@ -2339,7 +2105,7 @@ export default function Home() {
               className={`mx-auto mb-8 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}
             >
               Drop any public GitHub URL and get a complete AI-powered
-              repository audit architecture analysis, security findings, bug
+              repository audit — architecture analysis, security findings, bug
               detection, performance insights, and generated tests.
             </p>
 
@@ -2350,7 +2116,7 @@ export default function Home() {
               {token ? (
                 <Link
                   to="/dashboard"
-                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+                  className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.98]"
                   style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
                 >
                   <ScanLine />
@@ -2360,7 +2126,7 @@ export default function Home() {
                 <>
                   <Link
                     to="/login"
-                    className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]"
+                    className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.98]"
                     style={{
                       boxShadow: "0 8px 24px -6px var(--accent-soft-strong)",
                     }}
@@ -2370,7 +2136,7 @@ export default function Home() {
                   </Link>
                   <Link
                     to="/register"
-                    className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] active:scale-[0.98]"
+                    className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.98]"
                   >
                     Get Started Free →
                   </Link>
@@ -2389,13 +2155,11 @@ export default function Home() {
             </div>
           </div>
 
-          {/* RIGHT 3D orb visual */}
           <div ref={orbWrapperRef} className="mx-auto w-full max-w-md lg:mx-0">
             <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
           </div>
         </div>
 
-        {/* BELOW HERO tech strip, stats, feature grid (full width) */}
         <div className="mt-14 w-full max-w-5xl text-center">
           <TechStrip />
 
@@ -2435,7 +2199,7 @@ export default function Home() {
           >
             <div ref={(el) => (featureCardsRef.current[0] = el)}>
               <Feature
-                icon={<BugIcon />}
+                icon={<Bug size={20} strokeWidth={1.75} aria-hidden="true" />}
                 title="AI Bug Detection"
                 desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
                 index={0}
@@ -2443,7 +2207,9 @@ export default function Home() {
             </div>
             <div ref={(el) => (featureCardsRef.current[1] = el)}>
               <Feature
-                icon={<ShieldIcon />}
+                icon={
+                  <ShieldCheck size={20} strokeWidth={1.75} aria-hidden="true" />
+                }
                 title="Security Analysis"
                 desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
                 index={1}
@@ -2451,7 +2217,9 @@ export default function Home() {
             </div>
             <div ref={(el) => (featureCardsRef.current[2] = el)}>
               <Feature
-                icon={<FlaskIcon />}
+                icon={
+                  <FlaskConical size={20} strokeWidth={1.75} aria-hidden="true" />
+                }
                 title="Smart Test Generation"
                 desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
                 index={2}
