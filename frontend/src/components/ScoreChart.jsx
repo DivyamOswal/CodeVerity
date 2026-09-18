@@ -1,3 +1,4 @@
+// src/components/ScoreCharts.jsx
 import {
   RadarChart,
   PolarGrid,
@@ -7,15 +8,24 @@ import {
   ResponsiveContainer,
 } from "recharts";
 
-export default function ScoreCharts({ scores }) {
+export default function ScoreCharts({ scores = {} }) {
   const data = [
     { subject: "Code Quality", value: scores.codeQuality || 0 },
     { subject: "Security", value: scores.security || 0 },
     { subject: "Performance", value: scores.performance || 0 },
     { subject: "Maintainability", value: scores.maintainability || 0 },
   ];
+
+  const summary = data
+    .map((d) => `${d.subject}: ${d.value}%`)
+    .join(", ");
+
   return (
-    <div style={{ width: "100%", height: 280, minHeight: 280 }}>
+    <div
+      role="img"
+      aria-label={`Score breakdown — ${summary}`}
+      style={{ width: "100%", height: 280, minHeight: 280 }}
+    >
       <ResponsiveContainer width="100%" height="100%" minWidth={200}>
         <RadarChart data={data}>
           <PolarGrid stroke="var(--border-light)" />

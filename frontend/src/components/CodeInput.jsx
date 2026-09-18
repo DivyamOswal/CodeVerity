@@ -1,10 +1,19 @@
+// src/components/CodeInput.jsx
 import { useState } from "react";
+import {
+  ShieldCheck,
+  Code2,
+  ArrowRight,
+  Loader2,
+  Zap,
+  Sparkles,
+} from "lucide-react";
 import { analyzeCode } from "../api/analyze";
 import { usePreferences } from "../context/PreferencesContext";
 import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
-// Reusable mini components (same style as Home & other pages)
+// Reusable mini components
 // -----------------------------------------------------------------
 
 function CodeVerityLogo() {
@@ -12,32 +21,23 @@ function CodeVerityLogo() {
     <div className="flex items-center justify-center">
       <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
         <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
-        <svg
-          width="18"
-          height="18"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
+        <ShieldCheck
+          size={18}
+          strokeWidth={2}
+          aria-hidden="true"
           className="relative text-[var(--accent)]"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-        <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-card)] border border-[var(--border-light)]">
-          <span className="font-mono text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+        />
+        <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-card)]">
+          <span className="font-mono text-[6px] font-bold text-[var(--accent)]">
+            &lt;/&gt;
+          </span>
         </div>
-        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
+        <span className="absolute -top-0.5 -left-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
       </div>
     </div>
   );
 }
 
-// Single moving highlight bar across the button flat-color sweep,
-// reuses the global .animate-scanline utility from index.css instead
-// of redefining the same keyframe locally.
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-lg">
@@ -49,64 +49,53 @@ function ScanLine() {
   );
 }
 
-// Feature card accents one accent color at three opacity levels,
-// so the three cards read as a set rather than three separate hues.
-const colorMap = {
+// Feature card accents — one accent color at three opacity levels.
+const INTENSITY_CLASSES = {
   strong: {
-    border: "var(--accent-soft-strong)",
-    glow: "var(--accent-soft)",
-    bg: "var(--accent-soft-strong)",
+    border: "group-hover:border-[var(--accent-soft-strong)]",
+    shadow: "group-hover:shadow-[0_20px_40px_var(--accent-soft)]",
+    iconBg: "bg-[var(--accent-soft-strong)]",
   },
   medium: {
-    border: "var(--accent-soft)",
-    glow: "var(--accent-soft)",
-    bg: "var(--accent-soft)",
+    border: "group-hover:border-[var(--accent-soft)]",
+    shadow: "group-hover:shadow-[0_20px_40px_var(--accent-soft)]",
+    iconBg: "bg-[var(--accent-soft)]",
   },
   soft: {
-    border: "var(--border-light)",
-    glow: "var(--accent-soft)",
-    bg: "var(--accent-soft)",
+    border: "group-hover:border-[var(--border-medium)]",
+    shadow: "group-hover:shadow-[0_20px_40px_var(--accent-soft)]",
+    iconBg: "bg-[var(--accent-soft)]",
   },
 };
 
-function Feature({ icon, title, desc, intensity }) {
-  const [hovered, setHovered] = useState(false);
-  const c = colorMap[intensity];
+function Feature({ Icon, title, desc, intensity }) {
+  const c = INTENSITY_CLASSES[intensity] ?? INTENSITY_CLASSES.medium;
 
   return (
     <div
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      className="group relative cursor-default overflow-hidden rounded-xl p-5 text-left transition-all duration-300 ease-out bg-[var(--bg-card)]"
-      style={{
-        border: `1px solid ${hovered ? c.border : "var(--border-light)"}`,
-        transform: hovered ? "translateY(-4px)" : "translateY(0)",
-        boxShadow: hovered ? `0 20px 40px ${c.glow}` : "none",
-      }}
+      className={`group relative cursor-default overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 text-left transition-all duration-300 ease-out group-hover:-translate-y-1 ${c.border} ${c.shadow}`}
     >
       <div
-        className="absolute -right-8 -top-8 h-24 w-24 rounded-full blur-3xl transition-opacity duration-500"
-        style={{ background: c.bg, opacity: hovered ? 0.65 : 0 }}
+        aria-hidden="true"
+        className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-[var(--accent-soft)] opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-65"
       />
       <div
-        className="mb-4 flex h-10 w-10 items-center justify-center rounded-lg transition-transform duration-300"
-        style={{
-          background: c.bg,
-          transform: hovered ? "scale(1.08)" : "scale(1)",
-        }}
+        className={`mb-4 flex h-10 w-10 items-center justify-center rounded-lg text-[var(--accent)] transition-transform duration-300 group-hover:scale-[1.08] ${c.iconBg}`}
       >
-        <span className="text-lg text-[var(--accent)]">{icon}</span>
+        <Icon size={18} strokeWidth={2} aria-hidden="true" />
       </div>
       <h3 className="mb-1.5 text-[13px] font-semibold tracking-wide text-[var(--text-primary)]">
         {title}
       </h3>
-      <p className="text-[11px] leading-relaxed text-[var(--text-muted)]">{desc}</p>
+      <p className="text-[11px] leading-relaxed text-[var(--text-muted)]">
+        {desc}
+      </p>
     </div>
   );
 }
 
 // -----------------------------------------------------------------
-// Main CodeInput component – now supports compact mode from Settings
+// Main CodeInput component
 // -----------------------------------------------------------------
 
 export default function CodeInput({ setResult, model }) {
@@ -114,7 +103,6 @@ export default function CodeInput({ setResult, model }) {
   const [loading, setLoading] = useState(false);
   const { success, error } = useToast();
 
-  // Get preferences for compact mode
   const { compact } = usePreferences();
 
   const runAnalysis = async () => {
@@ -126,55 +114,57 @@ export default function CodeInput({ setResult, model }) {
       success("Analysis completed successfully!");
     } catch (err) {
       console.error(err);
-      error(err.response?.data?.message || err.response?.data?.error || "Analysis failed. Please try again.");
+      error(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          "Analysis failed. Please try again."
+      );
     } finally {
       setLoading(false);
     }
   };
 
-  // Compact overrides
   const compactClasses = compact
     ? {
         container: "py-4 px-2 sm:px-4",
         header: "mb-4",
         heading: "text-2xl sm:text-3xl",
-        editorCard: "p-4",
         footer: "py-3 px-4",
         featuresGrid: "gap-2",
-        featureCard: "p-3",
         footerText: "mt-4",
       }
     : {
         container: "py-8 px-4 sm:px-6 lg:px-10",
         header: "mb-8",
         heading: "text-3xl sm:text-4xl",
-        editorCard: "p-0",
         footer: "px-4 py-4 sm:px-5",
         featuresGrid: "gap-3",
-        featureCard: "p-4",
         footerText: "mt-8",
       };
 
   const hasCode = Boolean(code.trim());
+  const lineCount = code ? code.split("\n").length : 0;
 
   return (
     <div
-      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${compactClasses.container}`}
+      className={`relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.container}`}
     >
-      {/* ================= AMBIENT BACKGROUND ================= */}
+      {/* AMBIENT BACKGROUND */}
       <div className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-60 blur-3xl" />
       <div className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div className="pointer-events-none absolute left-0 top-0 h-[300px] w-[300px] rounded-full bg-[var(--accent-soft)] opacity-30 blur-3xl" />
       <div
+        aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
 
-      <div className="mx-auto max-w-6xl relative z-10">
-        {/* ================= HEADER ================= */}
+      <div className="relative z-10 mx-auto max-w-6xl">
+        {/* HEADER */}
         <div
           className={`animate-fadeDown flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between ${compactClasses.header}`}
         >
@@ -185,7 +175,9 @@ export default function CodeInput({ setResult, model }) {
                 <p className="text-sm font-bold tracking-wide text-[var(--text-primary)]">
                   CODEVERITY
                 </p>
-                <p className="font-mono text-xs text-[var(--text-muted)]">Intelligent code review</p>
+                <p className="font-mono text-xs text-[var(--text-muted)]">
+                  Intelligent code review
+                </p>
               </div>
             </div>
 
@@ -217,13 +209,25 @@ export default function CodeInput({ setResult, model }) {
           </div>
         </div>
 
-        {/* ================= EDITOR CARD ================= */}
-        <div className="animate-fadeUp relative" style={{ animationDelay: "100ms" }}>
-          {/* Corner brackets now with a subtle CSS-only breathing pulse */}
-          <span className="cv-corner absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
-          <span className="cv-corner absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" style={{ animationDelay: "0.4s" }} />
-          <span className="cv-corner absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" style={{ animationDelay: "0.8s" }} />
-          <span className="cv-corner absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" style={{ animationDelay: "1.2s" }} />
+        {/* EDITOR CARD */}
+        <div
+          className="animate-fadeUp relative"
+          style={{ animationDelay: "100ms" }}
+        >
+          {/* Corner brackets */}
+          <span className="cv-corner absolute -left-px -top-px z-10 h-4 w-4 rounded-tl-2xl border-l-2 border-t-2 border-[var(--accent)]/50" />
+          <span
+            className="cv-corner absolute -right-px -top-px z-10 h-4 w-4 rounded-tr-2xl border-r-2 border-t-2 border-[var(--accent)]/50"
+            style={{ animationDelay: "0.4s" }}
+          />
+          <span
+            className="cv-corner absolute -bottom-px -left-px z-10 h-4 w-4 rounded-bl-2xl border-b-2 border-l-2 border-[var(--accent)]/50"
+            style={{ animationDelay: "0.8s" }}
+          />
+          <span
+            className="cv-corner absolute -bottom-px -right-px z-10 h-4 w-4 rounded-br-2xl border-b-2 border-r-2 border-[var(--accent)]/50"
+            style={{ animationDelay: "1.2s" }}
+          />
 
           <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]">
             {/* Editor top bar */}
@@ -238,10 +242,7 @@ export default function CodeInput({ setResult, model }) {
                 <div className="hidden h-5 w-px bg-[var(--border-light)] sm:block" />
 
                 <div className="flex items-center gap-2 font-mono text-sm text-[var(--text-muted)]">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="M14.5 17.5 21 12l-6.5-5.5" />
-                    <path d="M9.5 6.5 3 12l6.5 5.5" />
-                  </svg>
+                  <Code2 size={15} strokeWidth={2} aria-hidden="true" />
                   <span>code-review</span>
                 </div>
               </div>
@@ -256,7 +257,10 @@ export default function CodeInput({ setResult, model }) {
 
             {/* Code area */}
             <div className="relative">
-              <div className="pointer-events-none absolute left-0 top-0 bottom-0 hidden w-14 border-r border-[var(--border-light)] bg-[var(--bg-primary)] pt-5 text-right font-mono text-xs leading-6 text-[var(--text-muted)] sm:block">
+              <div
+                aria-hidden="true"
+                className="pointer-events-none absolute bottom-0 left-0 top-0 hidden w-14 border-r border-[var(--border-light)] bg-[var(--bg-primary)] pt-5 text-right font-mono text-xs leading-6 text-[var(--text-muted)] sm:block"
+              >
                 {Array.from({ length: 12 }, (_, index) => (
                   <div key={index} className="pr-4">
                     {index + 1}
@@ -270,11 +274,11 @@ export default function CodeInput({ setResult, model }) {
                 placeholder={`// Paste your code here...\n\nfunction example() {\n  // CodeVerity will analyze your code\n  // for bugs, security, performance & quality.\n}`}
                 spellCheck={false}
                 aria-label="Code to analyze"
-                className="min-h-[420px] w-full resize-none bg-[var(--bg-primary)] p-5 font-mono text-sm leading-6 text-[var(--text-primary)] outline-none placeholder:text-[var(--border-medium)] sm:pl-[76px] focus:ring-1 focus:ring-[var(--accent)]/30 transition-all"
+                className="min-h-[420px] w-full resize-none bg-[var(--bg-primary)] p-5 font-mono text-sm leading-6 text-[var(--text-primary)] outline-none transition-all placeholder:text-[var(--border-medium)] focus:ring-1 focus:ring-[var(--accent)]/40 sm:pl-[76px]"
               />
             </div>
 
-            {/* ================= EDITOR FOOTER ================= */}
+            {/* EDITOR FOOTER */}
             <div
               className={`flex flex-col gap-4 border-t border-[var(--border-light)] bg-[var(--bg-primary)] sm:flex-row sm:items-center sm:justify-between ${compactClasses.footer}`}
             >
@@ -283,42 +287,45 @@ export default function CodeInput({ setResult, model }) {
                   <span className="h-2 w-2 rounded-full bg-[var(--accent)]" />
                   {code.length} characters
                 </div>
-                <div className="hidden sm:block">
-                  {code ? code.split("\n").length : 0} lines
-                </div>
+                <div className="hidden sm:block">{lineCount} lines</div>
                 <div className="hidden md:block">AI-powered analysis</div>
               </div>
 
               <button
+                type="button"
                 onClick={runAnalysis}
                 disabled={loading || !hasCode}
-                className={`group relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 hover:scale-[1.02] active:scale-95 ${
+                className={`group relative overflow-hidden rounded-lg px-6 py-3 text-sm font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-95 sm:min-w-[176px] ${
                   loading || !hasCode
                     ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)] shadow-none"
-                    : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] shadow-[0_0_30px_var(--accent-soft-strong)]"
+                    : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_0_30px_var(--accent-soft-strong)] hover:scale-[1.02] hover:bg-[var(--accent-hover)]"
                 }`}
               >
-                {loading || !hasCode ? (
-                  <>
-                    {loading && (
-                      <svg className="mr-2 inline h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                        <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="2" className="opacity-30" />
-                        <path d="M21 12a9 9 0 0 0-9-9" stroke="currentColor" strokeWidth="2" />
-                      </svg>
-                    )}
-                    {loading ? "Reviewing..." : "Analyze Code"}
-                  </>
+                {loading ? (
+                  <span className="flex items-center justify-center gap-2">
+                    <Loader2
+                      size={16}
+                      strokeWidth={2.4}
+                      aria-hidden="true"
+                      className="animate-spin"
+                    />
+                    Reviewing...
+                  </span>
+                ) : !hasCode ? (
+                  <span className="flex items-center justify-center gap-2">
+                    Analyze Code
+                  </span>
                 ) : (
                   <>
                     <ScanLine />
-                    <span className="relative z-10 flex items-center gap-2">
-                      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="m9 18 6-6-6-6" />
-                      </svg>
+                    <span className="relative z-10 flex items-center justify-center gap-2">
                       Analyze Code
-                      <span className="ml-1 text-[var(--accent-contrast)]/50 transition-transform group-hover:translate-x-0.5">
-                        →
-                      </span>
+                      <ArrowRight
+                        size={15}
+                        strokeWidth={2}
+                        aria-hidden="true"
+                        className="opacity-70 transition-transform group-hover:translate-x-0.5"
+                      />
                     </span>
                   </>
                 )}
@@ -327,55 +334,44 @@ export default function CodeInput({ setResult, model }) {
           </div>
         </div>
 
-        {/* ================= FEATURE CARDS ================= */}
+        {/* FEATURE CARDS */}
         <div
           className={`animate-fadeUp mt-5 grid grid-cols-1 sm:grid-cols-3 ${compactClasses.featuresGrid}`}
           style={{ animationDelay: "200ms" }}
         >
           <Feature
-            icon="🔐"
+            Icon={ShieldCheck}
             title="Security Analysis"
             desc="Detect potential vulnerabilities and unsafe patterns."
             intensity="strong"
           />
           <Feature
-            icon="⚡"
+            Icon={Zap}
             title="Performance"
             desc="Find inefficient logic and performance bottlenecks."
             intensity="medium"
           />
           <Feature
-            icon="🧹"
+            Icon={Sparkles}
             title="Code Quality"
             desc="Get actionable suggestions to make your code cleaner."
             intensity="soft"
           />
         </div>
 
-        {/* ================= FOOTER ================= */}
+        {/* FOOTER */}
         <div
           className={`animate-fadeUp flex items-center justify-center gap-2 text-xs text-[var(--text-muted)] ${compactClasses.footerText}`}
           style={{ animationDelay: "300ms" }}
         >
           <span>Powered by</span>
-          <span className="font-semibold text-[var(--text-secondary)]">CodeVerity AI</span>
+          <span className="font-semibold text-[var(--text-secondary)]">
+            CodeVerity AI
+          </span>
           <span>•</span>
           <span>Built for developers</span>
         </div>
       </div>
-
-      {/* Corner-bracket breathing small, self-contained, pure CSS.
-          Covered automatically by index.css's global
-          prefers-reduced-motion rule. */}
-      <style>{`
-        @keyframes cv-corner-breathe {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 1; }
-        }
-        .cv-corner {
-          animation: cv-corner-breathe 2.4s ease-in-out infinite;
-        }
-      `}</style>
     </div>
   );
 }

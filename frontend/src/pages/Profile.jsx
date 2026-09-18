@@ -1,73 +1,80 @@
-// frontend/src/pages/Profile.jsx
-
+// src/pages/Profile.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  ShieldCheck,
+  Activity,
+  LayoutGrid,
+  Star,
+  CheckCircle2,
+  Calendar,
+  Settings as SettingsIcon,
+  ArrowRight,
+  AlertCircle,
+  RotateCw,
+} from "lucide-react";
 import { useAuth } from "../App";
 import axios from "../api/axios";
 import { usePreferences } from "../context/PreferencesContext";
 import { useToast } from "../hooks/useToast";
 
 /* =========================================================
-   CODEVERITY LOGO uses the theme's --accent token, so it
-   follows whatever palette is active without edits here.
+   CODEVERITY LOGO — uses ShieldCheck from Lucide, matching
+   Navbar / Home / AuthLayout.
 ========================================================= */
-
 function CodeVerityLogo() {
   return (
     <div className="relative flex h-10 w-10 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
       <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
+      <ShieldCheck
+        size={18}
+        strokeWidth={2}
+        aria-hidden="true"
         className="relative text-[var(--accent)]"
-      >
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-        <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
+      />
+      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-secondary)]">
+        <span className="text-[6px] font-bold text-[var(--accent)]">
+          &lt;/&gt;
+        </span>
       </div>
-      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
+      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
     </div>
   );
 }
 
 /* =========================================================
-   SECTION KICKER – small uppercase label + accent dot, used
-   to give each card a consistent heading treatment instead
-   of a plain <h2>, matching the page header's "Account" tag.
+   SECTION KICKER
 ========================================================= */
-
-function SectionKicker({ icon, title, subtitle, compact, right }) {
+function SectionKicker({ Icon, title, subtitle, compact, right }) {
   return (
     <div
-      className={`flex flex-wrap items-start justify-between gap-2 ${compact ? "mb-3" : "mb-5"}`}
+      className={`flex flex-wrap items-start justify-between gap-2 ${
+        compact ? "mb-3" : "mb-5"
+      }`}
     >
       <div className="flex min-w-0 items-start gap-2.5">
-        {icon && (
+        {Icon && (
           <span
             className={`mt-0.5 flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] ${
-              compact ? "h-6 w-6 text-[11px]" : "h-7 w-7 text-xs"
+              compact ? "h-6 w-6" : "h-7 w-7"
             }`}
           >
-            {icon}
+            <Icon size={compact ? 12 : 14} strokeWidth={2} aria-hidden="true" />
           </span>
         )}
         <div className="min-w-0">
           <h2
-            className={`font-semibold leading-tight text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}
+            className={`font-semibold leading-tight text-[var(--text-primary)] ${
+              compact ? "text-xs" : "text-sm"
+            }`}
           >
             {title}
           </h2>
           {subtitle && (
             <p
-              className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+              className={`mt-0.5 text-[var(--text-muted)] ${
+                compact ? "text-[10px]" : "text-[11px]"
+              }`}
             >
               {subtitle}
             </p>
@@ -82,7 +89,6 @@ function SectionKicker({ icon, title, subtitle, compact, right }) {
 /* =========================================================
    PROFILE
 ========================================================= */
-
 export default function Profile() {
   const navigate = useNavigate();
   const { token } = useAuth();
@@ -121,8 +127,9 @@ export default function Profile() {
         setUser(u);
       })
       .catch((err) => {
+        console.error("Failed to load user profile", err);
         toastError("Failed to load user profile.");
-        console.error(err);
+        setError("Failed to load your profile.");
       });
 
     const reportsPromise = axios
@@ -131,8 +138,8 @@ export default function Profile() {
         setReports(res.data.reports ?? []);
       })
       .catch((err) => {
+        console.error("Failed to load report history", err);
         toastError("Failed to load report history.");
-        console.error(err);
         setReports([]);
       });
 
@@ -143,27 +150,29 @@ export default function Profile() {
 
   useEffect(() => {
     load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token]);
 
   if (loading && !user) {
     return <ProfileSkeleton compact={compact} />;
   }
 
-  // NOTE: `error`/`setError` is currently dead — both catch blocks
-  // above call toastError() instead of setError(), so this branch
-  // never renders. Left in place pending a decision on whether to
-  // wire it up (full-page error state on true failures) or remove it.
+  /* ─── ERROR ─── */
   if (error) {
     return (
-      <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col items-center justify-center gap-4 text-[var(--text-primary)] px-4">
-        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)]">
-          <span className="text-xl">!</span>
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-[var(--bg-primary)] px-4 text-[var(--text-primary)]">
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
+          <AlertCircle size={24} strokeWidth={2} aria-hidden="true" />
         </div>
-        <p className="text-sm text-[var(--color-danger)] text-center">{error}</p>
+        <p className="max-w-sm text-center text-sm text-[var(--color-danger)]">
+          {error}
+        </p>
         <button
+          type="button"
           onClick={load}
-          className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--border-medium)] hover:text-[var(--text-primary)] active:scale-[0.98]"
+          className="inline-flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.98]"
         >
+          <RotateCw size={12} strokeWidth={2.4} aria-hidden="true" />
           Retry
         </button>
       </div>
@@ -221,43 +230,39 @@ export default function Profile() {
 
   const compactClasses = compact
     ? {
-        topPadding: "pt-14",
+        topPadding: "pt-20",
         container: "px-3 py-4 sm:px-4",
         headerMargin: "mb-3",
         heading: "text-lg sm:text-xl",
-        subHeading: "text-[10px]",
+        subHeading: "text-[11px]",
         heroPadding: "p-4 sm:p-4",
         heroGap: "gap-3",
         avatarSize: "h-16 w-16 text-xl",
-        avatarOnline: "h-4 w-4",
         nameSize: "text-lg",
-        roleSize: "text-[9px]",
-        userEmailSize: "text-[10px]",
+        userEmailSize: "text-[11px]",
         pillsGap: "gap-1.5",
-        pillPadding: "px-2 py-1 text-[9px]",
         statsGap: "gap-2",
         statCardPadding: "p-3",
         statValueSize: "text-xl",
-        statIconSize: "h-6 w-6 text-xs",
+        statIconSize: "h-6 w-6",
         gradeBreakdownPadding: "p-4",
-        gradeBreakdownMargin: "mb-3",
-        gradeLabelSize: "text-[9px]",
+        gradeLabelSize: "text-[10px]",
         gradeBarHeight: "h-1",
         recentActivityPadding: "p-1.5",
         recentRowPadding: "px-2 py-2",
-        recentRepoSize: "text-[10px]",
-        recentDateSize: "text-[9px]",
-        recentScoreSize: "text-[9px] px-1.5 py-0.5",
+        recentRepoSize: "text-[11px]",
+        recentDateSize: "text-[10px]",
+        recentScoreSize: "text-[10px] px-1.5 py-0.5",
         emptyStatePadding: "py-10 px-4",
         emptyStateTitle: "text-sm",
-        emptyStateDesc: "text-[10px]",
+        emptyStateDesc: "text-[11px]",
         footerMargin: "mt-4",
-        footerText: "text-[9px]",
-        viewAllButton: "text-[9px] px-2 py-1",
-        settingsButton: "px-3 py-2 text-[10px]",
+        footerText: "text-[10px]",
+        viewAllButton: "text-[10px] px-2 py-1",
+        settingsButton: "px-3 py-2 text-[11px]",
       }
     : {
-        topPadding: "pt-16",
+        topPadding: "pt-24",
         container: "px-4 py-6 sm:px-6 lg:px-8",
         headerMargin: "mb-5",
         heading: "text-xl sm:text-2xl",
@@ -265,47 +270,47 @@ export default function Profile() {
         heroPadding: "p-5 sm:p-6",
         heroGap: "gap-5",
         avatarSize: "h-20 w-20 text-2xl",
-        avatarOnline: "h-5 w-5",
         nameSize: "text-xl",
-        roleSize: "text-[9px]",
         userEmailSize: "text-xs",
         pillsGap: "gap-2",
-        pillPadding: "px-2.5 py-1.5 text-[9px]",
         statsGap: "gap-3",
         statCardPadding: "p-4",
         statValueSize: "text-2xl",
-        statIconSize: "h-8 w-8 text-sm",
+        statIconSize: "h-8 w-8",
         gradeBreakdownPadding: "p-5",
-        gradeBreakdownMargin: "mb-5",
-        gradeLabelSize: "text-[10px]",
+        gradeLabelSize: "text-[11px]",
         gradeBarHeight: "h-1.5",
         recentActivityPadding: "p-2",
         recentRowPadding: "px-3 py-3",
-        recentRepoSize: "text-[11px]",
-        recentDateSize: "text-[9px]",
-        recentScoreSize: "text-[9px] px-2 py-1",
+        recentRepoSize: "text-xs",
+        recentDateSize: "text-[10px]",
+        recentScoreSize: "text-[10px] px-2 py-1",
         emptyStatePadding: "py-16 px-6",
         emptyStateTitle: "text-base",
         emptyStateDesc: "text-xs",
         footerMargin: "mt-6",
-        footerText: "text-[9px]",
-        viewAllButton: "text-[10px] px-2.5 py-1.5",
+        footerText: "text-[10px]",
+        viewAllButton: "text-[11px] px-2.5 py-1.5",
         settingsButton: "px-4 py-2.5 text-xs",
       };
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}>
+    <div
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}
+    >
       <div className={`mx-auto w-full max-w-7xl ${compactClasses.container}`}>
-        <div className={`space-y-5 ${compact ? "space-y-4" : "space-y-5"}`}>
+        <div className={compact ? "space-y-4" : "space-y-5"}>
           {/* PAGE HEADER */}
           <div className={compactClasses.headerMargin}>
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-              <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-success)]" />
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Account
               </span>
             </div>
-            <h1 className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}>
+            <h1
+              className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+            >
               Profile
             </h1>
             <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>
@@ -313,7 +318,7 @@ export default function Profile() {
             </p>
           </div>
 
-          {/* HERO – User Profile Card */}
+          {/* HERO */}
           <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
             <span className="absolute inset-x-0 top-0 h-[2px] bg-[var(--accent)]" />
             <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
@@ -325,14 +330,9 @@ export default function Profile() {
               {/* Avatar */}
               <div className="relative shrink-0 self-start sm:self-auto">
                 <div
-                  className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold shadow-lg shadow-[var(--accent-soft-strong)] text-[var(--accent-contrast)] ring-1 ring-[var(--accent-contrast)]/10 ${compactClasses.avatarSize}`}
+                  className={`flex items-center justify-center rounded-2xl bg-[var(--accent)] font-bold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ring-1 ring-[var(--accent-contrast)]/10 ${compactClasses.avatarSize}`}
                 >
                   {initials}
-                </div>
-                <div
-                  className={`absolute -bottom-1.5 -right-1.5 flex items-center justify-center rounded-full border-2 border-[var(--bg-card)] bg-[var(--color-success)] ${compactClasses.avatarOnline}`}
-                >
-                  <span className="h-1.5 w-1.5 rounded-full bg-white" />
                 </div>
               </div>
 
@@ -346,7 +346,9 @@ export default function Profile() {
                   </h1>
                   {user?.role && (
                     <span
-                      className={`w-fit rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[var(--text-secondary)] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]"}`}
+                      className={`w-fit rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] font-semibold uppercase tracking-wider text-[var(--text-secondary)] ${
+                        compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]"
+                      }`}
                     >
                       {user.role}
                     </span>
@@ -359,10 +361,14 @@ export default function Profile() {
                 </p>
                 <div className={`mt-3 flex flex-wrap ${compactClasses.pillsGap}`}>
                   {joinDate && (
-                    <Pill icon="◷" text={`Joined ${joinDate}`} compact={compact} />
+                    <Pill
+                      Icon={Calendar}
+                      text={`Joined ${joinDate}`}
+                      compact={compact}
+                    />
                   )}
                   <Pill
-                    icon="⌁"
+                    Icon={Activity}
                     text={`${totalScans} scan${totalScans !== 1 ? "s" : ""}`}
                     compact={compact}
                   />
@@ -371,19 +377,22 @@ export default function Profile() {
 
               {/* Settings button */}
               <button
+                type="button"
                 onClick={() => navigate("/settings")}
-                className={`flex w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.98] sm:w-auto ${compactClasses.settingsButton}`}
+                className={`flex w-full shrink-0 items-center justify-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] font-medium text-[var(--text-secondary)] transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] active:scale-[0.98] sm:w-auto ${compactClasses.settingsButton}`}
               >
-                <span className="text-sm">⚙</span>
+                <SettingsIcon size={13} strokeWidth={2} aria-hidden="true" />
                 Settings
               </button>
             </div>
           </div>
 
           {/* STATS */}
-          <div className={`grid grid-cols-2 ${compactClasses.statsGap} md:grid-cols-4`}>
+          <div
+            className={`grid grid-cols-2 ${compactClasses.statsGap} md:grid-cols-4`}
+          >
             <StatCard
-              icon="⌁"
+              Icon={Activity}
               label="Total Scans"
               value={totalScans}
               compact={compact}
@@ -392,7 +401,7 @@ export default function Profile() {
               iconSize={compactClasses.statIconSize}
             />
             <StatCard
-              icon="◈"
+              Icon={LayoutGrid}
               label="Average Score"
               value={`${avgScore}%`}
               compact={compact}
@@ -401,7 +410,7 @@ export default function Profile() {
               iconSize={compactClasses.statIconSize}
             />
             <StatCard
-              icon="★"
+              Icon={Star}
               label="Best Grade"
               value={bestReport?.grade ?? "—"}
               compact={compact}
@@ -410,7 +419,7 @@ export default function Profile() {
               iconSize={compactClasses.statIconSize}
             />
             <StatCard
-              icon="✓"
+              Icon={CheckCircle2}
               label="A-Grade Repos"
               value={gradeCounts["A"] ?? 0}
               compact={compact}
@@ -426,41 +435,55 @@ export default function Profile() {
               className={`rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] ${compactClasses.gradeBreakdownPadding}`}
             >
               <SectionKicker
-                icon="◈"
+                Icon={LayoutGrid}
                 title="Grade Breakdown"
                 subtitle="Distribution of your repository audit grades"
                 compact={compact}
                 right={
                   <div
-                    className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}
+                    className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${
+                      compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-[10px]"
+                    }`}
                   >
                     {totalScans} total
                   </div>
                 }
               />
 
-              <div className={`space-y-3 ${compact ? "space-y-2" : ""}`}>
+              <div className={compact ? "space-y-2" : "space-y-3"}>
                 {["A", "B", "C", "D", "F"].map((g) => {
                   const count = gradeCounts[g] ?? 0;
-                  const pct = totalScans ? Math.round((count / totalScans) * 100) : 0;
+                  const pct = totalScans
+                    ? Math.round((count / totalScans) * 100)
+                    : 0;
                   const style = gradeStyle(g);
 
                   return (
                     <div
                       key={g}
-                      className={`flex items-center gap-2 sm:gap-3 ${compact ? "gap-2" : ""}`}
+                      className={`flex items-center gap-2 sm:gap-3 ${
+                        compact ? "gap-2" : ""
+                      }`}
                     >
                       <span
-                        className={`flex shrink-0 items-center justify-center rounded-lg text-xs font-bold ${style.badge} ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}
+                        className={`flex shrink-0 items-center justify-center rounded-lg text-xs font-bold ${style.badge} ${
+                          compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"
+                        }`}
                       >
                         {g}
                       </span>
                       <div className="min-w-0 flex-1">
-                        <div className={`flex justify-between gap-2 ${compact ? "mb-1" : "mb-1.5"}`}>
-                          <span className={`text-[var(--text-muted)] ${compactClasses.gradeLabelSize}`}>
+                        <div
+                          className={`flex justify-between gap-2 ${
+                            compact ? "mb-1" : "mb-1.5"
+                          }`}
+                        >
+                          <span
+                            className={`text-[var(--text-muted)] ${compactClasses.gradeLabelSize}`}
+                          >
                             Grade {g}
                           </span>
-                          <span className={`shrink-0 text-[var(--text-muted)] text-[9px]`}>
+                          <span className="shrink-0 text-[10px] text-[var(--text-muted)]">
                             {pct}%
                           </span>
                         </div>
@@ -473,9 +496,7 @@ export default function Profile() {
                           />
                         </div>
                       </div>
-                      <span
-                        className={`w-12 shrink-0 text-right text-[var(--text-muted)] text-[9px] sm:w-14`}
-                      >
+                      <span className="w-12 shrink-0 text-right text-[10px] text-[var(--text-muted)] sm:w-14">
                         {count} repo{count !== 1 ? "s" : ""}
                       </span>
                     </div>
@@ -488,18 +509,24 @@ export default function Profile() {
           {/* RECENT ACTIVITY */}
           {reports.length > 0 && (
             <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-              <div className={`border-b border-[var(--border-dark)] ${compact ? "px-4 py-3" : "px-5 py-4"}`}>
+              <div
+                className={`border-b border-[var(--border-dark)] ${
+                  compact ? "px-4 py-3" : "px-5 py-4"
+                }`}
+              >
                 <SectionKicker
-                  icon="⌁"
+                  Icon={Activity}
                   title="Recent Activity"
                   subtitle="Your latest repository audits"
                   compact={compact}
                   right={
                     <button
+                      type="button"
                       onClick={() => navigate("/history")}
-                      className={`rounded-lg font-medium text-[var(--accent)] transition-colors duration-200 hover:bg-[var(--accent-soft)] ${compactClasses.viewAllButton}`}
+                      className={`inline-flex items-center gap-1 rounded-lg font-medium text-[var(--accent)] transition-colors duration-200 hover:bg-[var(--accent-soft)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${compactClasses.viewAllButton}`}
                     >
-                      View all →
+                      View all
+                      <ArrowRight size={11} strokeWidth={2.2} aria-hidden="true" />
                     </button>
                   }
                 />
@@ -515,7 +542,8 @@ export default function Profile() {
                       4
                   );
                   const style = gradeStyle((r.grade ?? "N/A")[0]);
-                  const repoName = r.repoUrl?.replace("https://github.com/", "") ?? "Unknown";
+                  const repoName =
+                    r.repoUrl?.replace("https://github.com/", "") ?? "Unknown";
                   const date = r.createdAt
                     ? new Date(r.createdAt).toLocaleDateString("en-US", {
                         month: "short",
@@ -529,7 +557,9 @@ export default function Profile() {
                       className={`group flex items-center gap-2 rounded-xl transition-colors duration-150 hover:bg-[var(--bg-primary)] sm:gap-3 ${compactClasses.recentRowPadding}`}
                     >
                       <span
-                        className={`flex shrink-0 items-center justify-center rounded-lg font-bold ${style.badge} ${compact ? "h-6 w-6 text-[9px]" : "h-7 w-7 text-[10px]"}`}
+                        className={`flex shrink-0 items-center justify-center rounded-lg font-bold ${style.badge} ${
+                          compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-[11px]"
+                        }`}
                       >
                         {r.grade ?? "N/A"}
                       </span>
@@ -539,7 +569,7 @@ export default function Profile() {
                         >
                           {repoName}
                         </p>
-                        <p className={`mt-0.5 text-[var(--text-muted)] text-[9px]`}>
+                        <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">
                           Repository audit
                         </p>
                       </div>
@@ -568,11 +598,15 @@ export default function Profile() {
               <div className="pointer-events-none absolute left-1/2 top-0 h-40 w-40 -translate-x-1/2 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="relative">
                 <div
-                  className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "h-12 w-12" : "h-14 w-14"}`}
+                  className={`mx-auto mb-5 flex items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--accent)] ${
+                    compact ? "h-12 w-12" : "h-14 w-14"
+                  }`}
                 >
-                  <span className={`text-[var(--accent)] ${compact ? "text-lg" : "text-xl"}`}>
-                    ◈
-                  </span>
+                  <LayoutGrid
+                    size={compact ? 20 : 24}
+                    strokeWidth={1.7}
+                    aria-hidden="true"
+                  />
                 </div>
                 <p
                   className={`font-semibold text-[var(--text-secondary)] ${compactClasses.emptyStateTitle}`}
@@ -586,10 +620,14 @@ export default function Profile() {
                   profile and see your audit statistics here.
                 </p>
                 <button
+                  type="button"
                   onClick={() => navigate("/dashboard")}
-                  className={`mt-5 rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95 ${compact ? "px-4 py-2 text-[10px]" : "px-5 py-2.5 text-xs"}`}
+                  className={`mt-5 inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition-all duration-200 hover:bg-[var(--accent-hover)] hover:scale-[1.02] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] active:scale-95 ${
+                    compact ? "px-4 py-2 text-[11px]" : "px-5 py-2.5 text-xs"
+                  }`}
                 >
-                  Start analyzing →
+                  Start analyzing
+                  <ArrowRight size={12} strokeWidth={2.2} aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -612,31 +650,25 @@ export default function Profile() {
 /* =========================================================
    PILL
 ========================================================= */
-
-function Pill({ icon, text, compact }) {
+function Pill({ Icon, text, compact }) {
   return (
     <span
-      className={`flex items-center gap-1.5 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compact ? "px-2 py-1 text-[9px]" : "px-2.5 py-1.5 text-[9px]"}`}
+      className={`flex items-center gap-1.5 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${
+        compact ? "px-2 py-1 text-[10px]" : "px-2.5 py-1.5 text-[10px]"
+      }`}
     >
-      <span className="text-[var(--accent)]">{icon}</span>
+      {Icon && (
+        <Icon size={11} strokeWidth={2} aria-hidden="true" className="text-[var(--accent)]" />
+      )}
       {text}
     </span>
   );
 }
 
 /* =========================================================
-   STAT CARD – matches Dashboard StatCard style
+   STAT CARD
 ========================================================= */
-
-function StatCard({
-  icon,
-  label,
-  value,
-  compact,
-  padding,
-  valueSize,
-  iconSize,
-}) {
+function StatCard({ Icon, label, value, compact, padding, valueSize, iconSize }) {
   return (
     <div
       className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-md)] ${padding}`}
@@ -648,81 +680,69 @@ function StatCard({
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative">
         <div
-          className={`mb-2 flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] sm:mb-3 ${iconSize}`}
+          className={`mb-2 flex items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] sm:mb-3 ${iconSize}`}
         >
-          {icon}
+          {Icon && <Icon size={compact ? 14 : 16} strokeWidth={2} aria-hidden="true" />}
         </div>
         <p
           className={`font-bold tabular-nums text-[var(--text-primary)] ${valueSize}`}
         >
           {value}
         </p>
-        <p
-          className={`mt-0.5 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[9px]"}`}
-        >
-          {label}
-        </p>
+        <p className="mt-0.5 text-[10px] text-[var(--text-muted)]">{label}</p>
       </div>
     </div>
   );
 }
 
 /* =========================================================
-   GRADE STYLE – 5-tier severity scale, aligned with the same
-   tokens used in History.jsx and Dashboard.jsx's ReportRow
-   (success/info/warning/caution/danger).
+   GRADE STYLE
 ========================================================= */
-
 function gradeStyle(letter) {
   const map = {
     A: {
       badge: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
-      text: "text-[var(--color-success)]",
       bar: "bg-[var(--color-success)]",
     },
     B: {
       badge: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
-      text: "text-[var(--color-info)]",
       bar: "bg-[var(--color-info)]",
     },
     C: {
       badge: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
-      text: "text-[var(--color-warning)]",
       bar: "bg-[var(--color-warning)]",
     },
     D: {
       badge: "bg-[var(--color-caution-soft)] text-[var(--color-caution)]",
-      text: "text-[var(--color-caution)]",
       bar: "bg-[var(--color-caution)]",
     },
     F: {
       badge: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
-      text: "text-[var(--color-danger)]",
       bar: "bg-[var(--color-danger)]",
     },
   };
   return (
     map[letter] ?? {
       badge: "bg-[var(--bg-hover)] text-[var(--text-muted)]",
-      text: "text-[var(--text-muted)]",
       bar: "bg-[var(--text-muted)]",
     }
   );
 }
 
 /* =========================================================
-   SKELETON — mirrors the real layout's shape (hero, stats,
-   grade breakdown) for an immediate sense of structure on
-   load, matching the pattern used on History and Dashboard.
+   SKELETON
 ========================================================= */
-
 function ProfileSkeleton({ compact }) {
-  const container = compact ? "px-3 py-4 sm:px-4" : "px-4 py-6 sm:px-6 lg:px-8";
-  const topPadding = compact ? "pt-14" : "pt-16";
+  const container = compact
+    ? "px-3 py-4 sm:px-4"
+    : "px-4 py-6 sm:px-6 lg:px-8";
+  const topPadding = compact ? "pt-20" : "pt-24";
   const statsGap = compact ? "gap-2" : "gap-3";
 
   return (
-    <div className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${topPadding}`}>
+    <div
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${topPadding}`}
+    >
       <div className={`mx-auto w-full max-w-7xl ${container}`}>
         <div className="animate-pulse space-y-5">
           <div className="space-y-2">
@@ -746,7 +766,10 @@ function ProfileSkeleton({ compact }) {
 
           <div className={`grid grid-cols-2 ${statsGap} md:grid-cols-4`}>
             {Array.from({ length: 4 }, (_, i) => (
-              <div key={i} className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4">
+              <div
+                key={i}
+                className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4"
+              >
                 <div className="h-8 w-8 rounded-lg bg-[var(--bg-hover)]" />
                 <div className="mt-3 h-6 w-12 rounded bg-[var(--bg-hover)]" />
                 <div className="mt-1.5 h-2 w-20 rounded bg-[var(--bg-hover)]" />
