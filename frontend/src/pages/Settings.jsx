@@ -1,18 +1,96 @@
-// frontend/src/pages/Settings.jsx
+// src/pages/Settings.jsx
 import { useEffect, useState, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  User as UserIcon,
+  Lock,
+  Palette,
+  Link2,
+  AlertTriangle,
+  CheckCircle2,
+  Moon,
+  Sun,
+  Monitor,
+  AlertCircle,
+} from "lucide-react";
+
 import axios from "../api/axios";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
 import { useToast } from "../hooks/useToast";
 
+import Section from "../components/Settings/Section";
+import Field from "../components/Settings/Field";
+import Input from "../components/Settings/Input";
+import Toggle from "../components/Settings/Toggle";
+import SaveButton from "../components/Settings/SaveButton";
+import DangerRow from "../components/Settings/DangerRow";
+import PasswordStrength from "../components/Settings/PasswordStrength";
+
 const TABS = [
-  "Account",
-  "Security",
-  "Appearance",
-  "Integrations",
-  "Danger Zone",
+  { id: "Account", label: "Account", icon: UserIcon },
+  { id: "Security", label: "Security", icon: Lock },
+  { id: "Appearance", label: "Appearance", icon: Palette },
+  { id: "Integrations", label: "Integrations", icon: Link2 },
+  { id: "Danger Zone", label: "Danger Zone", icon: AlertTriangle, danger: true },
 ];
+
+// Same class strings the old compactClasses object produced.
+function sizeFor(compact) {
+  return compact
+    ? {
+        container: "px-3 py-4 sm:px-4",
+        topPadding: "pt-20",
+        headerMargin: "mb-4",
+        heading: "text-lg sm:text-xl",
+        subHeading: "text-[11px]",
+        sidebarWidth: "md:w-36",
+        sidebarButton: "px-3 py-2 text-xs",
+        sectionPadding: "p-4",
+        sectionGap: "space-y-3",
+        avatarSize: "w-12 h-12 text-lg",
+        avatarText: "text-sm",
+        userEmail: "text-[11px]",
+        fieldLabel: "text-xs",
+        inputPadding: "px-3 py-2 text-xs",
+        toggleText: "text-xs",
+        toggleDesc: "text-[11px]",
+        saveButton: "px-4 py-1.5 text-xs",
+        dangerRowPadding: "p-3",
+        dangerTitle: "text-xs",
+        dangerDesc: "text-[11px]",
+        dangerButton: "px-3 py-1 text-[11px]",
+        footerMargin: "mt-4",
+        footerText: "text-[10px]",
+        themeButton: "py-2 text-xs",
+      }
+    : {
+        container: "px-4 py-6 sm:px-6 lg:px-8",
+        topPadding: "pt-24",
+        headerMargin: "mb-6",
+        heading: "text-xl sm:text-2xl",
+        subHeading: "text-xs",
+        sidebarWidth: "md:w-44",
+        sidebarButton: "px-4 py-2.5 text-sm",
+        sectionPadding: "p-6",
+        sectionGap: "space-y-4",
+        avatarSize: "w-16 h-16 text-2xl",
+        avatarText: "text-sm",
+        userEmail: "text-xs",
+        fieldLabel: "text-sm",
+        inputPadding: "px-4 py-2.5 text-sm",
+        toggleText: "text-sm",
+        toggleDesc: "text-xs",
+        saveButton: "px-5 py-2 text-sm",
+        dangerRowPadding: "p-4",
+        dangerTitle: "text-sm",
+        dangerDesc: "text-xs",
+        dangerButton: "px-4 py-1.5 text-xs",
+        footerMargin: "mt-6",
+        footerText: "text-[11px]",
+        themeButton: "py-2.5 text-sm",
+      };
+}
 
 export default function Settings() {
   const navigate = useNavigate();
@@ -36,8 +114,6 @@ export default function Settings() {
     setLoading(true);
     try {
       const res = await axios.get("/auth/me");
-
-      // Guard against empty 304 / cached responses
       if (!res || !res.data) return;
 
       const u = res.data.user ?? res.data;
@@ -60,7 +136,7 @@ export default function Settings() {
     } finally {
       setLoading(false);
     }
-  }, [navigate, logout]);   // ✅ toastError removed
+  }, [navigate, logout]);
 
   useEffect(() => {
     if (!isAuth) {
@@ -68,7 +144,7 @@ export default function Settings() {
       return;
     }
     fetchUser();
-  }, [isAuth, fetchUser]);  // ✅ navigate removed
+  }, [isAuth, fetchUser]);
 
   const saveProfile = async () => {
     if (!name.trim()) {
@@ -185,12 +261,10 @@ export default function Settings() {
     }
   };
 
+  const c = sizeFor(compact);
+
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] pt-16">
-        <div className="w-10 h-10 border-4 border-[var(--accent)] border-t-transparent rounded-full animate-spin" />
-      </div>
-    );
+    return <SettingsSkeleton c={c} />;
   }
 
   const initials = user?.name
@@ -205,193 +279,132 @@ export default function Settings() {
   const profileDirty =
     name.trim() !== (user?.name ?? "") || email.trim() !== (user?.email ?? "");
 
-  const compactClasses = compact
-    ? {
-        container: "px-3 py-4 sm:px-4",
-        topPadding: "pt-14",
-        headerMargin: "mb-4",
-        heading: "text-lg sm:text-xl",
-        subHeading: "text-[10px]",
-        sidebarWidth: "md:w-36",
-        sidebarButton: "px-3 py-2 text-xs",
-        sectionPadding: "p-4",
-        sectionGap: "space-y-3",
-        avatarSize: "w-12 h-12 text-lg",
-        avatarText: "text-sm",
-        userEmail: "text-[10px]",
-        fieldLabel: "text-xs",
-        inputPadding: "px-3 py-2 text-xs",
-        toggleText: "text-xs",
-        toggleDesc: "text-[10px]",
-        saveButton: "px-4 py-1.5 text-xs",
-        dangerRowPadding: "p-3",
-        dangerTitle: "text-xs",
-        dangerDesc: "text-[10px]",
-        dangerButton: "px-3 py-1 text-[10px]",
-        footerMargin: "mt-4",
-        footerText: "text-[7px]",
-        themeButton: "py-2 text-xs",
-      }
-    : {
-        container: "px-4 py-6 sm:px-6 lg:px-8",
-        topPadding: "pt-16",
-        headerMargin: "mb-6",
-        heading: "text-xl sm:text-2xl",
-        subHeading: "text-xs",
-        sidebarWidth: "md:w-44",
-        sidebarButton: "px-4 py-2.5 text-sm",
-        sectionPadding: "p-6",
-        sectionGap: "space-y-4",
-        avatarSize: "w-16 h-16 text-2xl",
-        avatarText: "text-sm",
-        userEmail: "text-xs",
-        fieldLabel: "text-sm",
-        inputPadding: "px-4 py-2.5 text-sm",
-        toggleText: "text-sm",
-        toggleDesc: "text-xs",
-        saveButton: "px-5 py-2 text-sm",
-        dangerRowPadding: "p-4",
-        dangerTitle: "text-sm",
-        dangerDesc: "text-xs",
-        dangerButton: "px-4 py-1.5 text-xs",
-        footerMargin: "mt-6",
-        footerText: "text-[9px]",
-        themeButton: "py-2.5 text-sm",
-      };
-
   return (
     <div
-      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${compactClasses.topPadding}`}
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${c.topPadding}`}
     >
-      <div className={`mx-auto w-full max-w-7xl ${compactClasses.container}`}>
-        <div className={`${compact ? "space-y-4" : "space-y-6"}`}>
+      <div className={`mx-auto w-full max-w-7xl ${c.container}`}>
+        <div className={compact ? "space-y-4" : "space-y-6"}>
           {/* HEADER */}
-          <div className={compactClasses.headerMargin}>
+          <div className={c.headerMargin}>
             <div className="flex items-center gap-2">
-              <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-              <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+              <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-success)]" />
+              <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                 Preferences
               </span>
             </div>
             <h1
-              className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+              className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${c.heading}`}
             >
               Settings
             </h1>
-            <p
-              className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}
-            >
+            <p className={`text-[var(--text-muted)] ${c.subHeading}`}>
               Manage your account and preferences
             </p>
           </div>
 
           {/* LAYOUT */}
-          <div
-            className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}
-          >
+          <div className={`flex flex-col md:flex-row ${compact ? "gap-4" : "gap-6"}`}>
             {/* SIDEBAR */}
             <nav
-              className={`-mx-1 flex gap-1 overflow-x-auto px-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 ${compactClasses.sidebarWidth} shrink-0`}
+              className={`-mx-1 flex gap-1 overflow-x-auto px-1 md:mx-0 md:flex-col md:overflow-visible md:px-0 ${c.sidebarWidth} shrink-0`}
               aria-label="Settings tabs"
             >
               {TABS.map((t) => {
-                const active = tab === t;
-                const isDanger = t === "Danger Zone";
+                const active = tab === t.id;
+                const isDanger = !!t.danger;
+                const Icon = t.icon;
                 return (
                   <button
-                    key={t}
-                    onClick={() => setTab(t)}
-                    className={`relative flex shrink-0 items-center gap-2 whitespace-nowrap ${compactClasses.sidebarButton} font-medium text-left transition-all duration-150 rounded-xl
-                      ${
-                        active
-                          ? isDanger
-                            ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)] border border-[var(--color-danger)]/30"
-                            : "bg-[var(--accent-soft)] text-[var(--accent)] border border-[var(--accent)]/30"
-                          : isDanger
-                            ? "text-[var(--color-danger)] hover:bg-[var(--color-danger-soft)] hover:text-[var(--color-danger)]"
-                            : "text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-                      }`}
+                    key={t.id}
+                    type="button"
+                    onClick={() => setTab(t.id)}
                     aria-current={active ? "page" : undefined}
+                    className={`group relative flex shrink-0 items-center gap-2 whitespace-nowrap rounded-xl border text-left font-medium transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] ${c.sidebarButton} ${
+                      active
+                        ? isDanger
+                          ? "border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
+                          : "border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)]"
+                        : isDanger
+                          ? "border-transparent text-[var(--color-danger)] hover:border-[var(--color-danger)]/20 hover:bg-[var(--color-danger-soft)]"
+                          : "border-transparent text-[var(--text-secondary)] hover:border-[var(--accent)]/20 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                    }`}
                   >
                     {active && (
                       <span
                         className={`absolute left-0 top-1/2 hidden h-4 w-0.5 -translate-y-1/2 rounded-full md:block ${
-                          isDanger ? "bg-[var(--color-danger)]" : "bg-[var(--accent)]"
+                          isDanger
+                            ? "bg-[var(--color-danger)]"
+                            : "bg-[var(--accent)]"
                         }`}
                       />
                     )}
-                    <span className="text-sm leading-none">{tabIcon(t)}</span>
-                    {t}
+                    <Icon
+                      size={compact ? 13 : 15}
+                      strokeWidth={1.9}
+                      aria-hidden="true"
+                      className="transition-transform duration-200 group-hover:scale-110"
+                    />
+                    {t.label}
                   </button>
                 );
               })}
             </nav>
 
             {/* PANEL */}
-            <div className={`flex-1 min-w-0 ${compact ? "space-y-4" : "space-y-5"}`}>
+            <div className={`min-w-0 flex-1 ${compact ? "space-y-4" : "space-y-5"}`}>
               {/* ACCOUNT */}
               {tab === "Account" && (
                 <Section
                   title="Public Profile"
-                  icon="👤"
+                  icon={UserIcon}
                   compact={compact}
-                  padding={compactClasses.sectionPadding}
-                  gap={compactClasses.sectionGap}
+                  padding={c.sectionPadding}
+                  gap={c.sectionGap}
                 >
                   <div
-                    className={`flex items-center ${compact ? "gap-3 mb-3" : "gap-4 mb-5"}`}
+                    className={`flex items-center ${compact ? "mb-3 gap-3" : "mb-5 gap-4"}`}
                   >
                     <div
-                      className={`shrink-0 rounded-2xl bg-[var(--accent)] flex items-center justify-center font-bold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ${compactClasses.avatarSize}`}
+                      className={`flex shrink-0 items-center justify-center rounded-2xl bg-[var(--accent)] font-bold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ${c.avatarSize}`}
                     >
                       {initials}
                     </div>
                     <div className="min-w-0">
                       <p
-                        className={`truncate font-medium text-[var(--text-primary)] ${compactClasses.avatarText}`}
+                        className={`truncate font-medium text-[var(--text-primary)] ${c.avatarText}`}
                       >
                         {name || "Your Name"}
                       </p>
-                      <p
-                        className={`truncate text-[var(--text-muted)] ${compactClasses.userEmail}`}
-                      >
+                      <p className={`truncate text-[var(--text-muted)] ${c.userEmail}`}>
                         {email}
                       </p>
                     </div>
                   </div>
 
-                  <Field
-                    label="Full Name"
-                    compact={compact}
-                    labelClass={compactClasses.fieldLabel}
-                  >
+                  <Field label="Full Name" compact={compact} labelClass={c.fieldLabel}>
                     <Input
                       value={name}
                       onChange={setName}
                       placeholder="Your full name"
-                      compact={compact}
-                      padding={compactClasses.inputPadding}
+                      padding={c.inputPadding}
                     />
                   </Field>
 
-                  <Field
-                    label="Email Address"
-                    compact={compact}
-                    labelClass={compactClasses.fieldLabel}
-                  >
+                  <Field label="Email Address" compact={compact} labelClass={c.fieldLabel}>
                     <Input
                       value={email}
                       onChange={setEmail}
                       placeholder="you@example.com"
                       type="email"
-                      compact={compact}
-                      padding={compactClasses.inputPadding}
+                      padding={c.inputPadding}
                     />
                   </Field>
 
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                     {profileDirty && (
-                      <p className="text-xs text-[var(--color-warning)]">
+                      <p className="inline-flex items-center gap-1.5 text-xs text-[var(--color-warning)]">
+                        <AlertCircle size={12} aria-hidden="true" />
                         Unsaved changes
                       </p>
                     )}
@@ -400,8 +413,7 @@ export default function Settings() {
                         onClick={saveProfile}
                         loading={saving}
                         disabled={!profileDirty}
-                        compact={compact}
-                        buttonClass={`${compactClasses.saveButton} w-full sm:w-auto`}
+                        buttonClass={`${c.saveButton} w-full sm:w-auto`}
                       />
                     </div>
                   </div>
@@ -412,15 +424,15 @@ export default function Settings() {
               {tab === "Security" && (
                 <Section
                   title="Change Password"
-                  icon="🔐"
+                  icon={Lock}
                   compact={compact}
-                  padding={compactClasses.sectionPadding}
-                  gap={compactClasses.sectionGap}
+                  padding={c.sectionPadding}
+                  gap={c.sectionGap}
                 >
                   <Field
                     label="Current Password"
                     compact={compact}
-                    labelClass={compactClasses.fieldLabel}
+                    labelClass={c.fieldLabel}
                   >
                     <Input
                       value={oldPass}
@@ -428,14 +440,13 @@ export default function Settings() {
                       type="password"
                       placeholder="••••••••"
                       autoComplete="current-password"
-                      compact={compact}
-                      padding={compactClasses.inputPadding}
+                      padding={c.inputPadding}
                     />
                   </Field>
                   <Field
                     label="New Password"
                     compact={compact}
-                    labelClass={compactClasses.fieldLabel}
+                    labelClass={c.fieldLabel}
                   >
                     <Input
                       value={newPass}
@@ -443,14 +454,13 @@ export default function Settings() {
                       type="password"
                       placeholder="••••••••"
                       autoComplete="new-password"
-                      compact={compact}
-                      padding={compactClasses.inputPadding}
+                      padding={c.inputPadding}
                     />
                   </Field>
                   <Field
                     label="Confirm New Password"
                     compact={compact}
-                    labelClass={compactClasses.fieldLabel}
+                    labelClass={c.fieldLabel}
                   >
                     <Input
                       value={confPass}
@@ -458,14 +468,14 @@ export default function Settings() {
                       type="password"
                       placeholder="••••••••"
                       autoComplete="new-password"
-                      compact={compact}
-                      padding={compactClasses.inputPadding}
+                      padding={c.inputPadding}
                     />
                     {newPass && confPass && newPass !== confPass && (
                       <p
-                        className="text-[var(--color-danger)] text-xs mt-1"
                         role="alert"
+                        className="mt-1 inline-flex items-center gap-1.5 text-xs text-[var(--color-danger)]"
                       >
+                        <AlertCircle size={12} aria-hidden="true" />
                         Passwords don't match
                       </p>
                     )}
@@ -479,8 +489,7 @@ export default function Settings() {
                       loading={saving}
                       label="Update Password"
                       disabled={!oldPass || !newPass || !confPass}
-                      compact={compact}
-                      buttonClass={`${compactClasses.saveButton} w-full sm:w-auto`}
+                      buttonClass={`${c.saveButton} w-full sm:w-auto`}
                     />
                   </div>
                 </Section>
@@ -490,32 +499,41 @@ export default function Settings() {
               {tab === "Appearance" && (
                 <Section
                   title="Display Preferences"
-                  icon="🎨"
+                  icon={Palette}
                   compact={compact}
-                  padding={compactClasses.sectionPadding}
-                  gap={compactClasses.sectionGap}
+                  padding={c.sectionPadding}
+                  gap={c.sectionGap}
                 >
-                  <Field
-                    label="Theme"
-                    compact={compact}
-                    labelClass={compactClasses.fieldLabel}
-                  >
+                  <Field label="Theme" compact={compact} labelClass={c.fieldLabel}>
                     <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                      {["dark", "light", "system"].map((t) => (
-                        <button
-                          key={t}
-                          onClick={() => setTheme(t)}
-                          className={`flex-1 ${compactClasses.themeButton} capitalize border rounded-xl transition-all duration-150
-                            ${
-                              theme === t
-                                ? "bg-[var(--accent-soft)] border-[var(--accent)]/40 text-[var(--accent)]"
-                                : "bg-[var(--bg-primary)] border-[var(--border-light)] text-[var(--text-secondary)] hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
+                      {[
+                        { id: "dark", label: "Dark", Icon: Moon },
+                        { id: "light", label: "Light", Icon: Sun },
+                        { id: "system", label: "System", Icon: Monitor },
+                      ].map(({ id, label, Icon }) => {
+                        const active = theme === id;
+                        return (
+                          <button
+                            key={id}
+                            type="button"
+                            onClick={() => setTheme(id)}
+                            aria-pressed={active}
+                            className={`group flex flex-1 items-center justify-center gap-2 rounded-xl border transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] ${c.themeButton} ${
+                              active
+                                ? "border-[var(--accent)]/40 bg-[var(--accent-soft)] text-[var(--accent)]"
+                                : "border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:border-[var(--accent)]/25 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
                             }`}
-                        >
-                          {t === "dark" ? "🌙" : t === "light" ? "☀️" : "💻"}{" "}
-                          {t}
-                        </button>
-                      ))}
+                          >
+                            <Icon
+                              size={compact ? 13 : 15}
+                              strokeWidth={1.9}
+                              aria-hidden="true"
+                              className="transition-transform duration-200 group-hover:scale-110"
+                            />
+                            {label}
+                          </button>
+                        );
+                      })}
                     </div>
                   </Field>
 
@@ -524,18 +542,16 @@ export default function Settings() {
                     description="Show report cards in a condensed layout"
                     value={compact}
                     onChange={setCompact}
-                    compact={compact}
-                    textClass={compactClasses.toggleText}
-                    descClass={compactClasses.toggleDesc}
+                    textClass={c.toggleText}
+                    descClass={c.toggleDesc}
                   />
                   <Toggle
                     label="Show Score Bars"
                     description="Display score progress bars on report cards"
                     value={showScores}
                     onChange={setShowScores}
-                    compact={compact}
-                    textClass={compactClasses.toggleText}
-                    descClass={compactClasses.toggleDesc}
+                    textClass={c.toggleText}
+                    descClass={c.toggleDesc}
                   />
 
                   <div className="flex justify-end">
@@ -543,8 +559,7 @@ export default function Settings() {
                       onClick={saveAppearance}
                       loading={false}
                       label="Save Preferences"
-                      compact={compact}
-                      buttonClass={`${compactClasses.saveButton} w-full sm:w-auto`}
+                      buttonClass={`${c.saveButton} w-full sm:w-auto`}
                     />
                   </div>
                 </Section>
@@ -554,21 +569,26 @@ export default function Settings() {
               {tab === "Integrations" && (
                 <Section
                   title="GitHub Integration"
-                  icon="🔗"
+                  icon={Link2}
                   compact={compact}
-                  padding={compactClasses.sectionPadding}
-                  gap={compactClasses.sectionGap}
+                  padding={c.sectionPadding}
+                  gap={c.sectionGap}
                 >
                   <p
-                    className={`text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-xs"}`}
+                    className={`text-[var(--text-muted)] ${compact ? "text-[11px]" : "text-xs"}`}
                   >
-                    Connect your GitHub account to enable Auto‑Fix, which
-                    creates PRs with AI‑generated fixes for detected issues.
+                    Connect your GitHub account to enable Auto‑Fix, which creates
+                    PRs with AI‑generated fixes for detected issues.
                   </p>
 
                   {user?.hasGithubConnected ? (
                     <div className="flex flex-col gap-3 rounded-xl border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] p-4 sm:flex-row sm:items-center">
-                      <span className="text-2xl">✅</span>
+                      <CheckCircle2
+                        size={22}
+                        strokeWidth={1.9}
+                        aria-hidden="true"
+                        className="shrink-0 text-[var(--color-success)]"
+                      />
                       <div className="min-w-0 flex-1">
                         <p className="font-medium text-[var(--text-primary)]">
                           GitHub connected
@@ -578,27 +598,34 @@ export default function Settings() {
                         </p>
                       </div>
                       <button
+                        type="button"
                         onClick={disconnectGitHub}
-                        className="shrink-0 self-start rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.98] sm:self-auto"
+                        className="shrink-0 self-start rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:border-[var(--color-danger)]/50 hover:bg-[var(--color-danger)]/25 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] sm:self-auto"
                       >
                         Disconnect
                       </button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-4 rounded-xl border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] p-5 text-center sm:p-6">
-                      <span className="text-4xl">🔗</span>
+                      <Link2
+                        size={34}
+                        strokeWidth={1.6}
+                        aria-hidden="true"
+                        className="text-[var(--accent)]"
+                      />
                       <div>
                         <p className="font-medium text-[var(--text-primary)]">
                           Connect GitHub
                         </p>
                         <p className="text-xs text-[var(--text-muted)]">
-                          Authorize CodeVerity to create branches and pull
-                          requests on your behalf.
+                          Authorize CodeVerity to create branches and pull requests
+                          on your behalf.
                         </p>
                       </div>
                       <button
+                        type="button"
                         onClick={connectGitHub}
-                        className="w-full rounded-xl bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] transition-all duration-150 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)] sm:w-auto"
+                        className="w-full rounded-xl bg-[var(--accent)] px-6 py-2.5 font-semibold text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] sm:w-auto"
                       >
                         Connect GitHub Account
                       </button>
@@ -612,7 +639,7 @@ export default function Settings() {
                       What Auto‑Fix can do
                     </p>
                     <ul
-                      className={`mt-2 space-y-1 text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-xs"}`}
+                      className={`mt-2 space-y-1 text-[var(--text-muted)] ${compact ? "text-[11px]" : "text-xs"}`}
                     >
                       <li>• Create a branch with the proposed fix</li>
                       <li>• Commit the fix to the branch</li>
@@ -627,23 +654,22 @@ export default function Settings() {
               {tab === "Danger Zone" && (
                 <Section
                   title="Danger Zone"
-                  icon="⚠️"
+                  icon={AlertTriangle}
                   danger
                   compact={compact}
-                  padding={compactClasses.sectionPadding}
-                  gap={compactClasses.sectionGap}
+                  padding={c.sectionPadding}
+                  gap={c.sectionGap}
                 >
-                  <div className={`space-y-4 ${compact ? "space-y-3" : ""}`}>
+                  <div className={compact ? "space-y-3" : "space-y-4"}>
                     <DangerRow
                       title="Clear Report History"
                       description="Permanently delete all your past analysis reports."
                       label="Clear History"
                       onClick={clearHistory}
-                      compact={compact}
-                      padding={compactClasses.dangerRowPadding}
-                      titleClass={compactClasses.dangerTitle}
-                      descClass={compactClasses.dangerDesc}
-                      buttonClass={compactClasses.dangerButton}
+                      padding={c.dangerRowPadding}
+                      titleClass={c.dangerTitle}
+                      descClass={c.dangerDesc}
+                      buttonClass={c.dangerButton}
                     />
                     <DangerRow
                       title="Delete Account"
@@ -651,11 +677,10 @@ export default function Settings() {
                       label="Delete Account"
                       onClick={deleteAccount}
                       bold
-                      compact={compact}
-                      padding={compactClasses.dangerRowPadding}
-                      titleClass={compactClasses.dangerTitle}
-                      descClass={compactClasses.dangerDesc}
-                      buttonClass={compactClasses.dangerButton}
+                      padding={c.dangerRowPadding}
+                      titleClass={c.dangerTitle}
+                      descClass={c.dangerDesc}
+                      buttonClass={c.dangerButton}
                     />
                   </div>
                 </Section>
@@ -665,7 +690,7 @@ export default function Settings() {
 
           {/* FOOTER */}
           <div
-            className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
+            className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${c.footerText} ${c.footerMargin}`}
           >
             <span>CodeVerity</span>
             <span>•</span>
@@ -677,258 +702,53 @@ export default function Settings() {
   );
 }
 
-/*  UI helpers  */
-
-function Section({ title, icon, children, danger, compact, padding, gap }) {
+// ─── Skeleton loading state ────────────────────────────────────
+function SettingsSkeleton({ c }) {
   return (
     <div
-      className={`bg-[var(--bg-card)] border rounded-2xl ${padding} ${gap}
-      ${danger ? "border-[var(--color-danger)]/20" : "border-[var(--border-light)]"}`}
+      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] ${c.topPadding}`}
+      aria-busy="true"
+      aria-live="polite"
     >
-      <div className="flex items-center gap-2.5">
-        {icon && (
-          <span
-            className={`flex shrink-0 items-center justify-center rounded-lg text-xs ${
-              compact ? "h-6 w-6" : "h-7 w-7"
-            } ${
-              danger
-                ? "bg-[var(--color-danger-soft)]"
-                : "bg-[var(--accent-soft)]"
-            }`}
-          >
-            {icon}
-          </span>
-        )}
-        <h2
-          className={`font-semibold ${danger ? "text-[var(--color-danger)]" : "text-[var(--text-primary)]"} ${compact ? "text-sm" : "text-base"}`}
-        >
-          {title}
-        </h2>
-      </div>
-      {children}
-    </div>
-  );
-}
+      <div className={`mx-auto w-full max-w-7xl ${c.container}`}>
+        <div className="space-y-6">
+          {/* header skeleton */}
+          <div className="space-y-3">
+            <div className="h-3 w-24 animate-pulse rounded bg-[var(--bg-hover)]" />
+            <div className="h-6 w-40 animate-pulse rounded bg-[var(--bg-hover)]" />
+            <div className="h-3 w-64 animate-pulse rounded bg-[var(--bg-hover)]" />
+          </div>
 
-function Field({ label, children, compact, labelClass }) {
-  return (
-    <div className={`space-y-1.5 ${compact ? "space-y-1" : ""}`}>
-      <label className={`text-[var(--text-secondary)] ${labelClass}`}>
-        {label}
-      </label>
-      {children}
-    </div>
-  );
-}
+          <div className="flex flex-col gap-6 md:flex-row">
+            {/* sidebar skeleton */}
+            <div className="flex gap-1 md:w-44 md:flex-col">
+              {[0, 1, 2, 3, 4].map((i) => (
+                <div
+                  key={i}
+                  className="h-9 flex-1 animate-pulse rounded-xl bg-[var(--bg-hover)] md:flex-none"
+                />
+              ))}
+            </div>
 
-function Input({
-  value,
-  onChange,
-  type = "text",
-  placeholder,
-  autoComplete,
-  compact,
-  padding,
-}) {
-  return (
-    <input
-      type={type}
-      value={value}
-      onChange={(e) => onChange(e.target.value)}
-      placeholder={placeholder}
-      autoComplete={autoComplete}
-      className={`w-full rounded-xl bg-[var(--bg-input)] border border-[var(--border-light)] text-[var(--text-primary)]
-        placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/50 transition ${padding}`}
-    />
-  );
-}
-
-function Toggle({
-  label,
-  description,
-  value,
-  onChange,
-  compact,
-  textClass,
-  descClass,
-}) {
-  return (
-    <div
-      className={`flex items-center justify-between gap-3 sm:gap-4 ${compact ? "gap-3" : ""}`}
-    >
-      <div className="min-w-0">
-        <p className={`font-medium text-[var(--text-primary)] ${textClass}`}>
-          {label}
-        </p>
-        <p className={`text-[var(--text-muted)] mt-0.5 ${descClass}`}>
-          {description}
-        </p>
-      </div>
-      <button
-        role="switch"
-        aria-checked={value}
-        onClick={() => onChange(!value)}
-        className={`relative w-11 h-6 shrink-0 rounded-full transition-colors duration-200
-          ${value ? "bg-[var(--accent)]" : "bg-[var(--border-light)]"}`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 rounded-full bg-white shadow
-            transition-transform duration-200 ${value ? "translate-x-5" : "translate-x-0"}`}
-        />
-      </button>
-    </div>
-  );
-}
-
-function SaveButton({
-  onClick,
-  loading,
-  label = "Save Changes",
-  disabled = false,
-  compact,
-  buttonClass,
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={loading || disabled}
-      className={`rounded-xl font-semibold
-        bg-[var(--accent)] text-[var(--accent-contrast)]
-        hover:bg-[var(--accent-hover)] disabled:opacity-40 disabled:cursor-not-allowed
-        transition-all hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-[var(--accent-soft-strong)] ${buttonClass}`}
-    >
-      {loading ? (
-        <span className="flex items-center justify-center gap-2">
-          <span
-            className="w-3.5 h-3.5 rounded-full border-2 border-t-transparent animate-spin"
-            style={{
-              borderColor: "var(--accent-contrast)",
-              borderTopColor: "transparent",
-              opacity: 0.85,
-            }}
-          />
-          Saving…
-        </span>
-      ) : (
-        label
-      )}
-    </button>
-  );
-}
-
-function DangerRow({
-  title,
-  description,
-  label,
-  onClick,
-  bold,
-  compact,
-  padding,
-  titleClass,
-  descClass,
-  buttonClass,
-}) {
-  return (
-    <div
-      className={`flex flex-col gap-3 rounded-xl bg-[var(--color-danger-soft)] border border-[var(--color-danger)]/10 sm:flex-row sm:items-center sm:justify-between sm:gap-4 ${padding}`}
-    >
-      <div className="min-w-0">
-        <p
-          className={`${bold ? "font-semibold text-[var(--color-danger)]" : "text-[var(--text-secondary)]"} ${titleClass}`}
-        >
-          {title}
-        </p>
-        <p className={`text-[var(--text-muted)] mt-0.5 ${descClass}`}>
-          {description}
-        </p>
-      </div>
-      <button
-        onClick={onClick}
-        className={`shrink-0 self-start rounded-lg font-medium sm:self-auto
-          bg-[var(--color-danger-soft)] text-[var(--color-danger)] hover:bg-[var(--color-danger)]/30 transition-all duration-150 active:scale-[0.98] ${buttonClass}`}
-      >
-        {label}
-      </button>
-    </div>
-  );
-}
-
-function PasswordStrength({ password, compact }) {
-  if (!password) return null;
-
-  const checks = {
-    length: password.length >= 8,
-    upper: /[A-Z]/.test(password),
-    number: /[0-9]/.test(password),
-    special: /[^a-zA-Z0-9]/.test(password),
-  };
-
-  const score = Object.values(checks).filter(Boolean).length;
-  const labels = ["", "Weak", "Fair", "Good", "Strong"];
-  const colors = [
-    "",
-    "bg-[var(--color-danger)]",
-    "bg-[var(--color-warning)]",
-    "bg-[var(--color-info)]",
-    "bg-[var(--color-success)]",
-  ];
-  const textColors = [
-    "",
-    "text-[var(--color-danger)]",
-    "text-[var(--color-warning)]",
-    "text-[var(--color-info)]",
-    "text-[var(--color-success)]",
-  ];
-
-  const barHeight = compact ? "h-1" : "h-1.5";
-  const labelSize = compact ? "text-[10px]" : "text-xs";
-  const chipSize = compact ? "text-[9px] px-1.5 py-0.5" : "text-xs px-2 py-0.5";
-
-  return (
-    <div className="space-y-2">
-      <div className="flex gap-1">
-        {[1, 2, 3, 4].map((i) => (
-          <div
-            key={i}
-            className={`flex-1 ${barHeight} rounded-full transition-all duration-300 ${
-              i <= score ? colors[score] : "bg-[var(--border-light)]"
-            }`}
-          />
-        ))}
-      </div>
-      <p className={`${textColors[score]} ${labelSize}`}>
-        {labels[score]} password
-      </p>
-      <div className="flex flex-wrap gap-2 mt-1">
-        {[
-          { key: "length", label: "8+ chars" },
-          { key: "upper", label: "Uppercase" },
-          { key: "number", label: "Number" },
-          { key: "special", label: "Special char" },
-        ].map(({ key, label }) => (
-          <span
-            key={key}
-            className={`${chipSize} rounded-full ${
-              checks[key]
-                ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
-                : "bg-[var(--border-light)] text-[var(--text-muted)]"
-            }`}
-          >
-            {checks[key] ? "✓" : "·"} {label}
-          </span>
-        ))}
+            {/* panel skeleton */}
+            <div className="flex-1 space-y-4">
+              <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6">
+                <div className="mb-5 flex items-center gap-4">
+                  <div className="h-16 w-16 animate-pulse rounded-2xl bg-[var(--bg-hover)]" />
+                  <div className="flex-1 space-y-2">
+                    <div className="h-3 w-32 animate-pulse rounded bg-[var(--bg-hover)]" />
+                    <div className="h-3 w-48 animate-pulse rounded bg-[var(--bg-hover)]" />
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  <div className="h-12 animate-pulse rounded-xl bg-[var(--bg-hover)]" />
+                  <div className="h-12 animate-pulse rounded-xl bg-[var(--bg-hover)]" />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
-}
-
-function tabIcon(tab) {
-  const map = {
-    Account: "👤",
-    Security: "🔐",
-    Appearance: "🎨",
-    Integrations: "🔗",
-    "Danger Zone": "⚠️",
-  };
-  return map[tab] ?? "";
 }

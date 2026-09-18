@@ -19,13 +19,14 @@
 }
 
 /* =====================================================
-   THEME SLATE + CYAN
-   Cyan as primary accent (pairs with the shield/checkmark brand
-   mark's "scan" imagery, and with the ScanLine sweep already used
-   on buttons); indigo as a secondary accent for chart series and
-   anything needing to sit alongside cyan without competing.
-   Dark is the :root default; light is the explicit opt-in via
-   [data-theme="light"].
+   THEME SLATE + PLUM
+   Plum as primary accent — a cool, editorial hue that
+   differentiates CodeVerity from the cyan/teal-heavy AI
+   tooling category. Indigo remains the secondary accent
+   for chart series and --color-info, sitting adjacent to
+   plum on the wheel so the two harmonize without competing.
+   Dark is the :root default; light is the explicit opt-in
+   via [data-theme="light"].
 ======================================================== */
 :root {
   --bg-primary: #0a0e14;
@@ -43,13 +44,13 @@
   --border-medium: #2d3947;
   --border-dark: #1e2733;
 
-  --accent: #22d3ee;
-  --accent-hover: #67e8f9;
-  --accent-soft: rgba(34, 211, 238, 0.14);
-  --accent-soft-strong: rgba(34, 211, 238, 0.26);
-  /* Cyan is high-luminance white text on it fails contrast, so
-     accent-contrast is dark navy here rather than white. */
-  --accent-contrast: #052730;
+  --accent: #c084fc;
+  --accent-hover: #d8b4fe;
+  --accent-soft: rgba(192, 132, 252, 0.14);
+  --accent-soft-strong: rgba(192, 132, 252, 0.26);
+  /* Plum is high-luminance white text on it fails contrast,
+     so accent-contrast is deep plum-navy here rather than white. */
+  --accent-contrast: #1a0b33;
 
   /* Secondary accent (indigo) chart series, secondary badges,
      and --color-info below. Not used for primary UI chrome. */
@@ -65,7 +66,7 @@
 
   /* 5-tier severity scale (grades A–F map success→info→warning→
      caution→danger). info reuses the secondary accent so it pairs
-     with cyan instead of introducing an unrelated hue. */
+     with plum instead of introducing an unrelated hue. */
   --color-success: #34d399;
   --color-success-soft: rgba(52, 211, 153, 0.14);
   --color-info: var(--accent-secondary);
@@ -102,12 +103,12 @@
   --border-medium: #cbd5e1;
   --border-dark: #94a3b8;
 
-  /* Darker teal-cyan than the dark theme's, so it keeps AA text
-     contrast against a white background bright cyan wouldn't. */
-  --accent: #0891b2;
-  --accent-hover: #0e7490;
-  --accent-soft: rgba(8, 145, 178, 0.1);
-  --accent-soft-strong: rgba(8, 145, 178, 0.2);
+  /* Darker plum than the dark theme's, so it keeps AA text
+     contrast against a white background bright plum wouldn't. */
+  --accent: #9333ea;
+  --accent-hover: #7e22ce;
+  --accent-soft: rgba(147, 51, 234, 0.1);
+  --accent-soft-strong: rgba(147, 51, 234, 0.2);
   --accent-contrast: #ffffff;
 
   --accent-secondary: #4f46e5;
