@@ -755,8 +755,8 @@ function ScrollFeatureCards() {
         .map((card) => card.querySelector(".scroll-card-glow"))
         .filter(Boolean);
 
-      // ---------- Reduced motion / mobile: render statically ----------
-      if (reduceMotion || window.innerWidth < 768) {
+      // ---------- Reduced motion: render fully static, no animation ----------
+      if (reduceMotion) {
         gsap.set(
           [
             headerBadge,
@@ -781,14 +781,106 @@ function ScrollFeatureCards() {
         return;
       }
 
-      // ---------- 3D setup ----------
+      // ---------- MOBILE (<768px): lightweight, non-pinned scroll reveal ----------
+      // No pin/scrub/3D here — each piece just fades + rises in the moment
+      // it crosses into view, which stays smooth on phones.
+      if (window.innerWidth < 768) {
+        gsap.set(cardElements, { clearProps: "transform" });
+
+        if (headerBadge) gsap.set(headerBadge, { y: 16, opacity: 0 });
+        if (titleLines.length) gsap.set(titleLines, { y: 20, opacity: 0 });
+        if (headerCopy) gsap.set(headerCopy, { y: 16, opacity: 0 });
+        if (scrollHint) gsap.set(scrollHint, { y: 10, opacity: 0 });
+        cardElements.forEach((card, i) => {
+          gsap.set(card, { y: 36, opacity: 0 });
+          if (cardContents[i].length) {
+            gsap.set(cardContents[i], { y: 16, opacity: 0 });
+          }
+        });
+
+        // Header: badge → title lines → copy, once, as the section arrives
+        ScrollTrigger.create({
+          trigger: section,
+          start: "top 80%",
+          onEnter: () => {
+            gsap.to(
+              [headerBadge, ...titleLines, headerCopy].filter(Boolean),
+              {
+                y: 0,
+                opacity: 1,
+                duration: 0.5,
+                stagger: 0.08,
+                ease: "power2.out",
+              }
+            );
+          },
+          once: true,
+        });
+
+        // Each card fades/rises in independently, content following it
+        cardElements.forEach((card, i) => {
+          const content = cardContents[i];
+          ScrollTrigger.create({
+            trigger: card,
+            start: "top 88%",
+            onEnter: () => {
+              const tl = gsap.timeline({ defaults: { ease: "power2.out" } });
+              tl.to(card, { y: 0, opacity: 1, duration: 0.55 });
+              if (content.length) {
+                tl.to(
+                  content,
+                  { y: 0, opacity: 1, duration: 0.45, stagger: 0.06 },
+                  "-=0.3"
+                );
+              }
+            },
+            once: true,
+          });
+        });
+
+        // Gentle, non-scrubbed glow drift so mobile isn't fully static
+        const glowTweens = glows.map((glow, i) =>
+          gsap.to(glow, {
+            x: i % 2 === 0 ? 16 : -16,
+            y: -10,
+            scale: 1.05,
+            duration: 7 + i,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+            delay: i * 0.4,
+          })
+        );
+
+        if (scrollHint) {
+          ScrollTrigger.create({
+            trigger: scrollHint,
+            start: "top 95%",
+            onEnter: () => {
+              gsap.to(scrollHint, {
+                y: 0,
+                opacity: 1,
+                duration: 0.5,
+                ease: "power2.out",
+              });
+            },
+            once: true,
+          });
+        }
+
+        return () => {
+          glowTweens.forEach((t) => t.kill());
+        };
+      }
+
+      // ---------- Desktop / tablet (>=768px): existing pinned 3D sequence ----------
+      // (unchanged)
       gsap.set(cardElements, {
         transformPerspective: 1600,
         transformOrigin: "center center",
         force3D: true,
       });
 
-      // Initial off-screen state for cards
       gsap.set(cardElements[0], {
         x: -40, y: 40, rotationY: -18, rotationX: 6, rotationZ: -2,
         scale: 0.94, opacity: 0,
@@ -802,18 +894,15 @@ function ScrollFeatureCards() {
         scale: 0.94, opacity: 0,
       });
 
-      // Initial content state (staggered reveal)
       cardContents.forEach((items) => {
         gsap.set(items, { y: 24, opacity: 0 });
       });
 
-      // Initial header state
       if (headerBadge) gsap.set(headerBadge, { y: 20, opacity: 0 });
       if (titleLines.length) gsap.set(titleLines, { y: 40, opacity: 0 });
       if (headerCopy) gsap.set(headerCopy, { y: 20, opacity: 0 });
       if (scrollHint) gsap.set(scrollHint, { y: 12, opacity: 0 });
 
-      // ---------- Master timeline ----------
       const tl = gsap.timeline({
         defaults: { ease: "power3.out" },
         scrollTrigger: {
@@ -827,12 +916,10 @@ function ScrollFeatureCards() {
         },
       });
 
-      // Stage 1 — Header badge
       if (headerBadge) {
         tl.to(headerBadge, { y: 0, opacity: 1, duration: 0.4 }, 0);
       }
 
-      // Stage 2 — Title lines cascade
       if (titleLines.length) {
         tl.to(
           titleLines,
@@ -841,12 +928,10 @@ function ScrollFeatureCards() {
         );
       }
 
-      // Stage 3 — Supporting copy
       if (headerCopy) {
         tl.to(headerCopy, { y: 0, opacity: 1, duration: 0.5 }, 0.35);
       }
 
-      // Stage 4 — Cards fly in and align
       tl.to(
         cardElements,
         {
@@ -860,7 +945,6 @@ function ScrollFeatureCards() {
         0.75
       );
 
-      // Stage 5 — Card contents cascade (value → label → title → description)
       tl.to(
         cardContents.flat(),
         {
@@ -872,7 +956,6 @@ function ScrollFeatureCards() {
         "-=0.45"
       );
 
-      // Stage 6 — Final composition: subtle fan, middle card lifted
       tl.to(
         cardElements,
         {
@@ -889,12 +972,10 @@ function ScrollFeatureCards() {
         "+=0.2"
       );
 
-      // Stage 7 — Scroll hint fades in
       if (scrollHint) {
         tl.to(scrollHint, { y: 0, opacity: 1, duration: 0.5 }, "-=0.4");
       }
 
-      // ---------- Ambient glow drift (runs independently) ----------
       const glowTweens = glows.map((glow, i) =>
         gsap.to(glow, {
           x: i % 2 === 0 ? 25 : -25,
@@ -960,10 +1041,8 @@ function ScrollFeatureCards() {
                 transformStyle: "preserve-3d",
               }}
             >
-              {/* Top accent line — reveals on hover */}
               <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent)]/60 to-transparent opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
-              {/* Top row: index + status dot */}
               <div className="relative z-10 flex items-center justify-between">
                 <span className="font-mono text-[11px] font-medium tracking-[0.15em] text-[var(--text-muted)]">
                   {card.number}
@@ -971,10 +1050,8 @@ function ScrollFeatureCards() {
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)] ring-4 ring-[var(--accent)]/10 transition-all duration-300 group-hover:ring-[var(--accent)]/25" />
               </div>
 
-              {/* Spacer pushes content to the bottom */}
               <div className="flex-1" />
 
-              {/* Content block — children stagger on scroll */}
               <div className="scroll-card-content relative z-10">
                 <span className="block text-6xl font-extrabold leading-none tracking-tighter text-[var(--text-primary)] sm:text-7xl">
                   {card.value}
@@ -993,16 +1070,13 @@ function ScrollFeatureCards() {
                 </p>
               </div>
 
-              {/* Decorative glow — drifts on a loop */}
               <div className="scroll-card-glow pointer-events-none absolute -bottom-24 -right-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] opacity-20 blur-3xl transition-opacity duration-500 group-hover:opacity-40" />
 
-              {/* Hover sheen */}
               <div className="pointer-events-none absolute inset-0 rounded-3xl bg-gradient-to-br from-white/[0.04] via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
             </div>
           ))}
         </div>
 
-        {/* Scroll indicator */}
         <div className="scroll-hint mt-12 flex flex-col items-center gap-2">
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Scroll to explore
