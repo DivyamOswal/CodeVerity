@@ -1,4 +1,4 @@
-// frontend/src/components/CodeEditor/RepoEditor.jsx
+// src/components/CodeEditor/RepoEditor.jsx
 import { useState, useEffect, useRef } from "react";
 import Editor from "@monaco-editor/react";
 import {
@@ -8,7 +8,11 @@ import {
   Sparkles,
   Loader2,
   Menu,
+  AlertTriangle,
+  Lightbulb,
+  Check,
 } from "lucide-react";
+import { usePreferences } from "../../context/PreferencesContext";
 import { useToast } from "../../hooks/useToast";
 import {
   getRepoContents,
@@ -17,8 +21,40 @@ import {
 } from "../../api/github";
 import axios from "../../api/axios";
 
+/* ─────────────────────────────────────────────────────────────
+   Register the CodeVerity Monaco theme from CSS custom
+   properties. Called both on mount and whenever the app theme
+   switches, so the editor follows light/dark like the rest of
+   the page.
+───────────────────────────────────────────────────────────── */
+function registerMonacoTheme(monaco) {
+  if (!monaco) return;
+  const styles = getComputedStyle(document.documentElement);
+  const isLight =
+    document.documentElement.getAttribute("data-theme") === "light";
+
+  monaco.editor.defineTheme("codeverity", {
+    base: isLight ? "vs" : "vs-dark",
+    inherit: true,
+    rules: [],
+    colors: {
+      "editor.background": styles.getPropertyValue("--bg-primary").trim(),
+      "editor.foreground": styles.getPropertyValue("--text-primary").trim(),
+      "editorLineNumber.foreground": styles
+        .getPropertyValue("--text-muted")
+        .trim(),
+      "editorGutter.background": styles
+        .getPropertyValue("--bg-primary")
+        .trim(),
+    },
+  });
+  monaco.editor.setTheme("codeverity");
+}
+
 export default function RepoEditor({ repoUrl, reportId }) {
   const { success, error } = useToast();
+  const { theme } = usePreferences();
+
   const [files, setFiles] = useState([]);
   const [currentFile, setCurrentFile] = useState(null);
   const [content, setContent] = useState("");
@@ -28,7 +64,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [repoContentLoading, setRepoContentLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // Monaco refs — needed to re-apply decorations on file/error changes.
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const decorationsRef = useRef([]);
@@ -51,9 +86,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
         const reportRes = await axios.get(`/report/${reportId}`);
         const report = reportRes.data?.report || {};
 
-        // Prefer the new structured `findings[]` — every item has a real
-        // `file` path from the AI prompt rewrite. Fall back to the legacy
-        // bugs/securityIssues only if findings is empty.
         const allErrors = [];
         const findings = Array.isArray(report.findings) ? report.findings : [];
 
@@ -108,6 +140,23 @@ export default function RepoEditor({ repoUrl, reportId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoUrl, reportId]);
 
+  /* ─── Re-register Monaco theme when the app theme changes ─── */
+  useEffect(() => {
+    if (monacoRef.current) {
+      registerMonacoTheme(monacoRef.current);
+    }
+  }, [theme]);
+
+  /* ─── Escape closes the mobile sidebar ─── */
+  useEffect(() => {
+    if (!sidebarOpen) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") setSidebarOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [sidebarOpen]);
+
   const openFile = async (file) => {
     setCurrentFile(file);
     setSidebarOpen(false);
@@ -126,7 +175,8 @@ export default function RepoEditor({ repoUrl, reportId }) {
   };
 
   const handleFix = async (errObj, lineNumber) => {
-    const issueId = errObj._id || errObj.id || `${currentFile.path}:${lineNumber}`;
+    const issueId =
+      errObj._id || errObj.id || `${currentFile.path}:${lineNumber}`;
     setFixLoading((prev) => ({ ...prev, [issueId]: true }));
 
     try {
@@ -143,8 +193,8 @@ export default function RepoEditor({ repoUrl, reportId }) {
       const result = res.data;
 
       if (result.success) {
-        success(`✅ Fix PR #${result.prNumber} created!`);
-        window.open(result.prUrl, "_blank");
+        success(`Fix PR #${result.prNumber} created!`);
+        window.open(result.prUrl, "_blank", "noopener,noreferrer");
         setFixedLines((prev) => ({ ...prev, [lineNumber]: true }));
       } else {
         error(result.error || "Failed to create fix PR.");
@@ -162,7 +212,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
     }
   };
 
-  // ─── Apply Monaco decorations whenever file or errors change ───
+  /* ─── Apply Monaco decorations whenever file or errors change ─── */
   useEffect(() => {
     const editor = editorRef.current;
     const monaco = monacoRef.current;
@@ -188,7 +238,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
 
     decorationsRef.current = editor.deltaDecorations(
       decorationsRef.current || [],
-      decorations,
+      decorations
     );
   }, [currentFile, errors]);
 
@@ -198,8 +248,8 @@ export default function RepoEditor({ repoUrl, reportId }) {
       <div key={item.path} style={{ paddingLeft: `${level * 16}px` }}>
         {item.type === "dir" ? (
           <details>
-            <summary className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-[var(--text-secondary)] hover:bg-[var(--bg-hover)]">
-              <FolderTree size={14} className="shrink-0" />
+            <summary className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]">
+              <FolderTree size={14} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{item.name}</span>
             </summary>
             <div>
@@ -207,22 +257,24 @@ export default function RepoEditor({ repoUrl, reportId }) {
             </div>
           </details>
         ) : (
-          <div
-            className={`flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm hover:bg-[var(--bg-hover)] ${
+          <button
+            type="button"
+            onClick={() => openFile(item)}
+            aria-current={currentFile?.path === item.path ? "page" : undefined}
+            className={`flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-sm transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-card)] ${
               currentFile?.path === item.path
                 ? "bg-[var(--accent-soft)] text-[var(--accent)]"
                 : "text-[var(--text-secondary)]"
             }`}
-            onClick={() => openFile(item)}
           >
-            <FileCode size={14} className="shrink-0" />
+            <FileCode size={14} className="shrink-0" aria-hidden="true" />
             <span className="truncate">{item.name}</span>
             {errors[item.path]?.length > 0 && (
               <span className="ml-auto shrink-0 rounded bg-[var(--color-danger-soft)] px-1.5 py-0.5 text-xs text-[var(--color-danger)]">
                 {errors[item.path].length}
               </span>
             )}
-          </div>
+          </button>
         )}
       </div>
     ));
@@ -231,7 +283,11 @@ export default function RepoEditor({ repoUrl, reportId }) {
   if (repoContentLoading) {
     return (
       <div className="flex items-center justify-center rounded-xl border border-[var(--border-light)] py-12">
-        <Loader2 className="mr-2 animate-spin text-[var(--accent)]" size={24} />
+        <Loader2
+          className="mr-2 animate-spin text-[var(--accent)]"
+          size={24}
+          aria-hidden="true"
+        />
         <span className="text-sm text-[var(--text-muted)]">
           Loading repository...
         </span>
@@ -245,6 +301,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
         <div
           className="absolute inset-0 z-30 bg-[var(--bg-primary)]/70 backdrop-blur-sm md:hidden"
           onClick={() => setSidebarOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -257,15 +314,14 @@ export default function RepoEditor({ repoUrl, reportId }) {
           <span className="text-xs font-medium uppercase tracking-wider text-[var(--text-muted)]">
             Files
           </span>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setSidebarOpen(false)}
-              className="rounded-md p-1 hover:bg-[var(--bg-hover)] md:hidden"
-              aria-label="Close file tree"
-            >
-              <X size={14} />
-            </button>
-          </div>
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(false)}
+            className="rounded-md p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 md:hidden"
+            aria-label="Close file tree"
+          >
+            <X size={14} aria-hidden="true" />
+          </button>
         </div>
         {files.length > 0 ? (
           renderFileTree(files)
@@ -280,11 +336,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
         <div className="flex items-center justify-between gap-2 border-b border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <button
+              type="button"
               onClick={() => setSidebarOpen(true)}
-              className="shrink-0 rounded-md p-1 hover:bg-[var(--bg-hover)] md:hidden"
+              className="shrink-0 rounded-md p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 md:hidden"
               aria-label="Open file tree"
             >
-              <Menu size={16} />
+              <Menu size={16} aria-hidden="true" />
             </button>
             <span className="truncate text-xs text-[var(--text-secondary)] sm:text-sm">
               {currentFile ? currentFile.path : "Select a file"}
@@ -296,10 +353,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
                 {errors[currentFile.path]?.length || 0} issues
               </span>
               <button
+                type="button"
                 onClick={() => setCurrentFile(null)}
-                className="rounded p-1 hover:bg-[var(--bg-hover)]"
+                className="rounded p-1 text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+                aria-label="Close file"
               >
-                <X size={14} />
+                <X size={14} aria-hidden="true" />
               </button>
             </div>
           )}
@@ -325,30 +384,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
             onMount={(editor, monaco) => {
               editorRef.current = editor;
               monacoRef.current = monaco;
-
-              const styles = getComputedStyle(document.documentElement);
-              const isLight =
-                document.documentElement.getAttribute("data-theme") === "light";
-              monaco.editor.defineTheme("codeverity", {
-                base: isLight ? "vs" : "vs-dark",
-                inherit: true,
-                rules: [],
-                colors: {
-                  "editor.background": styles
-                    .getPropertyValue("--bg-primary")
-                    .trim(),
-                  "editor.foreground": styles
-                    .getPropertyValue("--text-primary")
-                    .trim(),
-                  "editorLineNumber.foreground": styles
-                    .getPropertyValue("--text-muted")
-                    .trim(),
-                  "editorGutter.background": styles
-                    .getPropertyValue("--bg-primary")
-                    .trim(),
-                },
-              });
-              monaco.editor.setTheme("codeverity");
+              registerMonacoTheme(monaco);
             }}
           />
         </div>
@@ -360,47 +396,67 @@ export default function RepoEditor({ repoUrl, reportId }) {
             </div>
             {errors[currentFile.path].map((err, idx) => {
               const issueId = err._id || err.id || idx;
+              const isFixed = fixedLines[err.line];
+              const isLoading = fixLoading[issueId];
+
               return (
                 <div
                   key={idx}
                   className="flex flex-col gap-2 border-b border-[var(--border-dark)] px-1 py-2 last:border-0 sm:flex-row sm:items-start sm:gap-2 sm:px-2"
                 >
                   <div className="flex min-w-0 flex-1 items-start gap-2">
-                    <span className="shrink-0 text-xs text-[var(--color-danger)]">
-                      ⚠
-                    </span>
+                    <AlertTriangle
+                      size={13}
+                      strokeWidth={2.2}
+                      aria-hidden="true"
+                      className="mt-0.5 shrink-0 text-[var(--color-danger)]"
+                    />
                     <div className="min-w-0 flex-1">
                       <span className="block text-xs text-[var(--text-secondary)]">
                         Line {err.line || "?"}:{" "}
                         {err.message || err.issue || err.title}
                       </span>
                       {err.suggestion && (
-                        <span className="mt-0.5 block text-xs text-[var(--text-muted)]">
-                          💡 {err.suggestion}
+                        <span className="mt-0.5 flex items-start gap-1.5 text-xs text-[var(--text-muted)]">
+                          <Lightbulb
+                            size={11}
+                            strokeWidth={2}
+                            aria-hidden="true"
+                            className="mt-0.5 shrink-0 text-[var(--accent)]"
+                          />
+                          <span>{err.suggestion}</span>
                         </span>
                       )}
                       {err.category && (
-                        <span className="mt-0.5 inline-block rounded border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
+                        <span className="mt-1 inline-block rounded border border-[var(--border-light)] bg-[var(--bg-primary)] px-1.5 py-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
                           {err.category}
                         </span>
                       )}
                     </div>
                   </div>
                   <button
+                    type="button"
                     onClick={() => handleFix(err, err.line)}
-                    disabled={fixLoading[issueId] || fixedLines[err.line]}
-                    className={`flex shrink-0 items-center justify-center gap-1 self-start rounded px-2 py-1 text-xs font-medium transition sm:self-auto ${
-                      fixedLines[err.line]
+                    disabled={isLoading || isFixed}
+                    aria-label={`${isFixed ? "Fixed" : "Fix"} issue on line ${err.line || "unknown"}`}
+                    className={`flex shrink-0 items-center justify-center gap-1 self-start rounded px-2 py-1 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] sm:self-auto ${
+                      isFixed
                         ? "bg-[var(--color-success-soft)] text-[var(--color-success)]"
-                        : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]"
+                        : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] active:scale-[0.97]"
                     }`}
                   >
-                    {fixLoading[issueId] ? (
-                      <Loader2 className="animate-spin" size={12} />
+                    {isLoading ? (
+                      <Loader2
+                        className="animate-spin"
+                        size={12}
+                        aria-hidden="true"
+                      />
+                    ) : isFixed ? (
+                      <Check size={12} strokeWidth={2.6} aria-hidden="true" />
                     ) : (
-                      <Sparkles size={12} />
+                      <Sparkles size={12} aria-hidden="true" />
                     )}
-                    {fixedLines[err.line] ? "Fixed ✓" : "Fix with AI"}
+                    {isFixed ? "Fixed" : "Fix with AI"}
                   </button>
                 </div>
               );
@@ -408,18 +464,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
           </div>
         )}
       </div>
-
-      <style>{`
-        .error-line {
-          background: var(--color-danger-soft) !important;
-        }
-        .error-glyph {
-          background: var(--color-danger);
-          width: 4px !important;
-          margin-left: 3px;
-          border-radius: 2px;
-        }
-      `}</style>
     </div>
   );
 }
