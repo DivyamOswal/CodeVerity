@@ -1,5 +1,7 @@
+// src/components/Workspace/DeleteWorkspace.jsx
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Trash2, AlertTriangle, Loader2 } from "lucide-react";
 import { deleteWorkspace } from "../../api/workspace";
 import { useToast } from "../../hooks/useToast";
 
@@ -25,26 +27,9 @@ export default function DeleteWorkspace() {
 
   return (
     <div className="mt-6 border-t border-[var(--color-danger)]/20 pt-6">
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes danger-fade-in {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        .danger-confirm-panel {
-          animation: danger-fade-in 0.2s ease-out;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .danger-confirm-panel { animation: none; }
-        }
-      `,
-        }}
-      />
-
       <div className="flex items-center gap-2">
-        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--color-danger-soft)] text-[10px] text-[var(--color-danger)]">
-          !
+        <span className="flex h-5 w-5 shrink-0 items-center justify-center rounded-md bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
+          <AlertTriangle size={12} strokeWidth={2.4} aria-hidden="true" />
         </span>
         <h4 className="text-sm font-semibold uppercase tracking-wide text-[var(--color-danger)]">
           Danger Zone
@@ -58,17 +43,23 @@ export default function DeleteWorkspace() {
 
       {!confirming ? (
         <button
+          type="button"
           onClick={() => setConfirming(true)}
-          className="group relative mt-3 flex items-center gap-2 overflow-hidden rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-4 py-2 text-sm font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.97]"
+          className="group mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-4 py-2 text-sm font-medium text-[var(--color-danger)] transition-colors duration-150 hover:bg-[var(--color-danger)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97]"
         >
-          <span aria-hidden="true">🗑</span>
+          <Trash2
+            size={14}
+            strokeWidth={2}
+            aria-hidden="true"
+            className="transition-transform duration-150 group-hover:scale-110"
+          />
           Delete Workspace
         </button>
       ) : (
         <div className="danger-confirm-panel mt-3 max-w-md rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] p-4">
           <div className="flex items-start gap-3">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-sm text-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/30">
-              !
+            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/30">
+              <AlertTriangle size={16} strokeWidth={2.2} aria-hidden="true" />
             </div>
             <div className="min-w-0">
               <p className="text-sm font-semibold text-[var(--text-primary)]">
@@ -81,13 +72,19 @@ export default function DeleteWorkspace() {
 
               <div className="mt-3 flex flex-wrap items-center gap-2">
                 <button
+                  type="button"
                   onClick={handleDelete}
                   disabled={loading}
-                  className="flex items-center gap-2 rounded-lg bg-[var(--color-danger)] px-3.5 py-2 text-xs font-semibold text-white transition-all duration-150 hover:opacity-90 active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
+                  className="flex items-center gap-2 rounded-lg bg-[var(--color-danger)] px-3.5 py-2 text-xs font-semibold text-[var(--color-danger-contrast)] transition-all duration-150 hover:brightness-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:hover:brightness-100 disabled:active:scale-100"
                 >
                   {loading ? (
                     <>
-                      <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                      <Loader2
+                        size={12}
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                        className="animate-spin"
+                      />
                       Deleting…
                     </>
                   ) : (
@@ -95,9 +92,10 @@ export default function DeleteWorkspace() {
                   )}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setConfirming(false)}
                   disabled={loading}
-                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100"
                 >
                   Cancel
                 </button>

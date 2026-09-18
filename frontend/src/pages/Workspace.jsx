@@ -1,24 +1,12 @@
 // frontend/src/pages/WorkspaceSettings.jsx
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../App";
 import { usePreferences } from "../context/PreferencesContext";
 import {
-  Copy,
-  Check,
-  RefreshCw,
-  Trash2,
-  Plus,
-  Settings,
-  Users,
-  Key,
-  CreditCard,
-  List,
-  BarChart3,
-  Palette,
-  Clock,
-  Webhook,
-  TrendingUp,
+  Copy, Check, RefreshCw, Trash2, Plus, Settings, Users, Key,
+  CreditCard, List, BarChart3, Palette, Clock, Webhook, TrendingUp,
+  Building2, Plug, Activity, CheckCircle2, XCircle,
 } from "lucide-react";
 import {
   BarChart,
@@ -86,7 +74,7 @@ const TAB_GROUPS = [
   {
     label: "Connections",
     tabs: [
-      { id: "Integrations", label: "Integrations", icon: Webhook },
+      { id: "Integrations", label: "Integrations", icon: Plug },
       { id: "Webhooks", label: "Webhooks", icon: Webhook },
       { id: "Schedules", label: "Schedules", icon: Clock },
     ],
@@ -95,9 +83,9 @@ const TAB_GROUPS = [
     label: "Insights",
     tabs: [
       { id: "Repositories", label: "Repositories", icon: BarChart3 },
-      { id: "Analytics", label: "Analytics", icon: TrendingUp },
+      { id: "Analytics", label: "Analytics", icon: BarChart3 },
       { id: "Trends", label: "Trends", icon: TrendingUp },
-      { id: "Activity", label: "Activity", icon: TrendingUp },
+      { id: "Activity", label: "Activity", icon: Activity },
       { id: "Audit Log", label: "Audit Log", icon: List },
     ],
   },
@@ -496,10 +484,13 @@ export default function WorkspaceSettings() {
         <div className="mb-8">
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-[var(--accent)] to-[var(--accent-hover)] shadow-lg shadow-[var(--accent-soft-strong)]">
-              <span className="text-lg font-bold text-[var(--accent-contrast)]">
-                ⌘
-              </span>
-            </div>
+  <Building2
+    size={20}
+    strokeWidth={2}
+    aria-hidden="true"
+    className="text-[var(--accent-contrast)]"
+  />
+</div>
             <div className="min-w-0">
               <h1 className="text-xl font-bold tracking-tight text-[var(--text-primary)] sm:text-2xl">
                 {workspace?.name || "Workspace"}
@@ -608,7 +599,7 @@ export default function WorkspaceSettings() {
                           type="text"
                           value={workspaceName}
                           onChange={(e) => setWorkspaceName(e.target.value)}
-                          className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                          className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                           autoFocus
                         />
                         <div className="flex gap-2 sm:flex-none">
@@ -691,23 +682,16 @@ export default function WorkspaceSettings() {
                           Send scan notifications to Slack
                         </p>
                       </div>
-                      <label className="relative inline-flex shrink-0 cursor-pointer items-center">
-                        <input
-                          type="checkbox"
-                          checked={integrations.slack.enabled}
-                          onChange={(e) =>
-                            setIntegrations({
-                              ...integrations,
-                              slack: {
-                                ...integrations.slack,
-                                enabled: e.target.checked,
-                              },
-                            })
-                          }
-                          className="peer sr-only"
-                        />
-                        <div className="h-5 w-9 rounded-full bg-[var(--border-light)] peer peer-checked:bg-[var(--accent)] after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full" />
-                      </label>
+                      <Toggle
+  checked={integrations.slack.enabled}
+  onChange={(checked) =>
+    setIntegrations({
+      ...integrations,
+      slack: { ...integrations.slack, enabled: checked },
+    })
+  }
+  label="Enable Slack integration"
+/>
                     </div>
                     {integrations.slack.enabled && (
                       <div className="mt-4 space-y-3">
@@ -727,7 +711,7 @@ export default function WorkspaceSettings() {
                                 },
                               })
                             }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                             placeholder="https://hooks.slack.com/services/..."
                           />
                         </div>
@@ -747,7 +731,7 @@ export default function WorkspaceSettings() {
                                 },
                               })
                             }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                             placeholder="#general"
                           />
                         </div>
@@ -764,23 +748,16 @@ export default function WorkspaceSettings() {
                           Create tickets from scan findings
                         </p>
                       </div>
-                      <label className="relative inline-flex shrink-0 cursor-pointer items-center">
-                        <input
-                          type="checkbox"
-                          checked={integrations.jira.enabled}
-                          onChange={(e) =>
-                            setIntegrations({
-                              ...integrations,
-                              jira: {
-                                ...integrations.jira,
-                                enabled: e.target.checked,
-                              },
-                            })
-                          }
-                          className="peer sr-only"
-                        />
-                        <div className="h-5 w-9 rounded-full bg-[var(--border-light)] peer peer-checked:bg-[var(--accent)] after:absolute after:left-[2px] after:top-[2px] after:h-4 after:w-4 after:rounded-full after:bg-white after:transition-all peer-checked:after:translate-x-full" />
-                      </label>
+                      <Toggle
+  checked={integrations.jira.enabled}
+  onChange={(checked) =>
+    setIntegrations({
+      ...integrations,
+      jira: { ...integrations.jira, enabled: checked },
+    })
+  }
+  label="Enable Jira integration"
+/>
                     </div>
                     {integrations.jira.enabled && (
                       <div className="mt-4 space-y-3">
@@ -800,7 +777,7 @@ export default function WorkspaceSettings() {
                                 },
                               })
                             }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                             placeholder="https://your-domain.atlassian.net"
                           />
                         </div>
@@ -820,7 +797,7 @@ export default function WorkspaceSettings() {
                                 },
                               })
                             }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                             placeholder="PROJ"
                           />
                         </div>
@@ -840,7 +817,7 @@ export default function WorkspaceSettings() {
                                 },
                               })
                             }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                             placeholder="ATCTT..."
                           />
                         </div>
@@ -945,47 +922,49 @@ export default function WorkspaceSettings() {
                 )}
 
                 {showNewKey && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-primary)]/70 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[var(--shadow-xl)]">
-                      <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                        Create API Key
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--text-muted)]">
-                        Name this key to identify it later.
-                      </p>
-                      <div className="mt-4">
-                        <label className="block text-sm font-medium text-[var(--text-muted)]">
-                          Key Name
-                        </label>
-                        <input
-                          type="text"
-                          value={newKeyName}
-                          onChange={(e) => setNewKeyName(e.target.value)}
-                          className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                          placeholder="CI/CD Pipeline"
-                          autoFocus
-                        />
-                      </div>
-                      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                        <button
-                          onClick={createApiKeyHandler}
-                          disabled={submitting || !newKeyName.trim()}
-                          className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] disabled:opacity-50"
-                        >
-                          {submitting ? "Creating…" : "Create"}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowNewKey(false);
-                            setNewKeyName("");
-                          }}
-                          className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)]"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <Modal
+  open={showNewKey}
+  onClose={() => {
+    setShowNewKey(false);
+    setNewKeyName("");
+  }}
+  title="Create API Key"
+  description="Name this key to identify it later."
+  footer={
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <button
+        onClick={createApiKeyHandler}
+        disabled={submitting || !newKeyName.trim()}
+        className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] disabled:opacity-50"
+      >
+        {submitting ? "Creating…" : "Create"}
+      </button>
+      <button
+        onClick={() => {
+          setShowNewKey(false);
+          setNewKeyName("");
+        }}
+        className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)]"
+      >
+        Cancel
+      </button>
+    </div>
+  }
+>
+  <div>
+    <label className="block text-sm font-medium text-[var(--text-muted)]">
+      Key Name
+    </label>
+    <input
+      type="text"
+      value={newKeyName}
+      onChange={(e) => setNewKeyName(e.target.value)}
+      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
+      placeholder="CI/CD Pipeline"
+      autoFocus
+    />
+  </div>
+</Modal>
                 )}
               </div>
             )}
@@ -1009,7 +988,7 @@ export default function WorkspaceSettings() {
                       value={memberSearch}
                       onChange={(e) => setMemberSearch(e.target.value)}
                       placeholder="Search by name or email..."
-                      className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20 sm:w-64"
+                      className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40 sm:w-64"
                     />
                     <button
                       onClick={() => setShowInviteModal(true)}
@@ -1123,11 +1102,29 @@ export default function WorkspaceSettings() {
                       <p className="text-sm font-bold text-[var(--text-primary)]">
                         {workspace?.plan === "starter" ? "Free" : "Paid"}
                       </p>
-                      <p className="text-xs text-[var(--text-muted)]">
-                        {workspace?.subscriptionStatus === "active"
-                          ? "✅ Active"
-                          : "❌ Inactive"}
-                      </p>
+                      <p className="inline-flex items-center gap-1.5 text-xs text-[var(--text-muted)]">
+  {workspace?.subscriptionStatus === "active" ? (
+    <>
+      <CheckCircle2
+        size={12}
+        strokeWidth={2.2}
+        aria-hidden="true"
+        className="text-[var(--color-success)]"
+      />
+      Active
+    </>
+  ) : (
+    <>
+      <XCircle
+        size={12}
+        strokeWidth={2.2}
+        aria-hidden="true"
+        className="text-[var(--color-danger)]"
+      />
+      Inactive
+    </>
+  )}
+</p>
                     </div>
                   </div>
 
@@ -1596,7 +1593,7 @@ export default function WorkspaceSettings() {
                       onChange={(e) =>
                         setBranding({ ...branding, brandName: e.target.value })
                       }
-                      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                       placeholder="CodeVerity"
                     />
                   </div>
@@ -1620,7 +1617,7 @@ export default function WorkspaceSettings() {
                         onChange={(e) =>
                           setBranding({ ...branding, primaryColor: e.target.value })
                         }
-                        className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                        className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                         placeholder="#22d3ee"
                       />
                     </div>
@@ -1645,7 +1642,7 @@ export default function WorkspaceSettings() {
                         onChange={(e) =>
                           setBranding({ ...branding, secondaryColor: e.target.value })
                         }
-                        className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                        className="min-w-0 flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                         placeholder="#0e7490"
                       />
                     </div>
@@ -1793,79 +1790,81 @@ export default function WorkspaceSettings() {
                 )}
 
                 {showScheduleForm && (
-                  <div className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-primary)]/70 backdrop-blur-sm p-4">
-                    <div className="w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[var(--shadow-xl)]">
-                      <h3 className="text-lg font-semibold text-[var(--text-primary)]">
-                        Create Scheduled Scan
-                      </h3>
-                      <p className="mt-1 text-sm text-[var(--text-muted)]">
-                        Set up automatic scans for a repository.
-                      </p>
-                      <div className="mt-4 space-y-3">
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--text-muted)]">
-                            Repository URL
-                          </label>
-                          <input
-                            type="text"
-                            value={newSchedule.repoUrl}
-                            onChange={(e) =>
-                              setNewSchedule({ ...newSchedule, repoUrl: e.target.value })
-                            }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                            placeholder="https://github.com/username/repo"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--text-muted)]">
-                            Frequency
-                          </label>
-                          <select
-                            value={newSchedule.frequency}
-                            onChange={(e) =>
-                              setNewSchedule({ ...newSchedule, frequency: e.target.value })
-                            }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                          >
-                            <option value="daily">Daily</option>
-                            <option value="weekly">Weekly (Monday)</option>
-                            <option value="monthly">Monthly (1st)</option>
-                          </select>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium text-[var(--text-muted)]">
-                            Time (24h)
-                          </label>
-                          <input
-                            type="time"
-                            value={newSchedule.time}
-                            onChange={(e) =>
-                              setNewSchedule({ ...newSchedule, time: e.target.value })
-                            }
-                            className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
-                          />
-                        </div>
-                      </div>
-                      <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                        <button
-                          onClick={createScheduleHandler}
-                          disabled={submitting || !newSchedule.repoUrl || !newSchedule.time}
-                          className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] disabled:opacity-50"
-                        >
-                          {submitting ? "Creating…" : "Create Schedule"}
-                        </button>
-                        <button
-                          onClick={() => {
-                            setShowScheduleForm(false);
-                            setNewSchedule({ repoUrl: "", frequency: "daily", time: "09:00" });
-                          }}
-                          className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)]"
-                        >
-                          Cancel
-                        </button>
-                      </div>
-                    </div>
-                  </div>
+                  <Modal
+  open={showScheduleForm}
+  onClose={() => {
+    setShowScheduleForm(false);
+    setNewSchedule({ repoUrl: "", frequency: "daily", time: "09:00" });
+  }}
+  title="Create Scheduled Scan"
+  description="Set up automatic scans for a repository."
+  footer={
+    <div className="flex flex-col gap-3 sm:flex-row">
+      <button
+        onClick={createScheduleHandler}
+        disabled={submitting || !newSchedule.repoUrl || !newSchedule.time}
+        className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2 text-sm font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] disabled:opacity-50"
+      >
+        {submitting ? "Creating…" : "Create Schedule"}
+      </button>
+      <button
+        onClick={() => {
+          setShowScheduleForm(false);
+          setNewSchedule({ repoUrl: "", frequency: "daily", time: "09:00" });
+        }}
+        className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2 text-sm font-medium text-[var(--text-secondary)] transition hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)]"
+      >
+        Cancel
+      </button>
+    </div>
+  }
+>
+  <div className="space-y-3">
+    <div>
+      <label className="block text-sm font-medium text-[var(--text-muted)]">
+        Repository URL
+      </label>
+      <input
+        type="text"
+        value={newSchedule.repoUrl}
+        onChange={(e) =>
+          setNewSchedule({ ...newSchedule, repoUrl: e.target.value })
+        }
+        className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
+        placeholder="https://github.com/username/repo"
+      />
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-[var(--text-muted)]">
+        Frequency
+      </label>
+      <select
+        value={newSchedule.frequency}
+        onChange={(e) =>
+          setNewSchedule({ ...newSchedule, frequency: e.target.value })
+        }
+        className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
+      >
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly (Monday)</option>
+        <option value="monthly">Monthly (1st)</option>
+      </select>
+    </div>
+    <div>
+      <label className="block text-sm font-medium text-[var(--text-muted)]">
+        Time (24h)
+      </label>
+      <input
+        type="time"
+        value={newSchedule.time}
+        onChange={(e) =>
+          setNewSchedule({ ...newSchedule, time: e.target.value })
+        }
+        className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
+      />
+    </div>
+  </div>
+</Modal>
                 )}
               </div>
             )}
@@ -1891,7 +1890,7 @@ export default function WorkspaceSettings() {
                       type="url"
                       value={webhookUrl}
                       onChange={(e) => setWebhookUrl(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                       placeholder="https://your-service.com/webhook"
                     />
                   </div>
@@ -1905,7 +1904,7 @@ export default function WorkspaceSettings() {
                       type="password"
                       value={webhookSecret}
                       onChange={(e) => setWebhookSecret(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/20"
+                      className="mt-1 w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-input)] px-4 py-2 text-sm text-[var(--text-primary)] outline-none transition focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/40"
                       placeholder="Enter a new secret to rotate"
                     />
                     <p className="mt-1 text-xs text-[var(--text-muted)]">
@@ -2168,5 +2167,65 @@ function StatCard({ label, value, icon: Icon }) {
       </p>
       <p className="text-xs text-[var(--text-muted)]">{label}</p>
     </div>
+  );
+}
+
+// ─── Modal (shared by API Key + Schedule creation) ────────────
+function Modal({ open, onClose, title, description, children, footer }) {
+  const panelRef = useRef(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape") onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    if (panelRef.current) panelRef.current.focus();
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-[var(--bg-primary)]/70 p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose();
+      }}
+    >
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        tabIndex={-1}
+        className="ws-modal-panel w-full max-w-md rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 shadow-[var(--shadow-xl)] outline-none"
+      >
+        <h3 className="text-lg font-semibold text-[var(--text-primary)]">
+          {title}
+        </h3>
+        {description && (
+          <p className="mt-1 text-sm text-[var(--text-muted)]">{description}</p>
+        )}
+        <div className="mt-4">{children}</div>
+        {footer && <div className="mt-6">{footer}</div>}
+      </div>
+    </div>
+  );
+}
+
+// ─── Toggle (used by Slack + Jira integration cards) ──────────
+function Toggle({ checked, onChange, label }) {
+  return (
+    <label className="relative inline-flex shrink-0 cursor-pointer items-center">
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={(e) => onChange(e.target.checked)}
+        className="peer sr-only"
+        aria-label={label}
+      />
+      <span className="h-5 w-9 rounded-full bg-[var(--border-light)] transition-colors peer-checked:bg-[var(--accent)] peer-focus-visible:ring-2 peer-focus-visible:ring-[var(--accent)]/50 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-[var(--bg-card)]" />
+      <span className="pointer-events-none absolute left-[2px] top-[2px] h-4 w-4 rounded-full bg-white shadow transition-transform peer-checked:translate-x-4" />
+    </label>
   );
 }
