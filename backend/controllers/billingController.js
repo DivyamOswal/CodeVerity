@@ -1,7 +1,8 @@
 // backend/controllers/billingController.js
 import Stripe from "stripe";
 import User from "../models/User.js";
-import { addAuditLog } from "./workspaceController.js"; // 👈 import audit log helper
+import Transaction from "../models/Transaction.js";
+import { addAuditLog } from "./workspaceController.js";
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
@@ -39,6 +40,43 @@ async function getOrCreateCustomer(user) {
   return customer.id;
 }
 
+// ─── Helper: record a successful payment (idempotent) ──────────
+// Amount is stored in MAJOR units (₹, $) — Stripe sends minor
+// units (paise, cents), so we divide by 100 here. If you change
+// this convention, change the dashboard query to match.
+async function recordPayment(invoice, user, subscriptionId) {
+  if (!invoice.id) return null;
+
+  // Idempotency: Stripe retries webhooks on any 5xx. Don't double-record.
+  const exists = await Transaction.findOne({
+    paymentIntentId: invoice.id,
+    status: "paid",
+  });
+  if (exists) return exists;
+
+  return Transaction.create({
+    userId: user._id,
+    workspaceId: user.workspaceId || null,
+    amount: (invoice.amount_paid ?? 0) / 100,
+    currency: (invoice.currency || "inr").toUpperCase(),
+    paymentIntentId: invoice.id,
+    status: "paid",
+    description:
+      invoice.description ||
+      invoice.lines?.data?.[0]?.description ||
+      `${user.plan} subscription`,
+    metadata: {
+      stripeSubscriptionId: subscriptionId || null,
+      stripeCustomerId: invoice.customer || null,
+      stripeInvoiceId: invoice.id,
+      plan: user.plan,
+    },
+    createdAt: invoice.status_transitions?.paid_at
+      ? new Date(invoice.status_transitions.paid_at * 1000)
+      : new Date(),
+  });
+}
+
 // ─── Create Checkout Session ────────────────────────────────────
 export const createCheckoutSession = async (req, res) => {
   try {
@@ -53,7 +91,7 @@ export const createCheckoutSession = async (req, res) => {
 
     const user = await User.findById(userId);
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ error: "User not found." });
     }
 
     const priceKey = `${plan}-${cycle}-${currency}`;
@@ -76,7 +114,6 @@ export const createCheckoutSession = async (req, res) => {
       cancel_url: process.env.STRIPE_CANCEL_URL,
       metadata: { userId: userId, plan, cycle, currency },
       allow_promotion_codes: true,
-      // automatic_tax intentionally disabled until GST registration is in place
     });
 
     res.json({ sessionId: session.id, url: session.url });
@@ -109,14 +146,13 @@ export const cancelSubscription = async (req, res) => {
         .json({ error: "No active subscription to cancel." });
     }
 
-        await stripe.subscriptions.update(user.stripeSubscriptionId, {
+    await stripe.subscriptions.update(user.stripeSubscriptionId, {
       cancel_at_period_end: true,
     });
 
     user.subscriptionStatus = "canceling";
     await user.save();
 
-    // ── Audit log: subscription canceled ─────────────────────
     if (user.workspaceId) {
       addAuditLog(
         user.workspaceId,
@@ -156,7 +192,15 @@ export const handleWebhook = async (req, res) => {
     switch (event.type) {
       case "checkout.session.completed": {
         const session = event.data.object;
-        const { userId, plan, cycle } = session.metadata;
+        const { userId, plan, cycle } = session.metadata || {};
+        if (!userId || !plan) {
+          console.warn(
+            "checkout.session.completed: missing metadata",
+            session.id,
+          );
+          break;
+        }
+
         const user = await User.findById(userId);
         if (!user) break;
 
@@ -167,33 +211,43 @@ export const handleWebhook = async (req, res) => {
         user.subscriptionEndsAt = new Date(
           Date.now() + (cycle === "yearly" ? 365 : 30) * 24 * 60 * 60 * 1000,
         );
+
+        // ← BUG FIX #1: tokens were never updated on upgrade.
+        const config = User.getPlanConfig(plan);
+        user.tokensRemaining = config.tokens;
+
         await user.save();
 
-        // ── Audit log: subscription started / upgraded ──────
         if (user.workspaceId) {
           addAuditLog(
             user.workspaceId,
             user._id,
             "plan_change",
-            `Subscription ${oldPlan !== plan ? `upgraded from ${oldPlan} to` : "started"} ${plan} (${cycle})`,
+            `Subscription ${
+              oldPlan !== plan
+                ? `upgraded from ${oldPlan} to`
+                : "started"
+            } ${plan} (${cycle})`,
             { oldPlan, newPlan: plan, cycle },
           );
         }
         break;
       }
 
-            case "invoice.paid": {
+      case "invoice.paid": {
         const invoice = event.data.object;
         const subscriptionId =
-          invoice.parent?.subscription_details?.subscription;
+          invoice.parent?.subscription_details?.subscription ||
+          invoice.subscription;
 
         if (!subscriptionId) {
           console.warn("invoice.paid: no subscriptionId on invoice", invoice.id);
           break;
         }
 
-        const subscription =
-          await stripe.subscriptions.retrieve(subscriptionId);
+        const subscription = await stripe.subscriptions.retrieve(
+          subscriptionId,
+        );
 
         const user = await User.findOne({
           stripeSubscriptionId: subscriptionId,
@@ -209,9 +263,14 @@ export const handleWebhook = async (req, res) => {
             user.subscriptionEndsAt = new Date(periodEnd * 1000);
           }
 
+          // ← BUG FIX #2: record payment so revenue shows up on dashboard.
+          // Skip zero-amount invoices (e.g. trial start, 100%-off coupon).
+          if ((invoice.amount_paid ?? 0) > 0) {
+            await recordPayment(invoice, user, subscriptionId);
+          }
+
           await user.save();
 
-          // ── Audit log: successful renewal ──────────────────
           if (user.workspaceId) {
             addAuditLog(
               user.workspaceId,
@@ -224,10 +283,11 @@ export const handleWebhook = async (req, res) => {
         break;
       }
 
-            case "invoice.payment_failed": {
+      case "invoice.payment_failed": {
         const invoice = event.data.object;
         const subscriptionId =
-          invoice.parent?.subscription_details?.subscription;
+          invoice.parent?.subscription_details?.subscription ||
+          invoice.subscription;
 
         if (!subscriptionId) {
           console.warn("invoice.payment_failed: no subscriptionId", invoice.id);
@@ -241,7 +301,6 @@ export const handleWebhook = async (req, res) => {
           user.subscriptionStatus = "past_due";
           await user.save();
 
-          // ── Audit log: payment failure ─────────────────────
           if (user.workspaceId) {
             addAuditLog(
               user.workspaceId,
@@ -267,10 +326,8 @@ export const handleWebhook = async (req, res) => {
           user.subscriptionEndsAt = null;
           const config = User.getPlanConfig("starter");
           user.tokensRemaining = config.tokens;
-          // Remove scan limit reset if no longer using scans
           await user.save();
 
-          // ── Audit log: subscription ended ──────────────────
           if (user.workspaceId) {
             addAuditLog(
               user.workspaceId,
@@ -282,10 +339,14 @@ export const handleWebhook = async (req, res) => {
         }
         break;
       }
+
+      default:
+        // Unhandled event types: return 200 so Stripe stops retrying.
+        break;
     }
 
     res.json({ received: true });
-    } catch (err) {
+  } catch (err) {
     console.error("Webhook processing error:", {
       eventType: event?.type,
       eventId: event?.id,
