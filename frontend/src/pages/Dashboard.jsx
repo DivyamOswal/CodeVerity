@@ -1,32 +1,140 @@
+// src/pages/Dashboard.jsx
 import { useEffect, useState, useRef, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  Activity,
+  Boxes,
+  Cog,
+  Zap,
+  Shield,
+  Check,
+  ArrowRight,
+  AlertCircle,
+  Search as SearchIcon,
+} from "lucide-react";
+
 import { fetchDashboard } from "../api/dashboard";
 import { analyzeGithub, generateTests } from "../api/github";
-import { useNavigate } from "react-router-dom";
+import { getReport } from "../api/report";
 import Result from "../components/Result";
 import { usePreferences } from "../context/PreferencesContext";
-import { gsap, useGSAP } from "../lib/gsap";
-import { Search } from "lucide-react";
-import { getReport } from "../api/report";
 import { useToast } from "../hooks/useToast";
+import { gsap, useGSAP } from "../lib/gsap";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-/* =========================================================
-   CODEVERITY DASHBOARD – Token-based only
-========================================================= */
+/* Grade styles hoisted out of ReportRow so they aren't rebuilt per render. */
+const GRADE_STYLES = {
+  A: {
+    text: "text-[var(--color-success)]",
+    bg: "bg-[var(--color-success-soft)]",
+    border: "border-[var(--color-success)]/20",
+  },
+  B: {
+    text: "text-[var(--color-info)]",
+    bg: "bg-[var(--color-info-soft)]",
+    border: "border-[var(--color-info)]/20",
+  },
+  C: {
+    text: "text-[var(--color-warning)]",
+    bg: "bg-[var(--color-warning-soft)]",
+    border: "border-[var(--color-warning)]/20",
+  },
+  D: {
+    text: "text-[var(--color-caution)]",
+    bg: "bg-[var(--color-caution-soft)]",
+    border: "border-[var(--color-caution)]/20",
+  },
+  F: {
+    text: "text-[var(--color-danger)]",
+    bg: "bg-[var(--color-danger-soft)]",
+    border: "border-[var(--color-danger)]/20",
+  },
+};
+
+const FALLBACK_GRADE_STYLE = {
+  text: "text-[var(--text-secondary)]",
+  bg: "bg-[var(--bg-primary)]",
+  border: "border-[var(--border-light)]",
+};
+
+const FEATURES = [
+  { label: "Architecture", Icon: Boxes },
+  { label: "Bug detection", Icon: Zap },
+  { label: "Security", Icon: Shield },
+  { label: "Test generation", Icon: Check },
+  { label: "Roadmap", Icon: ArrowRight },
+];
+
+function sizeFor(compact) {
+  return compact
+    ? {
+        mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
+        topPadding: "pt-20",
+        headerSpacing: "gap-0.5",
+        heading: "text-lg sm:text-xl",
+        subHeading: "text-[11px]",
+        statsGap: "gap-2",
+        statCardPadding: "p-3",
+        statValue: "text-xl",
+        analyzerPadding: "p-4 sm:p-4",
+        analyzerHeaderGap: "mb-3 gap-2",
+        analyzerIconSize: "h-8 w-8",
+        analyzerTitle: "text-xs sm:text-sm",
+        analyzerDesc: "text-[10px] sm:text-[11px]",
+        inputHeight: "h-10",
+        inputPadding: "pl-8 pr-3",
+        buttonPadding: "px-4 py-2 text-[11px]",
+        featuresGap: "gap-1.5",
+        featuresTag: "px-2 py-1 text-[10px]",
+        recentHeaderPadding: "px-4 py-3",
+        recentTitle: "text-xs",
+        recentSub: "text-[10px]",
+        reportRowPadding: "px-2 py-2",
+        emptyStatePadding: "py-8 px-4",
+        footerMargin: "mt-4",
+        footerText: "text-[10px]",
+      }
+    : {
+        mainPadding: "px-4 py-6 sm:px-6 lg:px-8",
+        topPadding: "pt-24",
+        headerSpacing: "gap-1",
+        heading: "text-xl sm:text-2xl",
+        subHeading: "text-xs",
+        statsGap: "gap-3",
+        statCardPadding: "p-4",
+        statValue: "text-2xl",
+        analyzerPadding: "p-5 sm:p-6",
+        analyzerHeaderGap: "mb-5 gap-3",
+        analyzerIconSize: "h-10 w-10",
+        analyzerTitle: "text-sm sm:text-base",
+        analyzerDesc: "text-[11px] sm:text-xs",
+        inputHeight: "h-12",
+        inputPadding: "pl-9 pr-4",
+        buttonPadding: "px-6 py-3 text-xs",
+        featuresGap: "gap-2",
+        featuresTag: "px-2.5 py-1.5 text-[10px]",
+        recentHeaderPadding: "px-5 py-4",
+        recentTitle: "text-sm",
+        recentSub: "text-[10px]",
+        reportRowPadding: "px-3 py-3",
+        emptyStatePadding: "py-12 px-6",
+        footerMargin: "mt-6",
+        footerText: "text-[10px]",
+      };
+}
 
 export default function Dashboard() {
   const { error: toastError } = useToast();
   const [data, setData] = useState(null);
   const [statsKey, setStatsKey] = useState(0);
-  const [repoUrl, setRepoUrl] = useState(""); // input field value
+  const [repoUrl, setRepoUrl] = useState("");
   const [analysis, setAnalysis] = useState(null);
   const [reportId, setReportId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [activeView, setActiveView] = useState("home");
   const [mounted, setMounted] = useState(false);
-
   const [currentRepoUrl, setCurrentRepoUrl] = useState("");
 
   const navigate = useNavigate();
@@ -38,11 +146,8 @@ export default function Dashboard() {
   const emptyStateRef = useRef(null);
 
   const { compact } = usePreferences();
+  const c = sizeFor(compact);
 
-  // Note: `logout` was previously destructured from useAuth() here and
-  // listed as a dependency, but never called — the catch below clears
-  // the token and redirects manually. Removed to avoid depending on
-  // auth context this component doesn't actually use.
   const loadDashboard = useCallback(
     () =>
       fetchDashboard()
@@ -69,7 +174,9 @@ export default function Dashboard() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
-        const tl = gsap.timeline({ defaults: { ease: "power2.out", duration: 0.5 } });
+        const tl = gsap.timeline({
+          defaults: { ease: "power2.out", duration: 0.5 },
+        });
 
         if (mainContainerRef.current) {
           gsap.set(mainContainerRef.current, { opacity: 0, y: 15 });
@@ -104,7 +211,11 @@ export default function Dashboard() {
         }
 
         if (analyzerRef.current) {
-          tl.to(analyzerRef.current, { opacity: 1, y: 0, duration: 0.45 }, "-=0.15");
+          tl.to(
+            analyzerRef.current,
+            { opacity: 1, y: 0, duration: 0.45 },
+            "-=0.15"
+          );
         }
 
         tl.to(
@@ -133,14 +244,22 @@ export default function Dashboard() {
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
         if (mainContainerRef.current) {
-          gsap.set(mainContainerRef.current, { opacity: 1, y: 0, clearProps: "all" });
+          gsap.set(mainContainerRef.current, {
+            opacity: 1,
+            y: 0,
+            clearProps: "all",
+          });
         }
         const statsChildren = statsContainerRef.current?.children;
         if (statsChildren?.length) {
           gsap.set(statsChildren, { opacity: 1, y: 0, clearProps: "all" });
         }
         if (analyzerRef.current) {
-          gsap.set(analyzerRef.current, { opacity: 1, y: 0, clearProps: "all" });
+          gsap.set(analyzerRef.current, {
+            opacity: 1,
+            y: 0,
+            clearProps: "all",
+          });
         }
         gsap.set(".report-row", { opacity: 1, y: 0, clearProps: "all" });
         gsap.set(".empty-state", { opacity: 1, y: 0, clearProps: "all" });
@@ -215,7 +334,7 @@ export default function Dashboard() {
 
       if (errorMsg === "Insufficient tokens") {
         setError(
-          `${errorMsg}. <a href="/pricing" style="color: var(--accent); text-decoration: underline; font-weight: 500;">Upgrade your plan</a>`
+          `${errorMsg}. <a href="/pricing" class="underline font-medium text-[var(--accent)] hover:text-[var(--accent-hover)]">Upgrade your plan</a>`
         );
       } else {
         toastError(errorMsg);
@@ -294,8 +413,10 @@ export default function Dashboard() {
 
   const avgQuality = data.recentReports?.length
     ? Math.round(
-        data.recentReports.reduce((s, r) => s + (r.scores?.codeQuality ?? 0), 0) /
-          data.recentReports.length
+        data.recentReports.reduce(
+          (s, r) => s + (r.scores?.codeQuality ?? 0),
+          0
+        ) / data.recentReports.length
       )
     : data.stats?.avgScore ?? 0;
 
@@ -304,80 +425,21 @@ export default function Dashboard() {
       label: "Total scans",
       value: data.stats?.totalScans ?? 0,
       sub: "repositories analyzed",
-      icon: "⌁",
-      delay: "0ms",
+      Icon: Activity,
     },
     {
       label: "Avg code quality",
       value: `${avgQuality}%`,
       sub: "across all reports",
-      icon: "◈",
-      delay: "70ms",
+      Icon: Boxes,
     },
     {
       label: "DevOps score",
       value: `${data.stats?.devopsScore ?? 0}%`,
       sub: "CI/CD & infrastructure",
-      icon: "⚙",
-      delay: "140ms",
+      Icon: Cog,
     },
   ];
-
-  const compactClasses = compact
-    ? {
-        mainPadding: "px-4 py-4 sm:px-4 lg:px-6",
-        topPadding: "pt-14",
-        headerSpacing: "gap-0.5",
-        heading: "text-lg sm:text-xl",
-        subHeading: "text-[10px]",
-        statsGap: "gap-2",
-        statCardPadding: "p-3",
-        statValue: "text-xl",
-        analyzerPadding: "p-4 sm:p-4",
-        analyzerHeaderGap: "mb-3 gap-2",
-        analyzerIconSize: "h-8 w-8",
-        analyzerTitle: "text-xs sm:text-sm",
-        analyzerDesc: "text-[9px] sm:text-[10px]",
-        inputHeight: "h-10",
-        inputPadding: "pl-7 pr-3",
-        buttonPadding: "px-4 py-2 text-[10px]",
-        featuresGap: "gap-1.5",
-        featuresTag: "px-2 py-1 text-[9px]",
-        recentHeaderPadding: "px-4 py-3",
-        recentTitle: "text-xs",
-        recentSub: "text-[9px]",
-        reportRowPadding: "px-2 py-2",
-        emptyStatePadding: "py-8 px-4",
-        footerMargin: "mt-4",
-        footerText: "text-[9px]",
-      }
-    : {
-        mainPadding: "px-4 py-6 sm:px-6 lg:px-8",
-        topPadding: "pt-16",
-        headerSpacing: "gap-1",
-        heading: "text-xl sm:text-2xl",
-        subHeading: "text-xs",
-        statsGap: "gap-3",
-        statCardPadding: "p-4",
-        statValue: "text-2xl",
-        analyzerPadding: "p-5 sm:p-6",
-        analyzerHeaderGap: "mb-5 gap-3",
-        analyzerIconSize: "h-10 w-10",
-        analyzerTitle: "text-sm sm:text-base",
-        analyzerDesc: "text-[10px] sm:text-xs",
-        inputHeight: "h-12",
-        inputPadding: "pl-8 pr-4",
-        buttonPadding: "px-6 py-3 text-xs",
-        featuresGap: "gap-2",
-        featuresTag: "px-2.5 py-1.5 text-[9px]",
-        recentHeaderPadding: "px-5 py-4",
-        recentTitle: "text-sm",
-        recentSub: "text-[9px]",
-        reportRowPadding: "px-3 py-3",
-        emptyStatePadding: "py-12 px-6",
-        footerMargin: "mt-6",
-        footerText: "text-[9px]",
-      };
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
@@ -396,55 +458,65 @@ export default function Dashboard() {
       {activeView === "home" && (
         <main
           ref={mainContainerRef}
-          className={`mx-auto w-full max-w-7xl ${compactClasses.mainPadding} ${compactClasses.topPadding}`}
+          className={`mx-auto w-full max-w-7xl ${c.mainPadding} ${c.topPadding}`}
         >
           <div className="space-y-5">
             {/* HEADER */}
-            <div className={`flex flex-col ${compactClasses.headerSpacing}`}>
-              <div className="flex items-center gap-2 flex-wrap">
+            <div className={`flex flex-col ${c.headerSpacing}`}>
+              <div className="flex flex-wrap items-center gap-2">
                 <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-                <span className="text-[9px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
+                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
                   System online
                 </span>
 
-                {data?.user && typeof data.user.tokensRemaining === "number" && (
-                  <>
-                    <span className="text-[var(--text-muted)] text-[9px]">•</span>
-                    <span className="text-[9px] font-mono text-[var(--text-muted)]">
-                      <span className="text-[var(--accent)]">⚡</span>
-                      {data.user.tokensRemaining.toLocaleString()} tokens remaining
-                      {data.user.totalTokensUsed > 0 && (
-                        <span className="text-[var(--text-muted)]/60">
-                          &nbsp;({data.user.totalTokensUsed.toLocaleString()} used)
-                        </span>
-                      )}
-                    </span>
-                  </>
-                )}
+                {data?.user &&
+                  typeof data.user.tokensRemaining === "number" && (
+                    <>
+                      <span className="text-[10px] text-[var(--text-muted)]">
+                        •
+                      </span>
+                      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[var(--text-muted)]">
+                        <Zap
+                          size={11}
+                          aria-hidden="true"
+                          className="text-[var(--accent)]"
+                        />
+                        {data.user.tokensRemaining.toLocaleString()} tokens
+                        remaining
+                        {data.user.totalTokensUsed > 0 && (
+                          <span className="text-[var(--text-muted)]/60">
+                            &nbsp;({data.user.totalTokensUsed.toLocaleString()}{" "}
+                            used)
+                          </span>
+                        )}
+                      </span>
+                    </>
+                  )}
               </div>
 
               <h2
-                className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${compactClasses.heading}`}
+                className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${c.heading}`}
               >
                 Repository Dashboard
               </h2>
-              <p className={`text-[var(--text-muted)] ${compactClasses.subHeading}`}>
-                Analyze your GitHub repositories and get AI-powered engineering insights.
+              <p className={`text-[var(--text-muted)] ${c.subHeading}`}>
+                Analyze your GitHub repositories and get AI-powered engineering
+                insights.
               </p>
             </div>
 
             {/* STATS */}
             <div
               ref={statsContainerRef}
-              className={`grid grid-cols-1 ${compactClasses.statsGap} sm:grid-cols-3`}
+              className={`grid grid-cols-1 ${c.statsGap} sm:grid-cols-3`}
             >
               {stats.map((s) => (
                 <StatCard
                   key={`${s.label}-${statsKey}`}
                   {...s}
                   compact={compact}
-                  statValueClass={compactClasses.statValue}
-                  statPaddingClass={compactClasses.statCardPadding}
+                  statValueClass={c.statValue}
+                  statPaddingClass={c.statCardPadding}
                 />
               ))}
             </div>
@@ -452,7 +524,7 @@ export default function Dashboard() {
             {/* ANALYZER */}
             <div
               ref={analyzerRef}
-              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)]"
+              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] transition-colors duration-200 hover:border-[var(--accent)]/25"
             >
               <div
                 aria-hidden="true"
@@ -461,26 +533,32 @@ export default function Dashboard() {
               <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
               <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
-              <div className={`relative ${compactClasses.analyzerPadding}`}>
-                <div className={`flex items-start ${compactClasses.analyzerHeaderGap}`}>
+              <div className={`relative ${c.analyzerPadding}`}>
+                <div className={`flex items-start ${c.analyzerHeaderGap}`}>
                   <div
-                    className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)] ${compactClasses.analyzerIconSize}`}
+                    className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)] ${c.analyzerIconSize}`}
                   >
-                    ⌁
+                    <Activity
+                      size={compact ? 14 : 17}
+                      strokeWidth={1.9}
+                      aria-hidden="true"
+                    />
                   </div>
                   <div>
-                    <h2 className={`font-semibold text-[var(--text-primary)] ${compactClasses.analyzerTitle}`}>
+                    <h2
+                      className={`font-semibold text-[var(--text-primary)] ${c.analyzerTitle}`}
+                    >
                       Analyze a GitHub repository
                     </h2>
-                    <p className={`mt-1 leading-relaxed text-[var(--text-muted)] ${compactClasses.analyzerDesc}`}>
-                      Paste a public repository URL for a complete AI-powered engineering audit.
+                    <p
+                      className={`mt-1 leading-relaxed text-[var(--text-muted)] ${c.analyzerDesc}`}
+                    >
+                      Paste a public repository URL for a complete AI-powered
+                      engineering audit.
                     </p>
                   </div>
                 </div>
 
-                {/* Input + button joined into a single command bar on
-                    desktop, matching the terminal identity used across
-                    the app; stacks on mobile. */}
                 <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-[var(--border-light)] sm:bg-[var(--bg-input)] sm:transition-colors sm:focus-within:border-[var(--accent)]/60">
                   <div className="relative min-w-0 flex-1">
                     <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">
@@ -488,65 +566,78 @@ export default function Dashboard() {
                     </span>
                     <input
                       aria-label="GitHub repository URL"
-                      className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition-colors focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 sm:rounded-none sm:border-0 sm:focus:ring-0 ${compactClasses.inputHeight} ${compactClasses.inputPadding}`}
+                      className={`w-full rounded-xl border border-[var(--border-light)] bg-[var(--bg-input)] text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] transition-colors focus:border-[var(--accent)]/60 focus:ring-1 focus:ring-[var(--accent)]/20 sm:rounded-none sm:border-0 sm:focus:ring-0 ${c.inputHeight} ${c.inputPadding}`}
                       placeholder="https://github.com/username/repository"
                       value={repoUrl}
                       onChange={(e) => {
                         setRepoUrl(e.target.value);
                         setError("");
                       }}
-                      onKeyDown={(e) => e.key === "Enter" && !loading && generateReport()}
+                      onKeyDown={(e) =>
+                        e.key === "Enter" && !loading && generateReport()
+                      }
                     />
                   </div>
                   <button
+                    type="button"
                     onClick={generateReport}
                     disabled={loading}
-                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 sm:m-1 sm:rounded-lg ${
+                    aria-label={loading ? "Analyzing repository" : undefined}
+                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] sm:m-1 sm:min-w-[176px] sm:rounded-lg ${c.buttonPadding} ${
                       loading
                         ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)]"
-                        : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_8px_24px_-8px_var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] active:scale-95"
-                    } ${compactClasses.buttonPadding}`}
+                        : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_8px_24px_-8px_var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95"
+                    }`}
                   >
                     {loading ? (
                       <span className="flex items-center justify-center gap-2">
                         <span
                           className="h-4 w-4 animate-spin rounded-full border-2 border-t-transparent"
-                          style={{ borderColor: "var(--accent-contrast)", borderTopColor: "transparent", opacity: 0.85 }}
+                          style={{
+                            borderColor: "var(--accent-contrast)",
+                            borderTopColor: "transparent",
+                            opacity: 0.85,
+                          }}
                         />
                         Analyzing…
                       </span>
                     ) : (
-                      <span className="flex items-center gap-2">
+                      <span className="flex items-center justify-center gap-2">
                         Analyze repository
-                        <span>→</span>
+                        <ArrowRight size={14} aria-hidden="true" />
                       </span>
                     )}
                   </button>
                 </div>
 
                 {error && (
-                  <div className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] px-3 py-2.5 text-[10px] text-[var(--color-danger)] animate-[cv-dash-fadeUp-sm_0.2s_ease_both]">
-                    <span className="flex h-4 w-4 items-center justify-center rounded-full bg-[var(--color-danger-soft)]">
-                      !
-                    </span>
+                  <div
+                    role="alert"
+                    className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] px-3 py-2.5 text-xs text-[var(--color-danger)] animate-[cv-dash-fadeUp-sm_0.2s_ease_both]"
+                  >
+                    <AlertCircle
+                      size={14}
+                      strokeWidth={2}
+                      aria-hidden="true"
+                      className="shrink-0"
+                    />
                     <span dangerouslySetInnerHTML={{ __html: error }} />
                   </div>
                 )}
 
-                <div className={`mt-4 flex flex-wrap ${compactClasses.featuresGap}`}>
-                  {[
-                    { label: "Architecture", icon: "◈" },
-                    { label: "Bug detection", icon: "⚡" },
-                    { label: "Security", icon: "⌾" },
-                    { label: "Test generation", icon: "✓" },
-                    { label: "Roadmap", icon: "→" },
-                  ].map((f) => (
+                <div className={`mt-4 flex flex-wrap ${c.featuresGap}`}>
+                  {FEATURES.map(({ label, Icon }) => (
                     <span
-                      key={f.label}
-                      className={`flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] ${compactClasses.featuresTag}`}
+                      key={label}
+                      className={`group flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)] transition-colors duration-150 hover:border-[var(--accent)]/30 hover:text-[var(--text-secondary)] ${c.featuresTag}`}
                     >
-                      <span className="text-[var(--accent)]">{f.icon}</span>
-                      {f.label}
+                      <Icon
+                        size={11}
+                        strokeWidth={2}
+                        aria-hidden="true"
+                        className="text-[var(--accent)] transition-transform duration-200 group-hover:scale-110"
+                      />
+                      {label}
                     </span>
                   ))}
                 </div>
@@ -555,34 +646,46 @@ export default function Dashboard() {
 
             {/* RECENT REPORTS */}
             {data.recentReports?.length > 0 && (
-              <div ref={recentReportsRef} className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
+              <div
+                ref={recentReportsRef}
+                className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]"
+              >
                 <div
-                  className={`flex items-center justify-between border-b border-[var(--border-dark)] ${compactClasses.recentHeaderPadding}`}
+                  className={`flex items-center justify-between border-b border-[var(--border-dark)] ${c.recentHeaderPadding}`}
                 >
                   <div>
                     <div className="flex items-center gap-2">
-                      <h2 className={`font-semibold text-[var(--text-primary)] ${compactClasses.recentTitle}`}>
+                      <h2
+                        className={`font-semibold text-[var(--text-primary)] ${c.recentTitle}`}
+                      >
                         Recent reports
                       </h2>
-                      <span className="rounded-md bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono text-[9px] font-bold text-[var(--accent)]">
+                      <span className="rounded-md bg-[var(--accent-soft)] px-1.5 py-0.5 font-mono text-[10px] font-bold text-[var(--accent)]">
                         {data.recentReports.length}
                       </span>
                     </div>
-                    <p className={`mt-1 text-[var(--text-muted)] ${compactClasses.recentSub}`}>
+                    <p
+                      className={`mt-1 text-[var(--text-muted)] ${c.recentSub}`}
+                    >
                       Your latest repository analysis results
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
                     <span
                       key={statsKey}
-                      className="hidden items-center gap-1.5 text-[9px] text-[var(--color-success)] sm:flex"
+                      className="hidden items-center gap-1.5 text-[10px] text-[var(--color-success)] sm:flex"
                     >
                       <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
                       Live
                     </span>
                     <button
+                      type="button"
                       onClick={() => navigate("/history")}
-                      className={`rounded-lg px-2.5 py-1.5 text-[9px] font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft)] active:scale-[0.96] ${compact ? "px-2 py-1" : ""}`}
+                      className={`rounded-lg font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${
+                        compact
+                          ? "px-2 py-1 text-[10px]"
+                          : "px-2.5 py-1.5 text-[11px]"
+                      }`}
                     >
                       View all →
                     </button>
@@ -595,7 +698,11 @@ export default function Dashboard() {
                       key={`${report._id}-${statsKey}`}
                       className="report-row"
                     >
-                      <ReportRow report={report} onView={() => openResult(report)} compact={compact} />
+                      <ReportRow
+                        report={report}
+                        onView={() => openResult(report)}
+                        compact={compact}
+                      />
                     </div>
                   ))}
                 </div>
@@ -608,15 +715,24 @@ export default function Dashboard() {
                 ref={emptyStateRef}
                 className="empty-state rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center"
               >
-                <div className={`${compactClasses.emptyStatePadding}`}>
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-lg text-[var(--text-muted)]">
-                    ◈
+                <div className={`${c.emptyStatePadding}`}>
+                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)]">
+                    <Boxes size={20} strokeWidth={1.7} aria-hidden="true" />
                   </div>
-                  <h3 className={`font-semibold text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}>
+                  <h3
+                    className={`font-semibold text-[var(--text-secondary)] ${
+                      compact ? "text-xs" : "text-sm"
+                    }`}
+                  >
                     No reports yet
                   </h3>
-                  <p className={`mx-auto mt-1.5 max-w-sm leading-relaxed text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}>
-                    Enter a public GitHub repository above to generate your first CodeVerity audit.
+                  <p
+                    className={`mx-auto mt-1.5 max-w-sm leading-relaxed text-[var(--text-muted)] ${
+                      compact ? "text-[10px]" : "text-[11px]"
+                    }`}
+                  >
+                    Enter a public GitHub repository above to generate your
+                    first CodeVerity audit.
                   </p>
                 </div>
               </div>
@@ -624,7 +740,7 @@ export default function Dashboard() {
 
             {/* FOOTER */}
             <div
-              className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${compactClasses.footerText} ${compactClasses.footerMargin}`}
+              className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${c.footerText} ${c.footerMargin}`}
             >
               <span>CodeVerity</span>
               <span>•</span>
@@ -633,17 +749,6 @@ export default function Dashboard() {
           </div>
         </main>
       )}
-
-      <style>{`
-        @keyframes cv-dash-fadeUp {
-          from { transform: translateY(8px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-        @keyframes cv-dash-fadeUp-sm {
-          from { transform: translateY(4px); opacity: 0; }
-          to { transform: translateY(0); opacity: 1; }
-        }
-      `}</style>
     </div>
   );
 }
@@ -652,60 +757,48 @@ export default function Dashboard() {
    SUB-COMPONENTS
 ========================================================= */
 
-function CodeVerityLogo() {
-  return (
-    <div className="relative flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
-      <div className="absolute inset-[1px] rounded-[11px] bg-[var(--bg-primary)]" />
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="relative text-[var(--accent)]"
-      >
-        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-        <path d="m9 12 2 2 4-4" />
-      </svg>
-      <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md bg-[var(--bg-secondary)] border border-[var(--border-light)]">
-        <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
-      </div>
-      <span className="absolute -top-0.5 -left-0.5 h-2 w-2 rounded-full bg-[var(--accent)] animate-pulse" />
-    </div>
-  );
-}
-
-function StatCard({ label, value, sub, icon, delay, compact, statValueClass, statPaddingClass }) {
+function StatCard({
+  label,
+  value,
+  sub,
+  Icon,
+  compact,
+  statValueClass,
+  statPaddingClass,
+}) {
   const animated = useCountUp(value, 800);
 
   return (
     <div
-      className={`relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${statPaddingClass}`}
+      className={`group relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-md)] ${statPaddingClass}`}
     >
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40"
+        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40 transition-opacity duration-200 group-hover:opacity-80"
       />
       <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start justify-between">
         <div>
-          <p className="font-medium uppercase tracking-[0.12em] text-[var(--text-muted)] text-[9px]">
+          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--text-muted)]">
             {label}
           </p>
-          <p className={`mt-2 font-bold tabular-nums text-[var(--text-primary)] ${statValueClass}`}>
+          <p
+            className={`mt-2 font-bold tabular-nums text-[var(--text-primary)] ${statValueClass}`}
+          >
             {animated}
           </p>
-          <p className="mt-1 text-[var(--text-muted)] text-[9px]">{sub}</p>
+          <p className="mt-1 text-[10px] text-[var(--text-muted)]">{sub}</p>
         </div>
         <div
-          className={`flex items-center justify-center rounded-lg text-sm bg-[var(--accent-soft)] text-[var(--accent)] ${
-            compact ? "h-6 w-6 text-xs" : "h-8 w-8"
+          className={`flex items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-200 group-hover:scale-110 ${
+            compact ? "h-6 w-6" : "h-8 w-8"
           }`}
         >
-          {icon}
+          <Icon
+            size={compact ? 12 : 15}
+            strokeWidth={1.9}
+            aria-hidden="true"
+          />
         </div>
       </div>
     </div>
@@ -714,38 +807,7 @@ function StatCard({ label, value, sub, icon, delay, compact, statValueClass, sta
 
 function ReportRow({ report, onView, compact }) {
   const grade = report.grade ?? "N/A";
-  const gradeColor =
-    {
-      A: {
-        text: "text-[var(--color-success)]",
-        bg: "bg-[var(--color-success-soft)]",
-        border: "border-[var(--color-success)]/20",
-      },
-      B: {
-        text: "text-[var(--color-info)]",
-        bg: "bg-[var(--color-info-soft)]",
-        border: "border-[var(--color-info)]/20",
-      },
-      C: {
-        text: "text-[var(--color-warning)]",
-        bg: "bg-[var(--color-warning-soft)]",
-        border: "border-[var(--color-warning)]/20",
-      },
-      D: {
-        text: "text-[var(--color-caution)]",
-        bg: "bg-[var(--color-caution-soft)]",
-        border: "border-[var(--color-caution)]/20",
-      },
-      F: {
-        text: "text-[var(--color-danger)]",
-        bg: "bg-[var(--color-danger-soft)]",
-        border: "border-[var(--color-danger)]/20",
-      },
-    }[grade[0]] ?? {
-      text: "text-[var(--text-secondary)]",
-      bg: "bg-[var(--bg-primary)]",
-      border: "border-[var(--border-light)]",
-    };
+  const gradeColor = GRADE_STYLES[grade[0]] ?? FALLBACK_GRADE_STYLE;
 
   const avg = report.scores
     ? Math.round(
@@ -757,7 +819,8 @@ function ReportRow({ report, onView, compact }) {
       )
     : 0;
 
-  const repoName = report.repoUrl?.replace("https://github.com/", "") ?? "Unknown repo";
+  const repoName =
+    report.repoUrl?.replace("https://github.com/", "") ?? "Unknown repo";
   const date = report.createdAt
     ? new Date(report.createdAt).toLocaleDateString("en-US", {
         month: "short",
@@ -767,10 +830,14 @@ function ReportRow({ report, onView, compact }) {
 
   const rowPadding = compact ? "px-2 py-2" : "px-3 py-3";
   const gradeSize = compact ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]";
-  const repoFontSize = compact ? "text-[10px]" : "text-[11px]";
-  const dateFontSize = "text-[9px]";
-  const scoreBadgePadding = compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[9px]";
-  const viewButtonPadding = compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[9px]";
+  const repoFontSize = compact ? "text-[11px]" : "text-xs";
+  const dateFontSize = "text-[10px]";
+  const scoreBadgePadding = compact
+    ? "px-1.5 py-0.5 text-[10px]"
+    : "px-2 py-1 text-[10px]";
+  const viewButtonPadding = compact
+    ? "px-2 py-1 text-[10px]"
+    : "px-3 py-1.5 text-[10px]";
 
   return (
     <div
@@ -782,7 +849,9 @@ function ReportRow({ report, onView, compact }) {
         {grade}
       </span>
       <div className="min-w-0 flex-1">
-        <p className={`truncate font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${repoFontSize}`}>
+        <p
+          className={`truncate font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${repoFontSize}`}
+        >
           {repoName}
         </p>
         <p className={`mt-0.5 text-[var(--text-muted)] ${dateFontSize}`}>
@@ -814,8 +883,9 @@ function ReportRow({ report, onView, compact }) {
       </div>
 
       <button
+        type="button"
         onClick={onView}
-        className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:scale-[0.96] ${viewButtonPadding}`}
+        className={`rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--accent-soft)] hover:text-[var(--accent)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${viewButtonPadding}`}
       >
         View →
       </button>
@@ -854,11 +924,12 @@ function useCountUp(target, duration = 800) {
 }
 
 /* Skeleton dashboard — mirrors the real layout's shape so the page
-   structure is visible immediately on load, instead of a bare spinner
-   that jumps to a full dashboard once data arrives. */
+   structure is visible immediately on load. */
 function DashboardSkeleton({ compact }) {
-  const mainPadding = compact ? "px-4 py-4 sm:px-4 lg:px-6" : "px-4 py-6 sm:px-6 lg:px-8";
-  const topPadding = compact ? "pt-14" : "pt-16";
+  const mainPadding = compact
+    ? "px-4 py-4 sm:px-4 lg:px-6"
+    : "px-4 py-6 sm:px-6 lg:px-8";
+  const topPadding = compact ? "pt-20" : "pt-24";
   const statsGap = compact ? "gap-2" : "gap-3";
   const statPad = compact ? "p-3" : "p-4";
 
@@ -866,14 +937,12 @@ function DashboardSkeleton({ compact }) {
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <main className={`mx-auto w-full max-w-7xl ${mainPadding} ${topPadding}`}>
         <div className="animate-pulse space-y-5">
-          {/* Header */}
           <div className="space-y-2">
             <div className="h-2 w-28 rounded bg-[var(--bg-hover)]" />
             <div className="h-6 w-56 rounded bg-[var(--bg-hover)]" />
             <div className="h-2.5 w-80 max-w-full rounded bg-[var(--bg-hover)]" />
           </div>
 
-          {/* Stats */}
           <div className={`grid grid-cols-1 ${statsGap} sm:grid-cols-3`}>
             {Array.from({ length: 3 }, (_, i) => (
               <div
@@ -892,7 +961,6 @@ function DashboardSkeleton({ compact }) {
             ))}
           </div>
 
-          {/* Analyzer */}
           <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 sm:p-6">
             <div className="flex items-start gap-3">
               <div className="h-10 w-10 shrink-0 rounded-xl bg-[var(--bg-hover)]" />
@@ -904,12 +972,14 @@ function DashboardSkeleton({ compact }) {
             <div className="mt-5 h-12 w-full rounded-xl bg-[var(--bg-hover)]" />
             <div className="mt-4 flex flex-wrap gap-2">
               {Array.from({ length: 5 }, (_, i) => (
-                <div key={i} className="h-6 w-24 rounded-lg bg-[var(--bg-hover)]" />
+                <div
+                  key={i}
+                  className="h-6 w-24 rounded-lg bg-[var(--bg-hover)]"
+                />
               ))}
             </div>
           </div>
 
-          {/* Recent reports */}
           <div className="overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
             <div className="border-b border-[var(--border-dark)] px-5 py-4">
               <div className="h-3 w-32 rounded bg-[var(--bg-hover)]" />

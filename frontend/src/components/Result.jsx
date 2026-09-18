@@ -1,3 +1,4 @@
+// src/components/Result.jsx
 import { useState } from "react";
 import { useAuth } from "../App";
 import {
@@ -8,13 +9,39 @@ import {
   PolarRadiusAxis,
   ResponsiveContainer,
 } from "recharts";
+import {
+  Terminal,
+  LayoutGrid,
+  Shield,
+  ShieldCheck,
+  TrendingUp,
+  Target,
+  CircleDot,
+  AlertCircle,
+  Star,
+  Check,
+  AlertTriangle,
+  ArrowRight,
+  Zap,
+  Battery,
+  Download,
+  Plus,
+  RotateCw,
+  ChevronDown,
+  ChevronRight,
+  Copy as CopyIcon,
+  Boxes,
+  FileCode2,
+  ClipboardCheck,
+  Wrench,
+} from "lucide-react";
 
 import { generateTests as defaultGenerateTests } from "../api/github";
 import { usePreferences } from "../context/PreferencesContext";
 import RepoEditor from "../components/CodeEditor/RepoEditor";
 import { useToast } from "../hooks/useToast";
 
-// ── Grade → color mapping ──
+// ── Grade → text color ──
 function gradeAccent(grade) {
   const map = {
     A: "text-[var(--color-success)]",
@@ -26,7 +53,7 @@ function gradeAccent(grade) {
   return map[grade?.[0]] ?? "text-[var(--text-muted)]";
 }
 
-// ── Grade → glow shadow mapping (for accent cards) ──
+// ── Grade → glow shadow ──
 function gradeGlow(grade) {
   const map = {
     A: "shadow-[0_0_24px_-8px_var(--color-success)]",
@@ -38,7 +65,7 @@ function gradeGlow(grade) {
   return map[grade?.[0]] ?? "";
 }
 
-// ── Severity → color mapping ──
+// ── Severity → pill styling ──
 function severityColor(severity) {
   const map = {
     critical:
@@ -53,6 +80,51 @@ function severityColor(severity) {
     map[severity?.toLowerCase()] ??
     "bg-[var(--bg-hover)] text-[var(--text-muted)] border-[var(--border-light)]"
   );
+}
+
+// ── Category → Lucide icon for finding rows ──
+const CATEGORY_ICONS = {
+  security: ShieldCheck,
+  bug: AlertCircle,
+  performance: TrendingUp,
+  maintainability: Target,
+  style: LayoutGrid,
+  test: ClipboardCheck,
+  docs: FileCode2,
+  architecture: Boxes,
+  general: CircleDot,
+};
+
+function sizeFor(compact) {
+  return compact
+    ? {
+        containerPadding: "px-3 py-4 sm:px-5 lg:px-6",
+        headerMargin: "pb-3",
+        headingSize: "text-lg sm:text-xl md:text-2xl",
+        gradeBoxPadding: "px-3 py-2",
+        gradeTextSize: "text-lg sm:text-xl",
+        scoreCardGap: "gap-2",
+        tabPadding: "px-2 py-2 text-[11px] sm:px-3",
+        buttonPadding: "px-2 py-1 text-[11px]",
+        testFilePadding: "px-2 py-1.5",
+        testFileFont: "text-[11px]",
+        codeBlockPadding: "p-3",
+        codeBlockFont: "text-[11px]",
+      }
+    : {
+        containerPadding: "px-3 py-5 sm:px-6 lg:px-8",
+        headerMargin: "pb-5",
+        headingSize: "text-xl sm:text-2xl md:text-3xl",
+        gradeBoxPadding: "px-4 py-2.5",
+        gradeTextSize: "text-xl sm:text-2xl",
+        scoreCardGap: "gap-3",
+        tabPadding: "px-3 py-2.5 text-[11px] sm:px-4 sm:text-xs",
+        buttonPadding: "px-3 py-1.5 text-[11px]",
+        testFilePadding: "px-3 py-2",
+        testFileFont: "text-[11px]",
+        codeBlockPadding: "p-4",
+        codeBlockFont: "text-[11px]",
+      };
 }
 
 // ── Main Component ──
@@ -75,13 +147,13 @@ export default function Result({
   const [fixing, setFixing] = useState({});
 
   const { compact } = usePreferences();
+  const s = sizeFor(compact);
 
   if (!data) return null;
 
   const sourceCode = sourceCodeProp || data?._sourceCode || "";
   const doGenerateTests = generateTestsFn ?? defaultGenerateTests;
 
-  // ── Existing fields ──
   const {
     summary = "No summary generated.",
     architecture = [],
@@ -95,7 +167,6 @@ export default function Result({
     repoUrl = repoUrlProp || data?.repoUrl || "",
   } = data;
 
-  // ── Enhanced fields ──
   const {
     healthScore = { overall: 0, grade: "N/A", breakdown: {} },
     securityVulnerabilities = [],
@@ -113,7 +184,6 @@ export default function Result({
     },
     cveList = [],
     readmeScore = { score: 0, details: {} },
-    // ── New structured fields (from groq.js + githubController) ──
     findings = [],
     findingsSummary = null,
     strengths = [],
@@ -122,13 +192,12 @@ export default function Result({
     actionPlan = [],
   } = data;
 
-  // ── Compute sorted + grouped findings for display ──
   const SEVERITY_RANK = { critical: 0, high: 1, medium: 2, low: 3, info: 4 };
   const sortedFindings = [...findings].sort(
     (a, b) =>
       (SEVERITY_RANK[a.severity] ?? 9) - (SEVERITY_RANK[b.severity] ?? 9) ||
       (a.file || "").localeCompare(b.file || "") ||
-      (a.line || 0) - (b.line || 0),
+      (a.line || 0) - (b.line || 0)
   );
 
   const severityCounts =
@@ -148,7 +217,6 @@ export default function Result({
     { metric: "Maintainability", value: scores.maintainability || 0 },
   ];
 
-  // ── Test generation ──
   const runGenerateTests = async () => {
     if (!sourceCode?.trim()) {
       setTestError("No source code available. Please re-run the analysis.");
@@ -180,7 +248,6 @@ export default function Result({
     });
   };
 
-  // ── Auto‑Fix ──
   const handleAutoFix = async (issue, type = "bug") => {
     const issueId = issue._id || issue.id || Date.now();
     setFixing((prev) => ({ ...prev, [issueId]: true }));
@@ -224,106 +291,46 @@ export default function Result({
 
       const result = await response.json();
       if (result.success) {
-        success(`✅ Fix PR #${result.prNumber} created!`);
-        window.open(result.prUrl, "_blank");
+        success(`Fix PR #${result.prNumber} created!`);
+        window.open(result.prUrl, "_blank", "noopener,noreferrer");
       } else {
         error(result.error || "Failed to create fix PR.");
         if (result.action === "connect_github") {
           error(
-            "Please connect your GitHub account in settings to use Auto‑Fix.",
+            "Please connect your GitHub account in settings to use Auto-Fix."
           );
         }
       }
     } catch (err) {
-      console.error("Auto‑fix error:", err);
+      console.error("Auto-fix error:", err);
       error("An error occurred while creating the fix PR.");
     } finally {
       setFixing((prev) => ({ ...prev, [issueId]: false }));
     }
   };
 
-  // ── Compact overrides ──
-  const containerPadding = compact
-    ? "px-3 py-4 sm:px-5 lg:px-6"
-    : "px-3 py-5 sm:px-6 lg:px-8";
-  const headerMargin = compact ? "pb-3" : "pb-5";
-  const headingSize = compact
-    ? "text-lg sm:text-xl md:text-2xl"
-    : "text-xl sm:text-2xl md:text-3xl";
-  const gradeBoxPadding = compact ? "px-3 py-2" : "px-4 py-2.5";
-  const gradeTextSize = compact ? "text-lg sm:text-xl" : "text-xl sm:text-2xl";
-  const scoreCardGap = compact ? "gap-2" : "gap-3";
-  const tabPadding = compact
-    ? "px-2 py-2 text-[10px] sm:px-3"
-    : "px-3 py-2.5 text-[10px] sm:px-4 sm:text-xs";
-  const buttonPadding = compact ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]";
-  const testFilePadding = compact ? "px-2 py-1.5" : "px-3 py-2";
-  const testFileFont = compact ? "text-[10px]" : "text-[11px]";
-  const codeBlockPadding = compact ? "p-3" : "p-4";
-  const codeBlockFont = compact ? "text-[10px]" : "text-[11px]";
+  const TABS = [
+    { id: "audit", label: "Audit Report", Icon: CircleDot },
+    { id: "full", label: "Full Report", Icon: LayoutGrid },
+    { id: "tests", label: "Test Cases", Icon: ClipboardCheck },
+  ];
 
   return (
     <div
-      className={`min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)] relative overflow-hidden ${containerPadding}`}
+      className={`relative min-h-screen overflow-hidden bg-[var(--bg-primary)] text-[var(--text-primary)] ${s.containerPadding}`}
     >
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
-        @keyframes result-fade-up {
-          from { opacity: 0; transform: translateY(10px); }
-          to { opacity: 1; transform: translateY(0); }
-        }
-        @keyframes result-shimmer {
-          0% { background-position: 200% 0; }
-          100% { background-position: -200% 0; }
-        }
-        .result-panel {
-          animation: result-fade-up 0.45s ease-out both;
-        }
-        .result-metric-glow {
-          background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
-          -webkit-background-clip: text;
-          -webkit-text-fill-color: transparent;
-          background-clip: text;
-          color: transparent;
-        }
-        .result-glass-card {
-          transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
-        }
-        .result-glass-card:hover {
-          border-color: var(--accent);
-          box-shadow: 0 14px 32px -22px var(--accent-soft-strong);
-        }
-        .result-cta-shine {
-          position: relative;
-          overflow: hidden;
-        }
-        .result-cta-shine::after {
-          content: "";
-          position: absolute;
-          inset: 0;
-          background: linear-gradient(120deg, transparent 30%, rgba(255,255,255,0.22) 50%, transparent 70%);
-          background-size: 200% 100%;
-          animation: result-shimmer 3.2s linear infinite;
-          pointer-events: none;
-        }
-        @media (prefers-reduced-motion: reduce) {
-          .result-panel { animation: none; }
-          .result-cta-shine::after { animation: none; display: none; }
-        }
-      `,
-        }}
-      />
-
       {/* Background effects */}
       <div
+        aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-[0.04]"
         style={{
-          backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)",
+          backgroundImage:
+            "radial-gradient(var(--accent) 1px, transparent 1px)",
           backgroundSize: "28px 28px",
         }}
       />
       <div
+        aria-hidden="true"
         className="pointer-events-none absolute left-1/2 top-[30%] h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full"
         style={{
           background:
@@ -331,6 +338,7 @@ export default function Result({
         }}
       />
       <div
+        aria-hidden="true"
         className="pointer-events-none absolute bottom-0 right-0 h-[400px] w-[400px] rounded-full"
         style={{
           background:
@@ -338,40 +346,46 @@ export default function Result({
         }}
       />
 
-      <div className="mx-auto max-w-7xl space-y-5 relative z-10">
+      <div className="relative z-10 mx-auto max-w-7xl space-y-5">
         {/* Corner brackets */}
         <div className="relative">
-          <span className="absolute -top-px -left-px w-4 h-4 border-t-2 border-l-2 border-[var(--accent)]/50 rounded-tl-2xl z-10" />
-          <span className="absolute -top-px -right-px w-4 h-4 border-t-2 border-r-2 border-[var(--accent)]/50 rounded-tr-2xl z-10" />
-          <span className="absolute -bottom-px -left-px w-4 h-4 border-b-2 border-l-2 border-[var(--accent)]/50 rounded-bl-2xl z-10" />
-          <span className="absolute -bottom-px -right-px w-4 h-4 border-b-2 border-r-2 border-[var(--accent)]/50 rounded-br-2xl z-10" />
+          <span className="absolute -left-px -top-px z-10 h-4 w-4 rounded-tl-2xl border-l-2 border-t-2 border-[var(--accent)]/50" />
+          <span className="absolute -right-px -top-px z-10 h-4 w-4 rounded-tr-2xl border-r-2 border-t-2 border-[var(--accent)]/50" />
+          <span className="absolute -bottom-px -left-px z-10 h-4 w-4 rounded-bl-2xl border-b-2 border-l-2 border-[var(--accent)]/50" />
+          <span className="absolute -bottom-px -right-px z-10 h-4 w-4 rounded-br-2xl border-b-2 border-r-2 border-[var(--accent)]/50" />
         </div>
 
         {/* HEADER */}
         <div
-          className={`result-panel flex flex-col gap-4 border-b border-[var(--border-dark)] ${headerMargin} md:flex-row md:items-center md:justify-between`}
+          className={`result-panel flex flex-col gap-4 border-b border-[var(--border-dark)] ${s.headerMargin} md:flex-row md:items-center md:justify-between`}
         >
           <div className="min-w-0">
             <div className="mb-2 flex items-center gap-2">
               <div
-                className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-sm shadow-lg shadow-[var(--accent-soft-strong)] ${compact ? "h-6 w-6" : "h-8 w-8"}`}
+                className={`relative flex shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-lg shadow-[var(--accent-soft-strong)] ${
+                  compact ? "h-6 w-6" : "h-8 w-8"
+                }`}
               >
-                <span className="text-[var(--accent-contrast)]">⌘</span>
-                <span className="absolute -top-0.5 -right-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg-primary)]" />
+                <Terminal size={compact ? 13 : 16} strokeWidth={2} aria-hidden="true" />
+                <span className="absolute -right-0.5 -top-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)] ring-2 ring-[var(--bg-primary)]" />
               </div>
               <span
-                className={`font-semibold uppercase tracking-[0.2em] text-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                className={`font-semibold uppercase tracking-[0.2em] text-[var(--accent)] ${
+                  compact ? "text-[10px]" : "text-[11px]"
+                }`}
               >
                 CodeVerity
               </span>
             </div>
             <h1
-              className={`font-bold tracking-tight text-[var(--text-primary)] ${headingSize}`}
+              className={`font-bold tracking-tight text-[var(--text-primary)] ${s.headingSize}`}
             >
               AI Code Analysis Report
             </h1>
             <p
-              className={`mt-1 flex items-center gap-1.5 text-xs text-[var(--text-muted)] ${compact ? "text-[10px]" : ""}`}
+              className={`mt-1 flex items-center gap-1.5 text-[var(--text-muted)] ${
+                compact ? "text-[11px]" : "text-xs"
+              }`}
             >
               <span className="h-1 w-1 rounded-full bg-[var(--color-success)]" />
               Detailed analysis of your GitHub repository.
@@ -380,26 +394,31 @@ export default function Result({
 
           <div className="flex flex-wrap items-center gap-2 sm:gap-3">
             <div
-              className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_10px_25px_-18px_var(--accent-soft-strong)] transition-shadow duration-300 ${gradeGlow(grade)} ${gradeBoxPadding}`}
+              className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_10px_25px_-18px_var(--accent-soft-strong)] transition-shadow duration-300 ${gradeGlow(
+                grade
+              )} ${s.gradeBoxPadding}`}
             >
-              <p
-                className={`font-medium uppercase tracking-wider text-[var(--text-muted)] text-[9px]`}
-              >
+              <p className="text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
                 Final Grade
               </p>
               <div
-                className={`mt-0.5 font-bold ${gradeTextSize} ${gradeAccent(grade)}`}
+                className={`mt-0.5 font-bold ${s.gradeTextSize} ${gradeAccent(
+                  grade
+                )}`}
               >
                 {grade}
               </div>
             </div>
             {onDownload && (
               <button
+                type="button"
                 onClick={onDownload}
-                className={`result-cta-shine group relative overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-semibold text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] active:scale-[0.97] ${compact ? "px-3 py-2 text-[10px]" : "px-4 py-2.5 text-xs"}`}
+                className={`result-cta-shine group relative inline-flex items-center gap-2 overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-semibold text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97] ${
+                  compact ? "px-3 py-2 text-[11px]" : "px-4 py-2.5 text-xs"
+                }`}
               >
-                <span className="relative z-10 flex items-center gap-2">
-                  <span>↓</span>
+                <Download size={14} strokeWidth={2} aria-hidden="true" className="relative z-10" />
+                <span className="relative z-10">
                   {compact ? "PDF" : "Download Report"}
                 </span>
               </button>
@@ -409,59 +428,42 @@ export default function Result({
 
         {/* SCORE CARDS */}
         <div
-          className={`result-panel grid grid-cols-2 ${scoreCardGap} md:grid-cols-4`}
+          className={`result-panel grid grid-cols-2 ${s.scoreCardGap} md:grid-cols-4`}
           style={{ animationDelay: "0.05s" }}
         >
-          <ScoreCard
-            label="Code Quality"
-            value={scores.codeQuality}
-            icon="◈"
-            compact={compact}
-          />
-          <ScoreCard
-            label="Security"
-            value={scores.security}
-            icon="◇"
-            compact={compact}
-          />
-          <ScoreCard
-            label="Performance"
-            value={scores.performance}
-            icon="↗"
-            compact={compact}
-          />
-          <ScoreCard
-            label="Maintainability"
-            value={scores.maintainability}
-            icon="◎"
-            compact={compact}
-          />
+          <ScoreCard label="Code Quality" value={scores.codeQuality} Icon={LayoutGrid} compact={compact} />
+          <ScoreCard label="Security" value={scores.security} Icon={ShieldCheck} compact={compact} />
+          <ScoreCard label="Performance" value={scores.performance} Icon={TrendingUp} compact={compact} />
+          <ScoreCard label="Maintainability" value={scores.maintainability} Icon={Target} compact={compact} />
         </div>
 
         {/* TAB BAR */}
         <div className="flex flex-col gap-2 border-b border-[var(--border-dark)] sm:flex-row sm:items-center sm:gap-0">
           <div className="flex items-center gap-0.5 overflow-x-auto sm:gap-1">
-            {[
-              { id: "audit", label: "Audit Report" },
-              { id: "full", label: "Full Report" },
-              { id: "tests", label: "Test Cases" },
-            ].map((tab) => (
+            {TABS.map(({ id, label, Icon }) => (
               <button
-                key={tab.id}
-                onClick={() => handleTabClick(tab.id)}
-                className={`relative flex items-center gap-1.5 whitespace-nowrap font-medium transition-colors duration-150 ${tabPadding} ${activeTab === tab.id ? "text-[var(--text-primary)]" : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"}`}
+                key={id}
+                type="button"
+                onClick={() => handleTabClick(id)}
+                aria-pressed={activeTab === id}
+                className={`relative flex items-center gap-1.5 whitespace-nowrap font-medium transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] ${s.tabPadding} ${
+                  activeTab === id
+                    ? "text-[var(--text-primary)]"
+                    : "text-[var(--text-muted)] hover:text-[var(--text-secondary)]"
+                }`}
               >
-                <span
+                <Icon
+                  size={13}
+                  strokeWidth={2}
+                  aria-hidden="true"
                   className={
-                    activeTab === tab.id
+                    activeTab === id
                       ? "text-[var(--accent)]"
                       : "text-[var(--text-muted)]"
                   }
-                >
-                  {tab.id === "audit" ? "◉" : tab.id === "full" ? "◈" : "◇"}
-                </span>
-                {tab.label}
-                {activeTab === tab.id && (
+                />
+                {label}
+                {activeTab === id && (
                   <span className="absolute bottom-0 left-2 right-2 h-[2px] rounded-full bg-[var(--accent)] shadow-[0_0_10px_var(--accent-soft-strong)]" />
                 )}
               </button>
@@ -469,10 +471,11 @@ export default function Result({
           </div>
           {!testData && !testLoading && activeTab === "audit" && (
             <button
+              type="button"
               onClick={() => handleTabClick("tests")}
-              className={`flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] font-semibold text-[var(--accent)] transition-all duration-150 hover:bg-[var(--accent-soft-strong)] active:scale-[0.97] ${buttonPadding} sm:ml-auto sm:mb-1`}
+              className={`flex items-center justify-center gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] font-semibold text-[var(--accent)] transition-all duration-150 hover:bg-[var(--accent-soft-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97] ${s.buttonPadding} sm:mb-1 sm:ml-auto`}
             >
-              <span>+</span>
+              <Plus size={13} strokeWidth={2.2} aria-hidden="true" />
               {compact ? "Tests" : "Generate Tests"}
             </button>
           )}
@@ -481,19 +484,20 @@ export default function Result({
         {/* ─────────────────────────── AUDIT TAB ─────────────────────────── */}
         {activeTab === "audit" && (
           <div className="space-y-4">
-            {/* ─── Top Priority Callout ─────────────────── */}
             {topPriority && (
               <div className="result-panel rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] p-4 shadow-[0_0_28px_-14px_var(--accent-soft-strong)]">
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)]">
-                    ★
+                    <Star size={16} strokeWidth={2.2} aria-hidden="true" />
                   </div>
                   <div className="min-w-0">
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
                       Top Priority
                     </p>
                     <p
-                      className={`mt-1 leading-6 text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}
+                      className={`mt-1 leading-6 text-[var(--text-primary)] ${
+                        compact ? "text-xs" : "text-sm"
+                      }`}
                     >
                       {topPriority}
                     </p>
@@ -502,28 +506,32 @@ export default function Result({
               </div>
             )}
 
-            <GlassCard title="Executive Summary" icon="◈" compact={compact}>
+            <GlassCard title="Executive Summary" Icon={LayoutGrid} compact={compact}>
               <p
-                className={`leading-6 text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}
+                className={`leading-6 text-[var(--text-secondary)] ${
+                  compact ? "text-xs" : "text-sm"
+                }`}
               >
                 {summary}
               </p>
 
-              {/* Strengths / Risks two-column */}
               {(strengths.length > 0 || risks.length > 0) && (
                 <div className="mt-4 grid gap-3 sm:grid-cols-2">
                   {strengths.length > 0 && (
                     <div className="rounded-lg border border-[var(--color-success)]/20 bg-[var(--color-success)]/5 p-3">
                       <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-success)]">
-                        <span>✓</span> Strengths
+                        <Check size={12} strokeWidth={3} aria-hidden="true" />
+                        Strengths
                       </p>
                       <ul className="space-y-1.5">
-                        {strengths.map((s, i) => (
+                        {strengths.map((sItem, i) => (
                           <li
                             key={i}
-                            className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                            className={`leading-5 text-[var(--text-secondary)] ${
+                              compact ? "text-[11px]" : "text-xs"
+                            }`}
                           >
-                            • {s}
+                            • {sItem}
                           </li>
                         ))}
                       </ul>
@@ -532,13 +540,16 @@ export default function Result({
                   {risks.length > 0 && (
                     <div className="rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] p-3">
                       <p className="mb-2 flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-wider text-[var(--color-danger)]">
-                        <span>⚠</span> Risks
+                        <AlertTriangle size={12} strokeWidth={2.4} aria-hidden="true" />
+                        Risks
                       </p>
                       <ul className="space-y-1.5">
                         {risks.map((r, i) => (
                           <li
                             key={i}
-                            className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                            className={`leading-5 text-[var(--text-secondary)] ${
+                              compact ? "text-[11px]" : "text-xs"
+                            }`}
                           >
                             • {r}
                           </li>
@@ -550,29 +561,28 @@ export default function Result({
               )}
             </GlassCard>
 
-            {/* ─── Findings (structured review) ─────────── */}
             {sortedFindings.length > 0 && (
               <GlassCard
                 title={`Findings (${sortedFindings.length})`}
-                icon="!"
+                Icon={AlertCircle}
                 compact={compact}
               >
-                {/* Severity rollup */}
                 <div className="mb-4 flex flex-wrap items-center gap-2">
                   {["critical", "high", "medium", "low", "info"].map((sev) =>
                     severityCounts[sev] > 0 ? (
                       <span
                         key={sev}
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${severityColor(sev)}`}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wide ${severityColor(
+                          sev
+                        )}`}
                       >
                         <span className="h-1.5 w-1.5 rounded-full bg-current" />
                         {severityCounts[sev]} {sev}
                       </span>
-                    ) : null,
+                    ) : null
                   )}
                 </div>
 
-                {/* Findings list */}
                 <div className="space-y-2">
                   {sortedFindings.map((finding, i) => (
                     <FindingRow
@@ -587,20 +597,23 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── Action Plan ─────────────────────── */}
             {actionPlan.length > 0 && (
-              <GlassCard title="Action Plan" icon="→" compact={compact}>
+              <GlassCard title="Action Plan" Icon={ArrowRight} compact={compact}>
                 <ol className="space-y-2">
                   {actionPlan.map((step, i) => (
                     <li
                       key={i}
-                      className={`flex gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] p-3 ${compact ? "p-2" : ""}`}
+                      className={`flex gap-3 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] ${
+                        compact ? "p-2" : "p-3"
+                      }`}
                     >
                       <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[10px] font-bold text-[var(--accent)]">
                         {i + 1}
                       </span>
                       <span
-                        className={`leading-6 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                        className={`leading-6 text-[var(--text-secondary)] ${
+                          compact ? "text-[11px]" : "text-xs"
+                        }`}
                       >
                         {step}
                       </span>
@@ -611,7 +624,7 @@ export default function Result({
             )}
 
             <div className="grid gap-4 lg:grid-cols-2">
-              <GlassCard title="Quality Score Analysis" icon="◎" compact={compact}>
+              <GlassCard title="Quality Score Analysis" Icon={Target} compact={compact}>
                 <div
                   style={{
                     width: "100%",
@@ -650,34 +663,46 @@ export default function Result({
                 </div>
               </GlassCard>
 
-              <GlassCard title="Final Verdict" icon="✓" compact={compact}>
+              <GlassCard title="Final Verdict" Icon={Check} compact={compact}>
                 <div
-                  className={`flex h-full items-center ${compact ? "min-h-[200px]" : "min-h-[280px]"}`}
+                  className={`flex h-full items-center ${
+                    compact ? "min-h-[200px]" : "min-h-[280px]"
+                  }`}
                 >
                   <div className="w-full">
                     <div
-                      className={`flex items-center gap-3 ${compact ? "mb-3" : "mb-5"}`}
+                      className={`flex items-center gap-3 ${
+                        compact ? "mb-3" : "mb-5"
+                      }`}
                     >
                       <div
-                        className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_20px_-6px_var(--accent-soft-strong)] ${compact ? "h-8 w-8" : "h-10 w-10"}`}
+                        className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/30 bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_0_20px_-6px_var(--accent-soft-strong)] ${
+                          compact ? "h-8 w-8" : "h-10 w-10"
+                        }`}
                       >
-                        ✓
+                        <Check size={compact ? 16 : 18} strokeWidth={2.4} aria-hidden="true" />
                       </div>
                       <div className="min-w-0">
                         <p
-                          className={`uppercase tracking-wider text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                          className={`uppercase tracking-wider text-[var(--text-muted)] ${
+                            compact ? "text-[10px]" : "text-[11px]"
+                          }`}
                         >
                           Overall Assessment
                         </p>
                         <p
-                          className={`font-semibold text-[var(--text-primary)] ${compact ? "text-xs" : "text-sm"}`}
+                          className={`font-semibold text-[var(--text-primary)] ${
+                            compact ? "text-xs" : "text-sm"
+                          }`}
                         >
                           Repository Analysis Complete
                         </p>
                       </div>
                     </div>
                     <p
-                      className={`leading-6 text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}
+                      className={`leading-6 text-[var(--text-secondary)] ${
+                        compact ? "text-xs" : "text-sm"
+                      }`}
                     >
                       {finalVerdict}
                     </p>
@@ -686,28 +711,36 @@ export default function Result({
               </GlassCard>
             </div>
 
-            <GlassCard title="Architecture Review" icon="⌘" compact={compact}>
+            <GlassCard title="Architecture Review" Icon={Boxes} compact={compact}>
               {architecture.length ? (
                 <div className={`space-y-2 ${compact ? "space-y-1.5" : ""}`}>
                   {architecture.map((a, i) => (
                     <div
                       key={i}
-                      className={`group rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-all duration-150 hover:border-[var(--accent)]/30 hover:bg-[var(--bg-hover)]/40 ${compact ? "p-2" : "p-3"}`}
+                      className={`group rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-all duration-150 hover:border-[var(--accent)]/30 hover:bg-[var(--bg-hover)]/40 ${
+                        compact ? "p-2" : "p-3"
+                      }`}
                     >
                       <div className="mb-1 flex items-center gap-2">
                         <span
-                          className={`flex shrink-0 items-center justify-center rounded bg-[var(--accent-soft)] text-[10px] text-[var(--accent)] transition-colors duration-150 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] ${compact ? "h-4 w-4 text-[9px]" : "h-5 w-5"}`}
+                          className={`flex shrink-0 items-center justify-center rounded bg-[var(--accent-soft)] text-[var(--accent)] transition-colors duration-150 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] ${
+                            compact ? "h-5 w-5 text-[10px]" : "h-5 w-5 text-[10px]"
+                          }`}
                         >
                           {i + 1}
                         </span>
                         <p
-                          className={`font-semibold text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}
+                          className={`font-semibold text-[var(--accent)] ${
+                            compact ? "text-[11px]" : "text-xs"
+                          }`}
                         >
                           {a.component}
                         </p>
                       </div>
                       <p
-                        className={`pl-7 leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                        className={`pl-7 leading-5 text-[var(--text-secondary)] ${
+                          compact ? "text-[11px]" : "text-xs"
+                        }`}
                       >
                         {a.recommendation || a.description}
                       </p>
@@ -715,14 +748,11 @@ export default function Result({
                   ))}
                 </div>
               ) : (
-                <EmptyState
-                  text="No architecture insights provided."
-                  compact={compact}
-                />
+                <EmptyState text="No architecture insights provided." compact={compact} />
               )}
             </GlassCard>
 
-            <GlassCard title="Identified Bugs" icon="!" compact={compact}>
+            <GlassCard title="Identified Bugs" Icon={AlertCircle} compact={compact}>
               {bugs.length ? (
                 <div className={`space-y-2 ${compact ? "space-y-1.5" : ""}`}>
                   {bugs.map((b, i) => {
@@ -731,13 +761,21 @@ export default function Result({
                       <AlertCard key={i} type="error" compact={compact}>
                         <div className="flex items-start gap-2 sm:gap-3">
                           <div
-                            className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}
+                            className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)] ${
+                              compact ? "h-6 w-6" : "h-7 w-7"
+                            }`}
                           >
-                            !
+                            <AlertCircle
+                              size={compact ? 12 : 14}
+                              strokeWidth={2.2}
+                              aria-hidden="true"
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p
-                              className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                              className={`font-semibold text-[var(--text-primary)] ${
+                                compact ? "text-[11px]" : "text-xs"
+                              }`}
                             >
                               {b.title}{" "}
                               <span className="text-[var(--color-danger)]">
@@ -745,32 +783,25 @@ export default function Result({
                               </span>
                             </p>
                             <p
-                              className={`mt-1 leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                              className={`mt-1 leading-5 text-[var(--text-secondary)] ${
+                                compact ? "text-[11px]" : "text-xs"
+                              }`}
                             >
                               {b.description}
                             </p>
                             <p
-                              className={`mt-2 text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}
+                              className={`mt-2 text-[var(--accent)] ${
+                                compact ? "text-[11px]" : "text-xs"
+                              }`}
                             >
                               <span className="font-semibold">Fix:</span>{" "}
                               {b.suggestedFix || b.fix}
                             </p>
-                            <button
+                            <AutoFixButton
                               onClick={() => handleAutoFix(b, "bug")}
-                              disabled={fixing[issueId]}
-                              className={`mt-2 flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] hover:shadow-[0_6px_18px_-6px_var(--accent-soft-strong)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
-                            >
-                              {fixing[issueId] ? (
-                                <>
-                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white" />{" "}
-                                  Fixing…
-                                </>
-                              ) : (
-                                <>
-                                  <span>⚡</span> Auto-Fix
-                                </>
-                              )}
-                            </button>
+                              busy={fixing[issueId]}
+                              compact={compact}
+                            />
                           </div>
                         </div>
                       </AlertCard>
@@ -782,53 +813,54 @@ export default function Result({
               )}
             </GlassCard>
 
-            <GlassCard title="Security Assessment" icon="◇" compact={compact}>
+            <GlassCard title="Security Assessment" Icon={Shield} compact={compact}>
               {securityIssues.length ? (
                 <div className={`space-y-2 ${compact ? "space-y-1.5" : ""}`}>
-                  {securityIssues.map((s, i) => {
-                    const issueId = s._id || s.id || i;
+                  {securityIssues.map((sec, i) => {
+                    const issueId = sec._id || sec.id || i;
                     return (
                       <AlertCard key={i} type="warning" compact={compact}>
                         <div className="flex items-start gap-2 sm:gap-3">
                           <div
-                            className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--color-warning-soft)] text-[var(--color-warning)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7 text-xs"}`}
+                            className={`flex shrink-0 items-center justify-center rounded-lg bg-[var(--color-warning-soft)] text-[var(--color-warning)] ${
+                              compact ? "h-6 w-6" : "h-7 w-7"
+                            }`}
                           >
-                            !
+                            <AlertTriangle
+                              size={compact ? 12 : 14}
+                              strokeWidth={2.2}
+                              aria-hidden="true"
+                            />
                           </div>
                           <div className="min-w-0 flex-1">
                             <p
-                              className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                              className={`font-semibold text-[var(--text-primary)] ${
+                                compact ? "text-[11px]" : "text-xs"
+                              }`}
                             >
-                              {s.issue}
+                              {sec.issue}
                             </p>
-                            {s.risk && (
+                            {sec.risk && (
                               <p
-                                className={`mt-1 text-[var(--color-danger)] ${compact ? "text-[10px]" : "text-xs"}`}
+                                className={`mt-1 text-[var(--color-danger)] ${
+                                  compact ? "text-[11px]" : "text-xs"
+                                }`}
                               >
-                                Risk: {s.risk}
+                                Risk: {sec.risk}
                               </p>
                             )}
                             <p
-                              className={`mt-2 text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}
+                              className={`mt-2 text-[var(--accent)] ${
+                                compact ? "text-[11px]" : "text-xs"
+                              }`}
                             >
-                              Recommendation: {s.recommendation}
+                              Recommendation: {sec.recommendation}
                             </p>
-                            <button
-                              onClick={() => handleAutoFix(s, "security")}
-                              disabled={fixing[issueId]}
-                              className={`mt-2 flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] hover:shadow-[0_6px_18px_-6px_var(--accent-soft-strong)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
-                            >
-                              {fixing[issueId] ? (
-                                <>
-                                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white" />{" "}
-                                  Fixing…
-                                </>
-                              ) : (
-                                <>
-                                  <span>⚡</span> Auto-Fix
-                                </>
-                              )}
-                            </button>
+                            <AutoFixButton
+                              onClick={() => handleAutoFix(sec, "security")}
+                              busy={fixing[issueId]}
+                              compact={compact}
+                            />
                           </div>
                         </div>
                       </AlertCard>
@@ -843,21 +875,27 @@ export default function Result({
               )}
             </GlassCard>
 
-            <GlassCard title="Future Roadmap" icon="→" compact={compact}>
+            <GlassCard title="Future Roadmap" Icon={ArrowRight} compact={compact}>
               {futureRoadmap.length ? (
                 <div className={`space-y-2 ${compact ? "space-y-1.5" : ""}`}>
                   {futureRoadmap.map((f, i) => (
                     <div
                       key={i}
-                      className={`flex gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/20 sm:gap-3 ${compact ? "p-2" : "p-3"}`}
+                      className={`flex gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/20 sm:gap-3 ${
+                        compact ? "p-2" : "p-3"
+                      }`}
                     >
                       <div
-                        className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-[10px]"}`}
+                        className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)] ${
+                          compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-[10px]"
+                        }`}
                       >
                         {i + 1}
                       </div>
                       <p
-                        className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                        className={`leading-5 text-[var(--text-secondary)] ${
+                          compact ? "text-[11px]" : "text-xs"
+                        }`}
                       >
                         <b className="text-[var(--text-primary)]">
                           {f.phase || f.feature}:
@@ -872,15 +910,17 @@ export default function Result({
               )}
             </GlassCard>
 
-            <GlassCard title="Tools & Packages" icon="◇" compact={compact}>
+            <GlassCard title="Tools & Packages" Icon={Wrench} compact={compact}>
               {toolsAndPackages.length ? (
-                <div
-                  className={`flex flex-wrap gap-2 ${compact ? "gap-1.5" : ""}`}
-                >
+                <div className={`flex flex-wrap gap-2 ${compact ? "gap-1.5" : ""}`}>
                   {toolsAndPackages.map((t, i) => (
                     <span
                       key={i}
-                      className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] font-mono text-[var(--text-secondary)] transition-colors duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] ${compact ? "px-2 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"}`}
+                      className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] font-mono text-[var(--text-secondary)] transition-colors duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] ${
+                        compact
+                          ? "px-2 py-0.5 text-[10px]"
+                          : "px-2.5 py-1 text-[11px]"
+                      }`}
                     >
                       {t}
                     </span>
@@ -898,12 +938,16 @@ export default function Result({
           <div className="space-y-4">
             {(tokensUsed > 0 || tokensRemaining > 0) && (
               <div
-                className={`flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-4 sm:gap-4 ${compact ? "p-3" : ""}`}
+                className={`flex flex-wrap items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] sm:gap-4 ${
+                  compact ? "p-3" : "p-4"
+                }`}
               >
                 <div className="flex items-center gap-2">
-                  <span className="text-[var(--accent)]">⚡</span>
+                  <Zap size={14} strokeWidth={2} aria-hidden="true" className="text-[var(--accent)]" />
                   <span
-                    className={`text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-sm"}`}
+                    className={`text-[var(--text-muted)] ${
+                      compact ? "text-[11px]" : "text-sm"
+                    }`}
                   >
                     Tokens Used:{" "}
                     <strong className="text-[var(--text-primary)]">
@@ -912,9 +956,11 @@ export default function Result({
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="text-[var(--accent)]">🔋</span>
+                  <Battery size={14} strokeWidth={2} aria-hidden="true" className="text-[var(--accent)]" />
                   <span
-                    className={`text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-sm"}`}
+                    className={`text-[var(--text-muted)] ${
+                      compact ? "text-[11px]" : "text-sm"
+                    }`}
                   >
                     Remaining:{" "}
                     <strong className="text-[var(--text-primary)]">
@@ -925,7 +971,7 @@ export default function Result({
               </div>
             )}
 
-            <GlassCard title="Health Score" icon="◈" compact={compact}>
+            <GlassCard title="Health Score" Icon={LayoutGrid} compact={compact}>
               <div className="flex flex-col items-center gap-4 sm:flex-row sm:gap-6">
                 <div className="flex shrink-0 flex-col items-center">
                   <div className="relative">
@@ -954,8 +1000,7 @@ export default function Result({
                         strokeLinecap="round"
                         transform="rotate(-90 60 60)"
                         style={{
-                          filter:
-                            "drop-shadow(0 0 6px var(--accent-soft-strong))",
+                          filter: "drop-shadow(0 0 6px var(--accent-soft-strong))",
                         }}
                       />
                       <text
@@ -980,7 +1025,9 @@ export default function Result({
                     </svg>
                   </div>
                   <div
-                    className={`mt-2 flex items-center gap-2 rounded-lg border border-[var(--border-light)] px-3 py-1 font-bold ${gradeAccent(healthScore.grade)} ${compact ? "text-sm" : "text-base"}`}
+                    className={`mt-2 flex items-center gap-2 rounded-lg border border-[var(--border-light)] px-3 py-1 font-bold ${gradeAccent(
+                      healthScore.grade
+                    )} ${compact ? "text-sm" : "text-base"}`}
                   >
                     Grade: {healthScore.grade}
                   </div>
@@ -1011,7 +1058,9 @@ export default function Result({
                     />
                   </div>
                   <p
-                    className={`mt-3 text-xs text-[var(--text-muted)] ${compact ? "text-[10px]" : ""}`}
+                    className={`mt-3 text-[var(--text-muted)] ${
+                      compact ? "text-[11px]" : "text-xs"
+                    }`}
                   >
                     Health score combines code quality, security, performance,
                     and maintainability, with penalties for vulnerabilities and
@@ -1021,34 +1070,12 @@ export default function Result({
               </div>
             </GlassCard>
 
-            {/* ─── Complexity ─────────────────────────────── */}
             {complexity.functions && complexity.functions.length > 0 && (
-              <GlassCard title="Cyclomatic Complexity" icon="◈" compact={compact}>
+              <GlassCard title="Cyclomatic Complexity" Icon={LayoutGrid} compact={compact}>
                 <div className="mb-4 grid grid-cols-3 gap-2 sm:gap-3">
-                  <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
-                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
-                      Max Complexity
-                    </p>
-                    <p className="result-metric-glow text-lg font-bold sm:text-xl">
-                      {complexity.maxComplexity}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
-                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
-                      Average
-                    </p>
-                    <p className="result-metric-glow text-lg font-bold sm:text-xl">
-                      {complexity.averageComplexity}
-                    </p>
-                  </div>
-                  <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
-                    <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">
-                      Maintainability
-                    </p>
-                    <p className="result-metric-glow text-lg font-bold sm:text-xl">
-                      {complexity.maintainability}%
-                    </p>
-                  </div>
+                  <MetricBox label="Max Complexity" value={complexity.maxComplexity} />
+                  <MetricBox label="Average" value={complexity.averageComplexity} />
+                  <MetricBox label="Maintainability" value={`${complexity.maintainability}%`} />
                 </div>
                 <div className="max-h-40 overflow-y-auto text-xs">
                   {complexity.functions.slice(0, 10).map((fn, i) => (
@@ -1065,7 +1092,7 @@ export default function Result({
                     </div>
                   ))}
                   {complexity.functions.length > 10 && (
-                    <p className="pt-1 text-[10px] text-[var(--text-muted)]">
+                    <p className="pt-1 text-[11px] text-[var(--text-muted)]">
                       + {complexity.functions.length - 10} more functions
                     </p>
                   )}
@@ -1073,18 +1100,19 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── CVE List ────────────────────────────────── */}
             {cveList && cveList.length > 0 && (
               <GlassCard
-                title={`Dependency Vulnerabilities (CVEs)`}
-                icon="◇"
+                title="Dependency Vulnerabilities (CVEs)"
+                Icon={Shield}
                 compact={compact}
               >
                 <div className="space-y-2">
                   {cveList.map((cve, i) => (
                     <div
                       key={i}
-                      className={`flex flex-col gap-2 rounded-lg border p-2 transition-transform duration-150 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between ${severityColor(cve.severity)}`}
+                      className={`flex flex-col gap-2 rounded-lg border p-2 transition-transform duration-150 hover:-translate-y-0.5 sm:flex-row sm:items-center sm:justify-between ${severityColor(
+                        cve.severity
+                      )}`}
                     >
                       <div className="min-w-0 flex-1">
                         <p className="break-words font-mono text-xs sm:text-sm">
@@ -1110,9 +1138,8 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── README Quality ──────────────────────────── */}
             {readmeScore && readmeScore.score > 0 && (
-              <GlassCard title="README Quality" icon="◈" compact={compact}>
+              <GlassCard title="README Quality" Icon={LayoutGrid} compact={compact}>
                 <div className="flex flex-col items-center gap-4 sm:flex-row">
                   <div className="relative h-20 w-20 shrink-0">
                     <svg viewBox="0 0 100 100">
@@ -1150,10 +1177,10 @@ export default function Result({
                   <div className="min-w-0 text-center sm:text-left">
                     <p className="text-sm text-[var(--text-secondary)]">
                       {readmeScore.score >= 80
-                        ? "✅ Well documented"
+                        ? "Well documented"
                         : readmeScore.score >= 50
-                          ? "⚠️ Needs improvement"
-                          : "❌ Missing documentation"}
+                          ? "Needs improvement"
+                          : "Missing documentation"}
                     </p>
                     {readmeScore.details &&
                       readmeScore.details.missingSections && (
@@ -1168,29 +1195,24 @@ export default function Result({
               </GlassCard>
             )}
 
-            {/* ─── Security Vulnerabilities table ───────────────── */}
             {securityVulnerabilities.length > 0 && (
               <GlassCard
                 title={`Security Vulnerabilities (${securityVulnerabilities.length})`}
-                icon="◇"
+                Icon={Shield}
                 compact={compact}
               >
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[560px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-[var(--border-dark)]">
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Severity
-                        </th>
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Title
-                        </th>
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          File
-                        </th>
-                        <th className="whitespace-nowrap pb-2 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Line
-                        </th>
+                        {["Severity", "Title", "File", "Line"].map((h) => (
+                          <th
+                            key={h}
+                            className="whitespace-nowrap pb-2 pr-4 font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)]"
+                          >
+                            {h}
+                          </th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody>
@@ -1201,7 +1223,9 @@ export default function Result({
                         >
                           <td className="py-2 pr-4">
                             <span
-                              className={`inline-block rounded border px-2 py-0.5 text-[9px] font-medium ${severityColor(v.severity)}`}
+                              className={`inline-block rounded border px-2 py-0.5 text-[10px] font-medium ${severityColor(
+                                v.severity
+                              )}`}
                             >
                               {v.severity}
                             </span>
@@ -1226,28 +1250,23 @@ export default function Result({
             {dependencyVulnerabilities.length > 0 && (
               <GlassCard
                 title={`Dependency Vulnerabilities (${dependencyVulnerabilities.length})`}
-                icon="◇"
+                Icon={Shield}
                 compact={compact}
               >
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[640px] text-left text-xs">
                     <thead>
                       <tr className="border-b border-[var(--border-dark)]">
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Package
-                        </th>
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Version
-                        </th>
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          CVE
-                        </th>
-                        <th className="whitespace-nowrap pb-2 pr-4 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Severity
-                        </th>
-                        <th className="whitespace-nowrap pb-2 font-mono text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
-                          Fixed In
-                        </th>
+                        {["Package", "Version", "CVE", "Severity", "Fixed In"].map(
+                          (h) => (
+                            <th
+                              key={h}
+                              className="whitespace-nowrap pb-2 pr-4 font-mono text-[10px] uppercase tracking-wider text-[var(--text-muted)]"
+                            >
+                              {h}
+                            </th>
+                          )
+                        )}
                       </tr>
                     </thead>
                     <tbody>
@@ -1267,7 +1286,9 @@ export default function Result({
                           </td>
                           <td className="py-2 pr-4">
                             <span
-                              className={`inline-block rounded border px-2 py-0.5 text-[9px] font-medium ${severityColor(v.severity)}`}
+                              className={`inline-block rounded border px-2 py-0.5 text-[10px] font-medium ${severityColor(
+                                v.severity
+                              )}`}
                             >
                               {v.severity}
                             </span>
@@ -1284,49 +1305,49 @@ export default function Result({
             )}
 
             {(() => {
-              const filteredSecrets = secrets.filter((s) => {
+              const filteredSecrets = secrets.filter((sec) => {
                 if (
-                  s.file?.includes("package-lock.json") ||
-                  s.file?.includes("package.json")
+                  sec.file?.includes("package-lock.json") ||
+                  sec.file?.includes("package.json")
                 )
                   return false;
                 if (
-                  s.file?.includes("yarn.lock") ||
-                  s.file?.includes("pnpm-lock.yaml")
+                  sec.file?.includes("yarn.lock") ||
+                  sec.file?.includes("pnpm-lock.yaml")
                 )
                   return false;
                 if (
-                  s.pattern === "Generic Secret" ||
-                  s.pattern?.toLowerCase().includes("generic")
+                  sec.pattern === "Generic Secret" ||
+                  sec.pattern?.toLowerCase().includes("generic")
                 )
                   return false;
-                if (s.confidence && s.confidence < 40) return false;
+                if (sec.confidence && sec.confidence < 40) return false;
                 return true;
               });
               if (filteredSecrets.length === 0) return null;
               return (
                 <GlassCard
                   title={`Detected Secrets (${filteredSecrets.length})`}
-                  icon="!"
+                  Icon={AlertCircle}
                   compact={compact}
                 >
                   <div className="space-y-2">
-                    {filteredSecrets.map((s, i) => (
+                    {filteredSecrets.map((sec, i) => (
                       <div
                         key={i}
                         className="flex flex-wrap items-center gap-2 rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] p-2"
                       >
                         <span className="rounded bg-[var(--color-danger-soft)] px-2 py-0.5 text-[10px] font-semibold text-[var(--color-danger)]">
-                          {s.pattern}
+                          {sec.pattern}
                         </span>
                         <span className="break-all font-mono text-xs text-[var(--text-secondary)]">
-                          {s.file}
+                          {sec.file}
                         </span>
                         <span className="text-xs text-[var(--text-muted)]">
-                          line {s.line}
+                          line {sec.line}
                         </span>
                         <span className="ml-auto text-[10px] text-[var(--text-muted)]">
-                          Confidence: {s.confidence}%
+                          Confidence: {sec.confidence}%
                         </span>
                       </div>
                     ))}
@@ -1335,11 +1356,11 @@ export default function Result({
               );
             })()}
 
-            <GlassCard title="Technical Debt" icon="◇" compact={compact}>
+            <GlassCard title="Technical Debt" Icon={Shield} compact={compact}>
               <div className="space-y-3">
                 <div className="flex flex-wrap items-center gap-3 sm:gap-4">
                   <div className="rounded-lg border border-[var(--accent)]/20 bg-[var(--accent-soft)] px-4 py-2 shadow-[0_0_20px_-10px_var(--accent-soft-strong)]">
-                    <p className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+                    <p className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                       Estimated Hours
                     </p>
                     <p className="result-metric-glow text-2xl font-bold">
@@ -1352,7 +1373,7 @@ export default function Result({
                 </div>
                 {techDebt.issues?.length > 0 && (
                   <div className="space-y-1.5">
-                    <p className="text-[10px] font-medium text-[var(--text-muted)]">
+                    <p className="text-[11px] font-medium text-[var(--text-muted)]">
                       Breakdown:
                     </p>
                     {techDebt.issues.map((issue, i) => (
@@ -1361,7 +1382,13 @@ export default function Result({
                         className="flex items-center gap-2 rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs transition-colors duration-150 hover:border-[var(--border-light)] sm:gap-3"
                       >
                         <span
-                          className={`shrink-0 rounded px-1.5 py-0.5 text-[9px] font-medium ${issue.severity === "critical" ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]" : issue.severity === "major" ? "bg-[var(--color-caution-soft)] text-[var(--color-caution)]" : "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"}`}
+                          className={`shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                            issue.severity === "critical"
+                              ? "bg-[var(--color-danger-soft)] text-[var(--color-danger)]"
+                              : issue.severity === "major"
+                                ? "bg-[var(--color-caution-soft)] text-[var(--color-caution)]"
+                                : "bg-[var(--color-warning-soft)] text-[var(--color-warning)]"
+                          }`}
                         >
                           {issue.severity}
                         </span>
@@ -1379,7 +1406,7 @@ export default function Result({
             </GlassCard>
 
             {architectureGraph.nodes?.length > 0 && (
-              <GlassCard title="Architecture Graph" icon="⌘" compact={compact}>
+              <GlassCard title="Architecture Graph" Icon={Boxes} compact={compact}>
                 <div className="overflow-x-auto">
                   <div className="min-w-[300px]">
                     <svg
@@ -1404,17 +1431,14 @@ export default function Result({
                           };
                         });
                         const nodeMap = Object.fromEntries(
-                          nodes.map((node, i) => [node.id, i]),
+                          nodes.map((node, i) => [node.id, i])
                         );
                         return (
                           <>
                             {edges.map((edge, i) => {
                               const fromIdx = nodeMap[edge.from];
                               const toIdx = nodeMap[edge.to];
-                              if (
-                                fromIdx === undefined ||
-                                toIdx === undefined
-                              )
+                              if (fromIdx === undefined || toIdx === undefined)
                                 return null;
                               return (
                                 <line
@@ -1457,7 +1481,7 @@ export default function Result({
                     </svg>
                   </div>
                 </div>
-                <p className="mt-2 text-[10px] text-[var(--text-muted)]">
+                <p className="mt-2 text-[11px] text-[var(--text-muted)]">
                   Visualisation of module dependencies. Each node represents a
                   file or module; edges show import relationships.
                 </p>
@@ -1485,9 +1509,11 @@ export default function Result({
         {activeTab === "tests" && (
           <div className="space-y-4">
             {testLoading && (
-              <GlassCard title="Generating Tests..." icon="◌" compact={compact}>
+              <GlassCard title="Generating Tests..." Icon={CircleDot} compact={compact}>
                 <div
-                  className={`flex flex-col items-center gap-4 ${compact ? "py-8" : "py-12"}`}
+                  className={`flex flex-col items-center gap-4 ${
+                    compact ? "py-8" : "py-12"
+                  }`}
                 >
                   <div className="relative flex h-12 w-12 items-center justify-center">
                     <div className="absolute inset-0 animate-spin rounded-full border-2 border-[var(--border-light)] border-t-[var(--accent)]" />
@@ -1498,12 +1524,16 @@ export default function Result({
                   </div>
                   <div className="text-center">
                     <p
-                      className={`font-medium text-[var(--text-secondary)] ${compact ? "text-xs" : "text-sm"}`}
+                      className={`font-medium text-[var(--text-secondary)] ${
+                        compact ? "text-xs" : "text-sm"
+                      }`}
                     >
                       Analysing repository
                     </p>
                     <p
-                      className={`mt-1 text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-xs"}`}
+                      className={`mt-1 text-[var(--text-muted)] ${
+                        compact ? "text-[11px]" : "text-xs"
+                      }`}
                     >
                       Writing test cases based on your code...
                     </p>
@@ -1516,7 +1546,7 @@ export default function Result({
               <div className="rounded-xl border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] p-4">
                 <div className="flex items-start gap-3">
                   <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
-                    !
+                    <AlertCircle size={16} strokeWidth={2.2} aria-hidden="true" />
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-[var(--text-primary)]">
@@ -1526,8 +1556,9 @@ export default function Result({
                       {testError}
                     </p>
                     <button
+                      type="button"
                       onClick={runGenerateTests}
-                      className="mt-3 rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 active:scale-[0.97]"
+                      className="mt-3 rounded-lg border border-[var(--color-danger)]/30 bg-[var(--color-danger-soft)] px-3 py-1.5 text-xs font-medium text-[var(--color-danger)] transition-all duration-150 hover:bg-[var(--color-danger)]/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--color-danger)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97]"
                     >
                       Retry
                     </button>
@@ -1539,7 +1570,9 @@ export default function Result({
             {testData && !testLoading && (
               <>
                 <div
-                  className={`flex flex-wrap items-center gap-2 ${compact ? "gap-1.5" : ""}`}
+                  className={`flex flex-wrap items-center gap-2 ${
+                    compact ? "gap-1.5" : ""
+                  }`}
                 >
                   <Badge color="accent" compact={compact}>
                     Framework: {testData.framework ?? "jest"}
@@ -1549,27 +1582,29 @@ export default function Result({
                     {testData.coverageSummary?.estimatedCoverage ?? 0}%
                   </Badge>
                   <span
-                    className={`w-full text-[var(--text-muted)] sm:ml-auto sm:w-auto ${compact ? "text-[9px]" : "text-[10px]"}`}
+                    className={`w-full text-[var(--text-muted)] sm:ml-auto sm:w-auto ${
+                      compact ? "text-[10px]" : "text-[11px]"
+                    }`}
                   >
                     {testData.setupInstructions}
                   </span>
                 </div>
 
                 {testData.coverageSummary && (
-                  <GlassCard
-                    title="Coverage Summary"
-                    icon="◉"
-                    compact={compact}
-                  >
+                  <GlassCard title="Coverage Summary" Icon={CircleDot} compact={compact}>
                     <div className="space-y-4">
                       <div className="flex items-center justify-between gap-3">
                         <span
-                          className={`text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                          className={`text-[var(--text-secondary)] ${
+                            compact ? "text-[11px]" : "text-xs"
+                          }`}
                         >
                           Estimated Coverage
                         </span>
                         <span
-                          className={`result-metric-glow font-bold ${compact ? "text-xs" : "text-sm"}`}
+                          className={`result-metric-glow font-bold ${
+                            compact ? "text-xs" : "text-sm"
+                          }`}
                         >
                           {testData.coverageSummary.estimatedCoverage}%
                         </span>
@@ -1583,24 +1618,30 @@ export default function Result({
                         />
                       </div>
                       <p
-                        className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                        className={`leading-5 text-[var(--text-secondary)] ${
+                          compact ? "text-[11px]" : "text-xs"
+                        }`}
                       >
                         {testData.coverageSummary.recommendation}
                       </p>
                       {testData.coverageSummary.uncoveredAreas?.length > 0 && (
                         <div
-                          className={`flex flex-wrap gap-2 pt-1 ${compact ? "gap-1.5" : ""}`}
+                          className={`flex flex-wrap gap-2 pt-1 ${
+                            compact ? "gap-1.5" : ""
+                          }`}
                         >
-                          {testData.coverageSummary.uncoveredAreas.map(
-                            (a, i) => (
-                              <span
-                                key={i}
-                                className={`rounded-md border border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-[var(--color-warning)] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
-                              >
-                                {a}
-                              </span>
-                            ),
-                          )}
+                          {testData.coverageSummary.uncoveredAreas.map((a, i) => (
+                            <span
+                              key={i}
+                              className={`rounded-md border border-[var(--color-warning)]/20 bg-[var(--color-warning-soft)] text-[var(--color-warning)] ${
+                                compact
+                                  ? "px-1.5 py-0.5 text-[10px]"
+                                  : "px-2 py-1 text-[11px]"
+                              }`}
+                            >
+                              {a}
+                            </span>
+                          ))}
                         </div>
                       )}
                     </div>
@@ -1608,11 +1649,7 @@ export default function Result({
                 )}
 
                 {testData.testFiles?.length > 0 && (
-                  <GlassCard
-                    title="Generated Test Files"
-                    icon="◇"
-                    compact={compact}
-                  >
+                  <GlassCard title="Generated Test Files" Icon={Shield} compact={compact}>
                     <div className={`space-y-3 ${compact ? "space-y-2" : ""}`}>
                       {testData.testFiles.map((file, i) => (
                         <div
@@ -1620,29 +1657,32 @@ export default function Result({
                           className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/30"
                         >
                           <div
-                            className={`flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-dark)] bg-[var(--bg-card)] ${testFilePadding}`}
+                            className={`flex flex-wrap items-center justify-between gap-2 border-b border-[var(--border-dark)] bg-[var(--bg-card)] ${s.testFilePadding}`}
                           >
                             <span
-                              className={`max-w-[60%] truncate font-mono text-[var(--accent)] ${testFileFont}`}
+                              className={`max-w-[60%] truncate font-mono text-[var(--accent)] ${s.testFileFont}`}
                             >
                               {file.fileName}
                             </span>
                             <div className="flex items-center gap-3">
                               <span
-                                className={`hidden max-w-[300px] truncate text-[var(--text-muted)] md:block ${compact ? "text-[9px]" : "text-[10px]"}`}
+                                className={`hidden max-w-[300px] truncate text-[var(--text-muted)] md:block ${
+                                  compact ? "text-[10px]" : "text-[11px]"
+                                }`}
                               >
                                 {file.description}
                               </span>
-                              <button
-                                onClick={() => copy(file.testCode, `file-${i}`)}
-                                className={`rounded-md border border-[var(--border-light)] bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all duration-150 hover:text-[var(--text-primary)] active:scale-[0.95] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
-                              >
-                                {copiedId === `file-${i}` ? "Copied" : "Copy"}
-                              </button>
+                              <CopyButton
+                                id={`file-${i}`}
+                                text={file.testCode}
+                                copiedId={copiedId}
+                                onCopy={copy}
+                                compact={compact}
+                              />
                             </div>
                           </div>
                           <pre
-                            className={`overflow-x-auto bg-[var(--bg-primary)] text-[var(--text-secondary)] ${codeBlockPadding} ${codeBlockFont}`}
+                            className={`overflow-x-auto bg-[var(--bg-primary)] text-[var(--text-secondary)] ${s.codeBlockPadding} ${s.codeBlockFont}`}
                           >
                             <code>{file.testCode}</code>
                           </pre>
@@ -1653,24 +1693,30 @@ export default function Result({
                 )}
 
                 {testData.unitTests?.length > 0 && (
-                  <GlassCard title="Unit Tests" icon="◇" compact={compact}>
+                  <GlassCard title="Unit Tests" Icon={Shield} compact={compact}>
                     <div className={`space-y-5 ${compact ? "space-y-3" : ""}`}>
                       {testData.unitTests.map((fn, i) => (
                         <div key={i}>
                           <div className="mb-1 flex flex-wrap items-center gap-2">
                             <span
-                              className={`font-mono font-semibold text-[var(--accent)] ${compact ? "text-[10px]" : "text-xs"}`}
+                              className={`font-mono font-semibold text-[var(--accent)] ${
+                                compact ? "text-[11px]" : "text-xs"
+                              }`}
                             >
                               {fn.functionName}()
                             </span>
                             <span
-                              className={`break-all text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                              className={`break-all text-[var(--text-muted)] ${
+                                compact ? "text-[10px]" : "text-[11px]"
+                              }`}
                             >
                               {fn.filePath}
                             </span>
                           </div>
                           <p
-                            className={`mb-3 text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-[11px]"}`}
+                            className={`mb-3 text-[var(--text-muted)] ${
+                              compact ? "text-[11px]" : "text-[11px]"
+                            }`}
                           >
                             {fn.description}
                           </p>
@@ -1695,12 +1741,14 @@ export default function Result({
                 )}
 
                 {testData.edgeCases?.length > 0 && (
-                  <GlassCard title="Edge Cases" icon="!" compact={compact}>
+                  <GlassCard title="Edge Cases" Icon={AlertCircle} compact={compact}>
                     <div className={`space-y-3 ${compact ? "space-y-2" : ""}`}>
                       {testData.edgeCases.map((c, i) => (
                         <div key={i}>
                           <p
-                            className={`mb-1 font-mono text-[var(--color-warning)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                            className={`mb-1 font-mono text-[var(--color-warning)] ${
+                              compact ? "text-[10px]" : "text-[11px]"
+                            }`}
                           >
                             {c.functionName}()
                           </p>
@@ -1719,39 +1767,44 @@ export default function Result({
                 )}
 
                 {testData.integrationTests?.length > 0 && (
-                  <GlassCard
-                    title="Integration Tests"
-                    icon="↗"
-                    compact={compact}
-                  >
+                  <GlassCard title="Integration Tests" Icon={TrendingUp} compact={compact}>
                     <div className={`space-y-3 ${compact ? "space-y-2" : ""}`}>
                       {testData.integrationTests.map((t, i) => (
                         <div
                           key={i}
-                          className={`rounded-xl border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/20 ${compact ? "p-3" : "p-4"}`}
+                          className={`rounded-xl border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--accent)]/20 ${
+                            compact ? "p-3" : "p-4"
+                          }`}
                         >
                           <p
-                            className={`font-semibold text-[var(--text-primary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                            className={`font-semibold text-[var(--text-primary)] ${
+                              compact ? "text-[11px]" : "text-xs"
+                            }`}
                           >
                             {t.label}
                           </p>
                           <p
-                            className={`mb-3 mt-1 text-[var(--text-muted)] ${compact ? "text-[10px]" : "text-[11px]"}`}
+                            className={`mb-3 mt-1 text-[var(--text-muted)] ${
+                              compact ? "text-[11px]" : "text-[11px]"
+                            }`}
                           >
                             {t.description}
                           </p>
                           <div className="relative">
                             <pre
-                              className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] pr-16 text-[var(--accent)] ${codeBlockPadding} ${codeBlockFont}`}
+                              className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] pr-16 text-[var(--accent)] ${s.codeBlockPadding} ${s.codeBlockFont}`}
                             >
                               <code>{t.codeSnippet}</code>
                             </pre>
-                            <button
-                              onClick={() => copy(t.codeSnippet, `int-${i}`)}
-                              className={`absolute right-2 top-2 rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] transition-all duration-150 hover:text-[var(--text-primary)] active:scale-[0.95] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
-                            >
-                              {copiedId === `int-${i}` ? "✓" : "Copy"}
-                            </button>
+                            <div className="absolute right-2 top-2">
+                              <CopyButton
+                                id={`int-${i}`}
+                                text={t.codeSnippet}
+                                copiedId={copiedId}
+                                onCopy={copy}
+                                compact={compact}
+                              />
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -1760,36 +1813,43 @@ export default function Result({
                 )}
 
                 {testData.mocks?.length > 0 && (
-                  <GlassCard title="Mocks & Stubs" icon="◇" compact={compact}>
-                    <div
-                      className={`space-y-2 ${compact ? "space-y-1.5" : ""}`}
-                    >
+                  <GlassCard title="Mocks & Stubs" Icon={Shield} compact={compact}>
+                    <div className={`space-y-2 ${compact ? "space-y-1.5" : ""}`}>
                       {testData.mocks.map((m, i) => (
                         <AlertCard key={i} type="warning" compact={compact}>
                           <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                             <div className="min-w-0 flex-1">
                               <p
-                                className={`break-all font-mono font-semibold text-[var(--color-warning)] ${compact ? "text-[10px]" : "text-xs"}`}
+                                className={`break-all font-mono font-semibold text-[var(--color-warning)] ${
+                                  compact ? "text-[11px]" : "text-xs"
+                                }`}
                               >
                                 {m.target}
                               </p>
                               <p
-                                className={`mt-1 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-[11px]"}`}
+                                className={`mt-1 text-[var(--text-secondary)] ${
+                                  compact ? "text-[11px]" : "text-[11px]"
+                                }`}
                               >
                                 {m.reason}
                               </p>
                               <pre
-                                className={`mt-2 overflow-x-auto text-[var(--color-warning)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                                className={`mt-2 overflow-x-auto text-[var(--color-warning)] ${
+                                  compact ? "text-[10px]" : "text-[11px]"
+                                }`}
                               >
                                 <code>{m.snippet}</code>
                               </pre>
                             </div>
-                            <button
-                              onClick={() => copy(m.snippet, `mock-${i}`)}
-                              className={`shrink-0 self-start rounded-md border border-[var(--border-light)] bg-[var(--bg-hover)] text-[var(--text-secondary)] transition-all duration-150 hover:text-[var(--text-primary)] active:scale-[0.95] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
-                            >
-                              {copiedId === `mock-${i}` ? "✓" : "Copy"}
-                            </button>
+                            <div className="shrink-0 self-start">
+                              <CopyButton
+                                id={`mock-${i}`}
+                                text={m.snippet}
+                                copiedId={copiedId}
+                                onCopy={copy}
+                                compact={compact}
+                              />
+                            </div>
                           </div>
                         </AlertCard>
                       ))}
@@ -1799,11 +1859,15 @@ export default function Result({
 
                 <div className="flex justify-end">
                   <button
+                    type="button"
                     onClick={runGenerateTests}
                     disabled={testLoading}
-                    className={`flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1.5 text-[10px]" : "px-3 py-2 text-[11px]"}`}
+                    className={`flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-50 disabled:active:scale-100 ${
+                      compact ? "px-2 py-1.5 text-[11px]" : "px-3 py-2 text-[11px]"
+                    }`}
                   >
-                    <span>↻</span> {compact ? "Re-gen" : "Re-generate Tests"}
+                    <RotateCw size={13} strokeWidth={2} aria-hidden="true" />
+                    {compact ? "Re-gen" : "Re-generate Tests"}
                   </button>
                 </div>
               </>
@@ -1827,22 +1891,30 @@ export default function Result({
 }
 
 // ═══════════════════════════════════════════════════════════════
-// SUB‑COMPONENTS
+// SUB-COMPONENTS
 // ═══════════════════════════════════════════════════════════════
 
-function GlassCard({ title, children, icon, compact }) {
+function GlassCard({ title, children, Icon, compact }) {
   return (
     <div className="result-glass-card overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)]">
       <div
-        className={`flex items-center gap-2 border-b border-[var(--border-dark)] ${compact ? "px-3 py-2" : "px-4 py-3"}`}
+        className={`flex items-center gap-2 border-b border-[var(--border-dark)] ${
+          compact ? "px-3 py-2" : "px-4 py-3"
+        }`}
       >
-        <span
-          className={`flex shrink-0 items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] ${compact ? "h-5 w-5 text-[10px]" : "h-6 w-6 text-[11px]"}`}
-        >
-          {icon}
-        </span>
+        {Icon && (
+          <span
+            className={`flex shrink-0 items-center justify-center rounded-md bg-[var(--accent-soft)] text-[var(--accent)] ${
+              compact ? "h-5 w-5" : "h-6 w-6"
+            }`}
+          >
+            <Icon size={compact ? 11 : 13} strokeWidth={2} aria-hidden="true" />
+          </span>
+        )}
         <h2
-          className={`font-semibold uppercase tracking-wide text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+          className={`font-semibold uppercase tracking-wide text-[var(--text-secondary)] ${
+            compact ? "text-[11px]" : "text-xs"
+          }`}
         >
           {title}
         </h2>
@@ -1861,58 +1933,72 @@ function AlertCard({ children, type, compact }) {
   };
   return (
     <div
-      className={`rounded-lg border transition-colors duration-150 ${compact ? "p-2" : "p-3"} ${styles[type] || "border-[var(--border-light)] bg-[var(--bg-card)]"}`}
+      className={`rounded-lg border transition-colors duration-150 ${
+        compact ? "p-2" : "p-3"
+      } ${styles[type] || "border-[var(--border-light)] bg-[var(--bg-card)]"}`}
     >
       {children}
     </div>
   );
 }
 
-function ScoreCard({ label, value, icon, compact }) {
+function ScoreCard({ label, value, Icon, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[0_14px_30px_-20px_var(--accent-soft-strong)] ${compact ? "p-2.5" : "p-3.5"}`}
+      className={`group relative overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[0_14px_30px_-20px_var(--accent-soft-strong)] ${
+        compact ? "p-2.5" : "p-3.5"
+      }`}
     >
       <div
-        className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-60"
         aria-hidden="true"
+        className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-60"
       />
       <div className="relative flex items-center justify-between">
         <div
-          className={`flex items-center justify-center rounded-lg text-xs bg-[var(--accent-soft)] text-[var(--accent)] transition-colors duration-200 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] ${compact ? "h-6 w-6 text-[10px]" : "h-7 w-7"}`}
+          className={`flex items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-colors duration-200 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] ${
+            compact ? "h-6 w-6" : "h-7 w-7"
+          }`}
         >
-          {icon}
+          <Icon size={compact ? 12 : 14} strokeWidth={2} aria-hidden="true" />
         </div>
-        <span
-          className={`uppercase tracking-wider text-[var(--text-muted)] text-[9px]`}
-        >
+        <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
           Score
         </span>
       </div>
       <div
-        className={`relative flex items-end justify-between ${compact ? "mt-2" : "mt-3"}`}
+        className={`relative flex items-end justify-between ${
+          compact ? "mt-2" : "mt-3"
+        }`}
       >
         <div className="min-w-0">
           <p
-            className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+            className={`text-[var(--text-muted)] ${
+              compact ? "text-[10px]" : "text-[11px]"
+            }`}
           >
             {label}
           </p>
           <p
-            className={`result-metric-glow mt-0.5 font-bold ${compact ? "text-lg" : "text-xl"}`}
+            className={`result-metric-glow mt-0.5 font-bold ${
+              compact ? "text-lg" : "text-xl"
+            }`}
           >
             {val || "N/A"}
           </p>
         </div>
         <span
-          className={`mb-1 shrink-0 text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+          className={`mb-1 shrink-0 text-[var(--text-muted)] ${
+            compact ? "text-[10px]" : "text-[11px]"
+          }`}
         >
           /100
         </span>
       </div>
       <div
-        className={`relative overflow-hidden rounded-full bg-[var(--border-dark)] ${compact ? "mt-1.5 h-0.5" : "mt-2 h-1"}`}
+        className={`relative overflow-hidden rounded-full bg-[var(--border-dark)] ${
+          compact ? "mt-1.5 h-0.5" : "mt-2 h-1"
+        }`}
       >
         <div
           className="h-full rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent-soft-strong)] transition-all duration-700"
@@ -1932,10 +2018,63 @@ function Badge({ children, color = "accent", compact }) {
   };
   return (
     <span
-      className={`rounded-md border font-medium ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2.5 py-1 text-[10px]"} ${colors[color] || colors.accent}`}
+      className={`rounded-md border font-medium ${
+        compact ? "px-1.5 py-0.5 text-[10px]" : "px-2.5 py-1 text-[11px]"
+      } ${colors[color] || colors.accent}`}
     >
       {children}
     </span>
+  );
+}
+
+function CopyButton({ id, text, copiedId, onCopy, compact }) {
+  const isCopied = copiedId === id;
+  return (
+    <button
+      type="button"
+      onClick={() => onCopy(text, id)}
+      aria-label={isCopied ? "Copied" : "Copy code"}
+      className={`inline-flex items-center gap-1 rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.95] ${
+        compact ? "px-1.5 py-0.5 text-[10px]" : "px-2 py-1 text-[11px]"
+      }`}
+    >
+      {isCopied ? (
+        <>
+          <Check size={11} strokeWidth={2.6} aria-hidden="true" />
+          {compact ? "" : "Copied"}
+        </>
+      ) : (
+        <>
+          <CopyIcon size={11} strokeWidth={2} aria-hidden="true" />
+          {compact ? "" : "Copy"}
+        </>
+      )}
+    </button>
+  );
+}
+
+function AutoFixButton({ onClick, busy, compact }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className={`mt-2 inline-flex items-center gap-1 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] hover:shadow-[0_6px_18px_-6px_var(--accent-soft-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.96] disabled:opacity-50 disabled:active:scale-100 ${
+        compact ? "px-2 py-1 text-[10px]" : "px-3 py-1.5 text-[11px]"
+      }`}
+    >
+      {busy ? (
+        <>
+          <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-current" />
+          Fixing…
+        </>
+      ) : (
+        <>
+          <Zap size={12} strokeWidth={2.4} aria-hidden="true" />
+          Auto-Fix
+        </>
+      )}
+    </button>
   );
 }
 
@@ -1953,18 +2092,24 @@ function TestCaseRow({
   };
   return (
     <div
-      className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--border-light)] ${compact ? "p-2" : "p-3"}`}
+      className={`rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] transition-colors duration-150 hover:border-[var(--border-light)] ${
+        compact ? "p-2" : "p-3"
+      }`}
     >
       <div className={`flex items-center gap-2 ${compact ? "mb-1.5" : "mb-2"}`}>
         <TypeBadge type={c.type} compact={compact} />
         <span
-          className={`text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-[11px]"}`}
+          className={`text-[var(--text-secondary)] ${
+            compact ? "text-[11px]" : "text-[11px]"
+          }`}
         >
           {c.label}
         </span>
       </div>
       <div
-        className={`flex flex-col gap-1 text-[var(--text-muted)] sm:flex-row sm:gap-5 ${compact ? "text-[9px]" : "text-[10px]"}`}
+        className={`flex flex-col gap-1 text-[var(--text-muted)] sm:flex-row sm:gap-5 ${
+          compact ? "text-[10px]" : "text-[11px]"
+        }`}
       >
         <span className="break-all">
           Input: <span className="text-[var(--text-secondary)]">{c.input}</span>
@@ -1977,16 +2122,21 @@ function TestCaseRow({
       {c.codeSnippet && (
         <div className="relative">
           <pre
-            className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] pr-12 ${accentColors[accent] || "text-[var(--accent)]"} ${compact ? "p-2 text-[9px]" : "p-3 text-[10px]"}`}
+            className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-primary)] pr-12 ${
+              accentColors[accent] || "text-[var(--accent)]"
+            } ${compact ? "p-2 text-[10px]" : "p-3 text-[11px]"}`}
           >
             <code>{c.codeSnippet}</code>
           </pre>
-          <button
-            onClick={() => onCopy(c.codeSnippet, id)}
-            className={`absolute right-2 top-2 rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] transition-all duration-150 hover:text-[var(--text-primary)] active:scale-[0.95] ${compact ? "px-1.5 py-0.5 text-[9px]" : "px-2 py-1 text-[10px]"}`}
-          >
-            {copiedId === id ? "✓" : "Copy"}
-          </button>
+          <div className="absolute right-2 top-2">
+            <CopyButton
+              id={id}
+              text={c.codeSnippet}
+              copiedId={copiedId}
+              onCopy={onCopy}
+              compact={compact}
+            />
+          </div>
         </div>
       )}
     </div>
@@ -2014,7 +2164,9 @@ function TypeBadge({ type, compact }) {
   };
   return (
     <span
-      className={`rounded border font-mono uppercase tracking-wide ${compact ? "px-1 py-0.5 text-[9px]" : "px-1.5 py-0.5 text-[9px]"} ${cls}`}
+      className={`rounded border font-mono uppercase tracking-wide ${
+        compact ? "px-1 py-0.5 text-[10px]" : "px-1.5 py-0.5 text-[10px]"
+      } ${cls}`}
     >
       {label}
     </span>
@@ -2024,15 +2176,21 @@ function TypeBadge({ type, compact }) {
 function EmptyState({ text, compact }) {
   return (
     <div
-      className={`flex items-center gap-2.5 rounded-lg border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] ${compact ? "px-2 py-2" : "px-3 py-4"}`}
+      className={`flex items-center gap-2.5 rounded-lg border border-dashed border-[var(--border-light)] bg-[var(--bg-primary)] ${
+        compact ? "px-2 py-2" : "px-3 py-4"
+      }`}
     >
       <span
-        className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] ${compact ? "h-5 w-5 text-[9px]" : "h-6 w-6 text-xs"}`}
+        className={`flex shrink-0 items-center justify-center rounded-full bg-[var(--bg-hover)] text-[var(--text-muted)] ${
+          compact ? "h-5 w-5" : "h-6 w-6"
+        }`}
       >
-        ✓
+        <Check size={compact ? 11 : 13} strokeWidth={2.4} aria-hidden="true" />
       </span>
       <p
-        className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-xs"}`}
+        className={`text-[var(--text-muted)] ${
+          compact ? "text-[11px]" : "text-xs"
+        }`}
       >
         {text}
       </p>
@@ -2044,15 +2202,28 @@ function ScoreMini({ label, value, compact }) {
   return (
     <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
       <p
-        className={`text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+        className={`text-[var(--text-muted)] ${
+          compact ? "text-[10px]" : "text-[11px]"
+        }`}
       >
         {label}
       </p>
       <p
-        className={`result-metric-glow font-bold ${compact ? "text-sm" : "text-base"}`}
+        className={`result-metric-glow font-bold ${
+          compact ? "text-sm" : "text-base"
+        }`}
       >
         {value}
       </p>
+    </div>
+  );
+}
+
+function MetricBox({ label, value }) {
+  return (
+    <div className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center transition-colors duration-150 hover:border-[var(--accent)]/30">
+      <p className="text-[10px] text-[var(--text-muted)] sm:text-xs">{label}</p>
+      <p className="result-metric-glow text-lg font-bold sm:text-xl">{value}</p>
     </div>
   );
 }
@@ -2082,55 +2253,52 @@ function FindingRow({ finding, onFix, fixing, compact }) {
   const hasFix = Boolean(suggestedFix);
   const hasRefs = references.length > 0;
 
-  const catIcon =
-    {
-      security: "◇",
-      bug: "!",
-      performance: "↗",
-      maintainability: "◎",
-      style: "◈",
-      test: "◇",
-      docs: "◈",
-      architecture: "⌘",
-      general: "•",
-    }[category] || "•";
+  const CategoryIcon = CATEGORY_ICONS[category] ?? CircleDot;
 
   return (
     <div
-      className={`overflow-hidden rounded-lg border transition-colors duration-150 ${severityColor(severity)}`}
+      className={`overflow-hidden rounded-lg border transition-colors duration-150 ${severityColor(
+        severity
+      )}`}
     >
       <button
+        type="button"
         onClick={() => setExpanded((v) => !v)}
-        className="flex w-full items-start gap-3 p-3 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/30"
+        aria-expanded={expanded}
+        className="flex w-full items-start gap-3 p-3 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/30 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-inset"
       >
-        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-black/10 text-xs">
-          {catIcon}
+        <span className="mt-0.5 flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-black/10">
+          <CategoryIcon size={12} strokeWidth={2.2} aria-hidden="true" />
         </span>
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded border border-current/30 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider">
+            <span className="rounded border border-current/30 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider">
               {severity}
             </span>
-            <span className="rounded border border-[var(--border-light)] bg-[var(--bg-card)] px-1.5 py-0.5 text-[9px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
+            <span className="rounded border border-[var(--border-light)] bg-[var(--bg-card)] px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wider text-[var(--text-muted)]">
               {category}
             </span>
             {source && (
-              <span className="text-[9px] uppercase tracking-wider text-[var(--text-muted)]">
+              <span className="text-[10px] uppercase tracking-wider text-[var(--text-muted)]">
                 {source}
               </span>
             )}
           </div>
 
           <p
-            className={`mt-1.5 font-semibold text-[var(--text-primary)] ${compact ? "text-[11px]" : "text-xs"}`}
+            className={`mt-1.5 font-semibold text-[var(--text-primary)] ${
+              compact ? "text-[11px]" : "text-xs"
+            }`}
           >
             {title}
           </p>
 
           {file && (
             <p
-              className={`mt-0.5 font-mono text-[var(--text-muted)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+              className={`mt-0.5 font-mono text-[var(--text-muted)] ${
+                compact ? "text-[10px]" : "text-[11px]"
+              }`}
             >
               {file}
               {line ? `:${line}` : ""}
@@ -2139,8 +2307,12 @@ function FindingRow({ finding, onFix, fixing, compact }) {
           )}
         </div>
 
-        <span className="mt-1 shrink-0 text-[var(--text-muted)]">
-          {expanded ? "▾" : "▸"}
+        <span className="mt-1 shrink-0 text-[var(--text-muted)]" aria-hidden="true">
+          {expanded ? (
+            <ChevronDown size={14} strokeWidth={2} />
+          ) : (
+            <ChevronRight size={14} strokeWidth={2} />
+          )}
         </span>
       </button>
 
@@ -2148,11 +2320,13 @@ function FindingRow({ finding, onFix, fixing, compact }) {
         <div className="space-y-3 border-t border-current/20 bg-[var(--bg-primary)]/40 p-3">
           {description && (
             <div>
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 Description
               </p>
               <p
-                className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                className={`leading-5 text-[var(--text-secondary)] ${
+                  compact ? "text-[11px]" : "text-xs"
+                }`}
               >
                 {description}
               </p>
@@ -2161,11 +2335,13 @@ function FindingRow({ finding, onFix, fixing, compact }) {
 
           {whyItMatters && (
             <div>
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 Why it matters
               </p>
               <p
-                className={`leading-5 text-[var(--text-secondary)] ${compact ? "text-[10px]" : "text-xs"}`}
+                className={`leading-5 text-[var(--text-secondary)] ${
+                  compact ? "text-[11px]" : "text-xs"
+                }`}
               >
                 {whyItMatters}
               </p>
@@ -2174,13 +2350,13 @@ function FindingRow({ finding, onFix, fixing, compact }) {
 
           {hasFix && (
             <div>
-              <div className="mb-1 flex items-center justify-between">
-                <p className="text-[9px] font-semibold uppercase tracking-wider text-[var(--accent)]">
-                  Suggested fix
-                </p>
-              </div>
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--accent)]">
+                Suggested fix
+              </p>
               <pre
-                className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-card)] p-3 text-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                className={`overflow-x-auto rounded-lg border border-[var(--border-dark)] bg-[var(--bg-card)] p-3 text-[var(--accent)] ${
+                  compact ? "text-[10px]" : "text-[11px]"
+                }`}
               >
                 <code>{suggestedFix}</code>
               </pre>
@@ -2189,7 +2365,7 @@ function FindingRow({ finding, onFix, fixing, compact }) {
 
           {hasRefs && (
             <div>
-              <p className="mb-1 text-[9px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
+              <p className="mb-1 text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
                 References
               </p>
               <ul className="space-y-1">
@@ -2199,7 +2375,9 @@ function FindingRow({ finding, onFix, fixing, compact }) {
                       href={ref}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className={`break-all text-[var(--accent)] underline decoration-[var(--accent)]/40 underline-offset-2 hover:decoration-[var(--accent)] ${compact ? "text-[9px]" : "text-[10px]"}`}
+                      className={`break-all text-[var(--accent)] underline decoration-[var(--accent)]/40 underline-offset-2 hover:decoration-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 rounded ${
+                        compact ? "text-[10px]" : "text-[11px]"
+                      }`}
                     >
                       {ref}
                     </a>
@@ -2210,7 +2388,7 @@ function FindingRow({ finding, onFix, fixing, compact }) {
           )}
 
           {file && (
-            <button
+            <AutoFixButton
               onClick={() =>
                 onFix(
                   {
@@ -2221,23 +2399,12 @@ function FindingRow({ finding, onFix, fixing, compact }) {
                     line,
                     suggestedFix,
                   },
-                  category,
+                  category
                 )
               }
-              disabled={isFixing}
-              className={`flex items-center gap-1.5 rounded-lg bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_4px_14px_-6px_var(--accent-soft-strong)] transition-all duration-150 hover:bg-[var(--accent-hover)] active:scale-[0.97] disabled:opacity-50 disabled:active:scale-100 ${compact ? "px-2 py-1 text-[9px]" : "px-3 py-1.5 text-[10px]"}`}
-            >
-              {isFixing ? (
-                <>
-                  <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-t-transparent border-white" />
-                  Creating PR…
-                </>
-              ) : (
-                <>
-                  <span>⚡</span> Auto-Fix this issue
-                </>
-              )}
-            </button>
+              busy={isFixing}
+              compact={compact}
+            />
           )}
         </div>
       )}
