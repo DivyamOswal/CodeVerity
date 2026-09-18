@@ -20,6 +20,7 @@ import express from "express";
 import cors from "cors";
 import rateLimit from "express-rate-limit";
 import helmet from "helmet";
+import mongoose from "mongoose";
 import connectDB from "./config/db.js";
 
 // ─── Routes ────────────────────────────────────────────
@@ -35,12 +36,12 @@ import adminRoutes from "./routes/admin.js";
 
 import { startCleanupCron } from "./services/cleanupService.js";
 
-connectDB();
-
-// ─── Start cleanup cron ────────────────────────────────
-startCleanupCron();
-
 const app = express();
+
+// ─── Trust proxy (before CORS/rate limiters) ──────────
+// Render sits behind a load balancer. Without this, express-rate-limit
+// keys on the balancer's IP and the whole user base shares one bucket.
+app.set("trust proxy", 1);
 
 // ─── CORS ──────────────────────────────────────────────
 const allowedOrigins = [
@@ -52,11 +53,14 @@ const allowedOrigins = [
 app.use(
   cors({
     origin: function (origin, callback) {
+      // No origin = same-origin request, curl, mobile app, health check
       if (!origin) return callback(null, true);
       if (allowedOrigins.includes(origin)) {
         return callback(null, true);
       }
-      return callback(new Error("Not allowed by CORS"));
+      // Reject cleanly. Returning an Error here would produce a 500 with no
+      // CORS headers, which hides the real cause in the browser console.
+      return callback(null, false);
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
@@ -76,10 +80,15 @@ app.use(
 
 // ─── Body parsing (Stripe webhook needs raw body first) ─
 app.use("/api/billing/webhook", express.raw({ type: "application/json" }));
-app.use(express.json());
+app.use(express.json({ limit: "2mb" }));
 
-// ─── Trust proxy (needed for Render / Cloudflare) ──────
-app.set("trust proxy", 1);
+// ─── Request logging (dev only, or wire to your logger) ─
+if (process.env.NODE_ENV !== "production") {
+  app.use((req, _res, next) => {
+    console.log(`${req.method} ${req.originalUrl}`);
+    next();
+  });
+}
 
 // ─── Rate Limiting ─────────────────────────────────────
 const globalLimiter = rateLimit({
@@ -103,12 +112,13 @@ app.use("/api/github/analyze", expensiveLimiter);
 app.use("/api/github/generate-tests", expensiveLimiter);
 app.use("/api/github/auto-fix", expensiveLimiter);
 
-// ─── Health check ──────────────────────────────────────
+// ─── Health check (before /api so it bypasses the global limiter) ─
 app.get("/health", (req, res) => {
   res.status(200).json({
     status: "ok",
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
+    mongo: mongoose.connection.readyState === 1 ? "connected" : "disconnected",
   });
 });
 
@@ -119,21 +129,48 @@ app.use("/api/github", githubRoutes);
 app.use("/api/report", reportRoutes);
 app.use("/api/dashboard", dashboardRoutes);
 app.use("/api/billing", billingRoutes);
+// NOTE: if your frontend calls /api/workspaces/* (plural), change this to
+// app.use("/api/workspaces", workspaceRoutes); and keep it consistent.
 app.use("/api/workspace", workspaceRoutes);
 app.use("/api/stats", statsRoutes);
 app.use("/api/admin", adminRoutes);
 
-// ─── Sentry error handler (AFTER routes) ───────────────
-Sentry.setupExpressErrorHandler(app);
-
-// ─── Optional: custom fallback error handler ───────────
-app.use((err, req, res, next) => {
-  console.error("Unhandled error:", err);
-  res.status(err.status || 500).json({
-    error: err.message || "Internal server error",
+// ─── 404 for any unmatched route (JSON, not HTML) ──────
+app.use((req, res) => {
+  res.status(404).json({
+    error: "Not found",
+    path: req.originalUrl,
+    method: req.method,
   });
 });
 
-// ─── Start server ──────────────────────────────────────
+// ─── Sentry error handler (AFTER routes) ───────────────
+Sentry.setupExpressErrorHandler(app);
+
+// ─── Fallback error handler ────────────────────────────
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  res.status(err.status || 500).json({
+    error:
+      process.env.NODE_ENV === "production"
+        ? "Internal server error"
+        : err.message || "Internal server error",
+  });
+});
+
+// ─── Start server (after DB connects) ──────────────────
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+async function start() {
+  try {
+    await connectDB();
+    console.log("MongoDB connected");
+    startCleanupCron();
+    app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+  } catch (err) {
+    console.error("Failed to start server:", err);
+    process.exit(1);
+  }
+}
+
+start();

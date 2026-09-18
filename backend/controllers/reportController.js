@@ -6,7 +6,7 @@ import User from "../models/User.js";
 import WorkSpace from "../models/WorkSpace.js";
 import { addAuditLog } from "./workspaceController.js";
 
-// ── Base colors (not theme‑dependent) ─────────────────────────
+// ── Base colors (not theme-dependent) ─────────────────────────
 const BASE_COLORS = {
   red: "#ef4444",
   orange: "#f59e0b",
@@ -20,19 +20,32 @@ const BASE_COLORS = {
   border: "#e5e7eb",
 };
 
-// ── Helper: hex → RGB ─────────────────────────────────────────
+const FALLBACK_ACCENT_RGB = { r: 34, g: 211, b: 238 }; // cyan
+
+// ── Helper: hex → RGB (handles #fff, #ffffff, and invalid) ────
 function hexToRgb(hex) {
-  const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+  if (!hex || typeof hex !== "string") return FALLBACK_ACCENT_RGB;
+
+  let h = hex.replace("#", "").trim();
+  if (h.length === 3) {
+    h = h
+      .split("")
+      .map((c) => c + c)
+      .join("");
+  }
+  if (h.length !== 6) return FALLBACK_ACCENT_RGB;
+
+  const result = /^([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
   return result
     ? {
         r: parseInt(result[1], 16),
         g: parseInt(result[2], 16),
         b: parseInt(result[3], 16),
       }
-    : { r: 34, g: 211, b: 238 }; // fallback: cyan
+    : FALLBACK_ACCENT_RGB;
 }
 
-// ── Build theme‑aware color palette ───────────────────────────
+// ── Build theme-aware color palette ───────────────────────────
 function getThemeColors(accentHex) {
   const rgb = hexToRgb(accentHex);
   return {
@@ -43,7 +56,14 @@ function getThemeColors(accentHex) {
   };
 }
 
+// ── Hoisted chart canvases (avoid per-request startup cost) ───
+const radarCanvas = new ChartJSNodeCanvas({ width: 500, height: 500 });
+const healthCanvas = new ChartJSNodeCanvas({ width: 200, height: 200 });
+
 // ── Helper: Ensure user has a workspace ──────────────────────
+// NOTE: this has a side effect (creates a workspace if missing).
+// Only call from write paths or from endpoints where the user is
+// expected to already have a workspace.
 async function ensureWorkspace(user) {
   if (user.workspaceId) {
     const existing = await WorkSpace.findById(user.workspaceId);
@@ -60,24 +80,87 @@ async function ensureWorkspace(user) {
   return newWorkspace;
 }
 
-// ─── Helper: Increment workspace scan counter ──────────────────
+// ── Helper: Atomic scan-counter increment ─────────────────────
 async function incrementWorkspaceScans(workspaceId) {
   try {
-    const workspace = await WorkSpace.findById(workspaceId);
-    if (!workspace) return;
-    workspace.totalScans = (workspace.totalScans || 0) + 1;
-    await workspace.save();
+    await WorkSpace.findByIdAndUpdate(workspaceId, {
+      $inc: { totalScans: 1 },
+    });
   } catch (err) {
     console.error("Failed to increment workspace scans:", err);
   }
 }
 
-// ── PDF Helpers (theme‑aware) ─────────────────────────────────
+// ── Access-control helper ────────────────────────────────────
+// Loads a report and confirms the requesting user is allowed to see it.
+//
+// Rules (consistent across list, single, delete, and PDF):
+//   owner / admin  → any report in their workspace
+//   member / viewer → only their own reports
+//
+// Always returns "not_found" for both "doesn't exist" and "not yours"
+// so we don't leak the existence of report IDs.
+async function loadReportWithAccess(reportId, requestingUserId) {
+  const report = await Report.findById(reportId);
+  if (!report) return { error: "not_found" };
+
+  const user = await User.findById(requestingUserId);
+  if (!user) return { error: "unauthorized" };
+
+  const workspace = await ensureWorkspace(user);
+
+  // Report must belong to the requester's workspace.
+  if (
+    !report.workspaceId ||
+    report.workspaceId.toString() !== workspace._id.toString()
+  ) {
+    return { error: "not_found" };
+  }
+
+  const member = workspace.members.find(
+    (m) => m.userId.toString() === user._id.toString(),
+  );
+  if (!member) return { error: "not_found" };
+
+  const isPrivileged = member.role === "owner" || member.role === "admin";
+  const isOwnerOfReport = report.userId.toString() === user._id.toString();
+
+  if (!isPrivileged && !isOwnerOfReport) {
+    return { error: "not_found" };
+  }
+
+  return { report, user, workspace, member };
+}
+
+// ── Build the list-scope filter for a workspace member ────────
+// Used by getReports so list results match the single-report rules.
+function buildListFilter(workspace, member, userId) {
+  const isPrivileged = member.role === "owner" || member.role === "admin";
+
+  if (isPrivileged) {
+    return {
+      $or: [
+        { workspaceId: workspace._id },
+        { workspaceId: { $exists: false }, userId },
+      ],
+    };
+  }
+
+  // Members and viewers only see their own reports.
+  return { userId };
+}
+
+// ── PDF Helpers ───────────────────────────────────────────────
 
 function sectionTitle(doc, title, color) {
   doc.fontSize(16).fillColor(color).text(title);
   doc.moveDown(0.2);
-  doc.strokeColor(color).lineWidth(1.5).moveTo(50, doc.y).lineTo(550, doc.y).stroke();
+  doc
+    .strokeColor(color)
+    .lineWidth(1.5)
+    .moveTo(50, doc.y)
+    .lineTo(550, doc.y)
+    .stroke();
   doc.moveDown(0.8);
 }
 
@@ -88,7 +171,10 @@ function drawScoreBar(doc, label, value, color) {
   const barHeight = 12;
   const max = 100;
 
-  doc.fontSize(11).fillColor(BASE_COLORS.textDark).text(`${label}: ${value}%`, x, y);
+  doc
+    .fontSize(11)
+    .fillColor(BASE_COLORS.textDark)
+    .text(`${label}: ${value}%`, x, y);
   doc.moveDown(0.4);
   doc.rect(x, doc.y, barWidth, barHeight).fill(BASE_COLORS.border);
   const fillWidth = Math.min((value / max) * barWidth, barWidth);
@@ -101,7 +187,6 @@ function drawTable(doc, headers, rows, columnWidths) {
   let y = doc.y;
   const rowHeight = 20;
 
-  // Header
   doc.fontSize(10).fillColor(BASE_COLORS.primary);
   headers.forEach((h, i) => {
     const x = startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0);
@@ -113,7 +198,6 @@ function drawTable(doc, headers, rows, columnWidths) {
     .lineTo(startX + columnWidths.reduce((a, b) => a + b, 0), y)
     .stroke(BASE_COLORS.border);
 
-  // Rows
   doc.fontSize(9).fillColor(BASE_COLORS.textDark);
   rows.forEach((row) => {
     if (y > 750) {
@@ -122,7 +206,10 @@ function drawTable(doc, headers, rows, columnWidths) {
     }
     row.forEach((cell, i) => {
       const x = startX + columnWidths.slice(0, i).reduce((a, b) => a + b, 0);
-      doc.text(String(cell || ""), x, y + 2, { width: columnWidths[i], align: "left" });
+      doc.text(String(cell || ""), x, y + 2, {
+        width: columnWidths[i],
+        align: "left",
+      });
     });
     y += rowHeight;
     doc
@@ -133,12 +220,17 @@ function drawTable(doc, headers, rows, columnWidths) {
   doc.moveDown(0.5);
 }
 
-// ── CREATE REPORT (new) ────────────────────────────────────────
+// ── CREATE REPORT ─────────────────────────────────────────────
+// NOTE: currently not mounted on any route. Reports are created
+// inside githubController.analyzeGithubRepo(). Kept here for callers
+// who want a direct create endpoint.
 export const createReport = async (req, res) => {
   try {
     const { repoUrl, analysis, sourceCode } = req.body;
     if (!repoUrl || !analysis) {
-      return res.status(400).json({ error: "repoUrl and analysis are required" });
+      return res
+        .status(400)
+        .json({ error: "repoUrl and analysis are required" });
     }
 
     const user = await User.findById(req.user.id);
@@ -146,7 +238,6 @@ export const createReport = async (req, res) => {
 
     const workspace = await ensureWorkspace(user);
 
-    // Build report document
     const report = new Report({
       userId: user._id,
       workspaceId: workspace._id,
@@ -161,7 +252,6 @@ export const createReport = async (req, res) => {
       grade: analysis.grade || "N/A",
       finalVerdict: analysis.finalVerdict || "",
       _sourceCode: sourceCode || "",
-      // Optional enhanced fields if present
       healthScore: analysis.healthScore || null,
       securityVulnerabilities: analysis.securityVulnerabilities || [],
       dependencyVulnerabilities: analysis.dependencyVulnerabilities || [],
@@ -171,17 +261,14 @@ export const createReport = async (req, res) => {
     });
 
     await report.save();
-
-    // ── Increment workspace scan counter ────────────────────
     await incrementWorkspaceScans(workspace._id);
 
-    // ── Audit log ────────────────────────────────────────────
     await addAuditLog(
       workspace._id,
       user._id,
       "scan",
       `Scanned repository: ${repoUrl}`,
-      { repoUrl, reportId: report._id }
+      { repoUrl, reportId: report._id },
     );
 
     res.status(201).json({
@@ -195,95 +282,116 @@ export const createReport = async (req, res) => {
   }
 };
 
-// ── GET REPORTS (history) ────────────────────────────────────
-
+// ── GET REPORTS (history, paginated) ──────────────────────────
 export const getReports = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(401).json({ error: "User not found" });
-    }
+    const user = await User.findById(req.user.id);
+    if (!user) return res.status(401).json({ error: "User not found" });
 
     const workspace = await ensureWorkspace(user);
-    const workspaceId = workspace._id;
 
-    // Build filter
-    let filter;
-    if (user.role === "owner" || user.role === "admin") {
-      filter = {
-        $or: [
-          { workspaceId: workspaceId },
-          { workspaceId: { $exists: false }, userId: userId },
-        ],
-      };
-    } else {
-      filter = { userId: userId };
+    const member = workspace.members.find(
+      (m) => m.userId.toString() === user._id.toString(),
+    );
+    if (!member) {
+      return res.status(403).json({ error: "Not a workspace member" });
     }
 
-    const reports = await Report.find(filter)
-      .sort({ createdAt: -1 })
-      .lean();
+    const filter = buildListFilter(workspace, member, user._id);
 
-    res.json({ success: true, reports });
+    const page = Math.max(parseInt(req.query.page) || 1, 1);
+    const limit = Math.min(parseInt(req.query.limit) || 20, 100);
+    const skip = (page - 1) * limit;
+
+    const [reports, total] = await Promise.all([
+      Report.find(filter)
+        .select("-sourceCode") // full source is only needed on the detail page
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit)
+        .lean(),
+      Report.countDocuments(filter),
+    ]);
+
+    const totalPages = Math.ceil(total / limit) || 1;
+
+    res.json({
+      success: true,
+      reports,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNext: page < totalPages,
+        hasPrev: page > 1,
+      },
+    });
   } catch (err) {
     console.error("Get reports error:", err);
     res.status(500).json({ error: "Failed to fetch reports" });
   }
 };
 
-// ── GET SINGLE REPORT ──────────────────────────────────────────
+// ── GET SINGLE REPORT ─────────────────────────────────────────
 export const getReport = async (req, res) => {
   try {
     const { id } = req.params;
-    const report = await Report.findById(id);
-    if (!report) return res.status(404).json({ error: "Report not found" });
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(401).json({ error: "User not found" });
-
-    const workspace = await ensureWorkspace(user);
-    if (report.workspaceId?.toString() !== workspace._id.toString()) {
-      return res.status(403).json({ error: "Access denied" });
+    const result = await loadReportWithAccess(id, req.user.id);
+    if (result.error === "unauthorized") {
+      return res.status(401).json({ error: "User not found" });
+    }
+    if (result.error === "not_found") {
+      return res.status(404).json({ error: "Report not found" });
     }
 
-    res.json({ success: true, report });
+    res.json({ success: true, report: result.report });
   } catch (err) {
     console.error("Get report error:", err);
     res.status(500).json({ error: "Failed to fetch report" });
   }
 };
 
-// ── DELETE REPORT ──────────────────────────────────────────────
+// ── DELETE REPORT ─────────────────────────────────────────────
 export const deleteReport = async (req, res) => {
   try {
     const { id } = req.params;
-    const report = await Report.findById(id);
-    if (!report) return res.status(404).json({ error: "Report not found" });
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(401).json({ error: "User not found" });
+    const result = await loadReportWithAccess(id, req.user.id);
+    if (result.error === "unauthorized") {
+      return res.status(401).json({ error: "User not found" });
+    }
+    if (result.error === "not_found") {
+      return res.status(404).json({ error: "Report not found" });
+    }
 
-    const workspace = await ensureWorkspace(user);
-    if (report.workspaceId?.toString() !== workspace._id.toString()) {
-      return res.status(403).json({ error: "Access denied" });
+    const { report, user, workspace, member } = result;
+
+    // Only the report owner, an admin, or the workspace owner can delete.
+    const isPrivileged = member.role === "owner" || member.role === "admin";
+    const isOwner = report.userId.toString() === user._id.toString();
+    if (!isPrivileged && !isOwner) {
+      return res.status(404).json({ error: "Report not found" });
     }
 
     await report.deleteOne();
 
-    // Decrement workspace scan count
-    if (workspace.totalScans > 0) {
-      workspace.totalScans -= 1;
-      await workspace.save();
+    // Decrement scan counter atomically
+    try {
+      await WorkSpace.findByIdAndUpdate(workspace._id, {
+        $inc: { totalScans: -1 },
+      });
+    } catch (err) {
+      console.error("Failed to decrement totalScans:", err);
     }
 
-    // Audit log
     await addAuditLog(
       workspace._id,
       user._id,
       "report_delete",
       `Deleted report for ${report.repoUrl}`,
-      { reportId: report._id }
+      { reportId: report._id },
     );
 
     res.json({ success: true, message: "Report deleted" });
@@ -294,49 +402,92 @@ export const deleteReport = async (req, res) => {
 };
 
 // ── DOWNLOAD PDF ──────────────────────────────────────────────
-
 export const downloadReportPDF = async (req, res) => {
+  // Load access first, BEFORE piping the PDF. Once PDFKit starts
+  // writing to res, we can no longer send a JSON error.
+  let result;
   try {
-    const report = await Report.findById(req.params.id);
-    if (!report) return res.status(404).json({ error: "Report not found" });
+    result = await loadReportWithAccess(req.params.id, req.user.id);
+  } catch (err) {
+    console.error("PDF access check error:", err);
+    return res.status(500).json({ error: "Failed to generate PDF" });
+  }
 
-    const user = await User.findById(req.user.id);
-    if (!user) return res.status(401).json({ error: "User not found" });
+  if (result.error === "unauthorized") {
+    return res.status(401).json({ error: "User not found" });
+  }
+  if (result.error === "not_found") {
+    return res.status(404).json({ error: "Report not found" });
+  }
 
-    const workspace = await ensureWorkspace(user);
-    if (report.workspaceId?.toString() !== workspace._id.toString()) {
-      return res.status(403).json({ error: "Access denied" });
-    }
+  const { report, user, workspace } = result;
 
-    // ── Get user’s accent color (fallback to cyan) ──────────
+  try {
     const accent = user.accentColor || "#22d3ee";
     const COLORS = getThemeColors(accent);
 
     const doc = new PDFDocument({ margin: 50, size: "A4" });
+
+    // Sanitize the filename to avoid header injection if repoUrl ever
+    // contains unusual characters (not the case for GitHub, but cheap).
+    const repoName = (report.repoUrl.split("/").pop() || "report").replace(
+      /[^a-zA-Z0-9._-]/g,
+      "_",
+    );
+
     res.setHeader("Content-Type", "application/pdf");
     res.setHeader(
       "Content-Disposition",
-      `attachment; filename=${report.repoUrl.split("/").pop()}-AI-Code-Audit.pdf`
+      `attachment; filename="${repoName}-AI-Code-Audit.pdf"`,
     );
+
     doc.pipe(res);
 
     // ── Cover Page ──────────────────────────────────────────
-    doc.fontSize(32).fillColor(COLORS.primary).text("CodeVerity", { align: "center" });
+    doc
+      .fontSize(32)
+      .fillColor(COLORS.primary)
+      .text("CodeVerity", { align: "center" });
     doc.moveDown(0.3);
-    doc.fontSize(14).fillColor(COLORS.textLight).text("AI-Powered Code Audit Report", { align: "center" });
+    doc
+      .fontSize(14)
+      .fillColor(COLORS.textLight)
+      .text("AI-Powered Code Audit Report", { align: "center" });
     doc.moveDown(2);
-    doc.fontSize(12).fillColor(COLORS.textDark).text(`Repository: ${report.repoUrl}`, { align: "center" });
-    doc.fontSize(10).fillColor(COLORS.textLight).text(`Generated: ${new Date().toLocaleDateString()}`, { align: "center" });
-    doc.fontSize(10).fillColor(COLORS.textLight).text(`Grade: ${report.grade || "N/A"}`, { align: "center" });
+    doc
+      .fontSize(12)
+      .fillColor(COLORS.textDark)
+      .text(`Repository: ${report.repoUrl}`, { align: "center" });
+    doc
+      .fontSize(10)
+      .fillColor(COLORS.textLight)
+      .text(`Generated: ${new Date().toLocaleDateString()}`, {
+        align: "center",
+      });
+    doc
+      .fontSize(10)
+      .fillColor(COLORS.textLight)
+      .text(`Grade: ${report.grade || "N/A"}`, { align: "center" });
     doc.moveDown(1);
-    doc.fontSize(10).fillColor(COLORS.textLight).text("_______________________________________________", { align: "center" });
+    doc
+      .fontSize(10)
+      .fillColor(COLORS.textLight)
+      .text("_______________________________________________", {
+        align: "center",
+      });
     doc.moveDown(0.5);
-    doc.fontSize(8).fillColor(COLORS.textLight).text("Confidential – For internal use only", { align: "center" });
+    doc
+      .fontSize(8)
+      .fillColor(COLORS.textLight)
+      .text("Confidential – For internal use only", { align: "center" });
     doc.addPage();
 
     // ── Executive Summary ──────────────────────────────────
     sectionTitle(doc, "Executive Summary", COLORS.primary);
-    doc.fontSize(11).fillColor(COLORS.textDark).text(report.summary || "No summary available.", { align: "justify" });
+    doc
+      .fontSize(11)
+      .fillColor(COLORS.textDark)
+      .text(report.summary || "No summary available.", { align: "justify" });
     doc.moveDown(1);
 
     // ── Architecture Review ────────────────────────────────
@@ -353,7 +504,10 @@ export const downloadReportPDF = async (req, res) => {
         doc.moveDown(0.4);
       });
     } else {
-      doc.fontSize(11).fillColor(COLORS.textLight).text("No architecture details provided.");
+      doc
+        .fontSize(11)
+        .fillColor(COLORS.textLight)
+        .text("No architecture details provided.");
     }
     doc.moveDown(1);
 
@@ -363,28 +517,53 @@ export const downloadReportPDF = async (req, res) => {
     drawScoreBar(doc, "Code Quality", scores.codeQuality || 0, COLORS.primary);
     drawScoreBar(doc, "Security", scores.security || 0, COLORS.primaryLight);
     drawScoreBar(doc, "Performance", scores.performance || 0, COLORS.blue);
-    drawScoreBar(doc, "Maintainability", scores.maintainability || 0, COLORS.gray);
+    drawScoreBar(
+      doc,
+      "Maintainability",
+      scores.maintainability || 0,
+      COLORS.gray,
+    );
 
     // ── Radar Chart ────────────────────────────────────────
-    const chartImage = await generateRadarChart(scores, COLORS);
-    doc.moveDown(1);
-    doc.image(chartImage, { fit: [400, 400], align: "center" });
+    try {
+      const chartImage = await generateRadarChart(scores, COLORS);
+      doc.moveDown(1);
+      doc.image(chartImage, { fit: [400, 400], align: "center" });
+    } catch (chartErr) {
+      console.error("Radar chart failed:", chartErr);
+    }
     doc.addPage();
 
     // ── Health Score ──────────────────────────────────────
     if (report.healthScore) {
       sectionTitle(doc, "Health Score", COLORS.primary);
-      const healthChart = await generateHealthChart(report.healthScore, COLORS);
-      doc.image(healthChart, { fit: [180, 180], align: "left" });
+      try {
+        const healthChart = await generateHealthChart(
+          report.healthScore,
+          COLORS,
+        );
+        doc.image(healthChart, { fit: [180, 180], align: "left" });
+      } catch (chartErr) {
+        console.error("Health chart failed:", chartErr);
+      }
       const x = 250;
       let y = doc.y;
-      doc.fontSize(14).fillColor(COLORS.primary).text(`Grade: ${report.healthScore.grade || "N/A"}`, x, y);
+      doc
+        .fontSize(14)
+        .fillColor(COLORS.primary)
+        .text(`Grade: ${report.healthScore.grade || "N/A"}`, x, y);
       y += 20;
-      doc.fontSize(11).fillColor(COLORS.textDark).text(`Overall: ${report.healthScore.overall || 0} / 100`, x, y);
+      doc
+        .fontSize(11)
+        .fillColor(COLORS.textDark)
+        .text(`Overall: ${report.healthScore.overall || 0} / 100`, x, y);
       y += 18;
       const breakdown = report.healthScore.breakdown || {};
       Object.entries(breakdown).forEach(([key, val]) => {
-        doc.fontSize(10).fillColor(COLORS.textLight).text(`${key}: ${val}%`, x + 10, y);
+        doc
+          .fontSize(10)
+          .fillColor(COLORS.textLight)
+          .text(`${key}: ${val}%`, x + 10, y);
         y += 15;
       });
       doc.moveDown(1);
@@ -392,7 +571,11 @@ export const downloadReportPDF = async (req, res) => {
 
     // ── Security Vulnerabilities ────────────────────────────
     if (report.securityVulnerabilities?.length) {
-      sectionTitle(doc, `Security Vulnerabilities (${report.securityVulnerabilities.length})`, COLORS.red);
+      sectionTitle(
+        doc,
+        `Security Vulnerabilities (${report.securityVulnerabilities.length})`,
+        COLORS.red,
+      );
       const headers = ["Severity", "Title", "File", "Line"];
       const colWidths = [60, 200, 150, 50];
       const rows = report.securityVulnerabilities.map((v) => [
@@ -407,7 +590,11 @@ export const downloadReportPDF = async (req, res) => {
 
     // ── Dependency Vulnerabilities ──────────────────────────
     if (report.dependencyVulnerabilities?.length) {
-      sectionTitle(doc, `Dependency Vulnerabilities (${report.dependencyVulnerabilities.length})`, COLORS.orange);
+      sectionTitle(
+        doc,
+        `Dependency Vulnerabilities (${report.dependencyVulnerabilities.length})`,
+        COLORS.orange,
+      );
       const headers = ["Package", "Version", "CVE", "Severity", "Fixed In"];
       const colWidths = [100, 60, 80, 60, 80];
       const rows = report.dependencyVulnerabilities.map((v) => [
@@ -428,8 +615,12 @@ export const downloadReportPDF = async (req, res) => {
         doc
           .fontSize(10)
           .fillColor(COLORS.textDark)
-          .text(`${i + 1}. ${s.pattern || "Unknown"} ${s.file || ""} (line ${s.line || "?"})`);
-        doc.fillColor(COLORS.textLight).text(`   Confidence: ${s.confidence || 0}%`);
+          .text(
+            `${i + 1}. ${s.pattern || "Unknown"} ${s.file || ""} (line ${s.line || "?"})`,
+          );
+        doc
+          .fillColor(COLORS.textLight)
+          .text(`   Confidence: ${s.confidence || 0}%`);
         doc.moveDown(0.3);
       });
       doc.moveDown(0.5);
@@ -439,7 +630,10 @@ export const downloadReportPDF = async (req, res) => {
     if (report.techDebt) {
       sectionTitle(doc, "Technical Debt", COLORS.orange);
       const techDebt = report.techDebt;
-      doc.fontSize(14).fillColor(COLORS.primary).text(`Estimated Hours: ${techDebt.estimatedHours || 0}h`);
+      doc
+        .fontSize(14)
+        .fillColor(COLORS.primary)
+        .text(`Estimated Hours: ${techDebt.estimatedHours || 0}h`);
       doc.moveDown(0.5);
       if (techDebt.issues?.length) {
         doc.fontSize(11).fillColor(COLORS.textDark).text("Breakdown:");
@@ -448,13 +642,18 @@ export const downloadReportPDF = async (req, res) => {
             .fontSize(10)
             .fillColor(COLORS.textDark)
             .text(
-              `${i + 1}. ${issue.description || "No description"} (${issue.severity || "low"}) ${issue.effort || 0}h`
+              `${i + 1}. ${issue.description || "No description"} (${issue.severity || "low"}) ${issue.effort || 0}h`,
             );
-          doc.fillColor(COLORS.textLight).text(`   File: ${issue.file || "unknown"}`);
+          doc
+            .fillColor(COLORS.textLight)
+            .text(`   File: ${issue.file || "unknown"}`);
           doc.moveDown(0.2);
         });
       } else {
-        doc.fontSize(11).fillColor(COLORS.textLight).text("No technical debt issues listed.");
+        doc
+          .fontSize(11)
+          .fillColor(COLORS.textLight)
+          .text("No technical debt issues listed.");
       }
       doc.moveDown(0.5);
     }
@@ -489,7 +688,9 @@ export const downloadReportPDF = async (req, res) => {
           .fontSize(11)
           .fillColor(COLORS.textDark)
           .text(`Issue: ${b.description || "No description"}`);
-        doc.fillColor(COLORS.primary).text(`Fix: ${b.fix || b.suggestedFix || "Not specified"}`);
+        doc
+          .fillColor(COLORS.primary)
+          .text(`Fix: ${b.fix || b.suggestedFix || "Not specified"}`);
         doc.moveDown(0.6);
       });
     } else {
@@ -509,7 +710,9 @@ export const downloadReportPDF = async (req, res) => {
           .fontSize(11)
           .fillColor(COLORS.textDark)
           .text(`Severity: ${s.severity || "N/A"}`);
-        doc.fillColor(COLORS.primary).text(`Recommendation: ${s.recommendation || "N/A"}`);
+        doc
+          .fillColor(COLORS.primary)
+          .text(`Recommendation: ${s.recommendation || "N/A"}`);
         doc.moveDown(0.6);
       });
       doc.moveDown(1);
@@ -553,32 +756,36 @@ export const downloadReportPDF = async (req, res) => {
       .text(report.finalVerdict || "No verdict provided.", { align: "justify" });
 
     doc.moveDown(2);
-    doc.fontSize(8).fillColor(COLORS.textLight).text("Generated by CodeVerity AI · Confidential", { align: "center" });
+    doc
+      .fontSize(8)
+      .fillColor(COLORS.textLight)
+      .text("Generated by CodeVerity AI · Confidential", { align: "center" });
 
     doc.end();
 
-    // ── Audit log (PDF download) ────────────────────────────
-    await addAuditLog(
+    // Fire-and-forget audit log (after streaming starts).
+    // Don't await — we don't want to delay the response.
+    addAuditLog(
       workspace._id,
       user._id,
       "report_download",
       `Downloaded PDF report for ${report.repoUrl}`,
-      { reportId: report._id }
-    );
-
+      { reportId: report._id },
+    ).catch((err) => console.error("Audit log failed:", err));
   } catch (err) {
     console.error("PDF generation error:", err);
-    res.status(500).json({ error: "Failed to generate PDF" });
+    // If headers were already sent, we can only end the stream.
+    if (!res.headersSent) {
+      res.status(500).json({ error: "Failed to generate PDF" });
+    } else {
+      res.end();
+    }
   }
 };
 
-// ── Chart Generators (theme‑aware) ───────────────────────────
+// ── Chart Generators (use hoisted canvases) ──────────────────
 
 async function generateRadarChart(scores, COLORS) {
-  const width = 500;
-  const height = 500;
-  const canvas = new ChartJSNodeCanvas({ width, height });
-
   const config = {
     type: "radar",
     data: {
@@ -617,13 +824,10 @@ async function generateRadarChart(scores, COLORS) {
     },
   };
 
-  return await canvas.renderToBuffer(config);
+  return await radarCanvas.renderToBuffer(config);
 }
 
 async function generateHealthChart(healthScore, COLORS) {
-  const width = 200;
-  const height = 200;
-  const canvas = new ChartJSNodeCanvas({ width, height });
   const overall = healthScore.overall || 0;
   const remaining = 100 - overall;
 
@@ -645,5 +849,5 @@ async function generateHealthChart(healthScore, COLORS) {
     },
   };
 
-  return await canvas.renderToBuffer(config);
+  return await healthCanvas.renderToBuffer(config);
 }

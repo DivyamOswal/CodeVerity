@@ -3,16 +3,22 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
 import User from "../models/User.js";
-import PDFDocument from "pdfkit";
 import Report from "../models/Report.js";
 import WorkSpace from "../models/WorkSpace.js";
-import { addAuditLog } from "./workspaceController.js";  // 👈 import audit log helper
+import { addAuditLog } from "./workspaceController.js";
 
 /* =========================================================
    HELPERS
 ========================================================= */
 
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
+
+// A pre-computed bcrypt hash used for constant-time login behavior.
+// This is NOT a real user's hash — it exists only so that bcrypt.compare()
+// always runs, even when the email isn't registered. Prevents user
+// enumeration via response-timing differences.
+const DUMMY_HASH =
+  "$2a$10$CwTycUXWue0Thq9StjUM0uJ8pFC8Q9V3eZ.Ez2vJ0FOfyY2qL6nQO";
 
 const generateToken = (user) => {
   return jwt.sign(
@@ -23,20 +29,22 @@ const generateToken = (user) => {
 };
 
 const getOAuthUserPassword = () => {
-  return bcrypt.hash(
-    crypto.randomBytes(32).toString("hex"),
-    10
-  );
+  return bcrypt.hash(crypto.randomBytes(32).toString("hex"), 10);
 };
+
+const normalizeEmail = (raw) =>
+  typeof raw === "string" ? raw.trim().toLowerCase() : "";
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // Cookie helpers
 const setOAuthStateCookie = (res, state) => {
-  res.cookie('oauth_state', state, {
+  res.cookie("oauth_state", state, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
     maxAge: 600000,
-    path: '/',
+    path: "/",
   });
 };
 
@@ -51,16 +59,18 @@ const getCookie = (req, name) => {
 };
 
 const clearOAuthStateCookie = (res) => {
-  res.clearCookie('oauth_state', {
+  res.clearCookie("oauth_state", {
     httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-    path: '/',
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
   });
 };
 
 const redirectWithError = (res, errorMessage) => {
-  res.redirect(`${FRONTEND_URL}/oauth-error?error=${encodeURIComponent(errorMessage)}`);
+  res.redirect(
+    `${FRONTEND_URL}/oauth-error?error=${encodeURIComponent(errorMessage)}`
+  );
 };
 
 // ── Helper: Create workspace for a user ────────────────────────
@@ -81,10 +91,22 @@ const createWorkspaceForUser = async (user) => {
 ========================================================= */
 
 export const register = async (req, res) => {
-  const { name, email, password } = req.body;
+  const { name, password } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   if (!name || !email || !password) {
     return res.status(400).json({ error: "All fields are required." });
+  }
+  if (typeof name !== "string" || name.trim().length < 2 || name.trim().length > 80) {
+    return res.status(400).json({ error: "Name must be 2–80 characters." });
+  }
+  if (password.length < 8) {
+    return res
+      .status(400)
+      .json({ error: "Password must be at least 8 characters." });
+  }
+  if (!EMAIL_RE.test(email)) {
+    return res.status(400).json({ error: "Invalid email address." });
   }
 
   try {
@@ -95,15 +117,13 @@ export const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const user = await User.create({
-      name,
+      name: name.trim(),
       email,
       password: hashedPassword,
     });
 
-    // Create workspace for the user
     await createWorkspaceForUser(user);
 
-    // ── Audit log: User registered ──────────────────────────
     addAuditLog(
       user.workspaceId,
       user._id,
@@ -120,7 +140,8 @@ export const register = async (req, res) => {
         email: user.email,
         role: user.role,
         workspaceId: user.workspaceId,
-      }
+        hasGithubConnected: Boolean(user.githubAccessToken),
+      },
     });
   } catch (err) {
     console.error("Registration error:", err);
@@ -128,14 +149,16 @@ export const register = async (req, res) => {
   }
 };
 
+/* =========================================================
+   GET /me
+========================================================= */
+
 export const getMe = async (req, res) => {
-  // ✅ Prevent browser caching (avoids 304 with empty body)
   res.set("Cache-Control", "no-store, no-cache, must-revalidate, proxy-revalidate");
   res.set("Pragma", "no-cache");
   res.set("Expires", "0");
 
   try {
-    // Include githubAccessToken so we can compute hasGithubConnected
     const user = await User.findById(req.user.id)
       .select("-password +githubAccessToken")
       .lean();
@@ -144,14 +167,12 @@ export const getMe = async (req, res) => {
       return res.status(404).json({ error: "User not found" });
     }
 
-    // Never send the actual token to the client
     const { githubAccessToken, ...safeUser } = user;
 
     res.json({
       success: true,
       user: {
         ...safeUser,
-        // ✅ Boolean flag instead of raw token
         hasGithubConnected: Boolean(githubAccessToken),
       },
     });
@@ -166,7 +187,8 @@ export const getMe = async (req, res) => {
 ========================================================= */
 
 export const login = async (req, res) => {
-  const { email, password } = req.body;
+  const { password } = req.body;
+  const email = normalizeEmail(req.body.email);
 
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password required." });
@@ -174,16 +196,16 @@ export const login = async (req, res) => {
 
   try {
     const user = await User.findOne({ email });
-    if (!user) {
+
+    // Always run bcrypt so an attacker can't distinguish "user does not
+    // exist" from "wrong password" via response timing.
+    const hashToCompare = user?.password || DUMMY_HASH;
+    const valid = await bcrypt.compare(password, hashToCompare);
+
+    if (!user || !valid) {
       return res.status(401).json({ error: "Invalid credentials." });
     }
 
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return res.status(401).json({ error: "Invalid credentials." });
-    }
-
-    // ── Audit log: User logged in ──────────────────────────
     if (user.workspaceId) {
       addAuditLog(
         user.workspaceId,
@@ -202,7 +224,8 @@ export const login = async (req, res) => {
         email: user.email,
         role: user.role,
         workspaceId: user.workspaceId,
-      }
+        hasGithubConnected: Boolean(user.githubAccessToken),
+      },
     });
   } catch (err) {
     console.error("Login error:", err);
@@ -229,7 +252,9 @@ export const googleAuth = async (req, res) => {
       state,
     });
 
-    res.redirect(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
+    res.redirect(
+      `https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`
+    );
   } catch (error) {
     console.error("Google auth error:", error);
     res.status(500).json({ error: "Failed to start Google authentication" });
@@ -250,21 +275,17 @@ export const googleAuthCallback = async (req, res) => {
 
     clearOAuthStateCookie(res);
 
-    // Exchange code for access token
-    const tokenResponse = await fetch(
-      "https://oauth2.googleapis.com/token",
-      {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          code,
-          client_id: process.env.GOOGLE_CLIENT_ID,
-          client_secret: process.env.GOOGLE_CLIENT_SECRET,
-          redirect_uri: process.env.GOOGLE_CALLBACK_URL,
-          grant_type: "authorization_code",
-        }),
-      }
-    );
+    const tokenResponse = await fetch("https://oauth2.googleapis.com/token", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({
+        code,
+        client_id: process.env.GOOGLE_CLIENT_ID,
+        client_secret: process.env.GOOGLE_CLIENT_SECRET,
+        redirect_uri: process.env.GOOGLE_CALLBACK_URL,
+        grant_type: "authorization_code",
+      }),
+    });
 
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok || !tokenData.access_token) {
@@ -272,7 +293,6 @@ export const googleAuthCallback = async (req, res) => {
       return redirectWithError(res, "Failed to authenticate with Google");
     }
 
-    // Get user info
     const googleUserResponse = await fetch(
       "https://www.googleapis.com/oauth2/v3/userinfo",
       {
@@ -285,7 +305,7 @@ export const googleAuthCallback = async (req, res) => {
       return redirectWithError(res, "Failed to fetch Google user profile");
     }
 
-    const email = googleUser.email;
+    const email = normalizeEmail(googleUser.email);
     const name = googleUser.name || googleUser.given_name || "Google User";
     if (!email) {
       return redirectWithError(res, "Google account has no email address");
@@ -301,27 +321,25 @@ export const googleAuthCallback = async (req, res) => {
 
     if (isNew) {
       await createWorkspaceForUser(user);
-      // ── Audit log: New user via Google ─────────────────────
       addAuditLog(
         user.workspaceId,
         user._id,
         "register",
         `User ${user.email} registered via Google`
       );
-    } else {
-      // ── Audit log: Existing user logged in via Google ────
-      if (user.workspaceId) {
-        addAuditLog(
-          user.workspaceId,
-          user._id,
-          "login",
-          `User ${user.email} logged in via Google`
-        );
-      }
+    } else if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "login",
+        `User ${user.email} logged in via Google`
+      );
     }
 
     const token = generateToken(user);
-    res.redirect(`${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(token)}`);
+    res.redirect(
+      `${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(token)}`
+    );
   } catch (error) {
     console.error("Google callback error:", error);
     redirectWithError(res, "Google authentication failed");
@@ -335,26 +353,31 @@ export const googleAuthCallback = async (req, res) => {
 export const githubAuth = async (req, res) => {
   try {
     const state = crypto.randomBytes(32).toString("hex");
-    const isConnect = req.query.connect === 'true';
-    // if connect, we need user ID from token
+    const isConnect = req.query.connect === "true";
+
     let userId = null;
     if (isConnect) {
-      // verify JWT from Authorization header or cookie
-      const token = req.headers.authorization?.split(' ')[1] || req.cookies?.token;
+      const token =
+        req.headers.authorization?.split(" ")[1] || req.cookies?.token;
       if (token) {
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           userId = decoded.id;
-        } catch (e) {}
+        } catch (e) {
+          // invalid token — fall through to the 401 below
+        }
       }
       if (!userId) {
-        // not logged in, but we can redirect with error
-        return res.status(401).json({ error: "You must be logged in to connect GitHub." });
+        return res
+          .status(401)
+          .json({ error: "You must be logged in to connect GitHub." });
       }
     }
-    // store state with additional data
+
     const stateData = { state, connect: isConnect, userId };
-    const stateEncoded = Buffer.from(JSON.stringify(stateData)).toString('base64');
+    const stateEncoded = Buffer.from(JSON.stringify(stateData)).toString(
+      "base64"
+    );
     setOAuthStateCookie(res, stateEncoded);
 
     const params = new URLSearchParams({
@@ -364,7 +387,9 @@ export const githubAuth = async (req, res) => {
       state: stateEncoded,
     });
 
-    res.redirect(`https://github.com/login/oauth/authorize?${params.toString()}`);
+    res.redirect(
+      `https://github.com/login/oauth/authorize?${params.toString()}`
+    );
   } catch (error) {
     console.error("GitHub auth error:", error);
     res.status(500).json({ error: "Failed to start GitHub authentication" });
@@ -376,14 +401,17 @@ export const githubAuthCallback = async (req, res) => {
     const { code, state: stateParam } = req.query;
     const savedState = getCookie(req, "oauth_state");
     if (!code) return redirectWithError(res, "Authorization code missing");
-    if (!stateParam || !savedState || stateParam !== savedState) return redirectWithError(res, "Invalid state");
+    if (!stateParam || !savedState || stateParam !== savedState) {
+      return redirectWithError(res, "Invalid state");
+    }
 
     clearOAuthStateCookie(res);
 
-    // Decode state data
     let stateData = {};
     try {
-      stateData = JSON.parse(Buffer.from(stateParam, 'base64').toString('utf-8'));
+      stateData = JSON.parse(
+        Buffer.from(stateParam, "base64").toString("utf-8")
+      );
     } catch (e) {
       stateData = { state: stateParam };
     }
@@ -391,17 +419,22 @@ export const githubAuthCallback = async (req, res) => {
     const isConnect = stateData.connect || false;
     const userId = stateData.userId || null;
 
-    // Exchange code for token (same as before)
-    const tokenResponse = await fetch("https://github.com/login/oauth/access_token", {
-      method: "POST",
-      headers: { Accept: "application/json", "Content-Type": "application/x-www-form-urlencoded" },
-      body: new URLSearchParams({
-        client_id: process.env.GITHUB_CLIENT_ID,
-        client_secret: process.env.GITHUB_CLIENT_SECRET,
-        code,
-        redirect_uri: process.env.GITHUB_CALLBACK_URL,
-      }),
-    });
+    const tokenResponse = await fetch(
+      "https://github.com/login/oauth/access_token",
+      {
+        method: "POST",
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
+        body: new URLSearchParams({
+          client_id: process.env.GITHUB_CLIENT_ID,
+          client_secret: process.env.GITHUB_CLIENT_SECRET,
+          code,
+          redirect_uri: process.env.GITHUB_CALLBACK_URL,
+        }),
+      }
+    );
     const tokenData = await tokenResponse.json();
     if (!tokenResponse.ok || !tokenData.access_token) {
       console.error("GitHub token error:", tokenData);
@@ -409,65 +442,90 @@ export const githubAuthCallback = async (req, res) => {
     }
     const accessToken = tokenData.access_token;
 
-    // Get user info (same as before)
     const githubUserResponse = await fetch("https://api.github.com/user", {
-      headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json", "User-Agent": "CodeVerity" },
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+        Accept: "application/vnd.github+json",
+        "User-Agent": "CodeVerity",
+      },
     });
     const githubUser = await githubUserResponse.json();
-    if (!githubUserResponse.ok) return redirectWithError(res, "Failed to fetch GitHub user profile");
+    if (!githubUserResponse.ok) {
+      return redirectWithError(res, "Failed to fetch GitHub user profile");
+    }
 
-    // Get email (same as before)
     let email = githubUser.email;
     if (!email) {
-      const emailResponse = await fetch("https://api.github.com/user/emails", {
-        headers: { Authorization: `Bearer ${accessToken}`, Accept: "application/vnd.github+json", "User-Agent": "CodeVerity" },
-      });
+      const emailResponse = await fetch(
+        "https://api.github.com/user/emails",
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            Accept: "application/vnd.github+json",
+            "User-Agent": "CodeVerity",
+          },
+        }
+      );
       const emails = await emailResponse.json();
       if (emailResponse.ok && Array.isArray(emails)) {
-        const primary = emails.find(e => e.primary && e.verified);
-        email = primary?.email || emails.find(e => e.verified)?.email;
+        const primary = emails.find((e) => e.primary && e.verified);
+        email = primary?.email || emails.find((e) => e.verified)?.email;
       }
     }
     if (!email) return redirectWithError(res, "No verified email found");
 
+    email = normalizeEmail(email);
+
     const name = githubUser.name || githubUser.login || "GitHub User";
 
     if (isConnect) {
-      // Connect to existing account
       if (!userId) return redirectWithError(res, "User not identified");
       const user = await User.findById(userId);
       if (!user) return redirectWithError(res, "User not found");
+
       user.githubAccessToken = accessToken;
-      user.githubId = githubUser.id;
+      user.githubId = String(githubUser.id);
       await user.save();
-      // Redirect back to settings with success
+
       return res.redirect(`${FRONTEND_URL}/settings?github=connected`);
-    } else {
-      // Login flow: find or create user
-      let user = await User.findOne({ email });
-      let isNew = false;
-      if (!user) {
-        const password = await getOAuthUserPassword();
-        user = await User.create({ name, email, password });
-        isNew = true;
-      }
-      if (isNew) {
-        await createWorkspaceForUser(user);
-        addAuditLog(user.workspaceId, user._id, "register", `User ${user.email} registered via GitHub`);
-      } else {
-        if (user.workspaceId) {
-          addAuditLog(user.workspaceId, user._id, "login", `User ${user.email} logged in via GitHub`);
-        }
-      }
-      // Also update token if not present
-      if (!user.githubAccessToken) {
-        user.githubAccessToken = accessToken;
-        user.githubId = githubUser.id;
-        await user.save();
-      }
-      const jwtToken = generateToken(user);
-      res.redirect(`${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(jwtToken)}`);
     }
+
+    // Login flow
+    let user = await User.findOne({ email });
+    let isNew = false;
+    if (!user) {
+      const password = await getOAuthUserPassword();
+      user = await User.create({ name, email, password });
+      isNew = true;
+    }
+
+    if (isNew) {
+      await createWorkspaceForUser(user);
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "register",
+        `User ${user.email} registered via GitHub`
+      );
+    } else if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "login",
+        `User ${user.email} logged in via GitHub`
+      );
+    }
+
+    if (!user.githubAccessToken) {
+      user.githubAccessToken = accessToken;
+      user.githubId = String(githubUser.id);
+      await user.save();
+    }
+
+    const jwtToken = generateToken(user);
+    res.redirect(
+      `${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(jwtToken)}`
+    );
   } catch (error) {
     console.error("GitHub callback error:", error);
     redirectWithError(res, "GitHub authentication failed");
@@ -475,12 +533,8 @@ export const githubAuthCallback = async (req, res) => {
 };
 
 /* =========================================================
-   DOWNLOAD REPORT (placeholder – your existing code)
+   DISCONNECT GITHUB
 ========================================================= */
-
-export const downloadReportPDF = async (req, res) => {
-  // ... (your existing code)
-};
 
 export const disconnectGitHub = async (req, res) => {
   try {
@@ -488,8 +542,18 @@ export const disconnectGitHub = async (req, res) => {
     if (!user) return res.status(401).json({ error: "User not found" });
 
     user.githubAccessToken = null;
-    user.githubId = undefined;   // ← removes the field instead of storing null
+    user.githubId = undefined; // removes the field, satisfying the sparse/partial unique index
+
     await user.save();
+
+    if (user.workspaceId) {
+      addAuditLog(
+        user.workspaceId,
+        user._id,
+        "github_disconnect",
+        `User ${user.email} disconnected GitHub`
+      );
+    }
 
     res.json({ success: true, message: "GitHub account disconnected." });
   } catch (err) {

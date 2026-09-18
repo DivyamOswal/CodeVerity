@@ -64,7 +64,7 @@ const userSchema = new mongoose.Schema({
   },
   plan: { type: String, enum: ["starter", "pro", "team"], default: "starter" },
   isGlobalAdmin: { type: Boolean, default: false },
-  githubId: { type: String, unique: true, sparse: true },
+    githubId: { type: String },
   githubAccessToken: { type: String, select: false },
 
   // Billing / Stripe
@@ -119,7 +119,18 @@ userSchema.statics.getPlanConfig = function (plan) {
 };
 
 // ─── Indexes ────────────────────────────────────────────────
-userSchema.index({ email: 1 }, { unique: true });
 userSchema.index({ workspaceId: 1 });
+
+// Only enforce uniqueness when githubId is actually a string.
+// Documents with githubId: null are excluded, so multiple disconnected
+// users can coexist without E11000 duplicate-key errors.
+userSchema.index(
+  { githubId: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { githubId: { $type: "string" } },
+    name: "githubId_unique_when_string",
+  },
+);
 
 export default mongoose.model("User", userSchema);
