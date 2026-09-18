@@ -143,10 +143,6 @@ export default function AuthLayout({
     }
 
     const ctx = gsap.context(() => {
-      /* ------------------------------------------------------------------ */
-      /* Card corner animation                                               */
-      /* ------------------------------------------------------------------ */
-
       if (cornersRef.current) {
         gsap.to(cornersRef.current.children, {
           opacity: 0.35,
@@ -158,10 +154,6 @@ export default function AuthLayout({
         });
       }
 
-      /* ------------------------------------------------------------------ */
-      /* Terminal cursor                                                     */
-      /* ------------------------------------------------------------------ */
-
       if (cursorRef.current) {
         gsap.to(cursorRef.current, {
           opacity: 0,
@@ -171,10 +163,6 @@ export default function AuthLayout({
           ease: "none",
         });
       }
-
-      /* ------------------------------------------------------------------ */
-      /* Background orbs                                                     */
-      /* ------------------------------------------------------------------ */
 
       if (orb1Ref.current) {
         gsap.to(orb1Ref.current, {
@@ -198,31 +186,13 @@ export default function AuthLayout({
         });
       }
 
-      /* ------------------------------------------------------------------ */
-      /* Auth card entrance                                                  */
-      /* ------------------------------------------------------------------ */
-
       if (cardRef.current) {
         gsap.fromTo(
           cardRef.current,
-          {
-            opacity: 0,
-            y: 14,
-            scale: 0.985,
-          },
-          {
-            opacity: 1,
-            y: 0,
-            scale: 1,
-            duration: 0.65,
-            ease: "power3.out",
-          }
+          { opacity: 0, y: 14, scale: 0.985 },
+          { opacity: 1, y: 0, scale: 1, duration: 0.65, ease: "power3.out" }
         );
       }
-
-      /* ------------------------------------------------------------------ */
-      /* Card cursor-follow glow (desktop pointer only)                      */
-      /* ------------------------------------------------------------------ */
 
       if (cardRef.current && cardGlowRef.current) {
         const card = cardRef.current;
@@ -268,10 +238,7 @@ export default function AuthLayout({
     if (rightPanelRef.current) {
       gsap.fromTo(
         rightPanelRef.current.children,
-        {
-          opacity: 0,
-          x: 18,
-        },
+        { opacity: 0, x: 18 },
         {
           opacity: 1,
           x: 0,
@@ -310,7 +277,7 @@ export default function AuthLayout({
       <main
         className="
           no-scrollbar relative flex min-h-0 w-full
-          flex-col overflow-y-auto
+          flex-col overflow-y-auto overscroll-contain
           lg:w-1/2
         "
       >
@@ -367,20 +334,20 @@ export default function AuthLayout({
         <div
           className="
             relative z-10
-            flex min-h-full flex-1
+            flex flex-1
             items-center justify-center
-            px-5 py-8
+            px-5 py-6
             sm:px-8
-            lg:px-12
-            xl:px-16
+            lg:px-10
+            xl:px-14
           "
         >
           <div className="w-full max-w-[470px]">
             {/* HEADER */}
-            <div className="mb-7">
+            <div className="mb-6">
               <div
                 className="
-                  mb-4 flex items-center gap-2
+                  mb-3 flex items-center gap-2
                   font-mono text-[11px]
                   text-[var(--text-muted)]
                 "
@@ -391,10 +358,7 @@ export default function AuthLayout({
 
                 <span
                   ref={cursorRef}
-                  className="
-                    ml-0.5 inline-block h-3 w-[2px]
-                    bg-[var(--accent)]
-                  "
+                  className="ml-0.5 inline-block h-3 w-[2px] bg-[var(--accent)]"
                 />
               </div>
 
@@ -454,7 +418,7 @@ export default function AuthLayout({
                 <span className="absolute bottom-0 right-0 h-5 w-5 rounded-br-xl border-b border-r border-[var(--accent)]" />
               </div>
 
-              <div className="relative z-10 p-6 sm:p-7">
+              <div className="relative z-10 p-5 sm:p-7">
                 {/* ERROR */}
                 {error && (
                   <div
@@ -478,7 +442,11 @@ export default function AuthLayout({
                         text-[var(--color-danger)]
                       "
                     >
-                      <AlertCircle size={12} strokeWidth={2.4} aria-hidden="true" />
+                      <AlertCircle
+                        size={12}
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                      />
                     </div>
 
                     <div className="min-w-0">
@@ -624,7 +592,7 @@ export default function AuthLayout({
             </div>
 
             {/* SECURITY FOOTNOTE */}
-            <div className="mt-5 flex flex-col items-center gap-3">
+            <div className="mt-4 flex flex-col items-center gap-2.5">
               <div
                 className="
                   flex items-center gap-2
@@ -680,7 +648,7 @@ export default function AuthLayout({
           border-l border-[var(--border-light)]
           bg-[var(--bg-secondary)]
           lg:flex
-          lg:items-center
+          lg:items-stretch
           lg:justify-center
         "
       >
@@ -725,9 +693,8 @@ export default function AuthLayout({
         <div
           ref={rightPanelRef}
           className="
-            relative z-10
-            w-full max-w-[500px]
-            px-10 py-12
+            relative z-10 flex min-h-full w-full max-w-[500px]
+            flex-col px-10 py-8
             xl:px-14
           "
         >
@@ -736,7 +703,7 @@ export default function AuthLayout({
             to="/"
             aria-label="CodeVerity home"
             className="
-              inline-flex rounded
+              inline-flex self-start rounded
               transition-opacity
               hover:opacity-80
               focus-visible:outline-none
@@ -748,7 +715,7 @@ export default function AuthLayout({
           </Link>
 
           {/* HERO */}
-          <div className="mt-16">
+          <div className="mt-12">
             <div
               className="
                 mb-5 inline-flex items-center gap-2
@@ -802,7 +769,7 @@ export default function AuthLayout({
           </div>
 
           {/* FEATURES */}
-          <div className="mt-12 space-y-7">
+          <div className="mt-10 space-y-6">
             <FeatureRow
               icon={<Bug size={16} strokeWidth={1.75} aria-hidden="true" />}
               title="AI-powered analysis"
@@ -822,8 +789,8 @@ export default function AuthLayout({
             />
           </div>
 
-          {/* SYSTEM STATUS */}
-          <div className="mt-14">
+          {/* SYSTEM STATUS — hidden below 860px viewport height */}
+          <div className="mt-10 hidden [@media(min-height:860px)]:block">
             <div
               className="
                 flex items-center justify-between
@@ -851,12 +818,7 @@ export default function AuthLayout({
                 </span>
               </div>
 
-              <span
-                className="
-                  font-mono text-[9px]
-                  text-[var(--text-muted)]
-                "
-              >
+              <span className="font-mono text-[9px] text-[var(--text-muted)]">
                 v1.0
               </span>
             </div>
@@ -868,10 +830,10 @@ export default function AuthLayout({
             </div>
           </div>
 
-          {/* COPYRIGHT */}
+          {/* COPYRIGHT — pushed to bottom by mt-auto */}
           <div
             className="
-              mt-8 flex items-center justify-between
+              mt-auto flex items-center justify-between pt-8
               font-mono text-[9px]
               text-[var(--text-muted)]
             "

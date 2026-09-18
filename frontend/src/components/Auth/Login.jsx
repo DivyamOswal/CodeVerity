@@ -1,7 +1,8 @@
-// frontend/src/components/Auth/Login.jsx
+// src/components/Auth/Login.jsx
 
 import { useState } from "react";
 import { useNavigate, NavLink } from "react-router-dom";
+import { Mail, Lock, Eye, EyeOff, ArrowRight, Circle } from "lucide-react";
 import axios from "../../api/axios";
 import { useAuth } from "../../App";
 import AuthLayout from "./AuthLayout";
@@ -10,115 +11,20 @@ import { useToast } from "../../hooks/useToast";
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 /* -------------------------------------------------------------------------- */
-/* ICONS                                                                      */
-/* -------------------------------------------------------------------------- */
-
-function MailIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="2" y="4" width="20" height="16" rx="2.5" />
-      <path d="m3 6.5 9 6 9-6" />
-    </svg>
-  );
-}
-
-function LockIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <rect x="4" y="10.5" width="16" height="10" rx="2" />
-      <path d="M7.5 10.5V7a4.5 4.5 0 0 1 9 0v3.5" />
-    </svg>
-  );
-}
-
-function EyeIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z" />
-      <circle cx="12" cy="12" r="2.5" />
-    </svg>
-  );
-}
-
-function EyeOffIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="m3 3 18 18" />
-      <path d="M10.6 6.2A10.8 10.8 0 0 1 12 6c6 0 9.5 6 9.5 6a16.7 16.7 0 0 1-3.1 3.8" />
-      <path d="M6.2 6.9C3.8 8.7 2.5 12 2.5 12s3.5 6 9.5 6c1.3 0 2.5-.3 3.6-.8" />
-      <path d="M9.9 9.9a2.5 2.5 0 0 0 3.5 3.5" />
-    </svg>
-  );
-}
-
-function ArrowIcon({ className }) {
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      aria-hidden="true"
-    >
-      <path d="M5 12h14" />
-      <path d="m13 6 6 6-6 6" />
-    </svg>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
 /* LOGIN                                                                      */
 /* -------------------------------------------------------------------------- */
 
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const { success, error } = useToast();
+  const { success, error: toastError } = useToast();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
 
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [formError, setFormError] = useState("");
 
   const [touched, setTouched] = useState({
     email: false,
@@ -142,18 +48,23 @@ export default function Login() {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    setFormError("");
     setTouched({
       email: true,
       password: true,
     });
 
     if (!email.trim() || !password) {
-      error("Please enter your email and password.");
+      const msg = "Please enter your email and password.";
+      setFormError(msg);
+      toastError(msg);
       return;
     }
 
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      error("Please enter a valid email address.");
+      const msg = "Please enter a valid email address.";
+      setFormError(msg);
+      toastError(msg);
       return;
     }
 
@@ -168,15 +79,12 @@ export default function Login() {
       const token = res.data?.token ?? res.data?.accessToken;
 
       if (!token) {
-        console.error(
-          "Login response had no token field:",
-          res.data
-        );
+        console.error("Login response had no token field:", res.data);
 
-        error(
-          "Login succeeded but no token was returned. Check the API response."
-        );
-
+        const msg =
+          "Login succeeded but no token was returned. Check the API response.";
+        setFormError(msg);
+        toastError(msg);
         return;
       }
 
@@ -190,10 +98,12 @@ export default function Login() {
     } catch (err) {
       console.error("Login request failed:", err);
 
-      error(
+      const msg =
         err.response?.data?.error ??
-          "Login failed. Please check your credentials and try again."
-      );
+        "Login failed. Please check your credentials and try again.";
+
+      setFormError(msg);
+      toastError(msg);
     } finally {
       setLoading(false);
     }
@@ -213,27 +123,28 @@ export default function Login() {
   /* STYLES                                                                   */
   /* ------------------------------------------------------------------------ */
 
- const inputBase = `
-  w-full
-  border-0
-  bg-transparent
-  py-3
-  pl-11
-  pr-11
-  text-sm
-  text-[var(--text-primary)]
-  placeholder:text-[var(--text-muted)]
-  transition-all
-  duration-200
-  focus:outline-none
-  focus-visible:outline-none
-  focus:ring-0
-`;
+  const inputBase = `
+    w-full
+    border-0
+    bg-transparent
+    py-3
+    pl-11
+    pr-11
+    text-sm
+    text-[var(--text-primary)]
+    placeholder:text-[var(--text-muted)]
+    transition-all
+    duration-200
+    focus:outline-none
+    focus-visible:outline-none
+    focus:ring-0
+  `;
 
   return (
     <AuthLayout
       title="Sign in to verify your repos"
       terminalText="awaiting credentials"
+      error={formError}
       onOAuth={handleOAuth}
       footer={{
         question: "Don't have an account?",
@@ -241,15 +152,9 @@ export default function Login() {
         linkTo: "/register",
       }}
     >
-      <form
-        onSubmit={handleSubmit}
-        noValidate
-        className="space-y-5"
-      >
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
         {/* ================================================================== */}
-        {/* CREDENTIALS GROUP — email + password grouped into one bordered
-             fieldset with a hairline divider, so they read as a single
-             cohesive "credentials" block rather than two loose fields. */}
+        {/* CREDENTIALS GROUP                                                  */}
         {/* ================================================================== */}
 
         <div
@@ -266,14 +171,15 @@ export default function Login() {
             </label>
 
             <div className="group relative">
-              <MailIcon
+              <Mail
+                size={17}
+                strokeWidth={1.8}
+                aria-hidden="true"
                 className={`
                   pointer-events-none
                   absolute
                   left-3.5
                   top-1/2
-                  h-[17px]
-                  w-[17px]
                   -translate-y-1/2
                   transition-colors
                   duration-200
@@ -290,7 +196,10 @@ export default function Login() {
                 name="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (formError) setFormError("");
+                }}
                 onBlur={() =>
                   setTouched((prev) => ({
                     ...prev,
@@ -301,11 +210,10 @@ export default function Login() {
                 autoComplete="email"
                 autoCapitalize="none"
                 spellCheck="false"
+                enterKeyHint="next"
                 disabled={loading}
                 aria-invalid={emailInvalid}
-                aria-describedby={
-                  emailInvalid ? "email-error" : undefined
-                }
+                aria-describedby={emailInvalid ? "email-error" : undefined}
                 className={inputBase}
               />
             </div>
@@ -326,21 +234,22 @@ export default function Login() {
               <NavLink
                 to="/forgot-password"
                 tabIndex={loading ? -1 : 0}
-                className="text-[10px] text-[var(--text-muted)] transition-colors duration-200 hover:text-[var(--accent)]"
+                className="rounded text-[10px] text-[var(--text-muted)] transition-colors duration-200 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-1 focus-visible:ring-offset-[var(--bg-card)]"
               >
                 Forgot password?
               </NavLink>
             </div>
 
             <div className="group relative">
-              <LockIcon
+              <Lock
+                size={17}
+                strokeWidth={1.8}
+                aria-hidden="true"
                 className={`
                   pointer-events-none
                   absolute
                   left-3.5
                   top-1/2
-                  h-[17px]
-                  w-[17px]
                   -translate-y-1/2
                   transition-colors
                   duration-200
@@ -357,7 +266,10 @@ export default function Login() {
                 name="password"
                 type={showPassword ? "text" : "password"}
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={(e) => {
+                  setPassword(e.target.value);
+                  if (formError) setFormError("");
+                }}
                 onBlur={() =>
                   setTouched((prev) => ({
                     ...prev,
@@ -366,11 +278,10 @@ export default function Login() {
                 }
                 placeholder="Enter your password"
                 autoComplete="current-password"
+                enterKeyHint="go"
                 disabled={loading}
                 aria-invalid={passwordInvalid}
-                aria-describedby={
-                  passwordInvalid ? "password-error" : undefined
-                }
+                aria-describedby={passwordInvalid ? "password-error" : undefined}
                 className={inputBase}
               />
 
@@ -378,11 +289,7 @@ export default function Login() {
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
                 disabled={loading}
-                aria-label={
-                  showPassword
-                    ? "Hide password"
-                    : "Show password"
-                }
+                aria-label={showPassword ? "Hide password" : "Show password"}
                 className="
                   absolute
                   right-2
@@ -399,15 +306,15 @@ export default function Login() {
                   duration-200
                   hover:bg-[var(--bg-secondary)]
                   hover:text-[var(--text-primary)]
-                  focus:outline-none
-                  focus:ring-2
-                  focus:ring-[var(--accent)]/30
+                  focus-visible:outline-none
+                  focus-visible:ring-2
+                  focus-visible:ring-[var(--accent)]/50
                 "
               >
                 {showPassword ? (
-                  <EyeOffIcon className="h-4 w-4" />
+                  <EyeOff size={16} strokeWidth={1.8} aria-hidden="true" />
                 ) : (
-                  <EyeIcon className="h-4 w-4" />
+                  <Eye size={16} strokeWidth={1.8} aria-hidden="true" />
                 )}
               </button>
             </div>
@@ -424,7 +331,12 @@ export default function Login() {
                 id="email-error"
                 className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
               >
-                <span>•</span>
+                <Circle
+                  size={4}
+                  fill="currentColor"
+                  strokeWidth={0}
+                  aria-hidden="true"
+                />
                 Enter a valid email address.
               </p>
             )}
@@ -433,7 +345,12 @@ export default function Login() {
                 id="password-error"
                 className="flex items-center gap-1.5 text-[10px] text-[var(--color-danger)]"
               >
-                <span>•</span>
+                <Circle
+                  size={4}
+                  fill="currentColor"
+                  strokeWidth={0}
+                  aria-hidden="true"
+                />
                 Password is required.
               </p>
             )}
@@ -462,7 +379,7 @@ export default function Login() {
             shadow-[0_8px_30px_color-mix(in_srgb,var(--accent)_14%,transparent)]
             transition-all
             duration-300
-            hover:-translate-y-[1px]
+            hover:-translate-y-0.5
             hover:bg-[var(--accent-hover)]
             hover:shadow-[0_12px_35px_color-mix(in_srgb,var(--accent)_20%,transparent)]
             active:translate-y-0
@@ -470,16 +387,15 @@ export default function Login() {
             disabled:translate-y-0
             disabled:opacity-50
             disabled:shadow-none
-            focus:outline-none
-            focus:ring-2
-            focus:ring-[var(--accent)]/40
-            focus:ring-offset-2
-            focus:ring-offset-[var(--bg-card)]
+            focus-visible:outline-none
+            focus-visible:ring-2
+            focus-visible:ring-[var(--accent)]/50
+            focus-visible:ring-offset-2
+            focus-visible:ring-offset-[var(--bg-card)]
           "
           style={{ animationDelay: "180ms" }}
         >
-          {/* Shine */}
-
+          {/* Shine sweep on hover */}
           <span
             aria-hidden="true"
             className="
@@ -511,23 +427,16 @@ export default function Login() {
                     border-t-[var(--accent-contrast)]
                   "
                 />
-
-                <span className="font-mono text-[11px]">
-                  verifying…
-                </span>
+                <span className="font-mono text-[11px]">verifying…</span>
               </>
             ) : (
               <>
                 <span>Sign in</span>
-
-                <ArrowIcon
-                  className="
-                    h-4
-                    w-4
-                    transition-transform
-                    duration-200
-                    group-hover:translate-x-0.5
-                  "
+                <ArrowRight
+                  size={16}
+                  strokeWidth={2}
+                  aria-hidden="true"
+                  className="transition-transform duration-200 group-hover:translate-x-0.5"
                 />
               </>
             )}

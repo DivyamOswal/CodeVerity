@@ -457,6 +457,19 @@ html {
   -webkit-text-size-adjust: 100%;
 }
 
+/* =====================================================
+   AUTH SHELL — locks page scroll while auth pages are
+   mounted. Toggled by AuthLayout via `html.auth-no-scroll`.
+   Removes the page-level scrollbar on /login and /register
+   without affecting any other route.
+======================================================== */
+html.auth-no-scroll,
+html.auth-no-scroll body {
+  overflow: hidden;
+  height: 100dvh;
+  overscroll-behavior: none;
+}
+
 body {
   margin: 0;
   font-family: var(--font-sans);
