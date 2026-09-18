@@ -9,6 +9,23 @@ import {
 import axios from "../api/axios";
 import { useToast } from "../hooks/useToast";
 
+// Display-only split of the Stripe price. This does NOT change what
+// Stripe charges — the Stripe Price is the final amount. It exists
+// to show the customer how the total breaks down. The two numbers
+// must sum exactly to `total`, or the page is lying.
+//
+// Uses inclusive-tax math: base = total / 1.18, tax = total - base.
+const TAX_RATE = 0.18;
+
+function splitTaxInclusive(total, currency) {
+  if (currency !== "INR" || !total) {
+    return { base: total, tax: 0, total, hasTax: false };
+  }
+  const base = Math.round((total / (1 + TAX_RATE)) * 100) / 100;
+  const tax = Math.round((total - base) * 100) / 100;
+  return { base, tax, total, hasTax: true };
+}
+
 // ─── Icons ──────────────────────────────────────────────────────
 function ArrowLeftIcon() {
   return (
@@ -128,12 +145,10 @@ export default function Checkout() {
     () => PRICING_PLANS.find((p) => p.id === planId) ?? PRICING_PLANS[1],
     [planId],
   );
-  const price = plan[cycle][currency];
 
-  // Note: Stripe Checkout is configured without automatic tax, so the
-  // amount shown here must match the Stripe Price exactly. No local
-  // tax math is applied — the Price amount is the total.
-  const total = price;
+  // `total` is what Stripe charges. The split below is display-only.
+  const total = plan[cycle][currency];
+  const { base, tax, hasTax } = splitTaxInclusive(total, currency);
 
   const [loading, setLoading] = useState(false);
 
@@ -155,14 +170,15 @@ export default function Checkout() {
   };
 
   const isMonthly = cycle === "monthly";
-  const priceDisplay = formatPrice(price, currency);
+  const priceDisplay = formatPrice(base, currency);
+  const taxDisplay = formatPrice(tax, currency);
   const totalDisplay = formatPrice(total, currency);
 
   // Effective per-month rate on yearly billing — display-only math
-  // from the existing price, so the saving is visible at the moment
-  // of purchase rather than only on the pricing page.
+  // from the base price, so the saving is visible at the moment of
+  // purchase rather than only on the pricing page.
   const perMonthDisplay = !isMonthly
-    ? formatPrice(Math.round(price / 12), currency)
+    ? formatPrice(Math.round(base / 12), currency)
     : null;
 
   return (
@@ -298,7 +314,7 @@ export default function Checkout() {
             </div>
 
             <div className="space-y-4 p-4 sm:p-6">
-              {/* Line item */}
+              {/* Line items */}
               <div className="space-y-2.5 text-[13px]">
                 <div className="flex items-center justify-between gap-3">
                   <div className="min-w-0">
@@ -314,6 +330,15 @@ export default function Checkout() {
                     {priceDisplay}
                   </span>
                 </div>
+
+                {hasTax && (
+                  <div className="flex items-center justify-between gap-3">
+                    <p className="text-[var(--text-secondary)]">Tax (18%)</p>
+                    <span className="shrink-0 font-mono tabular-nums text-emerald-400">
+                      {taxDisplay}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* Total */}

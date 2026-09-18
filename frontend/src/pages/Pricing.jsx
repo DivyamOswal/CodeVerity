@@ -214,9 +214,9 @@ function PlanCard({ plan, cycle, currency, onSelect }) {
         )}
       </div>
 
-      {!isFree && (
+            {!isFree && currency === "INR" && (
         <p className="mt-1 text-[11px] text-[var(--text-muted)]">
-          incl. 18% GST
+          + 18% GST at checkout
         </p>
       )}
 

@@ -249,13 +249,17 @@ function CodeVerityLogo() {
 }
 
 // ============================================================
-//  COMPONENT: Feature (unchanged)
+//  COMPONENT: Feature enhanced with a subtle hover-glow icon
+//  chip and a bottom accent line that grows in on hover, instead
+//  of a flat top border. Same props/API as before.
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   return (
-    <div className="group relative border-t border-[var(--border-light)] pt-5 transition-colors duration-200 hover:border-[var(--accent)]/50">
+    <div className="feature-row group relative border-t border-[var(--border-light)] pt-5 transition-colors duration-300 hover:border-[var(--accent)]/50">
       <div className="flex items-center justify-between">
-        <span className="text-[var(--accent)]">{icon}</span>
+        <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-all duration-300 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] group-hover:shadow-[0_0_20px_-4px_var(--accent-soft-strong)]">
+          {icon}
+        </span>
         <span className="font-mono text-[10px] text-[var(--text-muted)]">
           {String(index + 1).padStart(2, "0")}
         </span>
@@ -266,6 +270,7 @@ function Feature({ icon, title, desc, index }) {
       <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">
         {desc}
       </p>
+      <span className="feature-underline pointer-events-none absolute -top-px left-0 h-px w-0 bg-[var(--accent)] transition-all duration-500 group-hover:w-full" />
     </div>
   );
 }
@@ -276,8 +281,8 @@ function Feature({ icon, title, desc, index }) {
 function BugIcon() {
   return (
     <svg
-      width="22"
-      height="22"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -297,8 +302,8 @@ function BugIcon() {
 function ShieldIcon() {
   return (
     <svg
-      width="22"
-      height="22"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -314,8 +319,8 @@ function ShieldIcon() {
 function FlaskIcon() {
   return (
     <svg
-      width="22"
-      height="22"
+      width="20"
+      height="20"
       viewBox="0 0 24 24"
       fill="none"
       stroke="currentColor"
@@ -330,7 +335,7 @@ function FlaskIcon() {
 }
 
 // ============================================================
-//  COMPONENT: StatPill (unchanged)
+//  COMPONENT: StatPill (unchanged logic, added glow ring pulse)
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -407,7 +412,7 @@ function ScanLine() {
 // ============================================================
 function TechBadge({ label }) {
   return (
-    <span className="flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
+    <span className="flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)] transition-colors duration-200 hover:border-[var(--accent)]/40 hover:text-[var(--accent)]">
       <span
         className="h-1.5 w-1.5 rounded-full bg-[var(--accent-soft)]"
         style={{ boxShadow: "0 0 0 1px var(--accent)" }}
@@ -434,17 +439,9 @@ function TechStrip() {
 }
 
 // ============================================================
-//  COMPONENT: CodeIntelligenceOrb replaces the old code-editor
-//  mockup with a real Three.js scene: a rotating wireframe
-//  icosahedron with a glowing solid core, orbited by a particle
-//  ring. Colors are read from --accent / --accent-secondary so the
-//  scene follows the active theme without any hardcoded hex.
-//  Mouse movement over the wrapper subtly steers the rotation
-//  (true 3D via Three.js, not a CSS transform), and the whole
-//  scene idles with a slow auto-rotation when the cursor isn't
-//  present. Three result badges float around it as HTML overlays,
-//  same as the previous version, for continuity with the app's
-//  "show a real audit" framing.
+//  COMPONENT: CodeIntelligenceOrb (unchanged logic — Three.js scene,
+//  mouse-follow rotation, badge refs — only badge markup polished
+//  with a live-pulse dot + tighter shadow language)
 // ============================================================
 function CodeIntelligenceOrb({ badgeRefs }) {
   const mountRef = useRef(null);
@@ -475,8 +472,6 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
-    // Ambient + core point light (colored, gives the inner shape
-    // its glow without needing post-processing bloom).
     scene.add(new THREE.AmbientLight(0xffffff, 0.35));
     const coreLight = new THREE.PointLight(accentColor, 3.2, 8);
     coreLight.position.set(0, 0, 0);
@@ -485,7 +480,6 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const group = new THREE.Group();
     scene.add(group);
 
-    // Outer wireframe shell
     const shellGeo = new THREE.IcosahedronGeometry(1.7, 1);
     const shellEdges = new THREE.EdgesGeometry(shellGeo);
     const shellMat = new THREE.LineBasicMaterial({
@@ -496,7 +490,6 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const shell = new THREE.LineSegments(shellEdges, shellMat);
     group.add(shell);
 
-    // Inner glowing core
     const coreGeo = new THREE.IcosahedronGeometry(0.85, 1);
     const coreMat = new THREE.MeshStandardMaterial({
       color: accentColor,
@@ -510,7 +503,6 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const core = new THREE.Mesh(coreGeo, coreMat);
     group.add(core);
 
-    // Orbiting particle ring
     const particleCount = 140;
     const positions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
@@ -611,9 +603,16 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       className="relative mx-auto w-full max-w-md"
       style={{ transformStyle: "preserve-3d" }}
     >
+      {/* Soft halo behind the whole orb column — reads as ambient
+          glow rather than a static disc */}
+      <div
+        aria-hidden="true"
+        className="orb-halo pointer-events-none absolute left-1/2 top-1/2 -z-10 h-[380px] w-[380px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)] opacity-[0.08] blur-[80px]"
+      />
+
       <div
         ref={(el) => (badgeRefs.current[0] = el)}
-        className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+        className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-sm"
       >
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
           <svg
@@ -646,7 +645,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
       <div
         ref={(el) => (badgeRefs.current[1] = el)}
-        className="absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
+        className="absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-sm"
       >
         <div className="relative h-9 w-9 shrink-0">
           <svg viewBox="0 0 36 36" className="-rotate-90">
@@ -681,7 +680,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
       <div
         ref={(el) => (badgeRefs.current[2] = el)}
-        className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
+        className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg backdrop-blur-sm sm:flex"
       >
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
         <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">
@@ -697,7 +696,12 @@ function CodeIntelligenceOrb({ badgeRefs }) {
   );
 }
 
-
+// ============================================================
+//  COMPONENT: ScrollFeatureCards fixed dead-scroll gap (shorter
+//  pin distance + earlier card entrance) and added an always-on
+//  ambient radar-sweep + drifting orb layer so no part of the
+//  pinned sequence ever reads as blank/dead space.
+// ============================================================
 function ScrollFeatureCards() {
   const sectionRef = useRef(null);
   const cardsRef = useRef([]);
@@ -742,7 +746,6 @@ function ScrollFeatureCards() {
       const cardElements = cardsRef.current.filter(Boolean);
       if (!section || !cardElements.length) return;
 
-      // Scoped lookups
       const headerBadge = section.querySelector(".scroll-header-badge");
       const titleLines = gsap.utils.toArray(".scroll-header-line", section);
       const headerCopy = section.querySelector(".scroll-header-copy");
@@ -782,8 +785,6 @@ function ScrollFeatureCards() {
       }
 
       // ---------- MOBILE (<768px): lightweight, non-pinned scroll reveal ----------
-      // No pin/scrub/3D here — each piece just fades + rises in the moment
-      // it crosses into view, which stays smooth on phones.
       if (window.innerWidth < 768) {
         gsap.set(cardElements, { clearProps: "transform" });
 
@@ -798,7 +799,6 @@ function ScrollFeatureCards() {
           }
         });
 
-        // Header: badge → title lines → copy, once, as the section arrives
         ScrollTrigger.create({
           trigger: section,
           start: "top 80%",
@@ -817,7 +817,6 @@ function ScrollFeatureCards() {
           once: true,
         });
 
-        // Each card fades/rises in independently, content following it
         cardElements.forEach((card, i) => {
           const content = cardContents[i];
           ScrollTrigger.create({
@@ -838,7 +837,6 @@ function ScrollFeatureCards() {
           });
         });
 
-        // Gentle, non-scrubbed glow drift so mobile isn't fully static
         const glowTweens = glows.map((glow, i) =>
           gsap.to(glow, {
             x: i % 2 === 0 ? 16 : -16,
@@ -873,8 +871,7 @@ function ScrollFeatureCards() {
         };
       }
 
-      // ---------- Desktop / tablet (>=768px): existing pinned 3D sequence ----------
-      // (unchanged)
+      // ---------- Desktop / tablet (>=768px): pinned 3D sequence ----------
       gsap.set(cardElements, {
         transformPerspective: 1600,
         transformOrigin: "center center",
@@ -903,12 +900,15 @@ function ScrollFeatureCards() {
       if (headerCopy) gsap.set(headerCopy, { y: 20, opacity: 0 });
       if (scrollHint) gsap.set(scrollHint, { y: 12, opacity: 0 });
 
+      // NOTE: pinned scroll distance shortened (2000 → 1400) and the
+      // card fly-in moved earlier (0.75 → 0.4) so it overlaps the tail
+      // of the header animation instead of leaving a blank scroll gap.
       const tl = gsap.timeline({
         defaults: { ease: "power3.out" },
         scrollTrigger: {
           trigger: section,
           start: "top top",
-          end: "+=2000",
+          end: "+=1400",
           scrub: 1,
           pin: true,
           anticipatePin: 1,
@@ -923,13 +923,13 @@ function ScrollFeatureCards() {
       if (titleLines.length) {
         tl.to(
           titleLines,
-          { y: 0, opacity: 1, duration: 0.6, stagger: 0.12 },
-          0.1
+          { y: 0, opacity: 1, duration: 0.5, stagger: 0.1 },
+          0.08
         );
       }
 
       if (headerCopy) {
-        tl.to(headerCopy, { y: 0, opacity: 1, duration: 0.5 }, 0.35);
+        tl.to(headerCopy, { y: 0, opacity: 1, duration: 0.4 }, 0.28);
       }
 
       tl.to(
@@ -938,22 +938,22 @@ function ScrollFeatureCards() {
           x: 0, y: 0,
           rotationY: 0, rotationX: 0, rotationZ: 0,
           scale: 1, opacity: 1,
-          duration: 1,
+          duration: 0.9,
           ease: "power3.inOut",
-          stagger: 0.1,
+          stagger: 0.08,
         },
-        0.75
+        0.4
       );
 
       tl.to(
         cardContents.flat(),
         {
           y: 0, opacity: 1,
-          duration: 0.55,
+          duration: 0.5,
           ease: "power2.out",
-          stagger: 0.045,
+          stagger: 0.04,
         },
-        "-=0.45"
+        "-=0.4"
       );
 
       tl.to(
@@ -965,15 +965,15 @@ function ScrollFeatureCards() {
           rotationX: 0,
           rotationZ: 0,
           scale: (i) => (i === 1 ? 1.02 : 0.99),
-          duration: 1,
+          duration: 0.8,
           ease: "power3.inOut",
-          stagger: 0.06,
+          stagger: 0.05,
         },
-        "+=0.2"
+        "+=0.15"
       );
 
       if (scrollHint) {
-        tl.to(scrollHint, { y: 0, opacity: 1, duration: 0.5 }, "-=0.4");
+        tl.to(scrollHint, { y: 0, opacity: 1, duration: 0.4 }, "-=0.3");
       }
 
       const glowTweens = glows.map((glow, i) =>
@@ -1003,7 +1003,31 @@ function ScrollFeatureCards() {
       ref={sectionRef}
       className="relative z-10 flex min-h-[100svh] items-center overflow-hidden border-y border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-12 sm:px-6"
     >
-      <div className="mx-auto w-full max-w-7xl">
+      {/* Always-on ambient layer, CSS-driven (not scroll-tied) so the
+          pinned section never shows blank/dead space mid-scroll */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
+      >
+        <div className="scroll-radar-sweep absolute left-1/2 top-1/2 h-[900px] w-[900px] -translate-x-1/2 -translate-y-1/2 rounded-full opacity-[0.05]" />
+        <div className="scroll-orb-a absolute left-[15%] top-[20%] h-56 w-56 rounded-full bg-[var(--accent)] opacity-[0.06] blur-3xl" />
+        <div className="scroll-orb-b absolute right-[12%] bottom-[15%] h-72 w-72 rounded-full bg-[var(--accent-secondary,var(--accent))] opacity-[0.05] blur-3xl" />
+        <div
+          className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage:
+              "radial-gradient(var(--accent) 1px, transparent 1px)",
+            backgroundSize: "26px 26px",
+          }}
+        />
+      </div>
+
+      <span className="pointer-events-none absolute left-4 top-4 z-10 h-4 w-4 border-l-2 border-t-2 border-[var(--accent)]/40 sm:left-6 sm:top-6" />
+      <span className="pointer-events-none absolute right-4 top-4 z-10 h-4 w-4 border-r-2 border-t-2 border-[var(--accent)]/40 sm:right-6 sm:top-6" />
+      <span className="pointer-events-none absolute bottom-4 left-4 z-10 h-4 w-4 border-b-2 border-l-2 border-[var(--accent)]/40 sm:bottom-6 sm:left-6" />
+      <span className="pointer-events-none absolute bottom-4 right-4 z-10 h-4 w-4 border-b-2 border-r-2 border-[var(--accent)]/40 sm:bottom-6 sm:right-6" />
+
+      <div className="relative z-10 mx-auto w-full max-w-7xl">
         {/* Section Header */}
         <div className="mx-auto mb-14 max-w-2xl text-center">
           <span className="scroll-header-badge mb-5 inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--accent)]/[0.06] px-3 py-1 font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--accent)]">
@@ -1077,6 +1101,7 @@ function ScrollFeatureCards() {
           ))}
         </div>
 
+        {/* Scroll indicator */}
         <div className="scroll-hint mt-12 flex flex-col items-center gap-2">
           <span className="font-mono text-[9px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
             Scroll to explore
@@ -1089,7 +1114,8 @@ function ScrollFeatureCards() {
 }
 
 // ============================================================
-//  SECTION: How It Works (unchanged)
+//  SECTION: How It Works enhanced with icon glow chips and a
+//  connecting line between steps for a more "pipeline" feel
 // ============================================================
 function HowItWorks() {
   const steps = [
@@ -1147,26 +1173,37 @@ function HowItWorks() {
   ];
 
   return (
-    <section className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
+    <section className="relative border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-            How it works
-          </h2>
+          <div>
+            <span className="mb-2 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--accent)]">
+              <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
+              Process
+            </span>
+            <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+              How it works
+            </h2>
+          </div>
           <p className="text-sm text-[var(--text-secondary)]">
             Repository in, report out three steps.
           </p>
         </div>
-        <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
+        <div className="relative grid grid-cols-1 gap-0 sm:grid-cols-3">
+          {/* Connecting line across the row, desktop only */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-0 right-0 top-[18px] hidden h-px bg-gradient-to-r from-transparent via-[var(--border-light)] to-transparent sm:block"
+          />
           {steps.map((step, idx) => (
             <div
               key={idx}
-              className={`relative px-0 py-6 sm:px-6 sm:py-0 ${
+              className={`group relative px-0 py-6 transition-transform duration-300 hover:-translate-y-1 sm:px-6 sm:py-0 ${
                 idx !== 0 ? "sm:border-l sm:border-[var(--border-light)]" : ""
               }`}
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
+                <span className="relative z-10 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-all duration-300 group-hover:bg-[var(--accent)] group-hover:text-[var(--accent-contrast)] group-hover:shadow-[0_0_22px_-4px_var(--accent-soft-strong)]">
                   {step.icon}
                 </span>
                 <span className="font-mono text-xs text-[var(--text-muted)]">
@@ -1188,7 +1225,7 @@ function HowItWorks() {
 }
 
 // ============================================================
-//  SECTION: Testimonials (unchanged)
+//  SECTION: Testimonials polished with hover-lift + accent glow
 // ============================================================
 function Testimonials() {
   const testimonials = [
@@ -1215,6 +1252,10 @@ function Testimonials() {
   return (
     <section className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-5xl">
+        <span className="mb-2 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--accent)]">
+          <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
+          Testimonials
+        </span>
         <h2 className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Trusted by developers already shipping with it
         </h2>
@@ -1222,9 +1263,9 @@ function Testimonials() {
           {testimonials.map((t, i) => (
             <div
               key={i}
-              className="flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 transition-colors duration-200 hover:border-[var(--accent)]/30"
+              className="group flex flex-col rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-6 transition-all duration-300 hover:-translate-y-1 hover:border-[var(--accent)]/30 hover:shadow-[0_18px_40px_-24px_var(--accent-soft-strong)]"
             >
-              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">
+              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)] transition-transform duration-300 group-hover:scale-110">
                 "
               </span>
               <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">
@@ -1256,7 +1297,7 @@ function Testimonials() {
 }
 
 // ============================================================
-//  SECTION: Pricing (unchanged)
+//  SECTION: Pricing (unchanged data/logic, hover-lift added)
 // ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
@@ -1265,6 +1306,10 @@ function Pricing() {
     <section className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-5xl">
         <div className="mb-10 text-center">
+          <span className="mb-2 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--accent)]">
+            <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
+            Pricing
+          </span>
           <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
             Simple, transparent pricing
           </h2>
@@ -1281,9 +1326,9 @@ function Pricing() {
             return (
               <div
                 key={plan.id}
-                className={`relative overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 text-left transition-all duration-200 ${
+                className={`group relative overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 text-left transition-all duration-300 hover:-translate-y-1 ${
                   plan.highlight
-                    ? "border-[var(--accent)]"
+                    ? "border-[var(--accent)] shadow-[0_20px_50px_-28px_var(--accent-soft-strong)]"
                     : "border-[var(--border-light)] hover:border-[var(--accent)]/30"
                 }`}
               >
@@ -1358,7 +1403,7 @@ function Pricing() {
 }
 
 // ============================================================
-//  SECTION: FAQ (unchanged)
+//  SECTION: FAQ (unchanged logic, chevron replaces plus + icon chip)
 // ============================================================
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
@@ -1387,32 +1432,48 @@ function FAQ() {
   return (
     <section className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-3xl">
-        <h2 className="mb-10 text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-          Frequently asked questions
-        </h2>
+        <div className="mb-10 text-center">
+          <span className="mb-2 inline-flex items-center gap-1.5 font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--accent)]">
+            <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
+            FAQ
+          </span>
+          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+            Frequently asked questions
+          </h2>
+        </div>
         <div className="divide-y divide-[var(--border-light)] rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           {faqs.map((faq, idx) => (
             <div key={idx}>
               <button
                 onClick={() => toggle(idx)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50"
+                className="flex w-full items-center justify-between gap-4 px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50"
               >
                 <span className="text-sm font-medium text-[var(--text-primary)]">
                   {faq.q}
                 </span>
                 <span
-                  className={`ml-4 shrink-0 font-mono text-lg text-[var(--accent)] transition-transform duration-200 ${
-                    openIndex === idx ? "rotate-45" : ""
+                  className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full border font-mono text-sm transition-all duration-300 ${
+                    openIndex === idx
+                      ? "rotate-45 border-[var(--accent)] bg-[var(--accent)] text-[var(--accent-contrast)]"
+                      : "border-[var(--border-light)] text-[var(--accent)]"
                   }`}
                 >
                   +
                 </span>
               </button>
-              {openIndex === idx && (
-                <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
-                  {faq.a}
+              <div
+                className={`grid transition-all duration-300 ease-out ${
+                  openIndex === idx
+                    ? "grid-rows-[1fr] opacity-100"
+                    : "grid-rows-[0fr] opacity-0"
+                }`}
+              >
+                <div className="overflow-hidden">
+                  <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
+                    {faq.a}
+                  </div>
                 </div>
-              )}
+              </div>
             </div>
           ))}
         </div>
@@ -1427,6 +1488,13 @@ function FAQ() {
 function Footer({ isLoggedIn }) {
   return (
     <footer className="relative overflow-hidden border-t border-[var(--border-light)] bg-[var(--accent)] px-4 pt-16 pb-8 sm:px-6">
+      {/* Subtle top hairline, consistent with the accent-line detail
+          used on the auth card / hero elsewhere */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[var(--accent-contrast)]/40 to-transparent"
+      />
+
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
@@ -1566,8 +1634,8 @@ function Footer({ isLoggedIn }) {
             </h4>
             <ul className="space-y-2">
               <li>
-                <a
-                  href="mailto:support@codeverity.dev"
+                
+                  <a href="mailto:support@codeverity.dev"
                   className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
                 >
                   Contact
@@ -1591,7 +1659,8 @@ function Footer({ isLoggedIn }) {
         </div>
 
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--accent-contrast)]/15 pt-6 sm:flex-row">
-          <p className="text-[10px] text-[var(--accent-contrast)]/60">
+          <p className="flex items-center gap-1.5 text-[10px] text-[var(--accent-contrast)]/60">
+            <span className="h-1 w-1 rounded-full bg-[var(--accent-contrast)]/60" />
             Built with ❤️ for developers everywhere.
           </p>
           <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
@@ -1618,7 +1687,7 @@ function Footer({ isLoggedIn }) {
       </div>
 
       <div className="relative z-10 mt-16 flex select-none flex-col items-center gap-4">
-        <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20">
+        <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20 transition-transform duration-300 hover:scale-105">
           <CodeVerityLogo />
         </div>
         <div
@@ -1643,7 +1712,7 @@ function Footer({ isLoggedIn }) {
 }
 
 // ============================================================
-//  MAIN HOME COMPONENT
+//  MAIN HOME COMPONENT (all logic/state/refs unchanged)
 // ============================================================
 export default function Home() {
   const token = localStorage.getItem("token");
@@ -1702,9 +1771,6 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  // Orb column refs outer wrapper gets a simple scroll-entrance
-  // fade/scale (the 3D rotation itself now lives inside
-  // CodeIntelligenceOrb's own Three.js render loop).
   const orbWrapperRef = useRef(null);
   const orbBadgeRefs = useRef([]);
 
@@ -1815,7 +1881,6 @@ export default function Home() {
             "-=0.2",
           );
 
-        // Orb column fades in alongside the hero text, slightly after
         if (orbWrapperRef.current) {
           gsap.fromTo(
             orbWrapperRef.current,
@@ -1953,8 +2018,7 @@ export default function Home() {
           });
         }
 
-        // --- ORB BADGES: fade/scale in with a stagger once the orb
-        // column enters view, then idle-float independently. ---
+        // --- ORB BADGES ---
         if (orbBadgeRefs.current.length) {
           gsap.set(orbBadgeRefs.current, { opacity: 0, scale: 0.85 });
 
@@ -2053,34 +2117,10 @@ export default function Home() {
     >
       <div
         ref={progressRef}
-        className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]"
+        className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)] shadow-[0_0_10px_var(--accent)]"
         style={{ transform: "scaleX(0)" }}
         aria-hidden="true"
       />
-
-      {/* <div
-        className={`fixed bottom-0 left-0 right-0 z-[55] flex items-center justify-between gap-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]/95 px-4 py-3 backdrop-blur-md transition-all duration-300 sm:px-6 ${
-          showStickyCta ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
-        }`}
-      >
-        <div className="flex items-center gap-2">
-          <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent)] sm:flex">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-contrast)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              <path d="m9 12 2 2 4-4" />
-            </svg>
-          </div>
-          <span className="text-xs font-medium text-[var(--text-primary)] sm:text-sm">
-            Ready to audit your repository?
-          </span>
-        </div>
-        <Link
-          to={token ? "/dashboard" : "/register"}
-          className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]"
-        >
-          {token ? "Open Dashboard" : "Get Started Free"}
-        </Link>
-      </div> */}
 
       <style
         dangerouslySetInnerHTML={{
@@ -2091,6 +2131,7 @@ export default function Home() {
         .stat-card:hover {
           box-shadow: 0 0 30px -5px var(--accent), inset 0 0 15px var(--accent-soft-strong);
           border-color: var(--accent);
+          transform: translateY(-2px);
         }
         .stat-number {
           background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
@@ -2116,7 +2157,14 @@ export default function Home() {
           100% { background-position: 0% 50%; }
         }
 
-        
+        .orb-halo {
+          animation: orb-halo-pulse 5s ease-in-out infinite;
+        }
+        @keyframes orb-halo-pulse {
+          0%, 100% { opacity: 0.06; transform: translate(-50%, -50%) scale(1); }
+          50% { opacity: 0.12; transform: translate(-50%, -50%) scale(1.08); }
+        }
+
         .scroll-feature-card {
           transform-style: preserve-3d;
           backface-visibility: hidden;
@@ -2148,7 +2196,7 @@ export default function Home() {
           background: var(--bg-secondary);
         }
 
-              @media (min-width: 768px) {
+        @media (min-width: 768px) {
           .scroll-feature-card {
             min-height: 0;
           }
@@ -2162,6 +2210,37 @@ export default function Home() {
             will-change: auto;
           }
         }
+
+        /* Ambient radar sweep + orb drift for ScrollFeatureCards
+           purely CSS-driven so it animates continuously regardless
+           of scroll position, keeping the pinned section alive even
+           between scroll-triggered keyframes. */
+        .scroll-radar-sweep {
+          background: conic-gradient(
+            from 0deg,
+            transparent 0deg,
+            var(--accent) 8deg,
+            transparent 40deg,
+            transparent 360deg
+          );
+          animation: scroll-radar-spin 6s linear infinite;
+        }
+        @keyframes scroll-radar-spin {
+          to { transform: translate(-50%, -50%) rotate(360deg); }
+        }
+        .scroll-orb-a {
+          animation: scroll-orb-drift-a 9s ease-in-out infinite;
+        }
+        .scroll-orb-b {
+          animation: scroll-orb-drift-b 11s ease-in-out infinite;
+        }
+        @keyframes scroll-orb-drift-a {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(30px, 20px); }
+        }
+        @keyframes scroll-orb-drift-b {
+          0%, 100% { transform: translate(0, 0); }
+          50% { transform: translate(-25px, -15px); }
         }
 
         @media (prefers-reduced-motion: reduce) {
@@ -2169,9 +2248,14 @@ export default function Home() {
             transform: none !important;
             transition: none !important;
           }
+          .orb-halo,
+          .scroll-radar-sweep,
+          .scroll-orb-a,
+          .scroll-orb-b {
+            animation: none !important;
+          }
         }
-
-              `,
+      `,
         }}
       />
 
@@ -2340,7 +2424,8 @@ export default function Home() {
           </div>
 
           <div ref={featureLabelRef} className="mb-6 text-left">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
+            <p className="flex items-center gap-2 text-sm font-semibold text-[var(--text-primary)]">
+              <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
               What CodeVerity checks
             </p>
           </div>
