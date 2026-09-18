@@ -19,11 +19,7 @@ const ENV_RULES = [
   ["PORT", (v) => /^\d+$/.test(v), false],
 
   // ── Security ────────────────────────────────────────────
-  [
-    "JWT_SECRET",
-    (v) => typeof v === "string" && v.length >= 32,
-    true,
-  ],
+  ["JWT_SECRET", (v) => typeof v === "string" && v.length >= 32, true],
   [
     "ENCRYPTION_KEY",
     (v) => typeof v === "string" && /^[a-f0-9]{64}$/i.test(v),
@@ -31,11 +27,7 @@ const ENV_RULES = [
   ],
 
   // ── Database ────────────────────────────────────────────
-  [
-    "MONGO_URI",
-    (v) => typeof v === "string" && v.startsWith("mongodb"),
-    true,
-  ],
+  ["MONGO_URI", (v) => typeof v === "string" && v.startsWith("mongodb"), true],
 
   // ── Frontend / CORS ─────────────────────────────────────
   [
@@ -67,11 +59,7 @@ const ENV_RULES = [
   ["GROQ_API_KEY", (v) => typeof v === "string" && v.length > 20, true],
 
   // ── Optional (recommended in prod) ─────────────────────
-  [
-    "GITHUB_TOKEN",
-    (v) => typeof v === "string" && v.length > 20,
-    false,
-  ],
+  ["GITHUB_TOKEN", (v) => typeof v === "string" && v.length > 20, false],
   [
     "SENTRY_DSN_BACKEND",
     (v) => typeof v === "string" && v.startsWith("https://"),
@@ -148,7 +136,8 @@ Sentry.init({
   integrations: [nodeProfilingIntegration()],
   tracesSampleRate: 0.2,
   profilesSampleRate: 0.2,
-  enabled: process.env.NODE_ENV === "production" && !!process.env.SENTRY_DSN_BACKEND,
+  enabled:
+    process.env.NODE_ENV === "production" && !!process.env.SENTRY_DSN_BACKEND,
   release: process.env.RENDER_GIT_COMMIT || undefined,
 });
 
@@ -174,6 +163,10 @@ import statsRoutes from "./routes/stats.js";
 import adminRoutes from "./routes/admin.js";
 
 import { startCleanupCron } from "./services/cleanupService.js";
+import {
+  startEmailQueueWorker,
+  stopEmailQueueWorker,
+} from "./services/emailQueue.js";
 
 const app = express();
 
@@ -201,7 +194,7 @@ app.use(
     allowedHeaders: ["Content-Type", "Authorization", "X-Requested-With"],
     exposedHeaders: ["Content-Length"],
     maxAge: 86400,
-  })
+  }),
 );
 
 // ─── Security headers ──────────────────────────────────
@@ -209,7 +202,7 @@ app.use(
   helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" },
     contentSecurityPolicy: false,
-  })
+  }),
 );
 
 // ─── Body parsing (Stripe webhook needs raw body first) ─
@@ -272,7 +265,8 @@ app.get("/health", (req, res) => {
     },
     memory: {
       rss: Math.round(process.memoryUsage().rss / 1024 / 1024) + " MB",
-      heapUsed: Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + " MB",
+      heapUsed:
+        Math.round(process.memoryUsage().heapUsed / 1024 / 1024) + " MB",
     },
   });
 });
@@ -348,6 +342,8 @@ async function start() {
     startCleanupCron();
     console.log("✅ Cleanup cron scheduled");
 
+    startEmailQueueWorker();
+
     httpServer = app.listen(PORT, () => {
       console.log(`✅ Server running on port ${PORT}`);
       console.log(`   Environment: ${process.env.NODE_ENV || "development"}`);
@@ -381,7 +377,16 @@ async function shutdown(signal) {
   forceExit.unref();
 
   try {
-    if (httpServer) {
+        if (httpServer) {
+      await new Promise((resolve, reject) => {
+        httpServer.close((err) => (err ? reject(err) : resolve()));
+      });
+      console.log("✅ HTTP server closed");
+    }
+
+    stopEmailQueueWorker();
+
+    await mongoose.connection.close(false);if (httpServer) {
       await new Promise((resolve, reject) => {
         httpServer.close((err) => (err ? reject(err) : resolve()));
       });

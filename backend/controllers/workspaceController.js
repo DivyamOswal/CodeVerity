@@ -5,7 +5,8 @@ import crypto from "crypto";
 import mongoose from "mongoose";
 import Report from "../models/Report.js";
 import { PERMISSIONS, ROLE_PERMISSIONS } from "../utils/permissions.js";
-import { sendInviteEmail } from "../utils/email.js";
+// import { sendInviteEmail } from "../utils/email.js";
+import { enqueueInviteEmail } from "../utils/email.js";
 
 // ─── Helper: Ensure user has a workspace ──────────────────────
 async function ensureWorkspace(user) {
@@ -1369,19 +1370,29 @@ export const createInvitation = async (req, res) => {
     await workspace.save();
 
     // Send emails (best-effort; invite is already persisted)
+        // Send emails via the queue. Each send is recorded as an EmailJob so
+    // failures are retried automatically. The inline first attempt still
+    // gives immediate feedback for the response payload.
     await Promise.allSettled(
       results
         .filter((r) => r.status === "sent")
         .map(async (r) => {
-          try {
-            await sendInviteEmail(r.email, workspace.name, r.inviteLink, role);
+          const outcome = await enqueueInviteEmail(
+            r.email,
+            workspace.name,
+            r.inviteLink,
+            role,
+            { workspaceId: workspace._id, triggeredBy: user._id },
+          );
+
+          if (outcome.success) {
             console.log(`✅ Invite email sent to ${r.email}`);
-          } catch (emailErr) {
-            console.error(
-              `❌ Failed to send invite email to ${r.email}:`,
-              emailErr.message,
+          } else {
+            console.warn(
+              `⚠️  Invite to ${r.email} failed; queued for retry (job ${outcome.jobId})`,
             );
-            r.error = "Email delivery failed";
+            r.error = "Email queued for retry";
+            r.queued = true;
           }
         }),
     );
