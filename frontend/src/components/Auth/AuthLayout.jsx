@@ -789,7 +789,7 @@ export default function AuthLayout({
             />
           </div>
 
-          {/* SYSTEM STATUS — hidden below 860px viewport height */}
+          {/* SYSTEM STATUS  hidden below 860px viewport height */}
           <div className="mt-10 hidden [@media(min-height:860px)]:block">
             <div
               className="
@@ -830,7 +830,7 @@ export default function AuthLayout({
             </div>
           </div>
 
-          {/* COPYRIGHT — pushed to bottom by mt-auto */}
+          {/* COPYRIGHT  pushed to bottom by mt-auto */}
           <div
             className="
               mt-auto flex items-center justify-between pt-8

@@ -41,7 +41,7 @@ async function getOrCreateCustomer(user) {
 }
 
 // ─── Helper: record a successful payment (idempotent) ──────────
-// Amount is stored in MAJOR units (₹, $) — Stripe sends minor
+// Amount is stored in MAJOR units (₹, $)  Stripe sends minor
 // units (paise, cents), so we divide by 100 here. If you change
 // this convention, change the dashboard query to match.
 async function recordPayment(invoice, user, subscriptionId) {

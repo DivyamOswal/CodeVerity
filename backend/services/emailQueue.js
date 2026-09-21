@@ -10,7 +10,7 @@ let isProcessing = false;
 
 // ─────────────────────────────────────────────────────────────
 // Atomically claim a job so two workers can't pick up the same one.
-// findOneAndUpdate is a single atomic op — safe across instances.
+// findOneAndUpdate is a single atomic op  safe across instances.
 // ─────────────────────────────────────────────────────────────
 async function claimOne() {
   const now = new Date();

@@ -94,7 +94,7 @@ userSchema.pre("save", async function () {
 
 // ─── Instance methods ───────────────────────────────────────
 userSchema.methods.deductTokens = async function (amount) {
-  // Atomic decrement — only touches these two fields, can't overwrite
+  // Atomic decrement  only touches these two fields, can't overwrite
   // plan, subscriptionStatus, or anything else on the document.
   const result = await this.constructor.updateOne(
     { _id: this._id, tokensRemaining: { $gte: amount } },

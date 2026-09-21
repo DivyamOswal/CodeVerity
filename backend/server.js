@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 // ═══════════════════════════════════════════════════════════════
-//  ENV VALIDATION — must run before anything else
+//  ENV VALIDATION  must run before anything else
 // ═══════════════════════════════════════════════════════════════
 // Fails fast on boot if critical config is missing. Without this,
 // the app starts and then throws cryptic errors at runtime (e.g.
@@ -240,7 +240,7 @@ app.use("/api/github/generate-tests", expensiveLimiter);
 app.use("/api/github/auto-fix", expensiveLimiter);
 
 // ═══════════════════════════════════════════════════════════════
-//  HEALTH CHECK — richer info for monitoring and debugging
+//  HEALTH CHECK  richer info for monitoring and debugging
 // ═══════════════════════════════════════════════════════════════
 const MONGO_STATES = {
   0: "disconnected",
@@ -417,7 +417,7 @@ process.on("unhandledRejection", (reason) => {
 process.on("uncaughtException", (err) => {
   console.error("❌ Uncaught exception:", err);
   Sentry.captureException(err);
-  // Uncaught exceptions leave the process in an undefined state — exit.
+  // Uncaught exceptions leave the process in an undefined state  exit.
   shutdown("uncaughtException");
 });
 

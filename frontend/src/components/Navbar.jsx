@@ -407,7 +407,7 @@ export default function Navbar() {
         ref={navContentRef}
         className="mx-auto flex h-full max-w-7xl items-center gap-3 px-3 sm:px-6 lg:px-8"
       >
-        {/* LEFT — Logo & brand */}
+        {/* LEFT  Logo & brand */}
         <div className="flex min-w-0 shrink-0 items-center">
           <NavLink
             ref={logoRef}
@@ -449,7 +449,7 @@ export default function Navbar() {
           </NavLink>
         </div>
 
-        {/* CENTER — nav */}
+        {/* CENTER  nav */}
         <div className="hidden flex-1 justify-center md:flex">
           <div className="flex items-center gap-1 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] p-1 shadow-sm transition-colors duration-200 hover:border-[var(--accent)]/25">
             {isAuth && (
@@ -519,7 +519,7 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* RIGHT — user / auth actions */}
+        {/* RIGHT  user / auth actions */}
         <div className="flex shrink-0 items-center gap-1">
           {isAuth ? (
             <div ref={dropRef} className="relative">

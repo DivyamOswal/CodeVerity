@@ -36,7 +36,7 @@ function ScanLine() {
   );
 }
 
-// GitHub brand mark — custom SVG because lucide-react no longer
+// GitHub brand mark  custom SVG because lucide-react no longer
 // exports the Github icon.
 function GithubIcon({ size = 14, className = "" }) {
   return (

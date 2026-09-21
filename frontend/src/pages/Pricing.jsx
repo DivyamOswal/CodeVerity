@@ -12,11 +12,11 @@ import { gsap, useGSAP } from "../lib/gsap";
 import { useToast } from "../hooks/useToast";
 
 // -----------------------------------------------------------------
-// Theme-driven throughout — no hardcoded palette values here, so this
+// Theme-driven throughout  no hardcoded palette values here, so this
 // page follows whatever theme is active (see index.css) without edits.
 // -----------------------------------------------------------------
 
-// Small per-tier glyphs — purely visual, differentiates the three
+// Small per-tier glyphs  purely visual, differentiates the three
 // plan names at a glance.
 const TIER_ICONS = {
   free: Shield,

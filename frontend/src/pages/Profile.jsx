@@ -19,7 +19,7 @@ import { usePreferences } from "../context/PreferencesContext";
 import { useToast } from "../hooks/useToast";
 
 /* =========================================================
-   CODEVERITY LOGO — uses ShieldCheck from Lucide, matching
+   CODEVERITY LOGO  uses ShieldCheck from Lucide, matching
    Navbar / Home / AuthLayout.
 ========================================================= */
 function CodeVerityLogo() {
@@ -412,7 +412,7 @@ export default function Profile() {
             <StatCard
               Icon={Star}
               label="Best Grade"
-              value={bestReport?.grade ?? "—"}
+              value={bestReport?.grade ?? ""}
               compact={compact}
               padding={compactClasses.statCardPadding}
               valueSize={compactClasses.statValueSize}

@@ -3,7 +3,7 @@ import mongoose from "mongoose";
 
 // Retry schedule (ms from previous attempt). Attempt 1 is the initial try,
 // so these are the delays BEFORE attempts 2-6. Five retries after the first
-// attempt gives ~8.6 hours of total retry coverage — plenty to ride out a
+// attempt gives ~8.6 hours of total retry coverage  plenty to ride out a
 // Resend outage without holding a job forever.
 const RETRY_DELAYS_MS = [
   1 * 60 * 1000,        // 1 min
@@ -34,7 +34,7 @@ const emailJobSchema = new mongoose.Schema(
 
     // ─── Payload (kept small and JSON-safe) ────────────────
     // Structured so the worker can reconstruct the email body fresh
-    // at send time. Never store rendered HTML — templates may change.
+    // at send time. Never store rendered HTML  templates may change.
     payload: {
       type: mongoose.Schema.Types.Mixed,
       default: {},
@@ -80,7 +80,7 @@ emailJobSchema.index({ status: 1, nextAttemptAt: 1 });
 
 // TTL: auto-delete sent/abandoned jobs after 30 days so the collection
 // doesn't grow forever. Failed and abandoned are kept longer for debugging
-// — actually, let's keep everything for 30 days.
+//  actually, let's keep everything for 30 days.
 emailJobSchema.index(
   { completedAt: 1 },
   { expireAfterSeconds: 30 * 24 * 60 * 60 },

@@ -1,6 +1,6 @@
 # CodeVerity
 
-**AI-powered GitHub repository intelligence.** Paste a repo URL, get a complete audit — architecture review, bug detection, security findings, generated tests, and a quality score — in minutes.
+**AI-powered GitHub repository intelligence.** Paste a repo URL, get a complete audit  architecture review, bug detection, security findings, generated tests, and a quality score  in minutes.
 
 <p align="center">
   <img alt="status" src="https://img.shields.io/badge/status-active-22d3ee" />
@@ -14,13 +14,13 @@
 
 CodeVerity analyzes public (and, on paid plans, private) GitHub repositories using AI and returns a structured engineering report:
 
-- **Architecture review** — how the codebase is put together, with recommendations
-- **Bug detection** — logic errors, edge cases, and anti-patterns, with suggested fixes
-- **Security analysis** — OWASP-style vulnerability scanning, exposed secrets, dependency CVEs
-- **Quality scoring** — code quality, security, performance, and maintainability, rolled into an A–F grade
-- **Test generation** — unit tests, edge cases, integration tests, and mocks generated from your actual source
-- **Technical debt estimation** — a rough hours-to-fix figure with an itemized breakdown
-- **PDF export** — every report can be downloaded and shared
+- **Architecture review**  how the codebase is put together, with recommendations
+- **Bug detection**  logic errors, edge cases, and anti-patterns, with suggested fixes
+- **Security analysis**  OWASP-style vulnerability scanning, exposed secrets, dependency CVEs
+- **Quality scoring**  code quality, security, performance, and maintainability, rolled into an A–F grade
+- **Test generation**  unit tests, edge cases, integration tests, and mocks generated from your actual source
+- **Technical debt estimation**  a rough hours-to-fix figure with an itemized breakdown
+- **PDF export**  every report can be downloaded and shared
 
 Reports are stored against your account so you can revisit them from **History**; source code itself is processed in memory and never persisted.
 
@@ -61,7 +61,7 @@ Reports are stored against your account so you can revisit them from **History**
 | Icons | Lucide |
 | HTTP | Axios |
 
-The frontend theme is entirely token-driven — every color, shadow, and font in the app is a CSS variable defined in `index.css`, so the palette (currently **Slate + Cyan**) can be swapped without touching component code.
+The frontend theme is entirely token-driven  every color, shadow, and font in the app is a CSS variable defined in `index.css`, so the palette (currently **Slate + Cyan**) can be swapped without touching component code.
 
 ## Getting started
 
@@ -141,12 +141,12 @@ src/
 
 All visual styling flows from `src/index.css`. Key token groups:
 
-- **Color** — `--accent`, `--accent-secondary`, `--bg-*`, `--text-*`, `--border-*`, and semantic status tokens (`--color-success/info/warning/caution/danger`) each with a `-soft` variant for backgrounds
-- **Typography** — `--font-display` (headings), `--font-sans` (body/UI), `--font-mono` (code, labels, terminal-style copy)
-- **Shadows** — a `--shadow-xs` → `--shadow-xl` elevation scale
-- **Dark/light** — dark is the default (`:root`); light is the explicit opt-in via `[data-theme="light"]`
+- **Color**  `--accent`, `--accent-secondary`, `--bg-*`, `--text-*`, `--border-*`, and semantic status tokens (`--color-success/info/warning/caution/danger`) each with a `-soft` variant for backgrounds
+- **Typography**  `--font-display` (headings), `--font-sans` (body/UI), `--font-mono` (code, labels, terminal-style copy)
+- **Shadows**  a `--shadow-xs` → `--shadow-xl` elevation scale
+- **Dark/light**  dark is the default (`:root`); light is the explicit opt-in via `[data-theme="light"]`
 
-To retheme the app, edit the token values in `index.css` — components consume tokens exclusively and require no changes.
+To retheme the app, edit the token values in `index.css`  components consume tokens exclusively and require no changes.
 
 ## Scripts
 
@@ -160,13 +160,13 @@ To retheme the app, edit the token values in `index.css` — components consume 
 ## Contributing
 
 1. Fork the repo and create a feature branch
-2. Keep new UI consistent with the existing token system — no hardcoded colors
+2. Keep new UI consistent with the existing token system  no hardcoded colors
 3. Run the app in both dark and light mode, and at a mobile viewport, before opening a PR
 4. Open a pull request describing the change and why it's needed
 
 ## License
 
-MIT — see `LICENSE` for details.
+MIT  see `LICENSE` for details.
 
 ## Support
 

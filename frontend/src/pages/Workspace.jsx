@@ -53,7 +53,7 @@ import {
 
 import { useToast } from "../hooks/useToast";
 
-// ─── Tabs — grouped so the sidebar can show section dividers,
+// ─── Tabs  grouped so the sidebar can show section dividers,
 // matching the Privacy/Terms sidebar-nav pattern already used
 // elsewhere in the app instead of a horizontally-scrolling row. ──
 const TAB_GROUPS = [
@@ -512,7 +512,7 @@ export default function WorkspaceSettings() {
 
         {/* ─── Layout: sidebar nav + content ───
              Replaces the horizontally-scrolling 13-tab row with a
-             sidebar, matching the Privacy/Terms sidebar pattern —
+             sidebar, matching the Privacy/Terms sidebar pattern 
              a settings page this large needs a scannable nav, not
              a row you have to scroll sideways through. */}
         <div className="flex flex-col gap-6 lg:flex-row">
@@ -2005,7 +2005,7 @@ export default function WorkspaceSettings() {
                           />
                           <Legend wrapperStyle={{ fontSize: 11 }} />
                           {/* Chart line colors now map to real theme
-                              tokens instead of hardcoded hex — same
+                              tokens instead of hardcoded hex  same
                               blind spot fixed in Result.jsx earlier,
                               since chart-library color props aren't
                               caught by scanning Tailwind classes. */}

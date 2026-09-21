@@ -214,7 +214,7 @@ export default function MemberActivity() {
                           ))
                         ) : (
                           <span className="text-xs text-[var(--text-muted)]">
-                            —
+                            
                           </span>
                         )}
                         {overflow > 0 && (

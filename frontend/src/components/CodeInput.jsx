@@ -49,7 +49,7 @@ function ScanLine() {
   );
 }
 
-// Feature card accents — one accent color at three opacity levels.
+// Feature card accents  one accent color at three opacity levels.
 const INTENSITY_CLASSES = {
   strong: {
     border: "group-hover:border-[var(--accent-soft-strong)]",

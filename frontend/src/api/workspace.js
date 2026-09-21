@@ -11,7 +11,7 @@ export const getMembers = () => axios.get("/workspace/members");
 export const addMember = (data) => axios.post("/workspace/members", data);
 export const removeMember = (userId) =>
   axios.delete(`/workspace/members/${userId}`);
-// NOTE: backend route is PUT /members/:userId — no /role suffix.
+// NOTE: backend route is PUT /members/:userId  no /role suffix.
 // Role goes in the request body.
 export const updateMemberRole = (userId, role) =>
   axios.put(`/workspace/members/${userId}`, { role });

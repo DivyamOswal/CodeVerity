@@ -42,7 +42,7 @@ const LOCKFILES = new Set([
   "bun.lockb",
 ]);
 
-const MAX_FILE_SIZE_BYTES = 1_000_000; // 1 MB — secrets are never in larger files
+const MAX_FILE_SIZE_BYTES = 1_000_000; // 1 MB  secrets are never in larger files
 const MAX_FILES_TO_SCAN = 2000;
 
 // ─── Helpers ─────────────────────────────────────────────────
@@ -170,7 +170,7 @@ async function hasAnyLockfile(repoPath) {
 
 /**
  * High-confidence patterns only. Generic "long alphanumeric string" matches
- * were removed — they produced hundreds of false positives per repo.
+ * were removed  they produced hundreds of false positives per repo.
  * If you want generic detection later, add entropy scoring on top of a
  * length heuristic restricted to assignments (= "…").
  */
@@ -243,7 +243,7 @@ export async function scanSecrets(repoPath) {
             file: relPath,
             line: i + 1,
             confidence: 95,
-            // Never include the matched value — it may be a real credential.
+            // Never include the matched value  it may be a real credential.
           });
           break; // one finding per line is enough
         }

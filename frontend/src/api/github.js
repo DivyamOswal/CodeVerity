@@ -27,7 +27,7 @@ export const autoFixIssue = (payload) =>
   axios.post("/github/auto-fix", payload);
 
 // ─────────────────────────────────────────────────────────────
-// Repo browsing — used by RepoEditor.jsx
+// Repo browsing  used by RepoEditor.jsx
 // ─────────────────────────────────────────────────────────────
 export const getRepoContents = (repoUrl, path = "") =>
   axios.get("/github/repo/contents", { params: { repoUrl, path } });

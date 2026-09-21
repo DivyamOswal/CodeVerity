@@ -61,7 +61,7 @@ function filePriority(file) {
   for (const hint of IMPORTANT_HINTS) {
     if (hint.test(file.path)) score += 100;
   }
-  // Prefer mid-sized files — tiny files are usually config, huge files
+  // Prefer mid-sized files  tiny files are usually config, huge files
   // blow the budget on one file.
   const size = file.size ?? 0;
   if (size > 500 && size < 60_000) score += 50;
@@ -164,7 +164,7 @@ function formatFileBlock(filePath, content) {
 
 /**
  * Fetch and concatenate a GitHub repo's source for AI analysis.
- * Throws on any failure — callers must not catch-and-substitute placeholder text.
+ * Throws on any failure  callers must not catch-and-substitute placeholder text.
  */
 export async function parseGithubRepo(
   repoUrl,
@@ -181,7 +181,7 @@ export async function parseGithubRepo(
 
   let candidates = tree.filter((f) => isCodeFile(f.path));
   if (candidates.length === 0) {
-    // Fallback — drop the extension whitelist but still exclude binaries.
+    // Fallback  drop the extension whitelist but still exclude binaries.
     candidates = tree.filter((f) => !BINARY_PATTERN.test(f.path));
   }
   if (candidates.length === 0) {
@@ -190,7 +190,7 @@ export async function parseGithubRepo(
     );
   }
 
-  // Sort by "interestingness" — the previous version sorted by size ascending,
+  // Sort by "interestingness"  the previous version sorted by size ascending,
   // which filled the budget with tiny config files before touching real logic.
   candidates.sort((a, b) => filePriority(b) - filePriority(a));
 
@@ -236,7 +236,7 @@ export async function parseGithubRepo(
           const contentRoom = room - marker.length - 40;
           combined += marker;
           combined += content.slice(0, Math.max(contentRoom, 0));
-          combined += `\n… [truncated — file continues past this point]`;
+          combined += `\n… [truncated  file continues past this point]`;
           filesFetched++;
         }
         budgetExhausted = true;
@@ -257,7 +257,7 @@ export async function parseGithubRepo(
     );
   }
 
-  // Final safety trim — but only if we're still over budget.
+  // Final safety trim  but only if we're still over budget.
   if (combined.length > maxChars) {
     combined = combined.slice(0, maxChars) + "\n… [output truncated at maxChars]";
   }

@@ -219,7 +219,7 @@ function buildUserPrompt({ code, staticFindings, fileTree, repoUrl }) {
       parts.push(
         "# Pre-computed static analysis\n" +
           "The following issues were already detected by deterministic tools. " +
-          "DO NOT repeat them verbatim — instead, include them in your `findings[]` " +
+          "DO NOT repeat them verbatim  instead, include them in your `findings[]` " +
           "with proper context, severity, and a suggested fix, and focus your " +
           "own analysis on issues the tools cannot see (logic bugs, design flaws, " +
           "missing tests, architectural concerns).\n",
@@ -284,11 +284,11 @@ function buildUserPrompt({ code, staticFindings, fileTree, repoUrl }) {
   return parts.join("\n");
 }
 
-// ── System prompt — the review ───────────────────────────────
+// ── System prompt  the review ───────────────────────────────
 
 const SYSTEM_PROMPT = `You are a PRINCIPAL SOFTWARE ENGINEER performing a formal code audit, comparable to a senior reviewer at Stripe, Google, or Cloudflare.
 
-You MUST respond with ONLY a valid JSON object — no preamble, no explanation, no markdown fences, no trailing text. Start your response with { and end with }.
+You MUST respond with ONLY a valid JSON object  no preamble, no explanation, no markdown fences, no trailing text. Start your response with { and end with }.
 
 ═══════════════════════════════════════════════════════════
 SCORING (0-100, apply strictly based on evidence)
@@ -311,26 +311,26 @@ GRADE FORMULA:
   60-64 C+ / 55-59 C / 50-54 C- / 45-49 D+ / 40-44 D / 35-39 D- / 0-34 F
 
 ═══════════════════════════════════════════════════════════
-FINDINGS — the core of the review
+FINDINGS  the core of the review
 ═══════════════════════════════════════════════════════════
 Every issue goes into "findings[]". Each finding MUST include:
 
 - severity: "critical" | "high" | "medium" | "low" | "info"
 - category: "security" | "bug" | "performance" | "maintainability" | "style" | "test" | "docs" | "architecture"
-- file: exact relative path from the repo root (use the file markers in the input) — REQUIRED
+- file: exact relative path from the repo root (use the file markers in the input)  REQUIRED
 - line: line number within that file (integer), or null if unknown
 - title: one-line summary
 - description: what the issue is and where, in 1-3 sentences
-- whyItMatters: concrete impact — what breaks, what's exploitable, what it costs
+- whyItMatters: concrete impact  what breaks, what's exploitable, what it costs
 - suggestedFix: code or a precise description of the fix. Include real code where possible.
 - references: array of URLs (CWE, OWASP, docs). Empty array if none.
 
 SEVERITY GUIDE:
-  critical — RCE, auth bypass, secrets in production, data loss
-  high     — SQLi, XSS, missing auth on sensitive route, N+1 in hot path
-  medium   — missing validation, magic numbers, poor error handling, missing tests on critical path
-  low      — style, naming, dead code, minor duplication
-  info     — suggestion, future improvement
+  critical  RCE, auth bypass, secrets in production, data loss
+  high      SQLi, XSS, missing auth on sensitive route, N+1 in hot path
+  medium    missing validation, magic numbers, poor error handling, missing tests on critical path
+  low       style, naming, dead code, minor duplication
+  info      suggestion, future improvement
 
 Aim for 5-25 findings on a real codebase. Do not pad. Do not invent.
 
@@ -338,7 +338,7 @@ Aim for 5-25 findings on a real codebase. Do not pad. Do not invent.
 OUTPUT SCHEMA (exact)
 ═══════════════════════════════════════════════════════════
 {
-  "summary": "6-10 sentence executive overview. Start with the verdict, then strongest points, then biggest risks. Be specific — mention actual files or functions.",
+  "summary": "6-10 sentence executive overview. Start with the verdict, then strongest points, then biggest risks. Be specific  mention actual files or functions.",
   "strengths": ["concrete strength 1", "concrete strength 2"],
   "risks": ["top risk 1", "top risk 2"],
   "topPriority": "The single most important thing to fix this week, in one sentence.",
@@ -396,15 +396,15 @@ RULES
 - Never invent line numbers. If unknown, use null.
 - If a section has nothing to report, use [].
 - Do not include markdown. Do not include any text outside the JSON.
-- Be harsh but fair. A senior reviewer at a top company flags real issues — they don't praise mediocrity.`;
+- Be harsh but fair. A senior reviewer at a top company flags real issues  they don't praise mediocrity.`;
 
-// ── System prompt — test generator ──────────────────────────
+// ── System prompt  test generator ──────────────────────────
 
 const TEST_GENERATOR_SYSTEM_PROMPT = `You are an EXPERT SOFTWARE TEST ENGINEER specialising in JavaScript/Node.js.
 
 Analyse source code and generate a test suite using Jest (or Vitest if detected).
 
-You MUST respond with ONLY a valid JSON object — no preamble, no explanation, no markdown fences, no trailing text. Start your response with { and end with }.
+You MUST respond with ONLY a valid JSON object  no preamble, no explanation, no markdown fences, no trailing text. Start your response with { and end with }.
 
 {
   "framework": "jest | vitest | mocha",
@@ -418,8 +418,8 @@ You MUST respond with ONLY a valid JSON object — no preamble, no explanation, 
 }
 
 RULES:
-- Analyse ONLY the code provided — do not invent functions that don't exist
-- Generate REAL, RUNNABLE test code — not pseudo-code
+- Analyse ONLY the code provided  do not invent functions that don't exist
+- Generate REAL, RUNNABLE test code  not pseudo-code
 - Cover happy paths, error paths, boundary values, and null/undefined inputs
 - If no async functions exist, omit async/await
 - Prefer jest.fn() for mocks unless vitest is detected (then use vi.fn())
@@ -429,7 +429,7 @@ RULES:
 
 const FALLBACK_RESULT = {
   summary:
-    "Analysis could not be completed — the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
+    "Analysis could not be completed  the AI returned an unparseable response. Please retry or check your GROQ_API_KEY and model settings.",
   strengths: [],
   risks: [],
   topPriority: "Retry the analysis.",
@@ -466,7 +466,7 @@ const FALLBACK_TEST_RESULT = {
   mocks: [],
   coverageSummary: {
     estimatedCoverage: 0,
-    uncoveredAreas: ["All areas — generation failed"],
+    uncoveredAreas: ["All areas  generation failed"],
     recommendation: "Retry the test generation.",
   },
 };
@@ -523,8 +523,8 @@ async function callGroqWithRetry(
  * Analyze a repository with the LLM.
  *
  * Accepts either:
- *   analyzeWithGroq(codeString)                          — legacy
- *   analyzeWithGroq({ code, staticFindings, fileTree, repoUrl })  — richer
+ *   analyzeWithGroq(codeString)                           legacy
+ *   analyzeWithGroq({ code, staticFindings, fileTree, repoUrl })   richer
  */
 export async function analyzeWithGroq(input) {
   const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });

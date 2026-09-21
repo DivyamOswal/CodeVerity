@@ -36,7 +36,7 @@ function CodeVerityLogo() {
   );
 }
 
-// Value icons — three Lucide icons mapped by name.
+// Value icons  three Lucide icons mapped by name.
 const VALUE_ICONS = {
   code: Code2,
   spark: Sparkles,
@@ -59,7 +59,7 @@ const values = [
   {
     icon: "spark",
     title: "AI you can verify",
-    desc: "Findings come with the reasoning behind them — file, line, and rationale — so you can check the AI's work instead of taking it on faith.",
+    desc: "Findings come with the reasoning behind them  file, line, and rationale  so you can check the AI's work instead of taking it on faith.",
   },
   {
     icon: "shield",
@@ -168,7 +168,7 @@ export default function About() {
           </h1>
           <p className="mx-auto mt-4 max-w-2xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
             CodeVerity started as an internal tool for auditing repositories
-            before a release — bugs, security gaps, and architectural drift,
+            before a release  bugs, security gaps, and architectural drift,
             surfaced automatically instead of found in production. We opened it
             up because every team has the same problem.
           </p>
@@ -200,13 +200,13 @@ export default function About() {
             our mission
           </p>
           <h2 className="mt-2 text-2xl font-bold leading-[1.15] tracking-tight sm:text-3xl">
-            Make code review something AI actually helps with — not something
+            Make code review something AI actually helps with  not something
             it just summarizes.
           </h2>
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-[var(--text-secondary)] sm:text-[15px]">
             Most AI code tools stop at a paragraph of vague praise. CodeVerity
             is built to go further: point to the exact file and line, explain
-            the risk in plain terms, and where it can — generate the test that
+            the risk in plain terms, and where it can  generate the test that
             would have caught it. We'd rather ship fewer features that
             developers actually trust than a long list of things that sound
             impressive in a demo.
@@ -260,7 +260,7 @@ export default function About() {
               Questions about how CodeVerity works?
             </p>
             <p className="mt-0.5 text-[13px] text-[var(--text-secondary)]">
-              We read every message ourselves — no support tickets lost in a
+              We read every message ourselves  no support tickets lost in a
               queue.
             </p>
           </div>
@@ -284,7 +284,7 @@ export default function About() {
           </h2>
           <p className="max-w-md text-sm text-[var(--text-secondary)]">
             Drop in a public GitHub URL and get a full audit in under a minute
-            — no card required.
+             no card required.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-3">
             <Link

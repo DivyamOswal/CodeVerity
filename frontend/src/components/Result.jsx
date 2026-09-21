@@ -1234,10 +1234,10 @@ export default function Result({
                             {v.title}
                           </td>
                           <td className="py-2 pr-4 font-mono text-[var(--text-muted)]">
-                            {v.file || "—"}
+                            {v.file || ""}
                           </td>
                           <td className="py-2 font-mono text-[var(--text-muted)]">
-                            {v.line || "—"}
+                            {v.line || ""}
                           </td>
                         </tr>
                       ))}

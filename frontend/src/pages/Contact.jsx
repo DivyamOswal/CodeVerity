@@ -35,7 +35,7 @@ function CodeVerityLogo() {
   );
 }
 
-// GitHub brand mark — custom SVG because lucide-react no longer
+// GitHub brand mark  custom SVG because lucide-react no longer
 // exports the Github icon (removed for trademark reasons).
 function GithubIcon({ size = 17, className = "" }) {
   return (
@@ -52,7 +52,7 @@ function GithubIcon({ size = 17, className = "" }) {
   );
 }
 
-// Contact icons — three Lucide icons mapped by name.
+// Contact icons  three Lucide icons mapped by name.
 const CONTACT_ICONS = {
   mail: Mail,
   github: GithubIcon,
@@ -182,7 +182,7 @@ export default function Contact() {
           </h1>
           <p className="mx-auto mt-4 max-w-xl text-[15px] leading-relaxed text-[var(--text-secondary)]">
             Whether it's a billing question, a false-positive from an audit, or
-            a feature you wish existed — send it over.
+            a feature you wish existed  send it over.
           </p>
         </div>
 

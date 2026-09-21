@@ -5,7 +5,7 @@ import EmailJob from "../models/EmailJob.js";
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 // ─────────────────────────────────────────────────────────────
-// Template builder (pure function — no I/O)
+// Template builder (pure function  no I/O)
 // ─────────────────────────────────────────────────────────────
 function buildInviteEmail({ workspaceName, inviteLink, role }) {
   const subject = `You're invited to join "${workspaceName}" on CodeVerity`;
@@ -23,7 +23,7 @@ function buildInviteEmail({ workspaceName, inviteLink, role }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Raw sender — the only function that talks to Resend.
+// Raw sender  the only function that talks to Resend.
 // Called by the queue worker (and by scripts/tests).
 // Throws on failure so the caller can decide what to do.
 // ─────────────────────────────────────────────────────────────

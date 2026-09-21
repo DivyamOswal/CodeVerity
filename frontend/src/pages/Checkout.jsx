@@ -17,7 +17,7 @@ import axios from "../api/axios";
 import { useToast } from "../hooks/useToast";
 
 // ─────────────────────────────────────────────────────────────
-// Tax math — GST is ADDED on top of the base price.
+// Tax math  GST is ADDED on top of the base price.
 // The base is what the pricing page shows.
 // The total is what Stripe charges (and what the user pays).
 // Both numbers must sum exactly: total = base + tax.
@@ -110,9 +110,9 @@ export default function Checkout() {
           </p>
         </div>
 
-        {/* ─── Layout — Order Summary FIRST on mobile ─────────── */}
+        {/* ─── Layout  Order Summary FIRST on mobile ─────────── */}
         <div className="mt-6 grid gap-6 sm:mt-8 lg:grid-cols-[1fr_400px] lg:gap-8">
-          {/* ─── Order Summary — moves to the right column on lg ── */}
+          {/* ─── Order Summary  moves to the right column on lg ── */}
           <aside
             aria-labelledby="order-summary-heading"
             className="h-fit overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-md)] lg:order-last lg:sticky lg:top-24"

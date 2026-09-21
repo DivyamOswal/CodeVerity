@@ -923,7 +923,7 @@ function useCountUp(target, duration = 800) {
   return value;
 }
 
-/* Skeleton dashboard — mirrors the real layout's shape so the page
+/* Skeleton dashboard  mirrors the real layout's shape so the page
    structure is visible immediately on load. */
 function DashboardSkeleton({ compact }) {
   const mainPadding = compact

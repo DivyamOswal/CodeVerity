@@ -20,7 +20,7 @@
 
 /* =====================================================
    THEME SLATE + PLUM
-   Plum as primary accent — a cool, editorial hue that
+   Plum as primary accent  a cool, editorial hue that
    differentiates CodeVerity from the cyan/teal-heavy AI
    tooling category. Indigo remains the secondary accent
    for chart series and --color-info, sitting adjacent to
@@ -143,7 +143,7 @@
 /* =====================================================
    RESPONSIVE / LAYOUT SAFETY
    Several components use absolutely-positioned blurred "orb"
-   backgrounds (e.g. -left-32, -right-32) for ambient decoration —
+   backgrounds (e.g. -left-32, -right-32) for ambient decoration 
    on narrow viewports these can silently introduce a horizontal
    scrollbar if anything miscalculates. Guarding at the root avoids
    needing this fix per-component.
@@ -249,7 +249,7 @@ video {
 }
 
 /* =====================================================
-   RESULT VIEW — moved from Result.jsx inline <style>
+   RESULT VIEW  moved from Result.jsx inline <style>
 ======================================================== */
 @keyframes result-fade-up {
   from { opacity: 0; transform: translateY(10px); }
@@ -262,7 +262,7 @@ video {
 }
 
 /* =====================================================
-   INVITE MEMBER MODAL — moved from InviteMemberModal.jsx
+   INVITE MEMBER MODAL  moved from InviteMemberModal.jsx
 ======================================================== */
 @keyframes invite-modal-in {
   from { opacity: 0; transform: translateY(10px) scale(0.98); }
@@ -284,7 +284,7 @@ video {
 }
 
 /* =====================================================
-   MEMBER ACTIVITY — moved from MemberActivity.jsx
+   MEMBER ACTIVITY  moved from MemberActivity.jsx
 ======================================================== */
 @keyframes activity-fade-in {
   from { opacity: 0; transform: translateY(6px); }
@@ -313,7 +313,7 @@ video {
 }
 
 /* =====================================================
-   PENDING INVITES — moved from PendingInvites.jsx
+   PENDING INVITES  moved from PendingInvites.jsx
 ======================================================== */
 @keyframes invite-row-fade {
   from { opacity: 0; transform: translateY(6px); }
@@ -350,14 +350,14 @@ video {
 }
 
 /* =====================================================
-   WORKSPACE SETTINGS — modal + skeleton animations
+   WORKSPACE SETTINGS  modal + skeleton animations
 ======================================================== */
 @keyframes ws-modal-in {
   from { opacity: 0; transform: translateY(10px) scale(0.98); }
   to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 /* =====================================================
-   GITHUB ANALYZER — corner breathe animation
+   GITHUB ANALYZER  corner breathe animation
 ======================================================== */
 @keyframes cv-corner-breathe {
   0%, 100% { opacity: 0.5; }
@@ -416,7 +416,7 @@ video {
 }
 
 /* =====================================================
-   HOME / LANDING VIEW — moved from Home.jsx inline <style>
+   HOME / LANDING VIEW  moved from Home.jsx inline <style>
 ======================================================== */
 
 /* ─── Stat pill cards in the hero ─── */
@@ -554,7 +554,7 @@ video {
 }
 
 /* =====================================================
-   CODE INPUT + GITHUB ANALYZER — corner breathe animation
+   CODE INPUT + GITHUB ANALYZER  corner breathe animation
 ======================================================== */
 @keyframes cv-corner-breathe {
   0%, 100% { opacity: 0.5; }
@@ -568,7 +568,7 @@ video {
 }
 
 /* =====================================================
-   PAGE LOADER — moved from PageLoader.jsx inline <style>
+   PAGE LOADER  moved from PageLoader.jsx inline <style>
 ======================================================== */
 @keyframes loader-spin {
   to { transform: rotate(360deg); }
@@ -646,7 +646,7 @@ html {
 }
 
 /* =====================================================
-   AUTH SHELL — locks page scroll while auth pages are
+   AUTH SHELL  locks page scroll while auth pages are
    mounted. Toggled by AuthLayout via `html.auth-no-scroll`.
    Removes the page-level scrollbar on /login and /register
    without affecting any other route.

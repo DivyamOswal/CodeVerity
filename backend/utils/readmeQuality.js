@@ -68,7 +68,7 @@ export async function scoreReadme(repoPath) {
         missingSections: Object.values(SECTIONS).map((s) => s.label),
         lines: 0,
         codeBlocks: 0,
-        message: `README exceeds ${Math.round(MAX_README_BYTES / 1000)} KB — skipping`,
+        message: `README exceeds ${Math.round(MAX_README_BYTES / 1000)} KB  skipping`,
       },
     };
   }

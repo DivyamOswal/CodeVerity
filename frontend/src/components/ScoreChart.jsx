@@ -23,7 +23,7 @@ export default function ScoreCharts({ scores = {} }) {
   return (
     <div
       role="img"
-      aria-label={`Score breakdown — ${summary}`}
+      aria-label={`Score breakdown  ${summary}`}
       style={{ width: "100%", height: 280, minHeight: 280 }}
     >
       <ResponsiveContainer width="100%" height="100%" minWidth={200}>
