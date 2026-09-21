@@ -25,7 +25,7 @@ const checkoutLimiter = rateLimit({
   },
 });
 
-// Cancel is rare — one per subscription lifetime. Very permissive.
+// Cancel is rare  one per subscription lifetime. Very permissive.
 const cancelLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
   max: 5,
@@ -37,7 +37,7 @@ const cancelLimiter = rateLimit({
 // ─── Public webhook (raw body is set at the app level in index.js) ───
 // NOTE: index.js applies `express.raw({ type: "application/json" })` to
 // /api/billing/webhook BEFORE `express.json()`. Do not add express.raw
-// here — the body is already a Buffer by the time this route runs. If
+// here  the body is already a Buffer by the time this route runs. If
 // you need to move the raw middleware, it MUST stay ahead of express.json
 // in the app chain or Stripe signature verification will fail.
 router.post("/webhook", handleWebhook);

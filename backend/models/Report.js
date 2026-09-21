@@ -138,7 +138,7 @@ const ReportSchema = new mongoose.Schema(
     },
 
     // ═══════════════════════════════════════════════════════
-    // AI analysis (legacy shape — kept for backwards compat)
+    // AI analysis (legacy shape  kept for backwards compat)
     // ═══════════════════════════════════════════════════════
     summary: String,
     strengths: { type: [String], default: [] },
@@ -250,7 +250,7 @@ const ReportSchema = new mongoose.Schema(
     },
 
     // ═══════════════════════════════════════════════════════
-    // Previously MISSING — being silently dropped
+    // Previously MISSING  being silently dropped
     // ═══════════════════════════════════════════════════════
     complexity: {
       type: mongoose.Schema.Types.Mixed,

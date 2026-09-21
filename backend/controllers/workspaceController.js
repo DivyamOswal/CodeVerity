@@ -905,7 +905,7 @@ export const triggerWebhook = async (workspaceId, report, user) => {
         }),
       },
       body: JSON.stringify(payload),
-      // Same 5s cap as testWebhook — a hanging target must not block
+      // Same 5s cap as testWebhook  a hanging target must not block
       // the scan completion flow.
       signal: AbortSignal.timeout(5000),
     });

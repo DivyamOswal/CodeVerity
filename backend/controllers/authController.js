@@ -14,7 +14,7 @@ import { addAuditLog } from "./workspaceController.js";
 const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:5173";
 
 // A pre-computed bcrypt hash used for constant-time login behavior.
-// This is NOT a real user's hash — it exists only so that bcrypt.compare()
+// This is NOT a real user's hash  it exists only so that bcrypt.compare()
 // always runs, even when the email isn't registered. Prevents user
 // enumeration via response-timing differences.
 const DUMMY_HASH =
@@ -364,7 +364,7 @@ export const githubAuth = async (req, res) => {
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
           userId = decoded.id;
         } catch (e) {
-          // invalid token — fall through to the 401 below
+          // invalid token  fall through to the 401 below
         }
       }
       if (!userId) {

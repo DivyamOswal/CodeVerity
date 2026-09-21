@@ -38,7 +38,7 @@ export const analyzeCode = async (req, res) => {
     const response = await analyzeWithGroq(code);
     const tokensUsed = response.usage?.total_tokens ?? estimateTokens(code);
 
-    // 2. Deduct tokens (atomic — see User.deductTokens).
+    // 2. Deduct tokens (atomic  see User.deductTokens).
     //    This only touches tokensRemaining and totalTokensUsed via $inc,
     //    so it can never rewrite plan / subscription fields from a
     //    stale in-memory document.

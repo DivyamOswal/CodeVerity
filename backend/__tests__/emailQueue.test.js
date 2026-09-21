@@ -1,7 +1,7 @@
 import { jest } from "@jest/globals";
 
 // Control the email layer per-test. This overrides setup.js's
-// resend mock entirely — emailQueue only calls sendInviteEmail.
+// resend mock entirely  emailQueue only calls sendInviteEmail.
 const mockSendInviteEmail = jest.fn();
 
 jest.unstable_mockModule("../utils/email.js", () => ({
@@ -92,7 +92,7 @@ describe("EmailJob model", () => {
 
 /* ─── Happy path ────────────────────────────────────────── */
 
-describe("processQueue — happy path", () => {
+describe("processQueue  happy path", () => {
   it("sends a due job and marks it sent", async () => {
     const job = await makeJob();
 
@@ -141,7 +141,7 @@ describe("processQueue — happy path", () => {
 
 /* ─── Failure and retry ─────────────────────────────────── */
 
-describe("processQueue — failure and retry", () => {
+describe("processQueue  failure and retry", () => {
   it("reschedules a failed job with the correct delay and error", async () => {
     mockSendInviteEmail.mockRejectedValueOnce(new Error("Resend 500"));
 

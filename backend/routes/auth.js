@@ -17,7 +17,7 @@ const router = express.Router();
 
 // ─── Rate limiters ──────────────────────────────────────────
 
-// Strict limiter for login/register — brute-force protection.
+// Strict limiter for login/register  brute-force protection.
 // 10 attempts per 15 minutes per IP. Successful attempts still count,
 // which is intentional: an attacker can't cycle IPs fast enough to
 // stay under the limit and still brute-force.
@@ -34,7 +34,7 @@ const authLimiter = rateLimit({
   // main app doesn't configure trust proxy.
 });
 
-// Lighter limiter for OAuth start routes — prevents someone hammering
+// Lighter limiter for OAuth start routes  prevents someone hammering
 // the auth provider through your server, but leaves headroom for real
 // users who might retry a couple of times.
 const oauthStartLimiter = rateLimit({

@@ -299,7 +299,7 @@ export const analyzeGithubRepo = async (req, res) => {
       });
     }
 
-    // ── 3. Static analysis — all in parallel ─────────────────
+    // ── 3. Static analysis  all in parallel ─────────────────
     let depVulns = [];
     let secrets = [];
     let secVulns = [];
@@ -467,7 +467,7 @@ export const analyzeGithubRepo = async (req, res) => {
     //    New namespaced fields (findings, metrics, ai, static, meta)
     //    are what the new frontend will read.
     const analysis = {
-      // Legacy — top-level (frontend currently reads these)
+      // Legacy  top-level (frontend currently reads these)
       ...aiAnalysis,
       healthScore,
       securityVulnerabilities: secVulns,
@@ -482,11 +482,11 @@ export const analyzeGithubRepo = async (req, res) => {
       cveList,
       readmeScore,
 
-      // New — unified findings
+      // New  unified findings
       findings,
       findingsSummary,
 
-      // New — namespaced
+      // New  namespaced
       ai: aiAnalysis,
       static: {
         security: secVulns,

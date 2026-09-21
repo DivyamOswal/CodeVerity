@@ -4,7 +4,7 @@ import request from "supertest";
 // Dynamic import so the limiter mock in setup.js is active first.
 const { default: authRoutes } = await import("../routes/auth.js");
 
-// Minimal app — boots only the auth router, no cron/worker/Mongo.
+// Minimal app  boots only the auth router, no cron/worker/Mongo.
 const app = express();
 app.use(express.json());
 app.use("/api/auth", authRoutes);
@@ -114,7 +114,7 @@ describe("POST /api/auth/login", () => {
       .send({ email: "nobody@example.com", password: "anything" });
 
     expect(res.status).toBe(401);
-    // Same message for both cases — prevents user enumeration.
+    // Same message for both cases  prevents user enumeration.
     expect(res.body.error).toMatch(/invalid credentials/i);
   });
 
