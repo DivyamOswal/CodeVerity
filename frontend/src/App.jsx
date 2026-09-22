@@ -21,6 +21,7 @@ import SmoothScroll from "./components/SmoothScroll";
 import Navbar from "./components/Navbar";
 import PageLoader from "./components/PageLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
+import ScrollReactiveBackground from "./components/ScrollReactiveBackground"; // ← NEW
 
 // ─── Lazy-loaded pages ───────────────────────────────────────
 const Home = lazy(() => import("./components/Home"));
@@ -44,7 +45,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 import { PreferencesProvider } from "./context/PreferencesContext";
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
-import { ScrollSmoother, ScrollTrigger } from "gsap/all";
+import { ScrollSmoother, ScrollTrigger } from "./lib/gsap"; // ← NEW (was "gsap/all")
 import { Toaster } from "react-hot-toast";
 
 // ─── Sentry Error Fallback UI ──────────────────────────────────
@@ -163,6 +164,7 @@ function Layout() {
 
   const hideNavbar = ["/login", "/register"];
   const showNav = !hideNavbar.includes(location.pathname);
+  const isHome = location.pathname === "/"; // ← NEW
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -181,6 +183,7 @@ function Layout() {
 
   return (
     <>
+      {isHome && <ScrollReactiveBackground />} {/* ← NEW */}
       {showNav && <Navbar />}
       <SmoothScroll>
         <Suspense fallback={<PageLoader />}>
