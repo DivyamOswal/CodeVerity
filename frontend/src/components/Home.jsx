@@ -496,14 +496,14 @@ function ComparisonSection() {
             >
               <span className="pr-2 text-[var(--text-primary)]">{row.label}</span>
               <span className="flex justify-center">
-                {row.linter ? <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" /> : <span className="text-[var(--text-muted)]">—</span>}
+                {row.linter ? <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" /> : <span className="text-[var(--text-muted)]"></span>}
               </span>
               <span className="flex justify-center">
                 {row.verity ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                ) : <span className="text-[var(--text-muted)]">—</span>}
+                ) : <span className="text-[var(--text-muted)]"></span>}
               </span>
             </div>
           ))}

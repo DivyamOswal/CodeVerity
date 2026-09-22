@@ -29,7 +29,7 @@ export default function PageLoader() {
       aria-label="Loading"
       className="relative flex min-h-[60vh] items-center justify-center overflow-hidden bg-[var(--bg-primary)]"
     >
-      {/* Dot-grid background — matches Home hero */}
+      {/* Dot-grid background  matches Home hero */}
       <div
         aria-hidden="true"
         className="pointer-events-none absolute inset-0 opacity-[0.05]"
@@ -56,7 +56,7 @@ export default function PageLoader() {
       <div className="loader-content relative z-10 flex flex-col items-center gap-8">
         {/* Concentric orbit + center logo */}
         <div className="relative flex h-24 w-24 items-center justify-center">
-          {/* Outer orbit — slow rotation, single bright dot */}
+          {/* Outer orbit  slow rotation, single bright dot */}
           <div
             aria-hidden="true"
             className="loader-orbit-outer absolute inset-0 rounded-full border border-[var(--border-light)]"
@@ -64,7 +64,7 @@ export default function PageLoader() {
             <span className="absolute left-1/2 top-0 h-1.5 w-1.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" />
           </div>
 
-          {/* Middle dashed orbit — counter-rotation */}
+          {/* Middle dashed orbit  counter-rotation */}
           <div
             aria-hidden="true"
             className="loader-orbit-mid absolute inset-3 rounded-full border border-dashed border-[var(--accent)]/30"
@@ -78,7 +78,7 @@ export default function PageLoader() {
             className="loader-ring-pulse absolute inset-6 rounded-full border border-[var(--accent)]/50"
           />
 
-          {/* Center logo — matches CodeVerityLogo mark */}
+          {/* Center logo  matches CodeVerityLogo mark */}
           <div className="relative flex h-10 w-10 items-center justify-center rounded-lg bg-[var(--accent)] shadow-[0_0_24px_var(--accent-soft-strong)]">
             <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
             <ShieldCheck

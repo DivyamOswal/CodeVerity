@@ -672,7 +672,7 @@ video {
   background-color: var(--bg-primary);
 }
 
-/* KPI card — subtle glow on hover, matches home hero cards */
+/* KPI card  subtle glow on hover, matches home hero cards */
 .admin-kpi {
   background:
     linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 60%),
@@ -690,7 +690,7 @@ video {
 }
 .admin-kpi:hover::after { opacity: 1; }
 
-/* Drawer — subtle inner top accent */
+/* Drawer  subtle inner top accent */
 .admin-drawer {
   background-image: linear-gradient(
     180deg,
@@ -716,7 +716,7 @@ video {
 }
 .admin-shell tbody tr:hover::before { opacity: 1; }
 
-/* Skeleton shimmer — matches Home */
+/* Skeleton shimmer  matches Home */
 .admin-skeleton {
   background: linear-gradient(
     90deg,

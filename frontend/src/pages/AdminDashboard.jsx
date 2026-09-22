@@ -45,7 +45,7 @@ function syntheticSeries(finalValue, points = 24, seed = 1) {
 }
 
 /* ============================================================
-   Sparkline — animated on mount
+   Sparkline  animated on mount
    ============================================================ */
 function Sparkline({ data, color = "accent", height = 34, width = 130 }) {
   const pathRef = useRef(null);
@@ -104,7 +104,7 @@ function Sparkline({ data, color = "accent", height = 34, width = 130 }) {
 }
 
 /* ============================================================
-   StatusPill — reusable
+   StatusPill  reusable
    ============================================================ */
 function StatusPill({ tone = "neutral", children }) {
   const map = {
@@ -131,7 +131,7 @@ function StatusPill({ tone = "neutral", children }) {
 }
 
 /* ============================================================
-   KpiCard — hero stat with sparkline + delta
+   KpiCard  hero stat with sparkline + delta
    ============================================================ */
 function KpiCard({ label, value, display, icon: Icon, tone, series, delta, index }) {
   const numRef = useRef(null);
@@ -294,7 +294,7 @@ function FilterChip({ active, onClick, children, count }) {
 }
 
 /* ============================================================
-   Drawer — slide-in from right
+   Drawer  slide-in from right
    ============================================================ */
 function Drawer({ open, onClose, title, subtitle, children }) {
   const wrapRef = useRef(null);
@@ -369,7 +369,7 @@ function Drawer({ open, onClose, title, subtitle, children }) {
 }
 
 /* ============================================================
-   CommandPalette — ⌘K
+   CommandPalette  ⌘K
    ============================================================ */
 function CommandPalette({ open, onClose, actions }) {
   const [query, setQuery] = useState("");
@@ -1190,7 +1190,7 @@ function WorkspaceManagement({ openDialog }) {
                       <span className="truncate font-medium text-[var(--text-primary)]">{ws.name}</span>
                     </td>
                     <td className="px-4 py-2.5">
-                      <span className="font-mono text-xs text-[var(--text-secondary)]">{ws.ownerId?.email || "—"}</span>
+                      <span className="font-mono text-xs text-[var(--text-secondary)]">{ws.ownerId?.email || ""}</span>
                     </td>
                     <td className="px-4 py-2.5 text-right font-mono text-xs tabular-nums text-[var(--text-secondary)]">
                       {ws.members?.length || 0}
@@ -1223,7 +1223,7 @@ function WorkspaceManagement({ openDialog }) {
           <div className="space-y-4">
             <DetailRow label="ID" value={selected.data._id} mono />
             <DetailRow label="Name" value={selected.data.name} />
-            <DetailRow label="Owner" value={selected.data.ownerId?.email || "—"} mono />
+            <DetailRow label="Owner" value={selected.data.ownerId?.email || ""} mono />
             <DetailRow label="Members" value={`${selected.data.members?.length || 0}`} />
             <div className="border-t border-[var(--border-light)] pt-4">
               <button
@@ -1321,7 +1321,7 @@ function ReportManagement() {
                     <td className="px-4 py-2.5">
                       {r.workspaceId?.name
                         ? <StatusPill tone="info">{r.workspaceId.name}</StatusPill>
-                        : <span className="text-[var(--text-muted)]">—</span>}
+                        : <span className="text-[var(--text-muted)]"></span>}
                     </td>
                     <td className="whitespace-nowrap px-4 py-2.5 text-right text-xs text-[var(--text-secondary)]">
                       {fmtRelative(r.createdAt)}
@@ -1345,7 +1345,7 @@ function ReportManagement() {
             <DetailRow label="ID" value={selected.data._id} mono />
             <DetailRow label="Repository" value={selected.data.repoUrl} mono link />
             <DetailRow label="User" value={selected.data.userId?.email || "Unknown"} />
-            <DetailRow label="Workspace" value={selected.data.workspaceId?.name || "—"} />
+            <DetailRow label="Workspace" value={selected.data.workspaceId?.name || ""} />
             <DetailRow label="Created" value={new Date(selected.data.createdAt).toLocaleString()} />
           </div>
         )}
