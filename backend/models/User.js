@@ -1,6 +1,6 @@
 // backend/models/User.js
 import mongoose from "mongoose";
-import crypto from "crypto"; // ✅ built-in, no install needed
+import crypto from "crypto";
 
 const PLAN_CONFIG = {
   starter: { tokens: 15000, label: "Starter" },
@@ -9,7 +9,7 @@ const PLAN_CONFIG = {
 };
 
 // ─── Encryption helpers ──────────────────────────────────────
-const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY; // 32-byte hex (64 chars)
+const ENCRYPTION_KEY = process.env.ENCRYPTION_KEY;
 const IV_LENGTH = 16;
 
 function encrypt(text) {
@@ -78,9 +78,8 @@ const userSchema = new mongoose.Schema({
   tokensLastReset: { type: Date, default: Date.now },
 });
 
-// ─── Pre-save: encryption only. Token grants are handled
-// explicitly wherever `plan` changes (webhook, register, etc.)
-// so that mid-cycle usage can never be reset by an unrelated save.
+// ─── Pre-save: encryption only. Token grants are explicit
+// wherever `plan` changes (see setPlan / setPlanWithRollover).
 userSchema.pre("save", async function () {
   if (this.isModified("githubAccessToken") && this.githubAccessToken) {
     const looksEncrypted = /^[a-f0-9]{32}:[a-f0-9]+$/i.test(
@@ -93,17 +92,21 @@ userSchema.pre("save", async function () {
 });
 
 // ─── Instance methods ───────────────────────────────────────
+
+/**
+ * Atomic token deduction. Only touches tokensRemaining and
+ * totalTokensUsed via $inc, so it can never rewrite plan /
+ * subscription fields from a stale in-memory document.
+ */
 userSchema.methods.deductTokens = async function (amount) {
-  // Atomic decrement  only touches these two fields, can't overwrite
-  // plan, subscriptionStatus, or anything else on the document.
   const result = await this.constructor.updateOne(
     { _id: this._id, tokensRemaining: { $gte: amount } },
-    { $inc: { tokensRemaining: -amount, totalTokensUsed: amount } },
+    { $inc: { tokensRemaining: -amount, totalTokensUsed: amount } }
   );
 
   if (result.modifiedCount === 0) return false;
 
-  // Keep the in-memory doc consistent for callers that read it after.
+  // Keep the in-memory doc consistent for callers that read after.
   this.tokensRemaining -= amount;
   this.totalTokensUsed += amount;
   return true;
@@ -114,9 +117,8 @@ userSchema.methods.getGithubToken = function () {
 };
 
 /**
- * Set plan + grant the plan's token allowance.
- * Use this everywhere you change a user's plan (webhook,
- * admin action, downgrade, etc.) instead of `user.plan = x; save()`.
+ * Reset plan and grant the plan's full allowance.
+ * Use on new subscriptions and renewals (same plan).
  */
 userSchema.methods.setPlan = function (planName) {
   const config = PLAN_CONFIG[planName] || PLAN_CONFIG.starter;
@@ -124,6 +126,24 @@ userSchema.methods.setPlan = function (planName) {
   this.tokensRemaining = config.tokens;
   this.totalTokensUsed = 0;
   this.tokensLastReset = new Date();
+};
+
+/**
+ * Upgrade/downgrade: carry unused tokens forward and add the
+ * new plan's allowance.
+ *   e.g. 500 remaining + upgrade to Pro (25,000) => 25,500
+ *
+ * Call this ONLY when the plan actually changes. For same-plan
+ * renewals use setPlan() — otherwise a user can buy the same
+ * plan twice and stack allowances.
+ */
+userSchema.methods.setPlanWithRollover = function (planName) {
+  const config = PLAN_CONFIG[planName] || PLAN_CONFIG.starter;
+  const carried = Math.max(this.tokensRemaining || 0, 0);
+  this.plan = planName;
+  this.tokensRemaining = carried + config.tokens;
+  this.tokensLastReset = new Date();
+  // totalTokensUsed is preserved — it tracks usage across upgrades.
 };
 
 // ─── Static methods ─────────────────────────────────────────
@@ -140,7 +160,7 @@ userSchema.index(
     unique: true,
     partialFilterExpression: { githubId: { $type: "string" } },
     name: "githubId_unique_when_string",
-  },
+  }
 );
 
 export default mongoose.model("User", userSchema);

@@ -11,9 +11,9 @@ export const getSystemStats = async (req, res) => {
     const totalTransactions = await Transaction.countDocuments();
     // Calculate revenue
     const revenueAgg = await Transaction.aggregate([
-      { $match: { isPaid: true } },
-      { $group: { _id: null, total: { $sum: "$amount" } } },
-    ]);
+  { $match: { status: "paid" } },
+  { $group: { _id: null, total: { $sum: "$amount" } } },
+]);
     const totalRevenue = revenueAgg[0]?.total || 0;
 
     res.json({

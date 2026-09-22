@@ -41,7 +41,7 @@ async function getOrCreateCustomer(user) {
 }
 
 // ─── Helper: record a successful payment (idempotent) ──────────
-// Amount is stored in MAJOR units (₹, $)  Stripe sends minor
+// Amount is stored in MAJOR units (₹, $) — Stripe sends minor
 // units (paise, cents), so we divide by 100 here. If you change
 // this convention, change the dashboard query to match.
 async function recordPayment(invoice, user, subscriptionId) {
@@ -205,9 +205,18 @@ export const handleWebhook = async (req, res) => {
         if (!user) break;
 
         const oldPlan = user.plan || "starter";
+        const isPlanChange = oldPlan !== plan;
 
-        // setPlan grants the plan's token allowance and resets usage.
-        user.setPlan(plan);
+        // Plan change → carry unused tokens into the new allowance.
+        // Same plan (renew / duplicate purchase) → reset to allowance.
+        // This prevents stacking allowances by repeatedly buying the
+        // same plan.
+        if (isPlanChange) {
+          user.setPlanWithRollover(plan);
+        } else {
+          user.setPlan(plan);
+        }
+
         user.stripeSubscriptionId = session.subscription;
         user.subscriptionStatus = "active";
         user.subscriptionEndsAt = new Date(
@@ -222,7 +231,7 @@ export const handleWebhook = async (req, res) => {
             user._id,
             "plan_change",
             `Subscription ${
-              oldPlan !== plan
+              isPlanChange
                 ? `upgraded from ${oldPlan} to`
                 : "started"
             } ${plan} (${cycle})`,
@@ -319,7 +328,9 @@ export const handleWebhook = async (req, res) => {
         if (user) {
           const oldPlan = user.plan;
 
-          user.setPlan("starter"); // grants starter tokens, resets usage
+          // Downgrade to starter — no rollover. Paid plans should not
+          // carry tokens into the free tier.
+          user.setPlan("starter");
           user.stripeSubscriptionId = null;
           user.subscriptionStatus = "canceled";
           user.subscriptionEndsAt = null;
