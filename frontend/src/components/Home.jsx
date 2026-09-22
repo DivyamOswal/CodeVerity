@@ -479,7 +479,7 @@ function ComparisonSection() {
         </RevealHeading>
         <p className="mb-10 max-w-2xl text-sm text-[var(--text-secondary)]">
           Static analyzers check syntax against rules. CodeVerity reads your code the way a senior
-          engineer would — understanding architecture, intent, and risk, not just style violations.
+          engineer would understanding architecture, intent, and risk, not just style violations.
         </p>
         <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           <div className="grid grid-cols-[1fr_90px_90px] border-b border-[var(--border-light)] bg-[var(--bg-hover)]/50 px-4 py-3 text-[11px] font-semibold text-[var(--text-muted)] sm:grid-cols-[1fr_120px_120px] sm:px-5">
@@ -783,7 +783,7 @@ function HowItWorks() {
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">the process</p>
         <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
           <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">How it works</RevealHeading>
-          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out — three steps.</p>
+          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out three steps.</p>
         </div>
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
           {steps.map((step, idx) => (
@@ -813,7 +813,7 @@ function HowItWorks() {
 function Testimonials() {
   const testimonials = [
     { quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.", author: "Sarah Chen", role: "Lead Engineer, Finlytics" },
-    { quote: "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
+    { quote: "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
     { quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.", author: "Dr. Aisha Patel", role: "CTO, DevSafe" },
   ];
 
@@ -960,7 +960,7 @@ function Pricing() {
             );
           })}
         </div>
-        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off — see full pricing page.</p>
+        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off see full pricing page.</p>
       </div>
     </section>
   );
@@ -976,8 +976,8 @@ function FAQ() {
     { q: "Is my code stored or shared?", a: "No. CodeVerity processes your repository in memory and never stores any source code. All analysis is temporary and encrypted." },
     { q: "Can I use CodeVerity for private repositories?", a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security." },
     { q: "How accurate is the AI bug detection?", a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement." },
-    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would — understanding architecture and intent, not just style violations — and explains findings in plain English instead of rule IDs." },
-    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately — no config files, no CI pipeline changes." },
+    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would understanding architecture and intent, not just style violations and explains findings in plain English instead of rule IDs." },
+    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately no config files, no CI pipeline changes." },
   ];
   const toggle = (idx) => setOpenIndex(openIndex === idx ? null : idx);
 
@@ -1458,7 +1458,7 @@ export default function Home() {
         requestAnimationFrame(animateBadges);
 
         /* ═══════════════════════════════════════════════════
-           NEW ANIMATIONS — modern polish layer
+           NEW ANIMATIONS modern polish layer
            ═══════════════════════════════════════════════════ */
 
         /* ---------- (NEW) How-it-works scrubbed progress line ---------- */
@@ -1503,7 +1503,7 @@ export default function Home() {
           );
         });
 
-        /* ---------- (NEW) Testimonial cards — blur + stagger reveal ---------- */
+        /* ---------- (NEW) Testimonial cards blur + stagger reveal ---------- */
         if (testimonialRef.current) {
           const cards = testimonialRef.current.querySelectorAll(".testimonial-card");
           if (cards.length) {
@@ -1527,7 +1527,7 @@ export default function Home() {
           }
         }
 
-        /* ---------- (NEW) Pricing cards — subtle lift on scroll ---------- */
+        /* ---------- (NEW) Pricing cards subtle lift on scroll ---------- */
         if (pricingRef.current) {
           const cards = pricingRef.current.querySelectorAll(".grid > div");
           if (cards.length) {
@@ -1549,7 +1549,7 @@ export default function Home() {
           }
         }
 
-        /* ---------- (NEW) FAQ rows — cascading reveal ---------- */
+        /* ---------- (NEW) FAQ rows cascading reveal ---------- */
         if (faqRef.current) {
           const rows = faqRef.current.querySelectorAll("button");
           if (rows.length) {
@@ -1690,7 +1690,7 @@ export default function Home() {
       <div ref={bgGlow2Ref} className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div ref={bgGridRef} className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
-      {/* ← REMOVED: <NeuralNetworkBackground /> — now rendered at App level as ScrollReactiveBackground */}
+      {/* ← REMOVED: <NeuralNetworkBackground /> now rendered at App level as ScrollReactiveBackground */}
 
       <div id="hero" ref={heroSectionRef} className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}>
         <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
@@ -1721,7 +1721,7 @@ export default function Home() {
             </p>
 
             <p ref={descriptionRef} className={`mx-auto mb-6 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}>
-              Drop any public GitHub URL and get a complete AI-powered repository audit — architecture analysis, security findings, bug detection, performance insights, and generated tests.
+              Drop any public GitHub URL and get a complete AI-powered repository audit architecture analysis, security findings, bug detection, performance insights, and generated tests.
             </p>
 
             <HeroRepoInput isAuthed={!!token} />

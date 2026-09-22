@@ -41,7 +41,7 @@ async function getOrCreateCustomer(user) {
 }
 
 // ─── Helper: record a successful payment (idempotent) ──────────
-// Amount is stored in MAJOR units (₹, $) — Stripe sends minor
+// Amount is stored in MAJOR units (₹, $) Stripe sends minor
 // units (paise, cents), so we divide by 100 here.
 async function recordPayment(invoice, user, subscriptionId) {
   if (!invoice.id) return null;
@@ -264,7 +264,7 @@ export const handleWebhook = async (req, res) => {
         );
 
         // Lookup by subscription OR customer. checkout.session.completed
-        // and invoice.paid fire at the same second — if the invoice
+        // and invoice.paid fire at the same second if the invoice
         // arrives first, stripeSubscriptionId isn't set yet, but
         // stripeCustomerId always is (from the first checkout).
         const user = await User.findOne({
@@ -345,7 +345,7 @@ export const handleWebhook = async (req, res) => {
         if (user) {
           const oldPlan = user.plan;
 
-          // Downgrade to starter — no rollover. Paid plans should not
+          // Downgrade to starter no rollover. Paid plans should not
           // carry tokens into the free tier.
           user.setPlan("starter");
           user.stripeSubscriptionId = null;

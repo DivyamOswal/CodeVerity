@@ -134,7 +134,7 @@ userSchema.methods.setPlan = function (planName) {
  *   e.g. 500 remaining + upgrade to Pro (25,000) => 25,500
  *
  * Call this ONLY when the plan actually changes. For same-plan
- * renewals use setPlan() — otherwise a user can buy the same
+ * renewals use setPlan() otherwise a user can buy the same
  * plan twice and stack allowances.
  */
 userSchema.methods.setPlanWithRollover = function (planName) {
@@ -143,7 +143,7 @@ userSchema.methods.setPlanWithRollover = function (planName) {
   this.plan = planName;
   this.tokensRemaining = carried + config.tokens;
   this.tokensLastReset = new Date();
-  // totalTokensUsed is preserved — it tracks usage across upgrades.
+  // totalTokensUsed is preserved it tracks usage across upgrades.
 };
 
 // ─── Static methods ─────────────────────────────────────────
