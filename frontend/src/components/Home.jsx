@@ -10,15 +10,13 @@ import {
 } from "../components/PricingPlans";
 
 // ============================================================
-//  Reads a --token color and converts to r,g,b (canvas) or hex
-//  string (THREE.Color) as needed.
+//  Color helpers (unchanged)
 // ============================================================
 function getCSSColor(varName, fallbackHex) {
   if (typeof window === "undefined") return fallbackHex;
   const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   return val || fallbackHex;
 }
-
 function getAccentRGB() {
   const hex = getCSSColor("--accent", "#22d3ee").replace("#", "");
   const bigint = parseInt(hex, 16);
@@ -67,14 +65,8 @@ function NeuralNetworkBackground() {
       }
     }
 
-    const handleMouseMove = (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    };
-    const handleMouseLeave = () => {
-      mouse.x = null;
-      mouse.y = null;
-    };
+    const handleMouseMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const handleMouseLeave = () => { mouse.x = null; mouse.y = null; };
 
     window.addEventListener("resize", resize);
     window.addEventListener("mousemove", handleMouseMove);
@@ -220,9 +212,93 @@ function CodeVerityLogo() {
 }
 
 // ============================================================
-//  COMPONENT: Feature  icon now animates on card hover (scale
-//  + slight rotate), using the `group` class already present on
-//  the parent, instead of only the border-color change.
+//  COMPONENT: MagneticWrap — NEW. Wraps a button/link so it nudges
+//  toward the cursor within a small radius and eases back on leave.
+//  Pure presentation: takes children, renders them unmodified aside
+//  from the wrapping transform, so any onClick/href on the child
+//  keeps working exactly as before.
+// ============================================================
+function MagneticWrap({ children, strength = 18, className = "" }) {
+  const ref = useRef(null);
+  const moveTo = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(hover: none)").matches) return; // skip on touch devices
+
+    const xTo = gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" });
+    const yTo = gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" });
+    moveTo.current = { xTo, yTo };
+
+    const handleMove = (e) => {
+      const rect = el.getBoundingClientRect();
+      const relX = e.clientX - (rect.left + rect.width / 2);
+      const relY = e.clientY - (rect.top + rect.height / 2);
+      xTo((relX / rect.width) * strength);
+      yTo((relY / rect.height) * strength);
+    };
+    const handleLeave = () => { xTo(0); yTo(0); };
+
+    el.addEventListener("mousemove", handleMove);
+    el.addEventListener("mouseleave", handleLeave);
+    return () => {
+      el.removeEventListener("mousemove", handleMove);
+      el.removeEventListener("mouseleave", handleLeave);
+    };
+  }, [strength]);
+
+  return (
+    <div ref={ref} className={`inline-block will-change-transform ${className}`}>
+      {children}
+    </div>
+  );
+}
+
+// ============================================================
+//  COMPONENT: RevealHeading — NEW. A distinctive "wipe" reveal for
+//  section headings using clip-path instead of the usual fade/slide,
+//  triggered once via IntersectionObserver (self-contained, doesn't
+//  need to hook into the big useGSAP timeline below).
+// ============================================================
+function RevealHeading({ children, as: Tag = "h2", className = "" }) {
+  const ref = useRef(null);
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      el.style.clipPath = "inset(0 0 0 0)";
+      el.style.opacity = 1;
+      return;
+    }
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          gsap.fromTo(
+            el,
+            { clipPath: "inset(0 100% 0 0)", opacity: 0 },
+            { clipPath: "inset(0 0% 0 0)", opacity: 1, duration: 0.9, ease: "power4.out" },
+          );
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.4 },
+    );
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
+  return (
+    <Tag ref={ref} className={className} style={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}>
+      {children}
+    </Tag>
+  );
+}
+
+// ============================================================
+//  COMPONENT: Feature (unchanged)
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   return (
@@ -326,11 +402,7 @@ function ScanLine() {
 }
 
 // ============================================================
-//  COMPONENT: TechBadge / TechStrip  icon-mark badges instead
-//  of plain text. Uses text-abbreviation marks (TS/JS/Py) and a
-//  generic branch glyph for "source control" rather than official
-//  brand logos, avoiding reproduction of trademarked marks while
-//  still reading as more iconic than a bare text chip.
+//  COMPONENT: BranchGlyph / TechBadge (unchanged)
 // ============================================================
 function BranchGlyph() {
   return (
@@ -342,10 +414,9 @@ function BranchGlyph() {
     </svg>
   );
 }
-
 function TechBadge({ label, mark }) {
   return (
-    <span className="flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
+    <span className="flex shrink-0 items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-2.5 py-1 text-[10px] font-medium text-[var(--text-secondary)]">
       <span className="flex h-4 w-4 shrink-0 items-center justify-center rounded bg-[var(--accent-soft)] font-mono text-[8px] font-bold text-[var(--accent)]">
         {mark}
       </span>
@@ -354,6 +425,12 @@ function TechBadge({ label, mark }) {
   );
 }
 
+// ============================================================
+//  COMPONENT: TechStrip — NOW an infinite marquee instead of a
+//  static row. The item list is rendered twice back-to-back and
+//  scrolled via a pure CSS keyframe, a standard seamless-loop
+//  marquee technique; pauses under prefers-reduced-motion.
+// ============================================================
 function TechStrip() {
   const items = [
     { label: "GitHub", mark: <BranchGlyph /> },
@@ -365,26 +442,24 @@ function TechStrip() {
   return (
     <div className="mb-8 flex flex-col items-center gap-2.5">
       <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Works with</p>
-      <div className="flex flex-wrap justify-center gap-2">
-        {items.map((item) => <TechBadge key={item.label} {...item} />)}
+      <div className="marquee-mask relative w-full max-w-xs overflow-hidden sm:max-w-sm">
+        <div className="marquee-track flex w-max gap-2">
+          {[...items, ...items].map((item, i) => (
+            <TechBadge key={`${item.label}-${i}`} {...item} />
+          ))}
+        </div>
       </div>
     </div>
   );
 }
 
 // ============================================================
-//  COMPONENT: HeroRepoInput  new, purely additive. Lets a
-//  visitor paste a repo URL directly from the hero and routes
-//  straight into the scan flow, using the exact same `?repo=`
-//  query param that Dashboard/Workspace already read (see
-//  WorkspaceSettings.jsx's "Scan again" button)  so nothing on
-//  the receiving end needs to change.
+//  COMPONENT: HeroRepoInput (unchanged)
 // ============================================================
 function HeroRepoInput({ isAuthed }) {
   const navigate = useNavigate();
   const [value, setValue] = useState("");
   const [touched, setTouched] = useState(false);
-
   const isValid = /^https:\/\/github\.com\/[^/]+\/[^/]+/.test(value.trim());
 
   const handleSubmit = (e) => {
@@ -398,15 +473,8 @@ function HeroRepoInput({ isAuthed }) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mx-auto mb-6 w-full max-w-lg lg:mx-0"
-    >
-      <div
-        className={`flex overflow-hidden rounded-xl border bg-[var(--bg-card)]/70 backdrop-blur-md transition-colors duration-200 ${
-          touched && !isValid ? "border-[var(--color-danger)]/50" : "border-[var(--border-light)] focus-within:border-[var(--accent)]/60"
-        }`}
-      >
+    <form onSubmit={handleSubmit} className="mx-auto mb-6 w-full max-w-lg lg:mx-0">
+      <div className={`flex overflow-hidden rounded-xl border bg-[var(--bg-card)]/70 backdrop-blur-md transition-colors duration-200 ${touched && !isValid ? "border-[var(--color-danger)]/50" : "border-[var(--border-light)] focus-within:border-[var(--accent)]/60"}`}>
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">$</span>
           <input
@@ -417,26 +485,19 @@ function HeroRepoInput({ isAuthed }) {
             className="h-11 w-full bg-transparent pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] sm:text-sm"
           />
         </div>
-        <button
-          type="submit"
-          className="m-1 shrink-0 rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] sm:text-sm"
-        >
+        <button type="submit" className="m-1 shrink-0 rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] sm:text-sm">
           Analyze →
         </button>
       </div>
       {touched && !isValid && (
-        <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">
-          Enter a valid GitHub repository URL.
-        </p>
+        <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">Enter a valid GitHub repository URL.</p>
       )}
     </form>
   );
 }
 
 // ============================================================
-//  COMPONENT: SampleReportModal  new, purely additive. A static,
-//  hardcoded preview (not a real scan, no API call) so a visitor
-//  can evaluate output quality before signing up.
+//  COMPONENT: SampleReportModal (unchanged)
 // ============================================================
 function SampleReportModal({ onClose }) {
   useEffect(() => {
@@ -446,31 +507,15 @@ function SampleReportModal({ onClose }) {
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--bg-primary)]/80 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sample audit report"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]"
-      >
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--bg-primary)]/80 p-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Sample audit report">
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]">
         <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Sample audit</p>
             <p className="text-sm font-semibold text-[var(--text-primary)]">expressjs/express</p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          >
-            ✕
-          </button>
+          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]">✕</button>
         </div>
-
         <div className="space-y-4 p-5">
           <div className="flex items-center gap-4">
             <div className="relative h-16 w-16 shrink-0">
@@ -485,36 +530,21 @@ function SampleReportModal({ onClose }) {
               Minor performance opportunities in route matching; no critical security issues found.
             </div>
           </div>
-
           <div className="grid grid-cols-4 gap-2">
-            {[
-              ["Quality", 91],
-              ["Security", 88],
-              ["Perf", 82],
-              ["Maint.", 90],
-            ].map(([label, val]) => (
+            {[["Quality", 91], ["Security", 88], ["Perf", 82], ["Maint.", 90]].map(([label, val]) => (
               <div key={label} className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center">
                 <p className="text-sm font-bold text-[var(--text-primary)]">{val}</p>
                 <p className="text-[9px] text-[var(--text-muted)]">{label}</p>
               </div>
             ))}
           </div>
-
           <div className="flex flex-wrap gap-2 text-[10px]">
             <span className="rounded-full bg-[var(--color-success-soft)] px-2.5 py-1 font-medium text-[var(--color-success)]">0 critical bugs</span>
             <span className="rounded-full bg-[var(--color-info-soft)] px-2.5 py-1 font-medium text-[var(--color-info)]">18 tests generated</span>
             <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 font-medium text-[var(--accent)]">3 suggestions</span>
           </div>
-
-          <p className="text-center text-[10px] text-[var(--text-muted)]">
-            This is a static preview. Run a real scan to see your own repository's audit.
-          </p>
-
-          <Link
-            to="/register"
-            onClick={onClose}
-            className="block w-full rounded-lg bg-[var(--accent)] py-2.5 text-center text-sm font-semibold text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-hover)]"
-          >
+          <p className="text-center text-[10px] text-[var(--text-muted)]">This is a static preview. Run a real scan to see your own repository's audit.</p>
+          <Link to="/register" onClick={onClose} className="block w-full rounded-lg bg-[var(--accent)] py-2.5 text-center text-sm font-semibold text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-hover)]">
             Scan your own repo →
           </Link>
         </div>
@@ -524,9 +554,8 @@ function SampleReportModal({ onClose }) {
 }
 
 // ============================================================
-//  COMPONENT: ComparisonSection  new, purely additive. Answers
-//  "how is this different from a linter/SonarQube/Snyk" before
-//  the visitor has to wonder and leave to find out elsewhere.
+//  COMPONENT: ComparisonSection (unchanged, heading now via
+//  RevealHeading for the wipe effect)
 // ============================================================
 function ComparisonSection() {
   const rows = [
@@ -540,17 +569,14 @@ function ComparisonSection() {
   return (
     <section id="comparison" className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-          not just another linter
-        </p>
-        <h2 className="mb-3 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">not just another linter</p>
+        <RevealHeading className="mb-3 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Linters catch typos. CodeVerity catches problems.
-        </h2>
+        </RevealHeading>
         <p className="mb-10 max-w-2xl text-sm text-[var(--text-secondary)]">
           Static analyzers check syntax against rules. CodeVerity reads your code the way a senior
-          engineer would  understanding architecture, intent, and risk, not just style violations.
+          engineer would — understanding architecture, intent, and risk, not just style violations.
         </p>
-
         <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           <div className="grid grid-cols-[1fr_90px_90px] border-b border-[var(--border-light)] bg-[var(--bg-hover)]/50 px-4 py-3 text-[11px] font-semibold text-[var(--text-muted)] sm:grid-cols-[1fr_120px_120px] sm:px-5">
             <span />
@@ -558,28 +584,17 @@ function ComparisonSection() {
             <span className="text-center text-[var(--accent)]">CodeVerity</span>
           </div>
           {rows.map((row, i) => (
-            <div
-              key={row.label}
-              className={`grid grid-cols-[1fr_90px_90px] items-center px-4 py-3 text-xs text-[var(--text-secondary)] sm:grid-cols-[1fr_120px_120px] sm:px-5 sm:text-sm ${
-                i !== rows.length - 1 ? "border-b border-[var(--border-light)]" : ""
-              }`}
-            >
+            <div key={row.label} className={`grid grid-cols-[1fr_90px_90px] items-center px-4 py-3 text-xs text-[var(--text-secondary)] sm:grid-cols-[1fr_120px_120px] sm:px-5 sm:text-sm ${i !== rows.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}>
               <span className="pr-2 text-[var(--text-primary)]">{row.label}</span>
               <span className="flex justify-center">
-                {row.linter ? (
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" />
-                ) : (
-                  <span className="text-[var(--text-muted)]"></span>
-                )}
+                {row.linter ? <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" /> : <span className="text-[var(--text-muted)]">—</span>}
               </span>
               <span className="flex justify-center">
                 {row.verity ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                ) : (
-                  <span className="text-[var(--text-muted)]"></span>
-                )}
+                ) : <span className="text-[var(--text-muted)]">—</span>}
               </span>
             </div>
           ))}
@@ -590,12 +605,8 @@ function ComparisonSection() {
 }
 
 // ============================================================
-//  COMPONENT: CodeIntelligenceOrb  now lazy-mounts the Three.js
-//  scene: init only runs once the section is about to scroll into
-//  view (IntersectionObserver gate), instead of on component mount
-//  regardless of viewport. The scene setup itself is byte-for-byte
-//  unchanged  only *when* it runs has changed. Badges render
-//  immediately (lightweight DOM), only the WebGL canvas is deferred.
+//  COMPONENT: CodeIntelligenceOrb (unchanged — Three.js scene,
+//  lazy-mounted via IntersectionObserver)
 // ============================================================
 function CodeIntelligenceOrb({ badgeRefs }) {
   const outerRef = useRef(null);
@@ -657,13 +668,8 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
     const coreGeo = new THREE.IcosahedronGeometry(0.85, 1);
     const coreMat = new THREE.MeshStandardMaterial({
-      color: accentColor,
-      emissive: accentColor,
-      emissiveIntensity: 0.9,
-      roughness: 0.3,
-      metalness: 0.1,
-      transparent: true,
-      opacity: 0.9,
+      color: accentColor, emissive: accentColor, emissiveIntensity: 0.9,
+      roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.9,
     });
     const core = new THREE.Mesh(coreGeo, coreMat);
     group.add(core);
@@ -681,11 +687,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const particleGeo = new THREE.BufferGeometry();
     particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: secondaryColor,
-      size: 0.035,
-      transparent: true,
-      opacity: 0.85,
-      sizeAttenuation: true,
+      color: secondaryColor, size: 0.035, transparent: true, opacity: 0.85, sizeAttenuation: true,
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     particles.rotation.x = 0.45;
@@ -717,9 +719,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       const ny = (e.clientY - rect.top) / rect.height - 0.5;
       stateRef.current.target = { x: ny * 0.6, y: nx * 0.8 };
     };
-    const handleMouseLeave = () => {
-      stateRef.current.target = { x: 0, y: stateRef.current.target.y };
-    };
+    const handleMouseLeave = () => { stateRef.current.target = { x: 0, y: stateRef.current.target.y }; };
 
     if (!reduceMotion) {
       mount.addEventListener("mousemove", handleMouseMove);
@@ -743,13 +743,9 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       resizeObserver.disconnect();
       mount.removeEventListener("mousemove", handleMouseMove);
       mount.removeEventListener("mouseleave", handleMouseLeave);
-      shellGeo.dispose();
-      shellEdges.dispose();
-      shellMat.dispose();
-      coreGeo.dispose();
-      coreMat.dispose();
-      particleGeo.dispose();
-      particleMat.dispose();
+      shellGeo.dispose(); shellEdges.dispose(); shellMat.dispose();
+      coreGeo.dispose(); coreMat.dispose();
+      particleGeo.dispose(); particleMat.dispose();
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
     };
@@ -757,10 +753,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
   return (
     <div ref={outerRef} className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
-      <div
-        ref={(el) => (badgeRefs.current[0] = el)}
-        className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
-      >
+      <div ref={(el) => (badgeRefs.current[0] = el)} className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
@@ -774,10 +767,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         </div>
       </div>
 
-      <div
-        ref={(el) => (badgeRefs.current[1] = el)}
-        className="absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]"
-      >
+      <div ref={(el) => (badgeRefs.current[1] = el)} className="absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
         <div className="relative h-9 w-9 shrink-0">
           <svg viewBox="0 0 36 36" className="-rotate-90">
             <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="var(--border-light)" strokeWidth="4" />
@@ -791,10 +781,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         </div>
       </div>
 
-      <div
-        ref={(el) => (badgeRefs.current[2] = el)}
-        className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex"
-      >
+      <div ref={(el) => (badgeRefs.current[2] = el)} className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
         <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
       </div>
@@ -826,7 +813,7 @@ function SectionDots({ sections, activeId, onJump }) {
 }
 
 // ============================================================
-//  SECTION: How It Works (unchanged)
+//  SECTION: How It Works (heading via RevealHeading)
 // ============================================================
 function HowItWorks() {
   const steps = [
@@ -840,8 +827,8 @@ function HowItWorks() {
       <div className="mx-auto max-w-6xl">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">the process</p>
         <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">How it works</h2>
-          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out  three steps.</p>
+          <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">How it works</RevealHeading>
+          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out — three steps.</p>
         </div>
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
           {steps.map((step, idx) => (
@@ -861,14 +848,13 @@ function HowItWorks() {
 }
 
 // ============================================================
-//  SECTION: Testimonials  cards now highlight one at a time as
-//  they cross the viewport center, via IntersectionObserver,
-//  instead of all three sitting static. Content unchanged.
+//  SECTION: Testimonials (unchanged scroll-highlight; heading now
+//  via RevealHeading)
 // ============================================================
 function Testimonials() {
   const testimonials = [
     { quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.", author: "Sarah Chen", role: "Lead Engineer, Finlytics" },
-    { quote: "I use it before every PR. The bug detection is surprisingly accurate  it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
+    { quote: "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
     { quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.", author: "Dr. Aisha Patel", role: "CTO, DevSafe" },
   ];
 
@@ -879,9 +865,7 @@ function Testimonials() {
     const observers = cardRefs.current.map((el, i) => {
       if (!el) return null;
       const obs = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) setActiveIdx(i);
-        },
+        (entries) => { if (entries[0].isIntersecting) setActiveIdx(i); },
         { rootMargin: "-40% 0px -40% 0px", threshold: 0 },
       );
       obs.observe(el);
@@ -894,17 +878,15 @@ function Testimonials() {
     <section id="testimonials" className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">social proof</p>
-        <h2 className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">Trusted by developers already shipping with it</h2>
+        <RevealHeading className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+          Trusted by developers already shipping with it
+        </RevealHeading>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
           {testimonials.map((t, i) => (
             <div
               key={i}
               ref={(el) => (cardRefs.current[i] = el)}
-              className={`flex flex-col rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-300 ${
-                activeIdx === i
-                  ? "border-[var(--accent)]/50 shadow-[var(--shadow-lg)] md:-translate-y-1"
-                  : "border-[var(--border-light)]"
-              }`}
+              className={`flex flex-col rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-300 ${activeIdx === i ? "border-[var(--accent)]/50 shadow-[var(--shadow-lg)] md:-translate-y-1" : "border-[var(--border-light)]"}`}
             >
               <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">"</span>
               <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">{t.quote}</p>
@@ -926,7 +908,7 @@ function Testimonials() {
 }
 
 // ============================================================
-//  SECTION: Pricing (unchanged, width already max-w-6xl)
+//  SECTION: Pricing (unchanged, heading via RevealHeading)
 // ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
@@ -936,7 +918,7 @@ function Pricing() {
       <div className="mx-auto max-w-6xl">
         <div className="mb-10 text-center">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">plans</p>
-          <h2 className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">Simple, transparent pricing</h2>
+          <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">Simple, transparent pricing</RevealHeading>
           <p className="mx-auto mt-2 max-w-xl text-sm text-[var(--text-secondary)]">Start for free, upgrade as you grow.</p>
         </div>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
@@ -980,15 +962,14 @@ function Pricing() {
             );
           })}
         </div>
-        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off  see full pricing page.</p>
+        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off — see full pricing page.</p>
       </div>
     </section>
   );
 }
 
 // ============================================================
-//  SECTION: FAQ  two new items added (security + comparison),
-//  width aligned to max-w-6xl to match every other section.
+//  SECTION: FAQ (unchanged content, heading via RevealHeading)
 // ============================================================
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
@@ -997,8 +978,8 @@ function FAQ() {
     { q: "Is my code stored or shared?", a: "No. CodeVerity processes your repository in memory and never stores any source code. All analysis is temporary and encrypted." },
     { q: "Can I use CodeVerity for private repositories?", a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security." },
     { q: "How accurate is the AI bug detection?", a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement." },
-    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would  understanding architecture and intent, not just style violations  and explains findings in plain English instead of rule IDs." },
-    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately  no config files, no CI pipeline changes." },
+    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would — understanding architecture and intent, not just style violations — and explains findings in plain English instead of rule IDs." },
+    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately — no config files, no CI pipeline changes." },
   ];
   const toggle = (idx) => setOpenIndex(openIndex === idx ? null : idx);
 
@@ -1006,10 +987,9 @@ function FAQ() {
     <section id="faq" className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
         <p className="mb-2 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">questions</p>
-        <h2 className="mb-10 text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">Frequently asked questions</h2>
-        {/* Inner column capped narrower than the section for
-            comfortable reading-line-length, while the section itself
-            still lines up edge-to-edge with every other section. */}
+        <RevealHeading as="h2" className="mb-10 block text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
+          Frequently asked questions
+        </RevealHeading>
         <div className="mx-auto max-w-3xl divide-y divide-[var(--border-light)] rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           {faqs.map((faq, idx) => (
             <div key={idx}>
@@ -1158,7 +1138,12 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  const orbWrapperRef = useRef(null);
+  // Orb: outer perspective wrapper (scroll-scrubbed tilt) + inner
+  // 3D-transformed wrapper that actually receives the tilt, matching
+  // the scroll-driven reveal that was on the original DOM showcase
+  // card — restored here after being dropped for a simple fade.
+  const orbPerspectiveRef = useRef(null);
+  const orbTiltRef = useRef(null);
   const orbBadgeRefs = useRef([]);
 
   const progressRef = useRef(null);
@@ -1224,17 +1209,11 @@ export default function Home() {
             trigger: statsRef.current,
             start: "top 90%",
             onEnter: () => {
-              if (!statsInViewRef.current) {
-                statsInViewRef.current = true;
-                setStatsReplayKey((k) => k + 1);
-              }
+              if (!statsInViewRef.current) { statsInViewRef.current = true; setStatsReplayKey((k) => k + 1); }
             },
             onLeave: () => { statsInViewRef.current = false; },
             onEnterBack: () => {
-              if (!statsInViewRef.current) {
-                statsInViewRef.current = true;
-                setStatsReplayKey((k) => k + 1);
-              }
+              if (!statsInViewRef.current) { statsInViewRef.current = true; setStatsReplayKey((k) => k + 1); }
             },
             onLeaveBack: () => { statsInViewRef.current = false; },
           });
@@ -1249,11 +1228,46 @@ export default function Home() {
           .fromTo(ctasRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, "-=0.3")
           .fromTo(trustRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4 }, "-=0.2");
 
-        if (orbWrapperRef.current) {
-          gsap.fromTo(orbWrapperRef.current, { opacity: 0, y: 30, scale: 0.94 }, { opacity: 1, y: 0, scale: 1, duration: 0.9, ease: "power3.out", delay: 0.3 });
-        }
         if (statsRef.current) {
           gsap.fromTo(statsRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 });
+        }
+
+        // --- ORB: scroll-scrubbed tilt-in, restored. Starts angled/
+        // receded/transparent, animates flat-and-close as the section
+        // scrolls into view (scrub tied directly to scroll position,
+        // not just a one-shot fade), then idles once in view.  ---
+        if (orbTiltRef.current && orbPerspectiveRef.current) {
+          const startState = { rotateY: -26, rotateX: 10, y: 60, scale: 0.92, opacity: 0 };
+          gsap.set(orbTiltRef.current, startState);
+
+          ScrollTrigger.create({
+            trigger: orbPerspectiveRef.current,
+            start: "top 90%",
+            end: "top 45%",
+            scrub: 1,
+            onUpdate: (self) => {
+              const p = self.progress;
+              gsap.to(orbTiltRef.current, {
+                rotateY: startState.rotateY + (0 - startState.rotateY) * p,
+                rotateX: startState.rotateX + (0 - startState.rotateX) * p,
+                y: startState.y + (0 - startState.y) * p,
+                scale: startState.scale + (1 - startState.scale) * p,
+                opacity: p,
+                duration: 0.1,
+                overwrite: true,
+              });
+            },
+            onLeaveBack: () => gsap.set(orbTiltRef.current, startState),
+          });
+
+          gsap.to(orbTiltRef.current, {
+            y: "+=10",
+            duration: 3.5,
+            repeat: -1,
+            yoyo: true,
+            ease: "sine.inOut",
+            delay: 1.2,
+          });
         }
 
         ScrollTrigger.create({
@@ -1310,7 +1324,7 @@ export default function Home() {
         if (orbBadgeRefs.current.length) {
           gsap.set(orbBadgeRefs.current, { opacity: 0, scale: 0.85 });
           ScrollTrigger.create({
-            trigger: orbWrapperRef.current,
+            trigger: orbPerspectiveRef.current,
             start: "top 85%",
             onEnter: () => {
               gsap.to(orbBadgeRefs.current, { opacity: 1, scale: 1, duration: 0.7, stagger: 0.15, ease: "back.out(1.6)", delay: 0.5 });
@@ -1333,9 +1347,9 @@ export default function Home() {
             descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
             featureLabelRef.current, featureCardsRef.current, howRef.current, comparisonRef.current,
             testimonialRef.current, pricingRef.current, faqRef.current,
-            orbWrapperRef.current, ...(orbBadgeRefs.current || []),
+            orbTiltRef.current, ...(orbBadgeRefs.current || []),
           ],
-          { opacity: 1, y: 0, scale: 1, clearProps: "all" },
+          { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, clearProps: "all" },
         );
         setShowStickyCta(false);
       });
@@ -1378,9 +1392,7 @@ export default function Home() {
       {showSampleModal && <SampleReportModal onClose={() => setShowSampleModal(false)} />}
 
       <div
-        className={`fixed bottom-0 left-0 right-0 z-[55] flex items-center justify-between gap-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]/95 px-4 py-3 backdrop-blur-md transition-all duration-300 sm:px-6 ${
-          showStickyCta ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"
-        }`}
+        className={`fixed bottom-0 left-0 right-0 z-[55] flex items-center justify-between gap-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]/95 px-4 py-3 backdrop-blur-md transition-all duration-300 sm:px-6 ${showStickyCta ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"}`}
       >
         <div className="flex items-center gap-2">
           <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent)] sm:flex">
@@ -1415,6 +1427,20 @@ export default function Home() {
         }
         @keyframes gradient-shift {
           0% { background-position: 0% 50%; } 50% { background-position: 100% 50%; } 100% { background-position: 0% 50%; }
+        }
+        .marquee-mask {
+          -webkit-mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+          mask-image: linear-gradient(to right, transparent, black 12%, black 88%, transparent);
+        }
+        .marquee-track {
+          animation: marquee-scroll 18s linear infinite;
+        }
+        @keyframes marquee-scroll {
+          from { transform: translateX(0); }
+          to { transform: translateX(-50%); }
+        }
+        @media (prefers-reduced-motion: reduce) {
+          .marquee-track { animation: none; }
         }
       `}} />
 
@@ -1453,29 +1479,35 @@ export default function Home() {
             </p>
 
             <p ref={descriptionRef} className={`mx-auto mb-6 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}>
-              Drop any public GitHub URL and get a complete AI-powered repository audit  architecture analysis, security findings, bug detection, performance insights, and generated tests.
+              Drop any public GitHub URL and get a complete AI-powered repository audit — architecture analysis, security findings, bug detection, performance insights, and generated tests.
             </p>
 
             <HeroRepoInput isAuthed={!!token} />
 
             <div ref={ctasRef} className={`flex flex-wrap justify-center gap-3 lg:justify-start ${compactClasses.ctaMargin}`}>
               {token ? (
-                <Link to="/dashboard" className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]" style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}>
-                  <ScanLine />
-                  <span className="relative z-10">Open Dashboard →</span>
-                </Link>
+                <MagneticWrap>
+                  <Link to="/dashboard" className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)]" style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}>
+                    <ScanLine />
+                    <span className="relative z-10">Open Dashboard →</span>
+                  </Link>
+                </MagneticWrap>
               ) : (
-                <Link to="/register" className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-all duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98]" style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}>
-                  <ScanLine />
-                  <span className="relative z-10">Get Started Free →</span>
-                </Link>
+                <MagneticWrap>
+                  <Link to="/register" className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)]" style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}>
+                    <ScanLine />
+                    <span className="relative z-10">Get Started Free →</span>
+                  </Link>
+                </MagneticWrap>
               )}
-              <button
-                onClick={() => setShowSampleModal(true)}
-                className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-all duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] active:scale-[0.98]"
-              >
-                See a sample audit
-              </button>
+              <MagneticWrap strength={14}>
+                <button
+                  onClick={() => setShowSampleModal(true)}
+                  className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)]/75 px-7 py-3 text-sm font-semibold text-[var(--text-primary)] backdrop-blur-sm transition-colors duration-200 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"
+                >
+                  See a sample audit
+                </button>
+              </MagneticWrap>
             </div>
 
             <div ref={trustRef} className="flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)] lg:justify-start">
@@ -1486,8 +1518,10 @@ export default function Home() {
             </div>
           </div>
 
-          <div ref={orbWrapperRef} className="mx-auto w-full max-w-md lg:mx-0">
-            <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
+          <div ref={orbPerspectiveRef} className="mx-auto w-full max-w-md lg:mx-0" style={{ perspective: "1400px" }}>
+            <div ref={orbTiltRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
+              <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
+            </div>
           </div>
         </div>
 
