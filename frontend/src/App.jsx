@@ -22,6 +22,7 @@ import Navbar from "./components/Navbar";
 import PageLoader from "./components/PageLoader";
 import RouteProgressBar from "./components/RouteProgressBar";
 import ProtectedRoute from "./components/ProtectedRoute";
+import RouteChangeLoader from "./components/RouteChangeLoader";
 import ScrollReactiveBackground from "./components/ScrollReactiveBackground.jsx";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────
@@ -96,8 +97,6 @@ function SentryFallback({ error, resetError }) {
 }
 
 // ─── Delayed Suspense Fallback ────────────────────────────────
-// Avoids flashing the loader on fast chunk loads. If the page
-// resolves in under `delay` ms, nothing is shown at all.
 function DelayedFallback({ delay = 250 }) {
   const [show, setShow] = useState(false);
   useEffect(() => {
@@ -196,9 +195,13 @@ function Layout() {
 
   return (
     <>
+      {/* ─── Fixed overlays: MUST be siblings of SmoothScroll ─── */}
+      <RouteChangeLoader minMs={700} />
       <RouteProgressBar />
+
       {isHome && <ScrollReactiveBackground />}
       {showNav && <Navbar />}
+
       <SmoothScroll>
         <Suspense fallback={<DelayedFallback delay={250} />}>
           <Routes>
