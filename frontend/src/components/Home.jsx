@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
 import { usePreferences } from "../context/PreferencesContext";
-import { gsap, ScrollTrigger, useGSAP } from "../lib/gsap";
+import { gsap, ScrollTrigger, ScrollSmoother, useGSAP } from "../lib/gsap"; // ← CHANGED (added ScrollSmoother)
 import {
   PRICING_PLANS,
   formatPrice,
@@ -16,136 +16,6 @@ function getCSSColor(varName, fallbackHex) {
   if (typeof window === "undefined") return fallbackHex;
   const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   return val || fallbackHex;
-}
-function getAccentRGB() {
-  const hex = getCSSColor("--accent", "#22d3ee").replace("#", "");
-  const bigint = parseInt(hex, 16);
-  if (isNaN(bigint)) return "34,211,238";
-  return `${(bigint >> 16) & 255},${(bigint >> 8) & 255},${bigint & 255}`;
-}
-
-// ============================================================
-//  NeuralNetworkBackground
-// ============================================================
-function NeuralNetworkBackground() {
-  const canvasRef = useRef(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const ctx = canvas.getContext("2d");
-    const accentRGB = getAccentRGB();
-    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-    let width, height;
-    let particles = [];
-    let animationFrame;
-    let mouse = { x: null, y: null, radius: 150 };
-
-    const resize = () => {
-      width = document.documentElement.clientWidth;
-      height = document.documentElement.clientHeight;
-      canvas.width = width;
-      canvas.height = height;
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      initParticles();
-    };
-
-    function initParticles() {
-      const particleCount = Math.min(Math.floor((width * height) / 15000), 100);
-      particles = [];
-      for (let i = 0; i < particleCount; i++) {
-        particles.push({
-          x: Math.random() * width,
-          y: Math.random() * height,
-          vx: (Math.random() - 0.5) * 0.5,
-          vy: (Math.random() - 0.5) * 0.5,
-          size: Math.random() * 1.5 + 0.5,
-        });
-      }
-    }
-
-    const handleMouseMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
-    const handleMouseLeave = () => { mouse.x = null; mouse.y = null; };
-
-    window.addEventListener("resize", resize);
-    window.addEventListener("mousemove", handleMouseMove);
-    window.addEventListener("mouseleave", handleMouseLeave);
-    resize();
-
-    const animate = () => {
-      ctx.clearRect(0, 0, width, height);
-      particles.forEach((p) => {
-        p.x += p.vx;
-        p.y += p.vy;
-        if (p.x < 0 || p.x > width) p.vx *= -1;
-        if (p.y < 0 || p.y > height) p.vy *= -1;
-        if (mouse.x != null && mouse.y != null) {
-          const dx = p.x - mouse.x;
-          const dy = p.y - mouse.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < mouse.radius) {
-            const force = (mouse.radius - dist) / mouse.radius;
-            p.x += (dx / dist) * force * 2;
-            p.y += (dy / dist) * force * 2;
-          }
-        }
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${accentRGB}, 0.4)`;
-        ctx.fill();
-      });
-      for (let i = 0; i < particles.length; i++) {
-        for (let j = i + 1; j < particles.length; j++) {
-          const dx = particles[i].x - particles[j].x;
-          const dy = particles[i].y - particles[j].y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < 120) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(particles[j].x, particles[j].y);
-            ctx.strokeStyle = `rgba(${accentRGB}, ${0.15 * (1 - dist / 120)})`;
-            ctx.lineWidth = 0.5;
-            ctx.stroke();
-          }
-        }
-        if (mouse.x != null && mouse.y != null) {
-          const dx = particles[i].x - mouse.x;
-          const dy = particles[i].y - mouse.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          if (dist < mouse.radius) {
-            ctx.beginPath();
-            ctx.moveTo(particles[i].x, particles[i].y);
-            ctx.lineTo(mouse.x, mouse.y);
-            ctx.strokeStyle = `rgba(${accentRGB}, ${0.3 * (1 - dist / mouse.radius)})`;
-            ctx.lineWidth = 0.8;
-            ctx.stroke();
-          }
-        }
-      }
-      animationFrame = requestAnimationFrame(animate);
-    };
-
-    if (reduceMotion) {
-      particles.forEach((p) => {
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${accentRGB}, 0.4)`;
-        ctx.fill();
-      });
-    } else {
-      animate();
-    }
-
-    return () => {
-      cancelAnimationFrame(animationFrame);
-      window.removeEventListener("resize", resize);
-      window.removeEventListener("mousemove", handleMouseMove);
-      window.removeEventListener("mouseleave", handleMouseLeave);
-    };
-  }, []);
-
-  return <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />;
 }
 
 // ============================================================
@@ -289,8 +159,6 @@ function RevealHeading({ children, as: Tag = "h2", className = "" }) {
 
 // ============================================================
 //  Feature card
-//  - 3D lift on hover (handled by GSAP in Home)
-//  - Mouse-follow spotlight (CSS custom properties set on hover)
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   const cardRef = useRef(null);
@@ -310,7 +178,6 @@ function Feature({ icon, title, desc, index }) {
       onMouseMove={handleMouseMove}
       className="feature-card group relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]/40 p-6 backdrop-blur-sm transition-[border-color,background-color] duration-300 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-card)]/70"
     >
-      {/* Mouse-follow spotlight */}
       <div
         className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
@@ -331,7 +198,6 @@ function Feature({ icon, title, desc, index }) {
       <h3 className="relative mt-5 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
       <p className="relative mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">{desc}</p>
 
-      {/* Bottom accent sweep */}
       <div className="absolute bottom-0 left-0 h-px w-0 bg-gradient-to-r from-[var(--accent)] to-transparent transition-all duration-500 group-hover:w-full" />
     </div>
   );
@@ -403,7 +269,7 @@ function StatPill({ value, label, delayMs = 0 }) {
   }, [value, hasStarted]);
 
   return (
-    <div className="stat-card relative flex min-w-[130px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/50 px-5 py-4 backdrop-blur-md transition-all duration-300">
+    <div className="stat-card relative flex min-w-[130px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/50 px-5 py-4 backdrop-blur-md">
       <span className="stat-number text-2xl font-extrabold tabular-nums">{display}</span>
       <span className="text-[10px] font-medium tracking-wide text-[var(--text-secondary)]">{label}</span>
     </div>
@@ -681,7 +547,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
     try {
       const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-      const accentColor = new THREE.Color(getCSSColor("--accent", "#22d3ee"));
+      const accentColor = new THREE.Color(getCSSColor("--accent", "#c084fc"));
       const secondaryColor = new THREE.Color(getCSSColor("--accent-secondary", "#818cf8"));
 
       let width = mount.clientWidth;
@@ -974,12 +840,12 @@ function Testimonials() {
         <RevealHeading className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Trusted by developers already shipping with it
         </RevealHeading>
-        <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
+        <div className="testimonial-grid grid grid-cols-1 gap-5 md:grid-cols-3">
           {testimonials.map((t, i) => (
             <div
               key={i}
               ref={(el) => (cardRefs.current[i] = el)}
-              className={`flex flex-col rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-300 ${activeIdx === i ? "border-[var(--accent)]/50 shadow-[var(--shadow-lg)] md:-translate-y-1" : "border-[var(--border-light)]"}`}
+              className={`testimonial-card flex flex-col rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-300 ${activeIdx === i ? "border-[var(--accent)]/50 shadow-[var(--shadow-lg)] md:-translate-y-1" : "border-[var(--border-light)]"}`}
             >
               <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">&ldquo;</span>
               <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">{t.quote}</p>
@@ -1130,7 +996,7 @@ function FAQ() {
                 <span className={`ml-4 shrink-0 font-mono text-lg text-[var(--accent)] transition-transform duration-200 ${openIndex === idx ? "rotate-45" : ""}`}>+</span>
               </button>
               {openIndex === idx && (
-                <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">{faq.a}</div>
+                <div className="px-4 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">{faq.a}</div>
               )}
             </div>
           ))}
@@ -1178,7 +1044,7 @@ function Footer({ isLoggedIn }) {
               <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
               <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
               <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
-              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
+              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text([var(--accent-contrast)]">Terms</Link></li>
             </ul>
           </div>
           <div>
@@ -1238,6 +1104,8 @@ export default function Home() {
             avgQuality: data.stats.avgQuality ?? 0,
             avgTime: data.stats.avgTime || "< 2 min",
           });
+          // ← NEW: refresh ScrollTrigger after page height may have changed
+          requestAnimationFrame(() => ScrollTrigger.refresh());
         }
       } catch (err) {
         console.error("Failed to fetch stats:", err);
@@ -1289,11 +1157,18 @@ export default function Home() {
   ];
   const [activeSection, setActiveSection] = useState("hero");
 
+  // ← CHANGED: routes through ScrollSmoother when available
   const jumpToSection = (id) => {
     const el = document.getElementById(id) || containerRef.current;
     if (!el) return;
-    const top = el.getBoundingClientRect().top + window.scrollY - 70;
-    window.scrollTo({ top, behavior: "smooth" });
+
+    const smoother = ScrollSmoother.get();
+    if (smoother) {
+      smoother.scrollTo(el, true, "top 90px");
+    } else {
+      const top = el.getBoundingClientRect().top + window.scrollY - 70;
+      window.scrollTo({ top, behavior: "smooth" });
+    }
   };
 
   useGSAP(
@@ -1301,6 +1176,7 @@ export default function Home() {
       const mm = gsap.matchMedia();
 
       mm.add("(prefers-reduced-motion: no-preference)", () => {
+        /* ---------- Progress bar ---------- */
         if (progressRef.current) {
           gsap.set(progressRef.current, { scaleX: 0 });
           const setProgress = gsap.quickTo(progressRef.current, "scaleX", { duration: 0.25, ease: "power2.out" });
@@ -1312,6 +1188,7 @@ export default function Home() {
           });
         }
 
+        /* ---------- Active section tracking ---------- */
         SECTIONS.forEach(({ id }) => {
           const el = document.getElementById(id);
           if (!el) return;
@@ -1324,6 +1201,7 @@ export default function Home() {
           });
         });
 
+        /* ---------- Sticky CTA ---------- */
         if (heroSectionRef.current) {
           ScrollTrigger.create({
             trigger: heroSectionRef.current,
@@ -1333,6 +1211,7 @@ export default function Home() {
           });
         }
 
+        /* ---------- Stats replay ---------- */
         if (statsRef.current) {
           ScrollTrigger.create({
             trigger: statsRef.current,
@@ -1348,7 +1227,7 @@ export default function Home() {
           });
         }
 
-        // Hero entrance — richer stagger
+        /* ---------- Hero intro timeline ---------- */
         const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.8 } });
         tl.fromTo(brandRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6 })
           .fromTo(badgeRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
@@ -1362,7 +1241,7 @@ export default function Home() {
           gsap.fromTo(statsRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 });
         }
 
-        // --- ORB: visible from mount, tilts to neutral on enter ---
+        /* ---------- Orb entrance ---------- */
         if (orbTiltRef.current && orbPerspectiveRef.current) {
           gsap.set(orbTiltRef.current, {
             rotateY: -18,
@@ -1396,7 +1275,7 @@ export default function Home() {
           });
         }
 
-        // --- Feature label reveal ---
+        /* ---------- Feature label ---------- */
         if (featureLabelRef.current) {
           ScrollTrigger.create({
             trigger: featureLabelRef.current,
@@ -1412,41 +1291,76 @@ export default function Home() {
           });
         }
 
-        // --- Feature cards: 3D cover-flow reveal on scroll ---
+        /* ---------- Feature cards cover-flow ---------- */
         if (featureGridRef.current && featureCardsRef.current.length) {
           const cards = featureCardsRef.current.filter(Boolean);
+          const isMobileFlow = window.matchMedia("(max-width: 639px)").matches;
 
-          const initStates = [
-            { rotateY: 32, rotateX: -8, z: -100, opacity: 0 },
-            { rotateY: 0,  rotateX: -14, z: 70,  opacity: 0 },
-            { rotateY: -32, rotateX: -8, z: -100, opacity: 0 },
-          ];
-
-          cards.forEach((card, i) => {
-            gsap.set(card, { ...initStates[i], transformOrigin: "center center" });
-          });
-
-          ScrollTrigger.create({
-            trigger: featureGridRef.current,
-            start: "top 80%",
-            once: true,
-            onEnter: () => {
-              cards.forEach((card, i) => {
-                gsap.to(card, {
-                  rotateY: 0,
-                  rotateX: 0,
-                  z: 0,
+          if (isMobileFlow) {
+            cards.forEach((card, idx) => {
+              gsap.fromTo(
+                card,
+                { opacity: 0, y: 24 },
+                {
                   opacity: 1,
-                  duration: 1.3,
-                  ease: "power3.out",
-                  delay: i * 0.15,
-                });
-              });
-            },
-          });
+                  y: 0,
+                  duration: 0.6,
+                  ease: "power2.out",
+                  delay: idx * 0.1,
+                  scrollTrigger: {
+                    trigger: card,
+                    start: "top 90%",
+                    toggleActions: "play none none reverse",
+                  },
+                },
+              );
+            });
+          } else {
+            const coverFlowPoses = [
+              { rotateY: 26, rotateX: -6, z: -140, scale: 0.92 },
+              { rotateY: 0, rotateX: -3, z: 90, scale: 1.04 },
+              { rotateY: -26, rotateX: -6, z: -140, scale: 0.92 },
+            ];
+            const deepSpaceStates = [
+              { rotateY: 55, rotateX: -14, z: -500 },
+              { rotateY: 0, rotateX: -18, z: -620 },
+              { rotateY: -55, rotateX: -14, z: -500 },
+            ];
+
+            const flowTl = gsap.timeline({
+              defaults: { ease: "power2.inOut" },
+              scrollTrigger: {
+                trigger: featureGridRef.current,
+                start: "top 92%",
+                end: "bottom 25%",
+                scrub: 1,
+              },
+            });
+
+            cards.forEach((card, idx) => {
+              flowTl.fromTo(
+                card,
+                { ...deepSpaceStates[idx], opacity: 0 },
+                { opacity: 1, ...coverFlowPoses[idx], duration: 1.1 },
+                idx * 0.12,
+              );
+            });
+
+            flowTl.to(
+              cards,
+              {
+                y: (idx) => -18 - idx * 7,
+                rotateX: "-=2",
+                duration: 0.8,
+                stagger: 0.05,
+                ease: "none",
+              },
+              ">-0.05",
+            );
+          }
         }
 
-        // --- Feature card hover: 3D lift + icon spin ---
+        /* ---------- Feature card hover: 3D lift + icon spin ---------- */
         featureCardsRef.current.forEach((el) => {
           if (!el) return;
           const card = el.querySelector(".feature-card");
@@ -1469,7 +1383,7 @@ export default function Home() {
           };
         });
 
-        // --- Section fade-ins ---
+        /* ---------- Section fade-ins ---------- */
         const sections = [
           { ref: howRef, start: "top 85%" },
           { ref: comparisonRef, start: "top 85%" },
@@ -1493,7 +1407,7 @@ export default function Home() {
           });
         });
 
-        // --- Parallax glows ---
+        /* ---------- Parallax glows ---------- */
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
@@ -1511,7 +1425,7 @@ export default function Home() {
           ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY3(self.progress * 50) });
         }
 
-        // --- Orb badges: fade in shortly after mount, then float ---
+        /* ---------- Orb badges ---------- */
         const animateBadges = () => {
           const badges = orbBadgeRefs.current.filter(Boolean);
           if (!badges.length) return;
@@ -1542,6 +1456,121 @@ export default function Home() {
           });
         };
         requestAnimationFrame(animateBadges);
+
+        /* ═══════════════════════════════════════════════════
+           NEW ANIMATIONS — modern polish layer
+           ═══════════════════════════════════════════════════ */
+
+        /* ---------- (NEW) How-it-works scrubbed progress line ---------- */
+        if (howRef.current) {
+          howRef.current.style.position = "relative";
+          const line = document.createElement("div");
+          line.className = "how-progress-line";
+          howRef.current.appendChild(line);
+
+          gsap.fromTo(
+            line,
+            { scaleX: 0 },
+            {
+              scaleX: 1,
+              ease: "none",
+              scrollTrigger: {
+                trigger: howRef.current,
+                start: "top 70%",
+                end: "bottom 60%",
+                scrub: true,
+              },
+            },
+          );
+        }
+
+        /* ---------- (NEW) Section heading parallax drift ---------- */
+        gsap.utils.toArray("section h2").forEach((el) => {
+          // Skip if reduced motion was on at mount (the whole block wouldn't run)
+          gsap.fromTo(
+            el,
+            { y: 12 },
+            {
+              y: -12,
+              ease: "none",
+              scrollTrigger: {
+                trigger: el,
+                start: "top bottom",
+                end: "bottom top",
+                scrub: true,
+              },
+            },
+          );
+        });
+
+        /* ---------- (NEW) Testimonial cards — blur + stagger reveal ---------- */
+        if (testimonialRef.current) {
+          const cards = testimonialRef.current.querySelectorAll(".testimonial-card");
+          if (cards.length) {
+            gsap.fromTo(
+              cards,
+              { opacity: 0, y: 40, filter: "blur(8px)" },
+              {
+                opacity: 1,
+                y: 0,
+                filter: "blur(0px)",
+                duration: 0.8,
+                stagger: 0.12,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: testimonialRef.current,
+                  start: "top 75%",
+                  toggleActions: "play none none reverse",
+                },
+              },
+            );
+          }
+        }
+
+        /* ---------- (NEW) Pricing cards — subtle lift on scroll ---------- */
+        if (pricingRef.current) {
+          const cards = pricingRef.current.querySelectorAll(".grid > div");
+          if (cards.length) {
+            gsap.fromTo(
+              cards,
+              { y: 24 },
+              {
+                y: 0,
+                duration: 0.9,
+                stagger: 0.1,
+                ease: "power3.out",
+                scrollTrigger: {
+                  trigger: pricingRef.current,
+                  start: "top 80%",
+                  toggleActions: "play none none reverse",
+                },
+              },
+            );
+          }
+        }
+
+        /* ---------- (NEW) FAQ rows — cascading reveal ---------- */
+        if (faqRef.current) {
+          const rows = faqRef.current.querySelectorAll("button");
+          if (rows.length) {
+            gsap.fromTo(
+              rows,
+              { opacity: 0, x: -12 },
+              {
+                opacity: 1,
+                x: 0,
+                duration: 0.45,
+                stagger: 0.05,
+                ease: "power2.out",
+                scrollTrigger: {
+                  trigger: faqRef.current,
+                  start: "top 80%",
+                  toggleActions: "play none none reverse",
+                },
+              },
+            );
+          }
+        }
 
         return () => {
           ScrollTrigger.getAll().forEach((st) => st.kill());
@@ -1593,7 +1622,9 @@ export default function Home() {
       };
 
   return (
-    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-transparent px-4 text-[var(--text-primary)] sm:px-6">
+      {/* ← CHANGED: bg-[var(--bg-primary)] → bg-transparent so the App-level background shows through */}
+
       <div ref={progressRef} className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]" style={{ transform: "scaleX(0)" }} aria-hidden="true" />
 
       <SectionDots sections={SECTIONS} activeId={activeSection} onJump={jumpToSection} />
@@ -1649,6 +1680,7 @@ export default function Home() {
           to { transform: translateX(-50%); }
         }
         .feature-card { will-change: transform; }
+        .testimonial-card { will-change: transform, opacity, filter; }
         @media (prefers-reduced-motion: reduce) {
           .marquee-track { animation: none; }
         }
@@ -1658,7 +1690,7 @@ export default function Home() {
       <div ref={bgGlow2Ref} className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div ref={bgGridRef} className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
-      <NeuralNetworkBackground />
+      {/* ← REMOVED: <NeuralNetworkBackground /> — now rendered at App level as ScrollReactiveBackground */}
 
       <div id="hero" ref={heroSectionRef} className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}>
         <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
@@ -1748,7 +1780,6 @@ export default function Home() {
             <p className="text-sm font-semibold text-[var(--text-primary)]">What CodeVerity checks</p>
           </div>
 
-          {/* 3D cover-flow feature grid */}
           <div
             ref={featureGridRef}
             className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}

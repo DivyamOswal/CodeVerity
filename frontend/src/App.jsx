@@ -21,7 +21,7 @@ import SmoothScroll from "./components/SmoothScroll";
 import Navbar from "./components/Navbar";
 import PageLoader from "./components/PageLoader";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ScrollReactiveBackground from "./components/ScrollReactiveBackground"; // ← NEW
+import ScrollReactiveBackground from "./components/ScrollReactiveBackground.jsx"; // ← NEW
 
 // ─── Lazy-loaded pages ───────────────────────────────────────
 const Home = lazy(() => import("./components/Home"));
