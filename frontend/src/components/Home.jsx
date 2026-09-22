@@ -10,7 +10,7 @@ import {
 } from "../components/PricingPlans";
 
 // ============================================================
-//  Color helpers (unchanged)
+//  Color helpers
 // ============================================================
 function getCSSColor(varName, fallbackHex) {
   if (typeof window === "undefined") return fallbackHex;
@@ -25,7 +25,7 @@ function getAccentRGB() {
 }
 
 // ============================================================
-//  COMPONENT: NeuralNetworkBackground (unchanged)
+//  NeuralNetworkBackground
 // ============================================================
 function NeuralNetworkBackground() {
   const canvasRef = useRef(null);
@@ -149,7 +149,7 @@ function NeuralNetworkBackground() {
 }
 
 // ============================================================
-//  COMPONENT: TypedWord (unchanged)
+//  TypedWord
 // ============================================================
 function TypedWord({ words }) {
   const [index, setIndex] = useState(0);
@@ -167,7 +167,6 @@ function TypedWord({ words }) {
             setCharIndex(charIndex + 1);
           } else {
             setIsDeleting(true);
-            setTimeout(() => {}, 1500);
           }
         } else {
           if (charIndex > 0) {
@@ -193,7 +192,7 @@ function TypedWord({ words }) {
 }
 
 // ============================================================
-//  COMPONENT: CodeVerityLogo (unchanged)
+//  CodeVerityLogo
 // ============================================================
 function CodeVerityLogo() {
   return (
@@ -212,25 +211,19 @@ function CodeVerityLogo() {
 }
 
 // ============================================================
-//  COMPONENT: MagneticWrap — NEW. Wraps a button/link so it nudges
-//  toward the cursor within a small radius and eases back on leave.
-//  Pure presentation: takes children, renders them unmodified aside
-//  from the wrapping transform, so any onClick/href on the child
-//  keeps working exactly as before.
+//  MagneticWrap
 // ============================================================
 function MagneticWrap({ children, strength = 18, className = "" }) {
   const ref = useRef(null);
-  const moveTo = useRef(null);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-    if (window.matchMedia("(hover: none)").matches) return; // skip on touch devices
+    if (window.matchMedia("(hover: none)").matches) return;
 
     const xTo = gsap.quickTo(el, "x", { duration: 0.35, ease: "power3.out" });
     const yTo = gsap.quickTo(el, "y", { duration: 0.35, ease: "power3.out" });
-    moveTo.current = { xTo, yTo };
 
     const handleMove = (e) => {
       const rect = el.getBoundingClientRect();
@@ -257,10 +250,7 @@ function MagneticWrap({ children, strength = 18, className = "" }) {
 }
 
 // ============================================================
-//  COMPONENT: RevealHeading — NEW. A distinctive "wipe" reveal for
-//  section headings using clip-path instead of the usual fade/slide,
-//  triggered once via IntersectionObserver (self-contained, doesn't
-//  need to hook into the big useGSAP timeline below).
+//  RevealHeading
 // ============================================================
 function RevealHeading({ children, as: Tag = "h2", className = "" }) {
   const ref = useRef(null);
@@ -298,27 +288,32 @@ function RevealHeading({ children, as: Tag = "h2", className = "" }) {
 }
 
 // ============================================================
-//  COMPONENT: Feature (unchanged)
+//  Feature card
 // ============================================================
 function Feature({ icon, title, desc, index }) {
   return (
-    <div className="group relative border-t border-[var(--border-light)] pt-5 transition-colors duration-200 hover:border-[var(--accent)]/50">
-      <div className="flex items-center justify-between">
-        <span className="inline-block text-[var(--accent)] transition-transform duration-300 ease-out group-hover:-rotate-6 group-hover:scale-110">
+    <div className="feature-card group relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]/40 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-card)]/70">
+      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[var(--accent-soft)] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+
+      <div className="relative flex items-center justify-between">
+        <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-300 ease-out group-hover:-rotate-6 group-hover:scale-110">
           {icon}
         </span>
         <span className="font-mono text-[10px] text-[var(--text-muted)]">
           {String(index + 1).padStart(2, "0")}
         </span>
       </div>
-      <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
-      <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-secondary)]">{desc}</p>
+
+      <h3 className="relative mt-5 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+      <p className="relative mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">{desc}</p>
+
+      <div className="absolute bottom-0 left-0 h-px w-0 bg-gradient-to-r from-[var(--accent)] to-transparent transition-all duration-500 group-hover:w-full" />
     </div>
   );
 }
 
 // ============================================================
-//  ICON COMPONENTS (unchanged)
+//  Icons
 // ============================================================
 function BugIcon() {
   return (
@@ -347,7 +342,7 @@ function FlaskIcon() {
 }
 
 // ============================================================
-//  COMPONENT: StatPill (unchanged)
+//  StatPill
 // ============================================================
 function StatPill({ value, label, delayMs = 0 }) {
   const [display, setDisplay] = useState(0);
@@ -363,7 +358,7 @@ function StatPill({ value, label, delayMs = 0 }) {
     if (!hasStarted) return;
     setDisplay(0);
     const num = parseFloat(String(value).replace(/[^0-9.]/g, ""));
-    if (isNaN(num)) return;
+    if (isNaN(num)) { setDisplay(value); return; }
     const isPct = String(value).includes("%");
     const isPlus = String(value).includes("+");
     const isLt = String(value).includes("<");
@@ -383,7 +378,7 @@ function StatPill({ value, label, delayMs = 0 }) {
   }, [value, hasStarted]);
 
   return (
-    <div className="stat-card relative flex min-w-[130px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[var(--accent)]/30 bg-[var(--bg-card)]/50 px-5 py-4 backdrop-blur-md transition-all duration-300">
+    <div className="stat-card relative flex min-w-[130px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/50 px-5 py-4 backdrop-blur-md transition-all duration-300">
       <span className="stat-number text-2xl font-extrabold tabular-nums">{display}</span>
       <span className="text-[10px] font-medium tracking-wide text-[var(--text-secondary)]">{label}</span>
     </div>
@@ -391,7 +386,7 @@ function StatPill({ value, label, delayMs = 0 }) {
 }
 
 // ============================================================
-//  COMPONENT: ScanLine (unchanged)
+//  ScanLine / BranchGlyph / TechBadge
 // ============================================================
 function ScanLine() {
   return (
@@ -400,10 +395,6 @@ function ScanLine() {
     </span>
   );
 }
-
-// ============================================================
-//  COMPONENT: BranchGlyph / TechBadge (unchanged)
-// ============================================================
 function BranchGlyph() {
   return (
     <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
@@ -426,10 +417,7 @@ function TechBadge({ label, mark }) {
 }
 
 // ============================================================
-//  COMPONENT: TechStrip — NOW an infinite marquee instead of a
-//  static row. The item list is rendered twice back-to-back and
-//  scrolled via a pure CSS keyframe, a standard seamless-loop
-//  marquee technique; pauses under prefers-reduced-motion.
+//  TechStrip
 // ============================================================
 function TechStrip() {
   const items = [
@@ -454,7 +442,7 @@ function TechStrip() {
 }
 
 // ============================================================
-//  COMPONENT: HeroRepoInput (unchanged)
+//  HeroRepoInput
 // ============================================================
 function HeroRepoInput({ isAuthed }) {
   const navigate = useNavigate();
@@ -474,7 +462,7 @@ function HeroRepoInput({ isAuthed }) {
 
   return (
     <form onSubmit={handleSubmit} className="mx-auto mb-6 w-full max-w-lg lg:mx-0">
-      <div className={`flex overflow-hidden rounded-xl border bg-[var(--bg-card)]/70 backdrop-blur-md transition-colors duration-200 ${touched && !isValid ? "border-[var(--color-danger)]/50" : "border-[var(--border-light)] focus-within:border-[var(--accent)]/60"}`}>
+      <div className={`flex overflow-hidden rounded-xl border bg-[var(--bg-card)]/70 backdrop-blur-md transition-all duration-200 ${touched && !isValid ? "border-[var(--color-danger)]/50" : "border-[var(--border-light)] focus-within:border-[var(--accent)]/60 focus-within:shadow-[0_0_24px_-6px_var(--accent-soft-strong)]"}`}>
         <div className="relative flex-1">
           <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">$</span>
           <input
@@ -497,7 +485,7 @@ function HeroRepoInput({ isAuthed }) {
 }
 
 // ============================================================
-//  COMPONENT: SampleReportModal (unchanged)
+//  SampleReportModal
 // ============================================================
 function SampleReportModal({ onClose }) {
   useEffect(() => {
@@ -554,8 +542,7 @@ function SampleReportModal({ onClose }) {
 }
 
 // ============================================================
-//  COMPONENT: ComparisonSection (unchanged, heading now via
-//  RevealHeading for the wipe effect)
+//  ComparisonSection
 // ============================================================
 function ComparisonSection() {
   const rows = [
@@ -605,8 +592,7 @@ function ComparisonSection() {
 }
 
 // ============================================================
-//  COMPONENT: CodeIntelligenceOrb (unchanged — Three.js scene,
-//  lazy-mounted via IntersectionObserver)
+//  CodeIntelligenceOrb — impro       ved lighting, subtle inner glow
 // ============================================================
 function CodeIntelligenceOrb({ badgeRefs }) {
   const outerRef = useRef(null);
@@ -652,29 +638,41 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     renderer.setClearColor(0x000000, 0);
     mount.appendChild(renderer.domElement);
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const coreLight = new THREE.PointLight(accentColor, 3.2, 8);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.4));
+    const coreLight = new THREE.PointLight(accentColor, 3.6, 8);
     coreLight.position.set(0, 0, 0);
     scene.add(coreLight);
+    const rimLight = new THREE.PointLight(secondaryColor, 2.2, 6);
+    rimLight.position.set(2, 2, 2);
+    scene.add(rimLight);
 
     const group = new THREE.Group();
     scene.add(group);
 
     const shellGeo = new THREE.IcosahedronGeometry(1.7, 1);
     const shellEdges = new THREE.EdgesGeometry(shellGeo);
-    const shellMat = new THREE.LineBasicMaterial({ color: accentColor, transparent: true, opacity: 0.45 });
+    const shellMat = new THREE.LineBasicMaterial({ color: accentColor, transparent: true, opacity: 0.5 });
     const shell = new THREE.LineSegments(shellEdges, shellMat);
     group.add(shell);
 
     const coreGeo = new THREE.IcosahedronGeometry(0.85, 1);
     const coreMat = new THREE.MeshStandardMaterial({
-      color: accentColor, emissive: accentColor, emissiveIntensity: 0.9,
-      roughness: 0.3, metalness: 0.1, transparent: true, opacity: 0.9,
+      color: accentColor, emissive: accentColor, emissiveIntensity: 1.1,
+      roughness: 0.25, metalness: 0.15, transparent: true, opacity: 0.95,
     });
     const core = new THREE.Mesh(coreGeo, coreMat);
     group.add(core);
 
-    const particleCount = 140;
+    // Inner halo ring
+    const haloGeo = new THREE.RingGeometry(1.05, 1.15, 64);
+    const haloMat = new THREE.MeshBasicMaterial({
+      color: secondaryColor, side: THREE.DoubleSide, transparent: true, opacity: 0.35,
+    });
+    const halo = new THREE.Mesh(haloGeo, haloMat);
+    halo.rotation.x = Math.PI / 2.3;
+    group.add(halo);
+
+    const particleCount = 160;
     const positions = new Float32Array(particleCount * 3);
     for (let i = 0; i < particleCount; i++) {
       const angle = (i / particleCount) * Math.PI * 2;
@@ -687,7 +685,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     const particleGeo = new THREE.BufferGeometry();
     particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
     const particleMat = new THREE.PointsMaterial({
-      color: secondaryColor, size: 0.035, transparent: true, opacity: 0.85, sizeAttenuation: true,
+      color: secondaryColor, size: 0.038, transparent: true, opacity: 0.9, sizeAttenuation: true,
     });
     const particles = new THREE.Points(particleGeo, particleMat);
     particles.rotation.x = 0.45;
@@ -701,6 +699,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       group.rotation.x += (stateRef.current.target.x - group.rotation.x) * 0.04;
       group.rotation.y += (stateRef.current.target.y - group.rotation.y) * 0.02;
       particles.rotation.y -= 0.0018;
+      halo.rotation.z += 0.002;
       render();
       animationFrame = requestAnimationFrame(animate);
     };
@@ -745,6 +744,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       mount.removeEventListener("mouseleave", handleMouseLeave);
       shellGeo.dispose(); shellEdges.dispose(); shellMat.dispose();
       coreGeo.dispose(); coreMat.dispose();
+      haloGeo.dispose(); haloMat.dispose();
       particleGeo.dispose(); particleMat.dispose();
       renderer.dispose();
       if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
@@ -753,7 +753,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
   return (
     <div ref={outerRef} className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
-      <div ref={(el) => (badgeRefs.current[0] = el)} className="absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
+      <div ref={(el) => (badgeRefs.current[0] = el)} className="orb-badge absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)]/90 px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-md">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
@@ -767,7 +767,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         </div>
       </div>
 
-      <div ref={(el) => (badgeRefs.current[1] = el)} className="absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)]">
+      <div ref={(el) => (badgeRefs.current[1] = el)} className="orb-badge absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/90 px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-md">
         <div className="relative h-9 w-9 shrink-0">
           <svg viewBox="0 0 36 36" className="-rotate-90">
             <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="var(--border-light)" strokeWidth="4" />
@@ -781,7 +781,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         </div>
       </div>
 
-      <div ref={(el) => (badgeRefs.current[2] = el)} className="absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)] px-3 py-1.5 shadow-lg sm:flex">
+      <div ref={(el) => (badgeRefs.current[2] = el)} className="orb-badge absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)]/90 px-3 py-1.5 shadow-lg backdrop-blur-md sm:flex">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
         <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
       </div>
@@ -792,7 +792,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 }
 
 // ============================================================
-//  COMPONENT: SectionDots (unchanged)
+//  SectionDots
 // ============================================================
 function SectionDots({ sections, activeId, onJump }) {
   return (
@@ -813,7 +813,7 @@ function SectionDots({ sections, activeId, onJump }) {
 }
 
 // ============================================================
-//  SECTION: How It Works (heading via RevealHeading)
+//  HowItWorks
 // ============================================================
 function HowItWorks() {
   const steps = [
@@ -848,8 +848,7 @@ function HowItWorks() {
 }
 
 // ============================================================
-//  SECTION: Testimonials (unchanged scroll-highlight; heading now
-//  via RevealHeading)
+//  Testimonials
 // ============================================================
 function Testimonials() {
   const testimonials = [
@@ -888,7 +887,7 @@ function Testimonials() {
               ref={(el) => (cardRefs.current[i] = el)}
               className={`flex flex-col rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-300 ${activeIdx === i ? "border-[var(--accent)]/50 shadow-[var(--shadow-lg)] md:-translate-y-1" : "border-[var(--border-light)]"}`}
             >
-              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">"</span>
+              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">&ldquo;</span>
               <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">{t.quote}</p>
               <div className="mt-5 flex items-center gap-2.5 border-t border-[var(--border-light)] pt-4">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
@@ -908,7 +907,7 @@ function Testimonials() {
 }
 
 // ============================================================
-//  SECTION: Pricing (unchanged, heading via RevealHeading)
+//  Pricing (unchanged logic — kept identical)
 // ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
@@ -969,7 +968,7 @@ function Pricing() {
 }
 
 // ============================================================
-//  SECTION: FAQ (unchanged content, heading via RevealHeading)
+//  FAQ
 // ============================================================
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
@@ -1009,7 +1008,7 @@ function FAQ() {
 }
 
 // ============================================================
-//  FOOTER (unchanged)
+//  Footer
 // ============================================================
 function Footer({ isLoggedIn }) {
   return (
@@ -1046,7 +1045,7 @@ function Footer({ isLoggedIn }) {
               <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
               <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
               <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
-              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
+              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text([var(--accent-contrast)]">Terms</Link></li>
             </ul>
           </div>
           <div>
@@ -1082,7 +1081,7 @@ function Footer({ isLoggedIn }) {
 }
 
 // ============================================================
-//  MAIN HOME COMPONENT
+//  HOME
 // ============================================================
 export default function Home() {
   const token = localStorage.getItem("token");
@@ -1127,6 +1126,7 @@ export default function Home() {
   const trustRef = useRef(null);
   const statsRef = useRef(null);
   const featureLabelRef = useRef(null);
+  const featureGridRef = useRef(null);      // ← NEW: wrapper for cards
   const featureCardsRef = useRef([]);
   const bgGlow1Ref = useRef(null);
   const bgGlow2Ref = useRef(null);
@@ -1138,10 +1138,6 @@ export default function Home() {
   const pricingRef = useRef(null);
   const faqRef = useRef(null);
 
-  // Orb: outer perspective wrapper (scroll-scrubbed tilt) + inner
-  // 3D-transformed wrapper that actually receives the tilt, matching
-  // the scroll-driven reveal that was on the original DOM showcase
-  // card — restored here after being dropped for a simple fade.
   const orbPerspectiveRef = useRef(null);
   const orbTiltRef = useRef(null);
   const orbBadgeRefs = useRef([]);
@@ -1232,10 +1228,7 @@ export default function Home() {
           gsap.fromTo(statsRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 });
         }
 
-        // --- ORB: scroll-scrubbed tilt-in, restored. Starts angled/
-        // receded/transparent, animates flat-and-close as the section
-        // scrolls into view (scrub tied directly to scroll position,
-        // not just a one-shot fade), then idles once in view.  ---
+        // --- ORB tilt + parallax ---
         if (orbTiltRef.current && orbPerspectiveRef.current) {
           const startState = { rotateY: -26, rotateX: 10, y: 60, scale: 0.92, opacity: 0 };
           gsap.set(orbTiltRef.current, startState);
@@ -1248,9 +1241,9 @@ export default function Home() {
             onUpdate: (self) => {
               const p = self.progress;
               gsap.to(orbTiltRef.current, {
-                rotateY: startState.rotateY + (0 - startState.rotateY) * p,
-                rotateX: startState.rotateX + (0 - startState.rotateX) * p,
-                y: startState.y + (0 - startState.y) * p,
+                rotateY: startState.rotateY * (1 - p),
+                rotateX: startState.rotateX * (1 - p),
+                y: startState.y * (1 - p),
                 scale: startState.scale + (1 - startState.scale) * p,
                 opacity: p,
                 duration: 0.1,
@@ -1270,21 +1263,58 @@ export default function Home() {
           });
         }
 
-        ScrollTrigger.create({
-          trigger: featureLabelRef.current,
-          start: "top 85%",
-          onEnter: () => { gsap.fromTo(featureLabelRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" }); },
-          once: true,
-        });
-        ScrollTrigger.create({
-          trigger: featureCardsRef.current,
-          start: "top 85%",
-          onEnter: () => {
-            gsap.fromTo(featureCardsRef.current, { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.15, ease: "power2.out", clearProps: "opacity, transform" });
-          },
-          once: true,
+        // --- Feature label + card grid ---
+        if (featureLabelRef.current) {
+          ScrollTrigger.create({
+            trigger: featureLabelRef.current,
+            start: "top 85%",
+            onEnter: () => {
+              gsap.fromTo(
+                featureLabelRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+              );
+            },
+            once: true,
+          });
+        }
+
+        // --- FIXED: single wrapper as trigger, stagger the cards ---
+        if (featureGridRef.current && featureCardsRef.current.length) {
+          gsap.set(featureCardsRef.current, { opacity: 0, y: 40 });
+          ScrollTrigger.create({
+            trigger: featureGridRef.current,
+            start: "top 85%",
+            once: true,
+            onEnter: () => {
+              gsap.to(featureCardsRef.current, {
+                opacity: 1,
+                y: 0,
+                duration: 0.7,
+                stagger: 0.15,
+                ease: "power2.out",
+                clearProps: "opacity,transform",
+              });
+            },
+          });
+        }
+
+        // --- Feature card hover lift ---
+        featureCardsRef.current.forEach((el) => {
+          if (!el) return;
+          const card = el.querySelector(".feature-card");
+          if (!card) return;
+          const onEnter = () => gsap.to(card, { y: -4, duration: 0.3, ease: "power2.out" });
+          const onLeave = () => gsap.to(card, { y: 0, duration: 0.3, ease: "power2.out" });
+          el.addEventListener("mouseenter", onEnter);
+          el.addEventListener("mouseleave", onLeave);
+          el._cleanup = () => {
+            el.removeEventListener("mouseenter", onEnter);
+            el.removeEventListener("mouseleave", onLeave);
+          };
         });
 
+        // --- Section fade-ins ---
         const sections = [
           { ref: howRef, start: "top 85%" },
           { ref: comparisonRef, start: "top 85%" },
@@ -1298,12 +1328,17 @@ export default function Home() {
             trigger: ref.current,
             start,
             onEnter: () => {
-              gsap.fromTo(ref.current, { opacity: 0, y: 50 }, { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", clearProps: "opacity, transform" });
+              gsap.fromTo(
+                ref.current,
+                { opacity: 0, y: 50 },
+                { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", clearProps: "opacity, transform" },
+              );
             },
             once: true,
           });
         });
 
+        // --- Parallax glows ---
         const bgGlow1 = bgGlow1Ref.current;
         const bgGlow2 = bgGlow2Ref.current;
         const bgGrid = bgGridRef.current;
@@ -1321,23 +1356,44 @@ export default function Home() {
           ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY3(self.progress * 50) });
         }
 
-        if (orbBadgeRefs.current.length) {
-          gsap.set(orbBadgeRefs.current, { opacity: 0, scale: 0.85 });
+        // --- Orb badges: animate after layout settles ---
+        const animateBadges = () => {
+          const badges = orbBadgeRefs.current.filter(Boolean);
+          if (!badges.length) return;
+          gsap.set(badges, { opacity: 0, scale: 0.85 });
           ScrollTrigger.create({
             trigger: orbPerspectiveRef.current,
             start: "top 85%",
             onEnter: () => {
-              gsap.to(orbBadgeRefs.current, { opacity: 1, scale: 1, duration: 0.7, stagger: 0.15, ease: "back.out(1.6)", delay: 0.5 });
+              gsap.to(badges, {
+                opacity: 1,
+                scale: 1,
+                duration: 0.7,
+                stagger: 0.15,
+                ease: "back.out(1.6)",
+                delay: 0.5,
+              });
             },
             once: true,
           });
-          orbBadgeRefs.current.forEach((el, i) => {
-            if (!el) return;
-            gsap.to(el, { y: "+=8", duration: 3 + i * 0.6, repeat: -1, yoyo: true, ease: "sine.inOut", delay: 1.5 + i * 0.4 });
+          badges.forEach((el, i) => {
+            gsap.to(el, {
+              y: "+=8",
+              duration: 3 + i * 0.6,
+              repeat: -1,
+              yoyo: true,
+              ease: "sine.inOut",
+              delay: 1.5 + i * 0.4,
+            });
           });
-        }
+        };
+        // Wait a frame so any child component refs are populated.
+        requestAnimationFrame(animateBadges);
 
-        return () => { ScrollTrigger.getAll().forEach((st) => st.kill()); };
+        return () => {
+          ScrollTrigger.getAll().forEach((st) => st.kill());
+          featureCardsRef.current.forEach((el) => el?._cleanup?.());
+        };
       });
 
       mm.add("(prefers-reduced-motion: reduce)", () => {
@@ -1348,7 +1404,7 @@ export default function Home() {
             featureLabelRef.current, featureCardsRef.current, howRef.current, comparisonRef.current,
             testimonialRef.current, pricingRef.current, faqRef.current,
             orbTiltRef.current, ...(orbBadgeRefs.current || []),
-          ],
+          ].filter(Boolean),
           { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, clearProps: "all" },
         );
         setShowStickyCta(false);
@@ -1439,6 +1495,7 @@ export default function Home() {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
         }
+        .feature-card { will-change: transform; }
         @media (prefers-reduced-motion: reduce) {
           .marquee-track { animation: none; }
         }
@@ -1538,7 +1595,11 @@ export default function Home() {
             <p className="text-sm font-semibold text-[var(--text-primary)]">What CodeVerity checks</p>
           </div>
 
-          <div className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}>
+          {/* FIXED: single wrapper as ScrollTrigger target, cards as children */}
+          <div
+            ref={featureGridRef}
+            className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}
+          >
             <div ref={(el) => (featureCardsRef.current[0] = el)}>
               <Feature icon={<BugIcon />} title="AI Bug Detection" desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase." index={0} />
             </div>
