@@ -42,8 +42,7 @@ async function getOrCreateCustomer(user) {
 
 // ─── Helper: record a successful payment (idempotent) ──────────
 // Amount is stored in MAJOR units (₹, $) — Stripe sends minor
-// units (paise, cents), so we divide by 100 here. If you change
-// this convention, change the dashboard query to match.
+// units (paise, cents), so we divide by 100 here.
 async function recordPayment(invoice, user, subscriptionId) {
   if (!invoice.id) return null;
 
@@ -92,6 +91,19 @@ export const createCheckoutSession = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ error: "User not found." });
+    }
+
+    // ── Guard: block re-checkout while a subscription is active ──
+    // Without this, a user can repeatedly buy the same plan and stack
+    // token allowances via setPlanWithRollover.
+    if (
+      user.stripeSubscriptionId &&
+      user.subscriptionStatus === "active"
+    ) {
+      return res.status(409).json({
+        error:
+          "You already have an active subscription. Cancel it before starting a new one.",
+      });
     }
 
     const priceKey = `${plan}-${cycle}-${currency}`;
@@ -207,15 +219,10 @@ export const handleWebhook = async (req, res) => {
         const oldPlan = user.plan || "starter";
         const isPlanChange = oldPlan !== plan;
 
-        // Plan change → carry unused tokens into the new allowance.
-        // Same plan (renew / duplicate purchase) → reset to allowance.
-        // This prevents stacking allowances by repeatedly buying the
-        // same plan.
-        if (isPlanChange) {
-          user.setPlanWithRollover(plan);
-        } else {
-          user.setPlan(plan);
-        }
+        // Always carry unused tokens forward on a new purchase.
+        // The duplicate-subscription guard in createCheckoutSession
+        // prevents stacking via repeated same-plan purchases.
+        user.setPlanWithRollover(plan);
 
         user.stripeSubscriptionId = session.subscription;
         user.subscriptionStatus = "active";
@@ -256,12 +263,16 @@ export const handleWebhook = async (req, res) => {
           subscriptionId,
         );
 
+        // Lookup by subscription OR customer. checkout.session.completed
+        // and invoice.paid fire at the same second — if the invoice
+        // arrives first, stripeSubscriptionId isn't set yet, but
+        // stripeCustomerId always is (from the first checkout).
         const user = await User.findOne({
-  $or: [
-    { stripeSubscriptionId: subscriptionId },
-    { stripeCustomerId: invoice.customer || null },
-  ],
-});
+          $or: [
+            { stripeSubscriptionId: subscriptionId },
+            { stripeCustomerId: invoice.customer || null },
+          ],
+        });
 
         if (user) {
           user.subscriptionStatus = "active";
@@ -305,11 +316,11 @@ export const handleWebhook = async (req, res) => {
         }
 
         const user = await User.findOne({
-  $or: [
-    { stripeSubscriptionId: subscriptionId },
-    { stripeCustomerId: invoice.customer || null },
-  ],
-});
+          $or: [
+            { stripeSubscriptionId: subscriptionId },
+            { stripeCustomerId: invoice.customer || null },
+          ],
+        });
         if (user) {
           user.subscriptionStatus = "past_due";
           await user.save();
