@@ -20,8 +20,9 @@ import * as Sentry from "@sentry/react";
 import SmoothScroll from "./components/SmoothScroll";
 import Navbar from "./components/Navbar";
 import PageLoader from "./components/PageLoader";
+import RouteProgressBar from "./components/RouteProgressBar";
 import ProtectedRoute from "./components/ProtectedRoute";
-import ScrollReactiveBackground from "./components/ScrollReactiveBackground.jsx"; // ← NEW
+import ScrollReactiveBackground from "./components/ScrollReactiveBackground.jsx";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────
 const Home = lazy(() => import("./components/Home"));
@@ -45,7 +46,7 @@ const AdminDashboard = lazy(() => import("./pages/AdminDashboard"));
 
 import { PreferencesProvider } from "./context/PreferencesContext";
 import { analyzeCode, generateTests, fetchRepoContents } from "./api/analyze";
-import { ScrollSmoother, ScrollTrigger } from "./lib/gsap"; // ← NEW (was "gsap/all")
+import { ScrollSmoother, ScrollTrigger } from "./lib/gsap";
 import { Toaster } from "react-hot-toast";
 
 // ─── Sentry Error Fallback UI ──────────────────────────────────
@@ -92,6 +93,18 @@ function SentryFallback({ error, resetError }) {
       </div>
     </div>
   );
+}
+
+// ─── Delayed Suspense Fallback ────────────────────────────────
+// Avoids flashing the loader on fast chunk loads. If the page
+// resolves in under `delay` ms, nothing is shown at all.
+function DelayedFallback({ delay = 250 }) {
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    const t = setTimeout(() => setShow(true), delay);
+    return () => clearTimeout(t);
+  }, [delay]);
+  return show ? <PageLoader /> : null;
 }
 
 // ─── Auth Context ──────────────────────────────────────────────
@@ -164,7 +177,7 @@ function Layout() {
 
   const hideNavbar = ["/login", "/register"];
   const showNav = !hideNavbar.includes(location.pathname);
-  const isHome = location.pathname === "/"; // ← NEW
+  const isHome = location.pathname === "/";
 
   useEffect(() => {
     const frame = requestAnimationFrame(() => {
@@ -183,10 +196,11 @@ function Layout() {
 
   return (
     <>
-      {isHome && <ScrollReactiveBackground />} {/* ← NEW */}
+      <RouteProgressBar />
+      {isHome && <ScrollReactiveBackground />}
       {showNav && <Navbar />}
       <SmoothScroll>
-        <Suspense fallback={<PageLoader />}>
+        <Suspense fallback={<DelayedFallback delay={250} />}>
           <Routes>
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
