@@ -14,9 +14,7 @@ import {
 // ============================================================
 function getCSSColor(varName, fallbackHex) {
   if (typeof window === "undefined") return fallbackHex;
-  const val = getComputedStyle(document.documentElement)
-    .getPropertyValue(varName)
-    .trim();
+  const val = getComputedStyle(document.documentElement).getPropertyValue(varName).trim();
   return val || fallbackHex;
 }
 function getAccentRGB() {
@@ -36,9 +34,7 @@ function NeuralNetworkBackground() {
     const canvas = canvasRef.current;
     const ctx = canvas.getContext("2d");
     const accentRGB = getAccentRGB();
-    const reduceMotion = window.matchMedia(
-      "(prefers-reduced-motion: reduce)",
-    ).matches;
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     let width, height;
     let particles = [];
@@ -69,14 +65,8 @@ function NeuralNetworkBackground() {
       }
     }
 
-    const handleMouseMove = (e) => {
-      mouse.x = e.clientX;
-      mouse.y = e.clientY;
-    };
-    const handleMouseLeave = () => {
-      mouse.x = null;
-      mouse.y = null;
-    };
+    const handleMouseMove = (e) => { mouse.x = e.clientX; mouse.y = e.clientY; };
+    const handleMouseLeave = () => { mouse.x = null; mouse.y = null; };
 
     window.addEventListener("resize", resize);
     window.addEventListener("mousemove", handleMouseMove);
@@ -155,9 +145,7 @@ function NeuralNetworkBackground() {
     };
   }, []);
 
-  return (
-    <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />
-  );
+  return <canvas ref={canvasRef} className="pointer-events-none fixed inset-0 z-0" />;
 }
 
 // ============================================================
@@ -210,24 +198,12 @@ function CodeVerityLogo() {
   return (
     <div className="relative flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent)] shadow-lg shadow-[var(--accent-soft-strong)]">
       <div className="absolute inset-[1px] rounded-[7px] bg-[var(--bg-primary)]" />
-      <svg
-        width="18"
-        height="18"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="relative text-[var(--accent)]"
-      >
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="relative text-[var(--accent)]">
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
         <path d="m9 12 2 2 4-4" />
       </svg>
       <div className="absolute -bottom-1 -right-1 flex h-3.5 w-3.5 items-center justify-center rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)]">
-        <span className="text-[6px] font-bold text-[var(--accent)]">
-          &lt;/&gt;
-        </span>
+        <span className="text-[6px] font-bold text-[var(--accent)]">&lt;/&gt;</span>
       </div>
       <span className="absolute -top-0.5 -left-0.5 h-2 w-2 animate-pulse rounded-full bg-[var(--accent)]" />
     </div>
@@ -256,10 +232,7 @@ function MagneticWrap({ children, strength = 18, className = "" }) {
       xTo((relX / rect.width) * strength);
       yTo((relY / rect.height) * strength);
     };
-    const handleLeave = () => {
-      xTo(0);
-      yTo(0);
-    };
+    const handleLeave = () => { xTo(0); yTo(0); };
 
     el.addEventListener("mousemove", handleMove);
     el.addEventListener("mouseleave", handleLeave);
@@ -270,10 +243,7 @@ function MagneticWrap({ children, strength = 18, className = "" }) {
   }, [strength]);
 
   return (
-    <div
-      ref={ref}
-      className={`inline-block will-change-transform ${className}`}
-    >
+    <div ref={ref} className={`inline-block will-change-transform ${className}`}>
       {children}
     </div>
   );
@@ -299,12 +269,7 @@ function RevealHeading({ children, as: Tag = "h2", className = "" }) {
           gsap.fromTo(
             el,
             { clipPath: "inset(0 100% 0 0)", opacity: 0 },
-            {
-              clipPath: "inset(0 0% 0 0)",
-              opacity: 1,
-              duration: 0.9,
-              ease: "power4.out",
-            },
+            { clipPath: "inset(0 0% 0 0)", opacity: 1, duration: 0.9, ease: "power4.out" },
           );
           observer.disconnect();
         }
@@ -316,11 +281,7 @@ function RevealHeading({ children, as: Tag = "h2", className = "" }) {
   }, []);
 
   return (
-    <Tag
-      ref={ref}
-      className={className}
-      style={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}
-    >
+    <Tag ref={ref} className={className} style={{ clipPath: "inset(0 100% 0 0)", opacity: 0 }}>
       {children}
     </Tag>
   );
@@ -328,14 +289,38 @@ function RevealHeading({ children, as: Tag = "h2", className = "" }) {
 
 // ============================================================
 //  Feature card
+//  - 3D lift on hover (handled by GSAP in Home)
+//  - Mouse-follow spotlight (CSS custom properties set on hover)
 // ============================================================
 function Feature({ icon, title, desc, index }) {
+  const cardRef = useRef(null);
+
+  const handleMouseMove = (e) => {
+    if (!cardRef.current) return;
+    const rect = cardRef.current.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+    cardRef.current.style.setProperty("--mx", `${x}%`);
+    cardRef.current.style.setProperty("--my", `${y}%`);
+  };
+
   return (
-    <div className="feature-card group relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]/40 p-6 backdrop-blur-sm transition-all duration-300 hover:-translate-y-1 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-card)]/70">
-      <div className="pointer-events-none absolute -right-10 -top-10 h-32 w-32 rounded-full bg-[var(--accent-soft)] opacity-0 blur-2xl transition-opacity duration-300 group-hover:opacity-100" />
+    <div
+      ref={cardRef}
+      onMouseMove={handleMouseMove}
+      className="feature-card group relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]/40 p-6 backdrop-blur-sm transition-[border-color,background-color] duration-300 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-card)]/70"
+    >
+      {/* Mouse-follow spotlight */}
+      <div
+        className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        style={{
+          background:
+            "radial-gradient(320px circle at var(--mx, 50%) var(--my, 50%), var(--accent-soft), transparent 45%)",
+        }}
+      />
 
       <div className="relative flex items-center justify-between">
-        <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-300 ease-out group-hover:-rotate-6 group-hover:scale-110">
+        <span className="feature-icon inline-flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--accent-soft)] text-[var(--accent)]">
           {icon}
         </span>
         <span className="font-mono text-[10px] text-[var(--text-muted)]">
@@ -343,13 +328,10 @@ function Feature({ icon, title, desc, index }) {
         </span>
       </div>
 
-      <h3 className="relative mt-5 text-sm font-semibold text-[var(--text-primary)]">
-        {title}
-      </h3>
-      <p className="relative mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">
-        {desc}
-      </p>
+      <h3 className="relative mt-5 text-sm font-semibold text-[var(--text-primary)]">{title}</h3>
+      <p className="relative mt-2 text-xs leading-relaxed text-[var(--text-secondary)]">{desc}</p>
 
+      {/* Bottom accent sweep */}
       <div className="absolute bottom-0 left-0 h-px w-0 bg-gradient-to-r from-[var(--accent)] to-transparent transition-all duration-500 group-hover:w-full" />
     </div>
   );
@@ -360,37 +342,16 @@ function Feature({ icon, title, desc, index }) {
 // ============================================================
 function BugIcon() {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-      <path d="M18 13h-2" />
-      <path d="M8 13H6" />
-      <path d="M10 4 8 2" />
-      <path d="M14 4 16 2" />
-      <path d="M12 22v-4" />
+      <path d="M18 13h-2" /><path d="M8 13H6" /><path d="M10 4 8 2" />
+      <path d="M14 4 16 2" /><path d="M12 22v-4" />
     </svg>
   );
 }
 function ShieldIcon() {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
       <path d="m9 12 2 2 4-4" />
     </svg>
@@ -398,16 +359,7 @@ function ShieldIcon() {
 }
 function FlaskIcon() {
   return (
-    <svg
-      width="22"
-      height="22"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.75"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
       <path d="M10 2v7.527a2 2 0 0 1-.293 1.086L6.172 16.5a2 2 0 0 0-.276.922L6 19a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2l-.104-1.578a2 2 0 0 0-.276-.922l-3.535-5.887A2 2 0 0 1 14 9.527V2" />
       <path d="M8 2h8" />
     </svg>
@@ -431,10 +383,7 @@ function StatPill({ value, label, delayMs = 0 }) {
     if (!hasStarted) return;
     setDisplay(0);
     const num = parseFloat(String(value).replace(/[^0-9.]/g, ""));
-    if (isNaN(num)) {
-      setDisplay(value);
-      return;
-    }
+    if (isNaN(num)) { setDisplay(value); return; }
     const isPct = String(value).includes("%");
     const isPlus = String(value).includes("+");
     const isLt = String(value).includes("<");
@@ -445,30 +394,18 @@ function StatPill({ value, label, delayMs = 0 }) {
       const progress = Math.min(elapsed / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = Math.round(num * eased);
-      let output = isPct
-        ? `${current}%`
-        : isPlus
-          ? `${current}+`
-          : isLt
-            ? `<${current}s`
-            : String(current);
+      let output = isPct ? `${current}%` : isPlus ? `${current}+` : isLt ? `<${current}s` : String(current);
       setDisplay(output);
       if (progress < 1) rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
+    return () => { if (rafRef.current) cancelAnimationFrame(rafRef.current); };
   }, [value, hasStarted]);
 
   return (
     <div className="stat-card relative flex min-w-[130px] flex-col items-center justify-center gap-1.5 rounded-2xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/50 px-5 py-4 backdrop-blur-md transition-all duration-300">
-      <span className="stat-number text-2xl font-extrabold tabular-nums">
-        {display}
-      </span>
-      <span className="text-[10px] font-medium tracking-wide text-[var(--text-secondary)]">
-        {label}
-      </span>
+      <span className="stat-number text-2xl font-extrabold tabular-nums">{display}</span>
+      <span className="text-[10px] font-medium tracking-wide text-[var(--text-secondary)]">{label}</span>
     </div>
   );
 }
@@ -485,16 +422,7 @@ function ScanLine() {
 }
 function BranchGlyph() {
   return (
-    <svg
-      width="11"
-      height="11"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2.2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
+    <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M6 3v12" />
       <circle cx="18" cy="6" r="3" />
       <circle cx="6" cy="18" r="3" />
@@ -526,9 +454,7 @@ function TechStrip() {
   ];
   return (
     <div className="mb-8 flex flex-col items-center gap-2.5">
-      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-muted)]">
-        Works with
-      </p>
+      <p className="font-mono text-[9px] uppercase tracking-[0.18em] text-[var(--text-muted)]">Works with</p>
       <div className="marquee-mask relative w-full max-w-xs overflow-hidden sm:max-w-sm">
         <div className="marquee-track flex w-max gap-2">
           {[...items, ...items].map((item, i) => (
@@ -560,39 +486,24 @@ function HeroRepoInput({ isAuthed }) {
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="mx-auto mb-6 w-full max-w-lg lg:mx-0"
-    >
-      <div
-        className={`flex overflow-hidden rounded-xl border bg-[var(--bg-card)]/70 backdrop-blur-md transition-all duration-200 ${touched && !isValid ? "border-[var(--color-danger)]/50" : "border-[var(--border-light)] focus-within:border-[var(--accent)]/60 focus-within:shadow-[0_0_24px_-6px_var(--accent-soft-strong)]"}`}
-      >
+    <form onSubmit={handleSubmit} className="mx-auto mb-6 w-full max-w-lg lg:mx-0">
+      <div className={`flex overflow-hidden rounded-xl border bg-[var(--bg-card)]/70 backdrop-blur-md transition-all duration-200 ${touched && !isValid ? "border-[var(--color-danger)]/50" : "border-[var(--border-light)] focus-within:border-[var(--accent)]/60 focus-within:shadow-[0_0_24px_-6px_var(--accent-soft-strong)]"}`}>
         <div className="relative flex-1">
-          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">
-            $
-          </span>
+          <span className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">$</span>
           <input
             value={value}
-            onChange={(e) => {
-              setValue(e.target.value);
-              if (touched) setTouched(false);
-            }}
+            onChange={(e) => { setValue(e.target.value); if (touched) setTouched(false); }}
             placeholder="https://github.com/username/repository"
             aria-label="GitHub repository URL"
             className="h-11 w-full bg-transparent pl-8 pr-3 text-xs text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] sm:text-sm"
           />
         </div>
-        <button
-          type="submit"
-          className="m-1 shrink-0 rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] sm:text-sm"
-        >
+        <button type="submit" className="m-1 shrink-0 rounded-lg bg-[var(--accent)] px-4 text-xs font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)] active:scale-[0.98] sm:text-sm">
           Analyze →
         </button>
       </div>
       {touched && !isValid && (
-        <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">
-          Enter a valid GitHub repository URL.
-        </p>
+        <p className="mt-1.5 text-[10px] text-[var(--color-danger)]">Enter a valid GitHub repository URL.</p>
       )}
     </form>
   );
@@ -609,101 +520,44 @@ function SampleReportModal({ onClose }) {
   }, [onClose]);
 
   return (
-    <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--bg-primary)]/80 p-4 backdrop-blur-sm"
-      onClick={onClose}
-      role="dialog"
-      aria-modal="true"
-      aria-label="Sample audit report"
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]"
-      >
+    <div className="fixed inset-0 z-[70] flex items-center justify-center bg-[var(--bg-primary)]/80 p-4 backdrop-blur-sm" onClick={onClose} role="dialog" aria-modal="true" aria-label="Sample audit report">
+      <div onClick={(e) => e.stopPropagation()} className="w-full max-w-lg overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-xl)]">
         <div className="flex items-center justify-between border-b border-[var(--border-light)] px-5 py-3">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-              Sample audit
-            </p>
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              expressjs/express
-            </p>
+            <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">Sample audit</p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">expressjs/express</p>
           </div>
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]"
-          >
-            ✕
-          </button>
+          <button onClick={onClose} aria-label="Close" className="rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)]">✕</button>
         </div>
         <div className="space-y-4 p-5">
           <div className="flex items-center gap-4">
             <div className="relative h-16 w-16 shrink-0">
               <svg viewBox="0 0 36 36" className="-rotate-90">
-                <path
-                  d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
-                  fill="none"
-                  stroke="var(--border-light)"
-                  strokeWidth="3.5"
-                />
-                <path
-                  d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
-                  fill="none"
-                  stroke="var(--color-success)"
-                  strokeWidth="3.5"
-                  strokeDasharray="88,100"
-                  strokeLinecap="round"
-                />
+                <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="var(--border-light)" strokeWidth="3.5" />
+                <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="var(--color-success)" strokeWidth="3.5" strokeDasharray="88,100" strokeLinecap="round" />
               </svg>
-              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--text-primary)]">
-                A
-              </span>
+              <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[var(--text-primary)]">A</span>
             </div>
             <div className="flex-1 text-xs text-[var(--text-secondary)]">
-              Well-structured middleware architecture with clear separation of
-              concerns. Minor performance opportunities in route matching; no
-              critical security issues found.
+              Well-structured middleware architecture with clear separation of concerns.
+              Minor performance opportunities in route matching; no critical security issues found.
             </div>
           </div>
           <div className="grid grid-cols-4 gap-2">
-            {[
-              ["Quality", 91],
-              ["Security", 88],
-              ["Perf", 82],
-              ["Maint.", 90],
-            ].map(([label, val]) => (
-              <div
-                key={label}
-                className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center"
-              >
-                <p className="text-sm font-bold text-[var(--text-primary)]">
-                  {val}
-                </p>
+            {[["Quality", 91], ["Security", 88], ["Perf", 82], ["Maint.", 90]].map(([label, val]) => (
+              <div key={label} className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] p-2 text-center">
+                <p className="text-sm font-bold text-[var(--text-primary)]">{val}</p>
                 <p className="text-[9px] text-[var(--text-muted)]">{label}</p>
               </div>
             ))}
           </div>
           <div className="flex flex-wrap gap-2 text-[10px]">
-            <span className="rounded-full bg-[var(--color-success-soft)] px-2.5 py-1 font-medium text-[var(--color-success)]">
-              0 critical bugs
-            </span>
-            <span className="rounded-full bg-[var(--color-info-soft)] px-2.5 py-1 font-medium text-[var(--color-info)]">
-              18 tests generated
-            </span>
-            <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 font-medium text-[var(--accent)]">
-              3 suggestions
-            </span>
+            <span className="rounded-full bg-[var(--color-success-soft)] px-2.5 py-1 font-medium text-[var(--color-success)]">0 critical bugs</span>
+            <span className="rounded-full bg-[var(--color-info-soft)] px-2.5 py-1 font-medium text-[var(--color-info)]">18 tests generated</span>
+            <span className="rounded-full bg-[var(--accent-soft)] px-2.5 py-1 font-medium text-[var(--accent)]">3 suggestions</span>
           </div>
-          <p className="text-center text-[10px] text-[var(--text-muted)]">
-            This is a static preview. Run a real scan to see your own
-            repository's audit.
-          </p>
-          <Link
-            to="/register"
-            onClick={onClose}
-            className="block w-full rounded-lg bg-[var(--accent)] py-2.5 text-center text-sm font-semibold text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-hover)]"
-          >
+          <p className="text-center text-[10px] text-[var(--text-muted)]">This is a static preview. Run a real scan to see your own repository's audit.</p>
+          <Link to="/register" onClick={onClose} className="block w-full rounded-lg bg-[var(--accent)] py-2.5 text-center text-sm font-semibold text-[var(--accent-contrast)] transition-colors hover:bg-[var(--accent-hover)]">
             Scan your own repo →
           </Link>
         </div>
@@ -717,41 +571,49 @@ function SampleReportModal({ onClose }) {
 // ============================================================
 function ComparisonSection() {
   const rows = [
-    {
-      label: "Understands intent, not just syntax",
-      linter: false,
-      verity: true,
-    },
-    {
-      label: "Generates working tests from your code",
-      linter: false,
-      verity: true,
-    },
-    {
-      label: "Explains findings in plain English",
-      linter: false,
-      verity: true,
-    },
+    { label: "Understands intent, not just syntax", linter: false, verity: true },
+    { label: "Generates working tests from your code", linter: false, verity: true },
+    { label: "Explains findings in plain English", linter: false, verity: true },
     { label: "Catches style/formatting issues", linter: true, verity: true },
     { label: "Requires config files to set up", linter: true, verity: false },
   ];
 
+  const rowRefs = useRef([]);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.dataset.idx);
+            gsap.fromTo(
+              entry.target,
+              { opacity: 0, x: -20 },
+              { opacity: 1, x: 0, duration: 0.5, ease: "power2.out", delay: idx * 0.06 },
+            );
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 },
+    );
+    rowRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section
-      id="comparison"
-      className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6"
-    >
+    <section id="comparison" className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-          not just another linter
-        </p>
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">not just another linter</p>
         <RevealHeading className="mb-3 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Linters catch typos. CodeVerity catches problems.
         </RevealHeading>
         <p className="mb-10 max-w-2xl text-sm text-[var(--text-secondary)]">
-          Static analyzers check syntax against rules. CodeVerity reads your
-          code the way a senior engineer would — understanding architecture,
-          intent, and risk, not just style violations.
+          Static analyzers check syntax against rules. CodeVerity reads your code the way a senior
+          engineer would — understanding architecture, intent, and risk, not just style violations.
         </p>
         <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           <div className="grid grid-cols-[1fr_90px_90px] border-b border-[var(--border-light)] bg-[var(--bg-hover)]/50 px-4 py-3 text-[11px] font-semibold text-[var(--text-muted)] sm:grid-cols-[1fr_120px_120px] sm:px-5">
@@ -762,35 +624,20 @@ function ComparisonSection() {
           {rows.map((row, i) => (
             <div
               key={row.label}
+              ref={(el) => (rowRefs.current[i] = el)}
+              data-idx={i}
               className={`grid grid-cols-[1fr_90px_90px] items-center px-4 py-3 text-xs text-[var(--text-secondary)] sm:grid-cols-[1fr_120px_120px] sm:px-5 sm:text-sm ${i !== rows.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}
             >
-              <span className="pr-2 text-[var(--text-primary)]">
-                {row.label}
-              </span>
+              <span className="pr-2 text-[var(--text-primary)]">{row.label}</span>
               <span className="flex justify-center">
-                {row.linter ? (
-                  <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" />
-                ) : (
-                  <span className="text-[var(--text-muted)]">—</span>
-                )}
+                {row.linter ? <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" /> : <span className="text-[var(--text-muted)]">—</span>}
               </span>
               <span className="flex justify-center">
                 {row.verity ? (
-                  <svg
-                    width="14"
-                    height="14"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="var(--color-success)"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                ) : (
-                  <span className="text-[var(--text-muted)]">—</span>
-                )}
+                ) : <span className="text-[var(--text-muted)]">—</span>}
               </span>
             </div>
           ))}
@@ -801,7 +648,7 @@ function ComparisonSection() {
 }
 
 // ============================================================
-//  CodeIntelligenceOrb — impro       ved lighting, subtle inner glow
+//  CodeIntelligenceOrb
 // ============================================================
 function CodeIntelligenceOrb({ badgeRefs }) {
   const outerRef = useRef(null);
@@ -833,13 +680,9 @@ function CodeIntelligenceOrb({ badgeRefs }) {
     let cleanup = () => {};
 
     try {
-      const reduceMotion = window.matchMedia(
-        "(prefers-reduced-motion: reduce)",
-      ).matches;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       const accentColor = new THREE.Color(getCSSColor("--accent", "#22d3ee"));
-      const secondaryColor = new THREE.Color(
-        getCSSColor("--accent-secondary", "#818cf8"),
-      );
+      const secondaryColor = new THREE.Color(getCSSColor("--accent-secondary", "#818cf8"));
 
       let width = mount.clientWidth;
       let height = mount.clientHeight;
@@ -848,10 +691,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       const camera = new THREE.PerspectiveCamera(42, width / height, 0.1, 100);
       camera.position.z = 5.2;
 
-      const renderer = new THREE.WebGLRenderer({
-        antialias: true,
-        alpha: true,
-      });
+      const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       renderer.setSize(width, height);
       renderer.setClearColor(0x000000, 0);
@@ -870,34 +710,21 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
       const shellGeo = new THREE.IcosahedronGeometry(1.7, 1);
       const shellEdges = new THREE.EdgesGeometry(shellGeo);
-      const shellMat = new THREE.LineBasicMaterial({
-        color: accentColor,
-        transparent: true,
-        opacity: 0.5,
-      });
+      const shellMat = new THREE.LineBasicMaterial({ color: accentColor, transparent: true, opacity: 0.5 });
       const shell = new THREE.LineSegments(shellEdges, shellMat);
       group.add(shell);
 
       const coreGeo = new THREE.IcosahedronGeometry(0.85, 1);
       const coreMat = new THREE.MeshStandardMaterial({
-        color: accentColor,
-        emissive: accentColor,
-        emissiveIntensity: 1.1,
-        roughness: 0.25,
-        metalness: 0.15,
-        transparent: true,
-        opacity: 0.95,
+        color: accentColor, emissive: accentColor, emissiveIntensity: 1.6,
+        roughness: 0.4, metalness: 0.3, transparent: true, opacity: 0.75,
       });
       const core = new THREE.Mesh(coreGeo, coreMat);
       group.add(core);
 
-      // Inner halo ring
       const haloGeo = new THREE.RingGeometry(1.05, 1.15, 64);
       const haloMat = new THREE.MeshBasicMaterial({
-        color: secondaryColor,
-        side: THREE.DoubleSide,
-        transparent: true,
-        opacity: 0.35,
+        color: secondaryColor, side: THREE.DoubleSide, transparent: true, opacity: 0.35,
       });
       const halo = new THREE.Mesh(haloGeo, haloMat);
       halo.rotation.x = Math.PI / 2.3;
@@ -914,16 +741,9 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         positions[i * 3 + 2] = Math.sin(angle) * radius;
       }
       const particleGeo = new THREE.BufferGeometry();
-      particleGeo.setAttribute(
-        "position",
-        new THREE.BufferAttribute(positions, 3),
-      );
+      particleGeo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
       const particleMat = new THREE.PointsMaterial({
-        color: secondaryColor,
-        size: 0.038,
-        transparent: true,
-        opacity: 0.9,
-        sizeAttenuation: true,
+        color: secondaryColor, size: 0.038, transparent: true, opacity: 0.9, sizeAttenuation: true,
       });
       const particles = new THREE.Points(particleGeo, particleMat);
       particles.rotation.x = 0.45;
@@ -934,10 +754,8 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
       const animate = () => {
         group.rotation.y += 0.0035;
-        group.rotation.x +=
-          (stateRef.current.target.x - group.rotation.x) * 0.04;
-        group.rotation.y +=
-          (stateRef.current.target.y - group.rotation.y) * 0.02;
+        group.rotation.x += (stateRef.current.target.x - group.rotation.x) * 0.04;
+        group.rotation.y += (stateRef.current.target.y - group.rotation.y) * 0.02;
         particles.rotation.y -= 0.0018;
         halo.rotation.z += 0.002;
         render();
@@ -958,9 +776,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         const ny = (e.clientY - rect.top) / rect.height - 0.5;
         stateRef.current.target = { x: ny * 0.6, y: nx * 0.8 };
       };
-      const handleMouseLeave = () => {
-        stateRef.current.target = { x: 0, y: stateRef.current.target.y };
-      };
+      const handleMouseLeave = () => { stateRef.current.target = { x: 0, y: stateRef.current.target.y }; };
 
       if (!reduceMotion) {
         mount.addEventListener("mousemove", handleMouseMove);
@@ -984,18 +800,12 @@ function CodeIntelligenceOrb({ badgeRefs }) {
         resizeObserver.disconnect();
         mount.removeEventListener("mousemove", handleMouseMove);
         mount.removeEventListener("mouseleave", handleMouseLeave);
-        shellGeo.dispose();
-        shellEdges.dispose();
-        shellMat.dispose();
-        coreGeo.dispose();
-        coreMat.dispose();
-        haloGeo.dispose();
-        haloMat.dispose();
-        particleGeo.dispose();
-        particleMat.dispose();
+        shellGeo.dispose(); shellEdges.dispose(); shellMat.dispose();
+        coreGeo.dispose(); coreMat.dispose();
+        haloGeo.dispose(); haloMat.dispose();
+        particleGeo.dispose(); particleMat.dispose();
         renderer.dispose();
-        if (renderer.domElement.parentNode === mount)
-          mount.removeChild(renderer.domElement);
+        if (renderer.domElement.parentNode === mount) mount.removeChild(renderer.domElement);
       };
     } catch (err) {
       console.error("Orb render failed (likely WebGL unavailable):", err);
@@ -1005,93 +815,41 @@ function CodeIntelligenceOrb({ badgeRefs }) {
   }, [shouldMount]);
 
   return (
-    <div
-      ref={outerRef}
-      className="relative mx-auto w-full max-w-md"
-      style={{ transformStyle: "preserve-3d" }}
-    >
-      <div
-        ref={(el) => (badgeRefs.current[0] = el)}
-        className="orb-badge absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)]/90 px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-md"
-      >
+    <div ref={outerRef} className="relative mx-auto w-full max-w-md" style={{ transformStyle: "preserve-3d" }}>
+      <div ref={(el) => (badgeRefs.current[0] = el)} className="orb-badge absolute -top-4 -right-3 z-20 flex items-center gap-2 rounded-xl border border-[var(--color-danger)]/25 bg-[var(--bg-card)]/90 px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-md">
         <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[var(--color-danger-soft)] text-[var(--color-danger)]">
-          <svg
-            width="14"
-            height="14"
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-          >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <path d="M12 22a8 8 0 0 0 8-8V8a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a8 8 0 0 0 8 8z" />
-            <path d="M18 13h-2" />
-            <path d="M8 13H6" />
-            <path d="M10 4 8 2" />
-            <path d="M14 4 16 2" />
-            <path d="M12 22v-4" />
+            <path d="M18 13h-2" /><path d="M8 13H6" /><path d="M10 4 8 2" />
+            <path d="M14 4 16 2" /><path d="M12 22v-4" />
           </svg>
         </span>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
-            Bugs found
-          </p>
-          <p className="font-mono text-sm font-bold text-[var(--text-primary)]">
-            0 critical
-          </p>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Bugs found</p>
+          <p className="font-mono text-sm font-bold text-[var(--text-primary)]">0 critical</p>
         </div>
       </div>
 
-      <div
-        ref={(el) => (badgeRefs.current[1] = el)}
-        className="orb-badge absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/90 px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-md"
-      >
+      <div ref={(el) => (badgeRefs.current[1] = el)} className="orb-badge absolute -bottom-5 -left-4 z-20 flex items-center gap-2.5 rounded-xl border border-[var(--accent)]/25 bg-[var(--bg-card)]/90 px-3.5 py-2.5 shadow-[0_20px_40px_-15px_rgba(0,0,0,0.5)] backdrop-blur-md">
         <div className="relative h-9 w-9 shrink-0">
           <svg viewBox="0 0 36 36" className="-rotate-90">
-            <path
-              d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
-              fill="none"
-              stroke="var(--border-light)"
-              strokeWidth="4"
-            />
-            <path
-              d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
-              fill="none"
-              stroke="var(--accent)"
-              strokeWidth="4"
-              strokeDasharray="92,100"
-              strokeLinecap="round"
-            />
+            <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="var(--border-light)" strokeWidth="4" />
+            <path d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831" fill="none" stroke="var(--accent)" strokeWidth="4" strokeDasharray="92,100" strokeLinecap="round" />
           </svg>
-          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[var(--text-primary)]">
-            A+
-          </span>
+          <span className="absolute inset-0 flex items-center justify-center text-[10px] font-bold text-[var(--text-primary)]">A+</span>
         </div>
         <div>
-          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">
-            Grade
-          </p>
-          <p className="font-mono text-xs font-semibold text-[var(--color-success)]">
-            92 / 100
-          </p>
+          <p className="font-mono text-[9px] uppercase tracking-wide text-[var(--text-muted)]">Grade</p>
+          <p className="font-mono text-xs font-semibold text-[var(--color-success)]">92 / 100</p>
         </div>
       </div>
 
-      <div
-        ref={(el) => (badgeRefs.current[2] = el)}
-        className="orb-badge absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)]/90 px-3 py-1.5 shadow-lg backdrop-blur-md sm:flex"
-      >
+      <div ref={(el) => (badgeRefs.current[2] = el)} className="orb-badge absolute top-2 left-2 z-10 hidden items-center gap-1.5 rounded-full border border-[var(--color-info)]/25 bg-[var(--bg-card)]/90 px-3 py-1.5 shadow-lg backdrop-blur-md sm:flex">
         <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--color-info)]" />
-        <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">
-          12 tests generated
-        </span>
+        <span className="font-mono text-[10px] font-medium text-[var(--color-info)]">12 tests generated</span>
       </div>
 
-      <div
-        ref={mountRef}
-        className="relative z-0 h-[340px] w-full sm:h-[380px]"
-      />
+      <div ref={mountRef} className="relative z-0 h-[340px] w-full sm:h-[380px]" />
     </div>
   );
 }
@@ -1101,26 +859,15 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 // ============================================================
 function SectionDots({ sections, activeId, onJump }) {
   return (
-    <div
-      className="fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-center gap-3 xl:flex"
-      aria-label="Page sections"
-    >
+    <div className="fixed right-5 top-1/2 z-40 hidden -translate-y-1/2 flex-col items-center gap-3 xl:flex" aria-label="Page sections">
       {sections.map((s) => {
         const isActive = activeId === s.id;
         return (
-          <button
-            key={s.id}
-            onClick={() => onJump(s.id)}
-            className="group relative flex items-center justify-end"
-            aria-label={`Jump to ${s.label}`}
-            aria-current={isActive ? "true" : undefined}
-          >
+          <button key={s.id} onClick={() => onJump(s.id)} className="group relative flex items-center justify-end" aria-label={`Jump to ${s.label}`} aria-current={isActive ? "true" : undefined}>
             <span className="pointer-events-none absolute right-5 whitespace-nowrap rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] px-2 py-1 font-mono text-[9px] text-[var(--text-secondary)] opacity-0 shadow-[var(--shadow-md)] transition-opacity duration-150 group-hover:opacity-100">
               {s.label}
             </span>
-            <span
-              className={`rounded-full transition-all duration-300 ${isActive ? "h-6 w-1.5 bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" : "h-1.5 w-1.5 bg-[var(--border-medium)] group-hover:bg-[var(--text-muted)]"}`}
-            />
+            <span className={`rounded-full transition-all duration-300 ${isActive ? "h-6 w-1.5 bg-[var(--accent)] shadow-[0_0_8px_var(--accent)]" : "h-1.5 w-1.5 bg-[var(--border-medium)] group-hover:bg-[var(--text-muted)]"}`} />
           </button>
         );
       })}
@@ -1133,96 +880,59 @@ function SectionDots({ sections, activeId, onJump }) {
 // ============================================================
 function HowItWorks() {
   const steps = [
-    {
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-        >
-          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          <path d="m9 12 2 2 4-4" />
-        </svg>
-      ),
-      title: "Paste your GitHub URL",
-      desc: "Enter any public repository link. CodeVerity immediately reads the codebase structure.",
-    },
-    {
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-        >
-          <circle cx="12" cy="12" r="10" />
-          <path d="M12 6v6l4 2" />
-        </svg>
-      ),
-      title: "AI scans every file",
-      desc: "Our engine examines architecture, dependencies, security, and potential bugs in seconds.",
-    },
-    {
-      icon: (
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="1.75"
-        >
-          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" />
-          <polyline points="22 4 12 14.01 9 11.01" />
-        </svg>
-      ),
-      title: "Get actionable insights",
-      desc: "Receive a clear report with test suggestions, vulnerability fixes, and performance tips.",
-    },
+    { icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /><path d="m9 12 2 2 4-4" /></svg>), title: "Paste your GitHub URL", desc: "Enter any public repository link. CodeVerity immediately reads the codebase structure." },
+    { icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><circle cx="12" cy="12" r="10" /><path d="M12 6v6l4 2" /></svg>), title: "AI scans every file", desc: "Our engine examines architecture, dependencies, security, and potential bugs in seconds." },
+    { icon: (<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg>), title: "Get actionable insights", desc: "Receive a clear report with test suggestions, vulnerability fixes, and performance tips." },
   ];
 
+  const stepRefs = useRef([]);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = Number(entry.target.dataset.idx);
+            gsap.fromTo(
+              entry.target,
+              { opacity: 0, y: 40 },
+              { opacity: 1, y: 0, duration: 0.7, ease: "power3.out", delay: idx * 0.15 },
+            );
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.2 },
+    );
+    stepRefs.current.forEach((el) => el && observer.observe(el));
+    return () => observer.disconnect();
+  }, []);
+
   return (
-    <section
-      id="how-it-works"
-      className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6"
-    >
+    <section id="how-it-works" className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-          the process
-        </p>
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">the process</p>
         <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
-          <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-            How it works
-          </RevealHeading>
-          <p className="text-sm text-[var(--text-secondary)]">
-            Repository in, report out — three steps.
-          </p>
+          <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">How it works</RevealHeading>
+          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out — three steps.</p>
         </div>
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
           {steps.map((step, idx) => (
             <div
               key={idx}
+              ref={(el) => (stepRefs.current[idx] = el)}
+              data-idx={idx}
               className={`relative px-0 py-6 sm:px-6 sm:py-0 ${idx !== 0 ? "sm:border-l sm:border-[var(--border-light)]" : ""}`}
             >
               <div className="flex items-center gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
-                  {step.icon}
-                </span>
-                <span className="font-mono text-xs text-[var(--text-muted)]">
-                  0{idx + 1}
-                </span>
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">{step.icon}</span>
+                <span className="font-mono text-xs text-[var(--text-muted)]">0{idx + 1}</span>
               </div>
-              <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">
-                {step.title}
-              </h3>
-              <p className="mt-1.5 max-w-[26ch] text-xs leading-relaxed text-[var(--text-secondary)]">
-                {step.desc}
-              </p>
+              <h3 className="mt-4 text-sm font-semibold text-[var(--text-primary)]">{step.title}</h3>
+              <p className="mt-1.5 max-w-[26ch] text-xs leading-relaxed text-[var(--text-secondary)]">{step.desc}</p>
             </div>
           ))}
         </div>
@@ -1236,24 +946,9 @@ function HowItWorks() {
 // ============================================================
 function Testimonials() {
   const testimonials = [
-    {
-      quote:
-        "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.",
-      author: "Sarah Chen",
-      role: "Lead Engineer, Finlytics",
-    },
-    {
-      quote:
-        "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.",
-      author: "Marcus Rivera",
-      role: "Full-stack Developer, OpenSource Collective",
-    },
-    {
-      quote:
-        "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.",
-      author: "Dr. Aisha Patel",
-      role: "CTO, DevSafe",
-    },
+    { quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.", author: "Sarah Chen", role: "Lead Engineer, Finlytics" },
+    { quote: "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
+    { quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.", author: "Dr. Aisha Patel", role: "CTO, DevSafe" },
   ];
 
   const cardRefs = useRef([]);
@@ -1263,9 +958,7 @@ function Testimonials() {
     const observers = cardRefs.current.map((el, i) => {
       if (!el) return null;
       const obs = new IntersectionObserver(
-        (entries) => {
-          if (entries[0].isIntersecting) setActiveIdx(i);
-        },
+        (entries) => { if (entries[0].isIntersecting) setActiveIdx(i); },
         { rootMargin: "-40% 0px -40% 0px", threshold: 0 },
       );
       obs.observe(el);
@@ -1275,14 +968,9 @@ function Testimonials() {
   }, []);
 
   return (
-    <section
-      id="testimonials"
-      className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6"
-    >
+    <section id="testimonials" className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-          social proof
-        </p>
+        <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">social proof</p>
         <RevealHeading className="mb-10 text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Trusted by developers already shipping with it
         </RevealHeading>
@@ -1293,27 +981,15 @@ function Testimonials() {
               ref={(el) => (cardRefs.current[i] = el)}
               className={`flex flex-col rounded-xl border bg-[var(--bg-card)] p-6 transition-all duration-300 ${activeIdx === i ? "border-[var(--accent)]/50 shadow-[var(--shadow-lg)] md:-translate-y-1" : "border-[var(--border-light)]"}`}
             >
-              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">
-                &ldquo;
-              </span>
-              <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">
-                {t.quote}
-              </p>
+              <span className="mb-3 font-mono text-3xl leading-none text-[var(--accent)]">&ldquo;</span>
+              <p className="flex-1 text-sm leading-relaxed text-[var(--text-primary)]">{t.quote}</p>
               <div className="mt-5 flex items-center gap-2.5 border-t border-[var(--border-light)] pt-4">
                 <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[var(--accent-soft)] font-mono text-[10px] font-bold text-[var(--accent)]">
-                  {t.author
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")
-                    .slice(0, 2)}
+                  {t.author.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                 </span>
                 <div>
-                  <p className="text-xs font-semibold text-[var(--text-primary)]">
-                    {t.author}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-muted)]">
-                    {t.role}
-                  </p>
+                  <p className="text-xs font-semibold text-[var(--text-primary)]">{t.author}</p>
+                  <p className="text-[10px] text-[var(--text-muted)]">{t.role}</p>
                 </div>
               </div>
             </div>
@@ -1325,60 +1001,73 @@ function Testimonials() {
 }
 
 // ============================================================
-//  Pricing (unchanged logic — kept identical)
+//  Pricing
 // ============================================================
 function Pricing() {
   const plans = PRICING_PLANS;
+  const cardsRef = useRef([]);
+
+  useEffect(() => {
+    const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (reduceMotion) return;
+
+    cardsRef.current.forEach((card, i) => {
+      if (!card) return;
+      gsap.set(card, { rotateY: i === 0 ? 20 : i === 2 ? -20 : 0, y: 30, opacity: 0 });
+    });
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          cardsRef.current.forEach((card, i) => {
+            if (!card) return;
+            gsap.to(card, {
+              rotateY: 0,
+              y: 0,
+              opacity: 1,
+              duration: 1.1,
+              ease: "power3.out",
+              delay: i * 0.12,
+            });
+          });
+          observer.disconnect();
+        }
+      },
+      { threshold: 0.2 },
+    );
+    const first = cardsRef.current[0];
+    if (first) observer.observe(first);
+    return () => observer.disconnect();
+  }, []);
 
   return (
-    <section
-      id="pricing"
-      className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6"
-    >
-      <div className="mx-auto max-w-6xl">
+    <section id="pricing" className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
+      <div className="mx-auto max-w-6xl" style={{ perspective: "1400px" }}>
         <div className="mb-10 text-center">
-          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-            plans
-          </p>
-          <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
-            Simple, transparent pricing
-          </RevealHeading>
-          <p className="mx-auto mt-2 max-w-xl text-sm text-[var(--text-secondary)]">
-            Start for free, upgrade as you grow.
-          </p>
+          <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">plans</p>
+          <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">Simple, transparent pricing</RevealHeading>
+          <p className="mx-auto mt-2 max-w-xl text-sm text-[var(--text-secondary)]">Start for free, upgrade as you grow.</p>
         </div>
         <div className="grid grid-cols-1 gap-5 md:grid-cols-3">
-          {plans.map((plan) => {
+          {plans.map((plan, idx) => {
             const price = plan.monthly.INR;
             const isFree = price === 0;
             const displayPrice = formatPrice(price, "INR");
             return (
               <div
                 key={plan.id}
+                ref={(el) => (cardsRef.current[idx] = el)}
+                style={{ transformStyle: "preserve-3d", willChange: "transform" }}
                 className={`relative overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 text-left transition-all duration-200 ${plan.highlight ? "border-[var(--accent)]" : "border-[var(--border-light)] hover:border-[var(--accent)]/30"}`}
               >
-                {plan.highlight && (
-                  <span className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />
-                )}
+                {plan.highlight && <span className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />}
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-bold text-[var(--text-primary)]">
-                    {plan.name}
-                  </h3>
-                  {plan.highlight && (
-                    <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-semibold text-[var(--accent)]">
-                      Most popular
-                    </span>
-                  )}
+                  <h3 className="text-lg font-bold text-[var(--text-primary)]">{plan.name}</h3>
+                  {plan.highlight && <span className="rounded-full bg-[var(--accent-soft)] px-2 py-0.5 text-[9px] font-semibold text-[var(--accent)]">Most popular</span>}
                 </div>
                 <div className="mt-3 flex items-baseline">
-                  <span className="text-3xl font-extrabold text-[var(--text-primary)]">
-                    {displayPrice}
-                  </span>
-                  {!isFree && (
-                    <span className="ml-1 text-sm text-[var(--text-muted)]">
-                      /mo
-                    </span>
-                  )}
+                  <span className="text-3xl font-extrabold text-[var(--text-primary)]">{displayPrice}</span>
+                  {!isFree && <span className="ml-1 text-sm text-[var(--text-muted)]">/mo</span>}
                 </div>
                 <div className="mt-3">
                   <span className="inline-flex items-center gap-1 rounded-md bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[10px] text-[var(--accent)]">
@@ -1388,13 +1077,7 @@ function Pricing() {
                 <ul className="mt-5 space-y-2.5 text-xs text-[var(--text-secondary)]">
                   {plan.features.map((f, fi) => (
                     <li key={fi} className="flex items-start gap-2">
-                      <svg
-                        className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                      >
+                      <svg className="mt-0.5 h-3 w-3 shrink-0 text-[var(--accent)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3">
                         <polyline points="20 6 9 17 4 12" />
                       </svg>
                       {f}
@@ -1402,11 +1085,7 @@ function Pricing() {
                   ))}
                 </ul>
                 <Link
-                  to={
-                    isFree
-                      ? "/register"
-                      : `/checkout?plan=${plan.id}&cycle=monthly&currency=INR`
-                  }
+                  to={isFree ? "/register" : `/checkout?plan=${plan.id}&cycle=monthly&currency=INR`}
                   className={`mt-6 block w-full rounded-lg px-4 py-2.5 text-center text-sm font-semibold transition-all duration-200 ${plan.highlight ? "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)]" : "border border-[var(--border-light)] text-[var(--text-primary)] hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)]"}`}
                 >
                   {plan.cta}
@@ -1415,9 +1094,7 @@ function Pricing() {
             );
           })}
         </div>
-        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">
-          All prices in INR. Yearly plans offer 20% off — see full pricing page.
-        </p>
+        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off — see full pricing page.</p>
       </div>
     </section>
   );
@@ -1429,68 +1106,31 @@ function Pricing() {
 function FAQ() {
   const [openIndex, setOpenIndex] = useState(null);
   const faqs = [
-    {
-      q: "What types of repositories does CodeVerity support?",
-      a: "Currently we support public GitHub repositories written in JavaScript, TypeScript, Python, and Java. More languages coming soon.",
-    },
-    {
-      q: "Is my code stored or shared?",
-      a: "No. CodeVerity processes your repository in memory and never stores any source code. All analysis is temporary and encrypted.",
-    },
-    {
-      q: "Can I use CodeVerity for private repositories?",
-      a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security.",
-    },
-    {
-      q: "How accurate is the AI bug detection?",
-      a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement.",
-    },
-    {
-      q: "How is this different from ESLint or SonarQube?",
-      a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would — understanding architecture and intent, not just style violations — and explains findings in plain English instead of rule IDs.",
-    },
-    {
-      q: "Do I need to configure anything before my first scan?",
-      a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately — no config files, no CI pipeline changes.",
-    },
+    { q: "What types of repositories does CodeVerity support?", a: "Currently we support public GitHub repositories written in JavaScript, TypeScript, Python, and Java. More languages coming soon." },
+    { q: "Is my code stored or shared?", a: "No. CodeVerity processes your repository in memory and never stores any source code. All analysis is temporary and encrypted." },
+    { q: "Can I use CodeVerity for private repositories?", a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security." },
+    { q: "How accurate is the AI bug detection?", a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement." },
+    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would — understanding architecture and intent, not just style violations — and explains findings in plain English instead of rule IDs." },
+    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately — no config files, no CI pipeline changes." },
   ];
   const toggle = (idx) => setOpenIndex(openIndex === idx ? null : idx);
 
   return (
-    <section
-      id="faq"
-      className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6"
-    >
+    <section id="faq" className="border-t border-[var(--border-light)] bg-[var(--bg-secondary)]/30 px-4 py-16 sm:px-6">
       <div className="mx-auto max-w-6xl">
-        <p className="mb-2 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">
-          questions
-        </p>
-        <RevealHeading
-          as="h2"
-          className="mb-10 block text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl"
-        >
+        <p className="mb-2 text-center font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">questions</p>
+        <RevealHeading as="h2" className="mb-10 block text-center text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">
           Frequently asked questions
         </RevealHeading>
         <div className="mx-auto max-w-3xl divide-y divide-[var(--border-light)] rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           {faqs.map((faq, idx) => (
             <div key={idx}>
-              <button
-                onClick={() => toggle(idx)}
-                className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50"
-              >
-                <span className="text-sm font-medium text-[var(--text-primary)]">
-                  {faq.q}
-                </span>
-                <span
-                  className={`ml-4 shrink-0 font-mono text-lg text-[var(--accent)] transition-transform duration-200 ${openIndex === idx ? "rotate-45" : ""}`}
-                >
-                  +
-                </span>
+              <button onClick={() => toggle(idx)} className="flex w-full items-center justify-between px-5 py-4 text-left transition-colors duration-150 hover:bg-[var(--bg-hover)]/50">
+                <span className="text-sm font-medium text-[var(--text-primary)]">{faq.q}</span>
+                <span className={`ml-4 shrink-0 font-mono text-lg text-[var(--accent)] transition-transform duration-200 ${openIndex === idx ? "rotate-45" : ""}`}>+</span>
               </button>
               {openIndex === idx && (
-                <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">
-                  {faq.a}
-                </div>
+                <div className="px-5 pb-4 text-xs leading-relaxed text-[var(--text-secondary)]">{faq.a}</div>
               )}
             </div>
           ))}
@@ -1509,185 +1149,53 @@ function Footer({ isLoggedIn }) {
       <div className="relative z-10 mx-auto max-w-6xl">
         <div className="grid grid-cols-2 gap-10 sm:grid-cols-4">
           <div className="col-span-2 sm:col-span-1">
-            <h3 className="text-2xl font-extrabold leading-tight text-[var(--accent-contrast)] sm:text-3xl">
-              AI-powered code
-              <br />
-              intelligence.
-            </h3>
-            <p className="mt-3 max-w-[220px] text-[12px] leading-relaxed text-[var(--accent-contrast)]/70">
-              One repo. Every insight. Built by developers who care about
-              quality.
-            </p>
+            <h3 className="text-2xl font-extrabold leading-tight text-[var(--accent-contrast)] sm:text-3xl">AI-powered code<br />intelligence.</h3>
+            <p className="mt-3 max-w-[220px] text-[12px] leading-relaxed text-[var(--accent-contrast)]/70">One repo. Every insight. Built by developers who care about quality.</p>
           </div>
           <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Product
-            </h4>
+            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">Product</h4>
             <ul className="space-y-2">
               {isLoggedIn ? (
                 <>
-                  <li>
-                    <Link
-                      to="/dashboard"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Dashboard
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/workspace"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Workspace
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/history"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      History
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/pricing"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Pricing
-                    </Link>
-                  </li>
+                  <li><Link to="/dashboard" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Dashboard</Link></li>
+                  <li><Link to="/workspace" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Workspace</Link></li>
+                  <li><Link to="/history" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">History</Link></li>
+                  <li><Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Pricing</Link></li>
                 </>
               ) : (
                 <>
-                  <li>
-                    <Link
-                      to="/pricing"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Pricing
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/login"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Sign In
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/register"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      Get Started
-                    </Link>
-                  </li>
-                  <li>
-                    <Link
-                      to="/about"
-                      className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                    >
-                      About
-                    </Link>
-                  </li>
+                  <li><Link to="/pricing" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Pricing</Link></li>
+                  <li><Link to="/login" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Sign In</Link></li>
+                  <li><Link to="/register" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Get Started</Link></li>
+                  <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
                 </>
               )}
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Resources
-            </h4>
+            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">Resources</h4>
             <ul className="space-y-2">
-              <li>
-                <Link
-                  to="/about"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  About
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/support"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  Support
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/privacy"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  Privacy
-                </Link>
-              </li>
-              <li>
-                <Link
-                  to="/terms"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text([var(--accent-contrast)]"
-                >
-                  Terms
-                </Link>
-              </li>
+              <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
+              <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
+              <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
+              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
             </ul>
           </div>
           <div>
-            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">
-              Company
-            </h4>
+            <h4 className="mb-3 text-[10px] font-semibold uppercase tracking-[0.15em] text-[var(--accent-contrast)]/60">Company</h4>
             <ul className="space-y-2">
-              <li>
-                <a
-                  href="mailto:support@codeverity.dev"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  Contact
-                </a>
-              </li>
-              <li>
-                <Link
-                  to="/about"
-                  className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]"
-                >
-                  About Us
-                </Link>
-              </li>
-              <li>
-                <span className="text-[12px] text-[var(--accent-contrast)]/60">
-                  © {new Date().getFullYear()}
-                </span>
-              </li>
+              <li><a href="mailto:support@codeverity.dev" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Contact</a></li>
+              <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About Us</Link></li>
+              <li><span className="text-[12px] text-[var(--accent-contrast)]/60">© {new Date().getFullYear()}</span></li>
             </ul>
           </div>
         </div>
         <div className="mt-12 flex flex-col items-center justify-between gap-3 border-t border-[var(--accent-contrast)]/15 pt-6 sm:flex-row">
-          <p className="text-[10px] text-[var(--accent-contrast)]/60">
-            Built with ❤️ for developers everywhere.
-          </p>
+          <p className="text-[10px] text-[var(--accent-contrast)]/60">Built with ❤️ for developers everywhere.</p>
           <div className="flex items-center gap-4 text-[10px] text-[var(--accent-contrast)]/70">
-            <Link
-              to="/privacy"
-              className="transition hover:text-[var(--accent-contrast)]"
-            >
-              Privacy
-            </Link>
-            <Link
-              to="/terms"
-              className="transition hover:text-[var(--accent-contrast)]"
-            >
-              Terms
-            </Link>
-            <Link
-              to="/support"
-              className="transition hover:text-[var(--accent-contrast)]"
-            >
-              Support
-            </Link>
+            <Link to="/privacy" className="transition hover:text-[var(--accent-contrast)]">Privacy</Link>
+            <Link to="/terms" className="transition hover:text-[var(--accent-contrast)]">Terms</Link>
+            <Link to="/support" className="transition hover:text-[var(--accent-contrast)]">Support</Link>
           </div>
         </div>
       </div>
@@ -1695,19 +1203,8 @@ function Footer({ isLoggedIn }) {
         <div className="rounded-2xl bg-[var(--bg-primary)] p-1 shadow-2xl ring-1 ring-[var(--accent-contrast)]/20">
           <CodeVerityLogo />
         </div>
-        <div
-          className="pointer-events-none w-full overflow-hidden text-center"
-          style={{
-            maskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
-            WebkitMaskImage:
-              "linear-gradient(to bottom, black 60%, transparent 100%)",
-          }}
-        >
-          <span
-            className="block whitespace-nowrap font-extrabold leading-none tracking-tight text-[var(--accent-contrast)]/10"
-            style={{ fontSize: "clamp(3.5rem, 15vw, 10rem)" }}
-          >
+        <div className="pointer-events-none w-full overflow-hidden text-center" style={{ maskImage: "linear-gradient(to bottom, black 60%, transparent 100%)", WebkitMaskImage: "linear-gradient(to bottom, black 60%, transparent 100%)" }}>
+          <span className="block whitespace-nowrap font-extrabold leading-none tracking-tight text-[var(--accent-contrast)]/10" style={{ fontSize: "clamp(3.5rem, 15vw, 10rem)" }}>
             CodeVerity
           </span>
         </div>
@@ -1723,11 +1220,7 @@ export default function Home() {
   const token = localStorage.getItem("token");
   const { compact } = usePreferences();
 
-  const [stats, setStats] = useState({
-    totalScans: 0,
-    avgQuality: 0,
-    avgTime: "0s",
-  });
+  const [stats, setStats] = useState({ totalScans: 0, avgQuality: 0, avgTime: "0s" });
   const [statsLoading, setStatsLoading] = useState(true);
   const [showSampleModal, setShowSampleModal] = useState(false);
 
@@ -1737,8 +1230,7 @@ export default function Home() {
         const res = await fetch(`${import.meta.env.VITE_API_URL}/stats/public`);
         const text = await res.text();
         if (!res.ok) throw new Error(`Stats API failed: ${res.status}`);
-        if (!text.trim())
-          throw new Error("Stats API returned an empty response");
+        if (!text.trim()) throw new Error("Stats API returned an empty response");
         const data = JSON.parse(text);
         if (data.success) {
           setStats({
@@ -1767,7 +1259,7 @@ export default function Home() {
   const trustRef = useRef(null);
   const statsRef = useRef(null);
   const featureLabelRef = useRef(null);
-  const featureGridRef = useRef(null); // ← NEW: wrapper for cards
+  const featureGridRef = useRef(null);
   const featureCardsRef = useRef([]);
   const bgGlow1Ref = useRef(null);
   const bgGlow2Ref = useRef(null);
@@ -1811,10 +1303,7 @@ export default function Home() {
       mm.add("(prefers-reduced-motion: no-preference)", () => {
         if (progressRef.current) {
           gsap.set(progressRef.current, { scaleX: 0 });
-          const setProgress = gsap.quickTo(progressRef.current, "scaleX", {
-            duration: 0.25,
-            ease: "power2.out",
-          });
+          const setProgress = gsap.quickTo(progressRef.current, "scaleX", { duration: 0.25, ease: "power2.out" });
           ScrollTrigger.create({
             trigger: document.documentElement,
             start: "top top",
@@ -1849,83 +1338,31 @@ export default function Home() {
             trigger: statsRef.current,
             start: "top 90%",
             onEnter: () => {
-              if (!statsInViewRef.current) {
-                statsInViewRef.current = true;
-                setStatsReplayKey((k) => k + 1);
-              }
+              if (!statsInViewRef.current) { statsInViewRef.current = true; setStatsReplayKey((k) => k + 1); }
             },
-            onLeave: () => {
-              statsInViewRef.current = false;
-            },
+            onLeave: () => { statsInViewRef.current = false; },
             onEnterBack: () => {
-              if (!statsInViewRef.current) {
-                statsInViewRef.current = true;
-                setStatsReplayKey((k) => k + 1);
-              }
+              if (!statsInViewRef.current) { statsInViewRef.current = true; setStatsReplayKey((k) => k + 1); }
             },
-            onLeaveBack: () => {
-              statsInViewRef.current = false;
-            },
+            onLeaveBack: () => { statsInViewRef.current = false; },
           });
         }
 
-        const tl = gsap.timeline({
-          defaults: { ease: "power3.out", duration: 0.8 },
-        });
-        tl.fromTo(
-          brandRef.current,
-          { opacity: 0, y: 30 },
-          { opacity: 1, y: 0, duration: 0.6 },
-        )
-          .fromTo(
-            badgeRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5 },
-            "-=0.3",
-          )
-          .fromTo(
-            headingRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.6 },
-            "-=0.3",
-          )
-          .fromTo(
-            typedRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5 },
-            "-=0.4",
-          )
-          .fromTo(
-            descriptionRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5 },
-            "-=0.3",
-          )
-          .fromTo(
-            ctasRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 },
-            "-=0.3",
-          )
-          .fromTo(
-            trustRef.current,
-            { opacity: 0, y: 30 },
-            { opacity: 1, y: 0, duration: 0.4 },
-            "-=0.2",
-          );
+        // Hero entrance — richer stagger
+        const tl = gsap.timeline({ defaults: { ease: "power3.out", duration: 0.8 } });
+        tl.fromTo(brandRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.6 })
+          .fromTo(badgeRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
+          .fromTo(headingRef.current, { opacity: 0, y: 30, scale: 0.96 }, { opacity: 1, y: 0, scale: 1, duration: 0.7 }, "-=0.3")
+          .fromTo(typedRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.4")
+          .fromTo(descriptionRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5 }, "-=0.3")
+          .fromTo(ctasRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.08 }, "-=0.3")
+          .fromTo(trustRef.current, { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.4 }, "-=0.2");
 
         if (statsRef.current) {
-          gsap.fromTo(
-            statsRef.current,
-            { opacity: 0, y: 20 },
-            { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 },
-          );
+          gsap.fromTo(statsRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.5, stagger: 0.1, delay: 0.5 });
         }
 
-        // --- ORB tilt + parallax ---
         // --- ORB: visible from mount, tilts to neutral on enter ---
-        // (No opacity:0 initial state — that was the bug. Scrub tweens
-        // don't fire onUpdate on load, so the orb stayed hidden.)
         if (orbTiltRef.current && orbPerspectiveRef.current) {
           gsap.set(orbTiltRef.current, {
             rotateY: -18,
@@ -1949,7 +1386,6 @@ export default function Home() {
             },
           });
 
-          // Continuous gentle float — always running.
           gsap.to(orbTiltRef.current, {
             y: "+=10",
             duration: 3.5,
@@ -1960,7 +1396,7 @@ export default function Home() {
           });
         }
 
-        // --- Feature label + card grid ---
+        // --- Feature label reveal ---
         if (featureLabelRef.current) {
           ScrollTrigger.create({
             trigger: featureLabelRef.current,
@@ -1976,35 +1412,55 @@ export default function Home() {
           });
         }
 
-        // --- FIXED: single wrapper as trigger, stagger the cards ---
+        // --- Feature cards: 3D cover-flow reveal on scroll ---
         if (featureGridRef.current && featureCardsRef.current.length) {
-          gsap.set(featureCardsRef.current, { opacity: 0, y: 40 });
+          const cards = featureCardsRef.current.filter(Boolean);
+
+          const initStates = [
+            { rotateY: 32, rotateX: -8, z: -100, opacity: 0 },
+            { rotateY: 0,  rotateX: -14, z: 70,  opacity: 0 },
+            { rotateY: -32, rotateX: -8, z: -100, opacity: 0 },
+          ];
+
+          cards.forEach((card, i) => {
+            gsap.set(card, { ...initStates[i], transformOrigin: "center center" });
+          });
+
           ScrollTrigger.create({
             trigger: featureGridRef.current,
-            start: "top 85%",
+            start: "top 80%",
             once: true,
             onEnter: () => {
-              gsap.to(featureCardsRef.current, {
-                opacity: 1,
-                y: 0,
-                duration: 0.7,
-                stagger: 0.15,
-                ease: "power2.out",
-                clearProps: "opacity,transform",
+              cards.forEach((card, i) => {
+                gsap.to(card, {
+                  rotateY: 0,
+                  rotateX: 0,
+                  z: 0,
+                  opacity: 1,
+                  duration: 1.3,
+                  ease: "power3.out",
+                  delay: i * 0.15,
+                });
               });
             },
           });
         }
 
-        // --- Feature card hover lift ---
+        // --- Feature card hover: 3D lift + icon spin ---
         featureCardsRef.current.forEach((el) => {
           if (!el) return;
           const card = el.querySelector(".feature-card");
+          const icon = el.querySelector(".feature-icon");
           if (!card) return;
-          const onEnter = () =>
-            gsap.to(card, { y: -4, duration: 0.3, ease: "power2.out" });
-          const onLeave = () =>
-            gsap.to(card, { y: 0, duration: 0.3, ease: "power2.out" });
+
+          const onEnter = () => {
+            gsap.to(card, { y: -6, duration: 0.35, ease: "power2.out" });
+            if (icon) gsap.to(icon, { rotate: -6, scale: 1.08, duration: 0.4, ease: "back.out(2)" });
+          };
+          const onLeave = () => {
+            gsap.to(card, { y: 0, duration: 0.35, ease: "power2.out" });
+            if (icon) gsap.to(icon, { rotate: 0, scale: 1, duration: 0.4, ease: "power2.out" });
+          };
           el.addEventListener("mouseenter", onEnter);
           el.addEventListener("mouseleave", onLeave);
           el._cleanup = () => {
@@ -2030,13 +1486,7 @@ export default function Home() {
               gsap.fromTo(
                 ref.current,
                 { opacity: 0, y: 50 },
-                {
-                  opacity: 1,
-                  y: 0,
-                  duration: 0.8,
-                  ease: "power2.out",
-                  clearProps: "opacity, transform",
-                },
+                { opacity: 1, y: 0, duration: 0.8, ease: "power2.out", clearProps: "opacity, transform" },
               );
             },
             once: true,
@@ -2049,44 +1499,19 @@ export default function Home() {
         const bgGrid = bgGridRef.current;
 
         if (bgGlow1) {
-          const setY1 = gsap.quickTo(bgGlow1, "y", {
-            duration: 0.3,
-            ease: "power1.out",
-          });
-          ScrollTrigger.create({
-            trigger: containerRef.current,
-            start: "top top",
-            end: "bottom top",
-            onUpdate: (self) => setY1(self.progress * 200),
-          });
+          const setY1 = gsap.quickTo(bgGlow1, "y", { duration: 0.3, ease: "power1.out" });
+          ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY1(self.progress * 200) });
         }
         if (bgGlow2) {
-          const setY2 = gsap.quickTo(bgGlow2, "y", {
-            duration: 0.3,
-            ease: "power1.out",
-          });
-          ScrollTrigger.create({
-            trigger: containerRef.current,
-            start: "top top",
-            end: "bottom top",
-            onUpdate: (self) => setY2(-self.progress * 150),
-          });
+          const setY2 = gsap.quickTo(bgGlow2, "y", { duration: 0.3, ease: "power1.out" });
+          ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY2(-self.progress * 150) });
         }
         if (bgGrid) {
-          const setY3 = gsap.quickTo(bgGrid, "y", {
-            duration: 0.3,
-            ease: "power1.out",
-          });
-          ScrollTrigger.create({
-            trigger: containerRef.current,
-            start: "top top",
-            end: "bottom top",
-            onUpdate: (self) => setY3(self.progress * 50),
-          });
+          const setY3 = gsap.quickTo(bgGrid, "y", { duration: 0.3, ease: "power1.out" });
+          ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY3(self.progress * 50) });
         }
 
         // --- Orb badges: fade in shortly after mount, then float ---
-        // Not tied to scroll — they live in the hero, always visible.
         const animateBadges = () => {
           const badges = orbBadgeRefs.current.filter(Boolean);
           if (!badges.length) return;
@@ -2127,32 +1552,13 @@ export default function Home() {
       mm.add("(prefers-reduced-motion: reduce)", () => {
         gsap.set(
           [
-            brandRef.current,
-            badgeRef.current,
-            headingRef.current,
-            typedRef.current,
-            descriptionRef.current,
-            ctasRef.current,
-            trustRef.current,
-            statsRef.current,
-            featureLabelRef.current,
-            featureCardsRef.current,
-            howRef.current,
-            comparisonRef.current,
-            testimonialRef.current,
-            pricingRef.current,
-            faqRef.current,
-            orbTiltRef.current,
-            ...(orbBadgeRefs.current || []),
+            brandRef.current, badgeRef.current, headingRef.current, typedRef.current,
+            descriptionRef.current, ctasRef.current, trustRef.current, statsRef.current,
+            featureLabelRef.current, featureCardsRef.current, howRef.current, comparisonRef.current,
+            testimonialRef.current, pricingRef.current, faqRef.current,
+            orbTiltRef.current, ...(orbBadgeRefs.current || []),
           ].filter(Boolean),
-          {
-            opacity: 1,
-            y: 0,
-            rotateX: 0,
-            rotateY: 0,
-            scale: 1,
-            clearProps: "all",
-          },
+          { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, clearProps: "all" },
         );
         setShowStickyCta(false);
       });
@@ -2187,61 +1593,31 @@ export default function Home() {
       };
 
   return (
-    <div
-      ref={containerRef}
-      className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6"
-    >
-      <div
-        ref={progressRef}
-        className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]"
-        style={{ transform: "scaleX(0)" }}
-        aria-hidden="true"
-      />
+    <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-[var(--bg-primary)] px-4 text-[var(--text-primary)] sm:px-6">
+      <div ref={progressRef} className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]" style={{ transform: "scaleX(0)" }} aria-hidden="true" />
 
-      <SectionDots
-        sections={SECTIONS}
-        activeId={activeSection}
-        onJump={jumpToSection}
-      />
+      <SectionDots sections={SECTIONS} activeId={activeSection} onJump={jumpToSection} />
 
-      {showSampleModal && (
-        <SampleReportModal onClose={() => setShowSampleModal(false)} />
-      )}
+      {showSampleModal && <SampleReportModal onClose={() => setShowSampleModal(false)} />}
 
       <div
         className={`fixed bottom-0 left-0 right-0 z-[55] flex items-center justify-between gap-3 border-t border-[var(--border-light)] bg-[var(--bg-card)]/95 px-4 py-3 backdrop-blur-md transition-all duration-300 sm:px-6 ${showStickyCta ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-full opacity-0"}`}
       >
         <div className="flex items-center gap-2">
           <div className="hidden h-7 w-7 items-center justify-center rounded-lg bg-[var(--accent)] sm:flex">
-            <svg
-              width="14"
-              height="14"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="var(--accent-contrast)"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--accent-contrast)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
               <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
               <path d="m9 12 2 2 4-4" />
             </svg>
           </div>
-          <span className="text-xs font-medium text-[var(--text-primary)] sm:text-sm">
-            Ready to audit your repository?
-          </span>
+          <span className="text-xs font-medium text-[var(--text-primary)] sm:text-sm">Ready to audit your repository?</span>
         </div>
-        <Link
-          to={token ? "/dashboard" : "/register"}
-          className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]"
-        >
+        <Link to={token ? "/dashboard" : "/register"} className="shrink-0 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] transition hover:bg-[var(--accent-hover)]">
           {token ? "Open Dashboard" : "Get Started Free"}
         </Link>
       </div>
 
-      <style
-        dangerouslySetInnerHTML={{
-          __html: `
+      <style dangerouslySetInnerHTML={{__html: `
         .stat-card { box-shadow: 0 0 20px -5px var(--accent-soft-strong), inset 0 0 10px var(--accent-soft); }
         .stat-card:hover { box-shadow: 0 0 30px -5px var(--accent), inset 0 0 15px var(--accent-soft-strong); border-color: var(--accent); }
         .stat-number {
@@ -2276,56 +1652,26 @@ export default function Home() {
         @media (prefers-reduced-motion: reduce) {
           .marquee-track { animation: none; }
         }
-      `,
-        }}
-      />
+      `}} />
 
-      <div
-        ref={bgGlow1Ref}
-        className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl"
-      />
-      <div
-        ref={bgGlow2Ref}
-        className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl"
-      />
-      <div
-        ref={bgGridRef}
-        className="pointer-events-none absolute inset-0 opacity-[0.04]"
-        style={{
-          backgroundImage:
-            "radial-gradient(var(--accent) 1px, transparent 1px)",
-          backgroundSize: "28px 28px",
-        }}
-      />
+      <div ref={bgGlow1Ref} className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl" />
+      <div ref={bgGlow2Ref} className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
+      <div ref={bgGridRef} className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
       <NeuralNetworkBackground />
 
-      <div
-        id="hero"
-        ref={heroSectionRef}
-        className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}
-      >
+      <div id="hero" ref={heroSectionRef} className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}>
         <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
           <div className="text-center lg:text-left">
-            <div
-              ref={brandRef}
-              className={`flex items-center justify-center gap-3 lg:justify-start ${compactClasses.brandMargin}`}
-            >
+            <div ref={brandRef} className={`flex items-center justify-center gap-3 lg:justify-start ${compactClasses.brandMargin}`}>
               <CodeVerityLogo />
               <div className="text-left">
-                <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)]">
-                  CodeVerity
-                </p>
-                <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">
-                  AI-powered repository intelligence
-                </p>
+                <p className="text-[12px] font-bold tracking-[0.22em] text-[var(--text-primary)]">CodeVerity</p>
+                <p className="mt-0.5 text-[9px] text-[var(--text-secondary)]">AI-powered repository intelligence</p>
               </div>
             </div>
 
-            <div
-              ref={badgeRef}
-              className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}
-            >
+            <div ref={badgeRef} className={`inline-flex items-center gap-2 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/60 px-3.5 py-1.5 text-[10px] font-medium tracking-wide text-[var(--text-secondary)] backdrop-blur-xl ${compactClasses.badgeMargin}`}>
               <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-[var(--accent)]" />
               AI-powered GitHub code analysis
             </div>
@@ -2334,62 +1680,31 @@ export default function Home() {
               understand your code, instantly
             </p>
 
-            <h1
-              ref={headingRef}
-              className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}
-            >
+            <h1 ref={headingRef} className={`mb-3 font-extrabold leading-[1.05] tracking-tight ${compactClasses.heading}`}>
               <span className="hero-title-glow">CodeVerity</span>
             </h1>
 
-            <p
-              ref={typedRef}
-              className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}
-            >
-              <TypedWord
-                words={[
-                  "Finds your bugs.",
-                  "Flags vulnerabilities.",
-                  "Generates tests.",
-                  "Ships confidence.",
-                ]}
-              />
+            <p ref={typedRef} className={`mb-5 h-8 font-medium ${compactClasses.subheading}`}>
+              <TypedWord words={["Finds your bugs.", "Flags vulnerabilities.", "Generates tests.", "Ships confidence."]} />
             </p>
 
-            <p
-              ref={descriptionRef}
-              className={`mx-auto mb-6 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}
-            >
-              Drop any public GitHub URL and get a complete AI-powered
-              repository audit — architecture analysis, security findings, bug
-              detection, performance insights, and generated tests.
+            <p ref={descriptionRef} className={`mx-auto mb-6 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}>
+              Drop any public GitHub URL and get a complete AI-powered repository audit — architecture analysis, security findings, bug detection, performance insights, and generated tests.
             </p>
 
             <HeroRepoInput isAuthed={!!token} />
 
-            <div
-              ref={ctasRef}
-              className={`flex flex-wrap justify-center gap-3 lg:justify-start ${compactClasses.ctaMargin}`}
-            >
+            <div ref={ctasRef} className={`flex flex-wrap justify-center gap-3 lg:justify-start ${compactClasses.ctaMargin}`}>
               {token ? (
                 <MagneticWrap>
-                  <Link
-                    to="/dashboard"
-                    className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)]"
-                    style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}
-                  >
+                  <Link to="/dashboard" className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)]" style={{ boxShadow: "0 0 30px var(--accent-soft-strong)" }}>
                     <ScanLine />
                     <span className="relative z-10">Open Dashboard →</span>
                   </Link>
                 </MagneticWrap>
               ) : (
                 <MagneticWrap>
-                  <Link
-                    to="/register"
-                    className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)]"
-                    style={{
-                      boxShadow: "0 8px 24px -6px var(--accent-soft-strong)",
-                    }}
-                  >
+                  <Link to="/register" className="group relative overflow-hidden rounded-lg bg-[var(--accent)] px-7 py-3 text-sm font-semibold text-[var(--accent-contrast)] transition-colors duration-200 hover:bg-[var(--accent-hover)]" style={{ boxShadow: "0 8px 24px -6px var(--accent-soft-strong)" }}>
                     <ScanLine />
                     <span className="relative z-10">Get Started Free →</span>
                   </Link>
@@ -2405,10 +1720,7 @@ export default function Home() {
               </MagneticWrap>
             </div>
 
-            <div
-              ref={trustRef}
-              className="flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)] lg:justify-start"
-            >
+            <div ref={trustRef} className="flex items-center justify-center gap-2 text-[9px] text-[var(--text-muted)] lg:justify-start">
               <span className="h-1.5 w-1.5 rounded-full bg-[var(--accent)]" />
               No credit card required
               <span>•</span>
@@ -2416,15 +1728,8 @@ export default function Home() {
             </div>
           </div>
 
-          <div
-            ref={orbPerspectiveRef}
-            className="mx-auto w-full max-w-md lg:mx-0"
-            style={{ perspective: "1400px" }}
-          >
-            <div
-              ref={orbTiltRef}
-              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
-            >
+          <div ref={orbPerspectiveRef} className="mx-auto w-full max-w-md lg:mx-0" style={{ perspective: "1400px" }}>
+            <div ref={orbTiltRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
               <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
             </div>
           </div>
@@ -2433,85 +1738,50 @@ export default function Home() {
         <div className="mt-14 w-full max-w-6xl text-center">
           <TechStrip />
 
-          <div
-            ref={statsRef}
-            className={`mx-auto flex w-fit flex-wrap justify-center gap-4 ${compactClasses.statsMargin}`}
-          >
-            <StatPill
-              key={`scans-${statsReplayKey}`}
-              value={statsLoading ? "..." : `${stats.totalScans}+`}
-              label="Repos Scanned"
-              delayMs={200}
-            />
-            <StatPill
-              key={`quality-${statsReplayKey}`}
-              value={statsLoading ? "..." : `${stats.avgQuality}%`}
-              label="Issue Accuracy"
-              delayMs={300}
-            />
-            <StatPill
-              key={`time-${statsReplayKey}`}
-              value={statsLoading ? "..." : stats.avgTime}
-              label="Avg Audit Time"
-              delayMs={400}
-            />
+          <div ref={statsRef} className={`mx-auto flex w-fit flex-wrap justify-center gap-4 ${compactClasses.statsMargin}`}>
+            <StatPill key={`scans-${statsReplayKey}`} value={statsLoading ? "..." : `${stats.totalScans}+`} label="Repos Scanned" delayMs={200} />
+            <StatPill key={`quality-${statsReplayKey}`} value={statsLoading ? "..." : `${stats.avgQuality}%`} label="Issue Accuracy" delayMs={300} />
+            <StatPill key={`time-${statsReplayKey}`} value={statsLoading ? "..." : stats.avgTime} label="Avg Audit Time" delayMs={400} />
           </div>
 
           <div ref={featureLabelRef} className="mb-6 text-left">
-            <p className="text-sm font-semibold text-[var(--text-primary)]">
-              What CodeVerity checks
-            </p>
+            <p className="text-sm font-semibold text-[var(--text-primary)]">What CodeVerity checks</p>
           </div>
 
-          {/* FIXED: single wrapper as ScrollTrigger target, cards as children */}
+          {/* 3D cover-flow feature grid */}
           <div
             ref={featureGridRef}
             className={`grid grid-cols-1 ${compactClasses.featureGap} sm:grid-cols-3`}
+            style={{ perspective: "1400px", perspectiveOrigin: "center 40%" }}
           >
-            <div ref={(el) => (featureCardsRef.current[0] = el)}>
-              <Feature
-                icon={<BugIcon />}
-                title="AI Bug Detection"
-                desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase."
-                index={0}
-              />
+            <div
+              ref={(el) => (featureCardsRef.current[0] = el)}
+              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+            >
+              <Feature icon={<BugIcon />} title="AI Bug Detection" desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase." index={0} />
             </div>
-            <div ref={(el) => (featureCardsRef.current[1] = el)}>
-              <Feature
-                icon={<ShieldIcon />}
-                title="Security Analysis"
-                desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly."
-                index={1}
-              />
+            <div
+              ref={(el) => (featureCardsRef.current[1] = el)}
+              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+            >
+              <Feature icon={<ShieldIcon />} title="Security Analysis" desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly." index={1} />
             </div>
-            <div ref={(el) => (featureCardsRef.current[2] = el)}>
-              <Feature
-                icon={<FlaskIcon />}
-                title="Smart Test Generation"
-                desc="Creates useful test cases from your repository to help verify fixes and prevent regressions."
-                index={2}
-              />
+            <div
+              ref={(el) => (featureCardsRef.current[2] = el)}
+              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+            >
+              <Feature icon={<FlaskIcon />} title="Smart Test Generation" desc="Creates useful test cases from your repository to help verify fixes and prevent regressions." index={2} />
             </div>
           </div>
         </div>
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl">
-        <div ref={howRef}>
-          <HowItWorks />
-        </div>
-        <div ref={comparisonRef}>
-          <ComparisonSection />
-        </div>
-        <div ref={testimonialRef}>
-          <Testimonials />
-        </div>
-        <div ref={pricingRef}>
-          <Pricing />
-        </div>
-        <div ref={faqRef}>
-          <FAQ />
-        </div>
+        <div ref={howRef}><HowItWorks /></div>
+        <div ref={comparisonRef}><ComparisonSection /></div>
+        <div ref={testimonialRef}><Testimonials /></div>
+        <div ref={pricingRef}><Pricing /></div>
+        <div ref={faqRef}><FAQ /></div>
         <Footer isLoggedIn={!!token} />
       </div>
     </div>
