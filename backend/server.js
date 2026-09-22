@@ -234,7 +234,11 @@ const expensiveLimiter = rateLimit({
   legacyHeaders: false,
 });
 
-app.use("/api", globalLimiter);
+app.use("/api", (req, res, next) => {
+  // Stripe webhooks retry from a small IP pool; don't rate-limit them.
+  if (req.originalUrl === "/api/billing/webhook") return next();
+  return globalLimiter(req, res, next);
+});
 app.use("/api/github/analyze", expensiveLimiter);
 app.use("/api/github/generate-tests", expensiveLimiter);
 app.use("/api/github/auto-fix", expensiveLimiter);
@@ -386,14 +390,7 @@ async function shutdown(signal) {
 
     stopEmailQueueWorker();
 
-    await mongoose.connection.close(false);if (httpServer) {
-      await new Promise((resolve, reject) => {
-        httpServer.close((err) => (err ? reject(err) : resolve()));
-      });
-      console.log("✅ HTTP server closed");
-    }
-
-    await mongoose.connection.close(false);
+       await mongoose.connection.close(false);
     console.log("✅ MongoDB connection closed");
 
     console.log("👋 Shutdown complete");

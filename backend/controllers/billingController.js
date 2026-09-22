@@ -257,8 +257,11 @@ export const handleWebhook = async (req, res) => {
         );
 
         const user = await User.findOne({
-          stripeSubscriptionId: subscriptionId,
-        });
+  $or: [
+    { stripeSubscriptionId: subscriptionId },
+    { stripeCustomerId: invoice.customer || null },
+  ],
+});
 
         if (user) {
           user.subscriptionStatus = "active";
@@ -302,8 +305,11 @@ export const handleWebhook = async (req, res) => {
         }
 
         const user = await User.findOne({
-          stripeSubscriptionId: subscriptionId,
-        });
+  $or: [
+    { stripeSubscriptionId: subscriptionId },
+    { stripeCustomerId: invoice.customer || null },
+  ],
+});
         if (user) {
           user.subscriptionStatus = "past_due";
           await user.save();
