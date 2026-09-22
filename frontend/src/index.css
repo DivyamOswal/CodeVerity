@@ -423,12 +423,8 @@ video {
 .stat-card {
   box-shadow: 0 0 20px -5px var(--accent-soft-strong),
     inset 0 0 10px var(--accent-soft);
-}
-.stat-card:hover {
-  box-shadow: 0 0 30px -5px var(--accent),
-    inset 0 0 15px var(--accent-soft-strong);
-  border-color: var(--accent);
-  transform: translateY(-2px);
+  transition: box-shadow 0.3s ease, border-color 0.3s ease, transform 0.25s ease;
+  will-change: transform;
 }
 .stat-number {
   background: linear-gradient(135deg, var(--accent) 0%, var(--accent-hover) 100%);
@@ -536,6 +532,38 @@ video {
 @keyframes scroll-orb-drift-b {
   0%, 100% { transform: translate(0, 0); }
   50% { transform: translate(-25px, -15px); }
+}
+
+/* ─── Scroll-scrubbed accent line under "How it works" ─── */
+.how-progress-line {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  height: 1px;
+  width: 100%;
+  transform-origin: left;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    var(--accent) 50%,
+    transparent 100%
+  );
+  pointer-events: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scroll-feature-card {
+    transform: none !important;
+    transition: none !important;
+  }
+  .orb-halo,
+  .scroll-radar-sweep,
+  .scroll-orb-a,
+  .scroll-orb-b,
+  .hero-title-glow,
+  .how-progress-line {        /* ← add this */
+    animation: none !important;
+  }
 }
 
 /* ─── Reduced-motion overrides for these classes ─── */

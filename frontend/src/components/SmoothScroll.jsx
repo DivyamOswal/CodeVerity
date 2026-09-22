@@ -26,6 +26,7 @@ export default function SmoothScroll({ children }) {
           });
 
           smootherRef.current = smoother;
+          window.__smoother = smoother;
 
           // Wait for the smoother to settle before refreshing
           // ScrollTrigger, otherwise pinned sections can jump.
@@ -34,6 +35,7 @@ export default function SmoothScroll({ children }) {
           return () => {
             smoother.kill();
             smootherRef.current = null;
+            window.__smoother = null;
           };
         }
       );
