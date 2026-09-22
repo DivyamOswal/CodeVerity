@@ -664,6 +664,87 @@ video {
 .animate-scanline { animation: scanline 3s ease-in-out infinite; }
 
 /* =====================================================
+   ADMIN DASHBOARD
+======================================================== */
+
+/* Dotted ambient grid background */
+.admin-shell {
+  background-color: var(--bg-primary);
+}
+
+/* KPI card — subtle glow on hover, matches home hero cards */
+.admin-kpi {
+  background:
+    linear-gradient(180deg, rgba(255,255,255,0.015) 0%, transparent 60%),
+    var(--bg-card);
+}
+.admin-kpi::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  background: radial-gradient(600px circle at 50% -20%, var(--accent-soft), transparent 45%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+.admin-kpi:hover::after { opacity: 1; }
+
+/* Drawer — subtle inner top accent */
+.admin-drawer {
+  background-image: linear-gradient(
+    180deg,
+    var(--accent-soft) 0%,
+    transparent 8%
+  );
+}
+
+/* Table row hover accent bar */
+.admin-shell tbody tr {
+  position: relative;
+}
+.admin-shell tbody tr::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: var(--accent);
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+.admin-shell tbody tr:hover::before { opacity: 1; }
+
+/* Skeleton shimmer — matches Home */
+.admin-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-hover) 25%,
+    var(--accent-soft) 50%,
+    var(--bg-hover) 75%
+  );
+  background-size: 200% 100%;
+  animation: admin-shimmer 1.6s ease-in-out infinite;
+}
+@keyframes admin-shimmer {
+  0%   { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .admin-skeleton { animation: none; }
+  .admin-kpi::after { transition: none; }
+  .admin-shell tbody tr::before { transition: none; }
+}
+
+/* Sticky table header safety on Safari */
+.admin-shell thead.sticky {
+  position: sticky;
+  top: 0;
+}
+
+/* =====================================================
    RESET / GLOBAL STYLES
 ======================================================== */
 html {
