@@ -137,7 +137,12 @@ function findingsFromAI(aiAnalysis) {
         line: pickField(b, ["line", "lineNumber", "lineStart"]),
         endLine: pickField(b, ["endLine", "lineEnd"]),
         title: pickField(b, ["title", "name"]),
-        description: pickField(b, ["description", "message", "detail", "issue"]),
+        description: pickField(b, [
+          "description",
+          "message",
+          "detail",
+          "issue",
+        ]),
         whyItMatters: pickField(b, ["whyItMatters", "impact", "reason"]),
         suggestedFix: pickField(b, ["suggestedFix", "fix", "remediation"]),
         references: pickField(b, ["references", "refs"], []),
@@ -156,7 +161,12 @@ function findingsFromAI(aiAnalysis) {
         line: pickField(s, ["line", "lineNumber", "lineStart"]),
         endLine: pickField(s, ["endLine", "lineEnd"]),
         title: pickField(s, ["title", "name"]),
-        description: pickField(s, ["description", "message", "detail", "issue"]),
+        description: pickField(s, [
+          "description",
+          "message",
+          "detail",
+          "issue",
+        ]),
         whyItMatters: pickField(s, ["whyItMatters", "impact", "reason", "cwe"]),
         suggestedFix: pickField(s, ["suggestedFix", "fix", "remediation"]),
         references: pickField(s, ["references", "refs"], []),
@@ -355,10 +365,7 @@ export const analyzeGithubRepo = async (req, res) => {
       if (graphRes.status === "fulfilled" && graphRes.value) {
         graph = graphRes.value;
       } else {
-        console.warn(
-          "⚠️ Architecture graph failed:",
-          graphRes.reason?.message,
-        );
+        console.warn("⚠️ Architecture graph failed:", graphRes.reason?.message);
       }
 
       if (complexityRes.status === "fulfilled" && complexityRes.value) {
@@ -532,7 +539,8 @@ export const analyzeGithubRepo = async (req, res) => {
     }
     const status = statusForError(err);
     return res.status(status).json({
-      error: status === 500 ? "Analysis failed. Please try again." : err.message,
+      error:
+        status === 500 ? "Analysis failed. Please try again." : err.message,
     });
   }
 };
@@ -578,8 +586,7 @@ export const autoFixIssue = async (req, res) => {
     }
 
     const safePath = sanitizeFilePath(filePath);
-
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("+githubAccessToken");
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const githubToken = user.getGithubToken();
@@ -715,7 +722,7 @@ export const getRepoContents = async (req, res) => {
     const { repoUrl, path: rawPath = "" } = req.query;
     const safePath = rawPath ? sanitizeFilePath(rawPath) : "";
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("+githubAccessToken");
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const githubToken = user.getGithubToken();
@@ -762,7 +769,7 @@ export const getFileContent = async (req, res) => {
     const { repoUrl, filePath } = req.query;
     const safePath = sanitizeFilePath(filePath);
 
-    const user = await User.findById(req.user.id);
+    const user = await User.findById(req.user.id).select("+githubAccessToken");
     if (!user) return res.status(401).json({ error: "User not found" });
 
     const githubToken = user.getGithubToken();
