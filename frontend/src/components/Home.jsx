@@ -2,7 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import * as THREE from "three";
 import { usePreferences } from "../context/PreferencesContext";
-import { gsap, ScrollTrigger, ScrollSmoother, useGSAP } from "../lib/gsap"; // ← CHANGED (added ScrollSmoother)
+import { gsap, ScrollTrigger, ScrollSmoother, useGSAP } from "../lib/gsap";
 import {
   PRICING_PLANS,
   formatPrice,
@@ -479,7 +479,7 @@ function ComparisonSection() {
         </RevealHeading>
         <p className="mb-10 max-w-2xl text-sm text-[var(--text-secondary)]">
           Static analyzers check syntax against rules. CodeVerity reads your code the way a senior
-          engineer would understanding architecture, intent, and risk, not just style violations.
+          engineer would — understanding architecture, intent, and risk, not just style violations.
         </p>
         <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)]">
           <div className="grid grid-cols-[1fr_90px_90px] border-b border-[var(--border-light)] bg-[var(--bg-hover)]/50 px-4 py-3 text-[11px] font-semibold text-[var(--text-muted)] sm:grid-cols-[1fr_120px_120px] sm:px-5">
@@ -492,18 +492,18 @@ function ComparisonSection() {
               key={row.label}
               ref={(el) => (rowRefs.current[i] = el)}
               data-idx={i}
-              className={`grid grid-cols-[1fr_90px_90px] items-center px-4 py-3 text-xs text-[var(--text-secondary)] sm:grid-cols-[1fr_120px_120px] sm:px-5 sm:text-sm ${i !== rows.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}
+              className={`comparison-row grid grid-cols-[1fr_90px_90px] items-center px-4 py-3 text-xs text-[var(--text-secondary)] sm:grid-cols-[1fr_120px_120px] sm:px-5 sm:text-sm ${i !== rows.length - 1 ? "border-b border-[var(--border-light)]" : ""}`}
             >
               <span className="pr-2 text-[var(--text-primary)]">{row.label}</span>
               <span className="flex justify-center">
-                {row.linter ? <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" /> : <span className="text-[var(--text-muted)]"></span>}
+                {row.linter ? <span className="h-1.5 w-1.5 rounded-full bg-[var(--text-muted)]" /> : <span className="text-[var(--text-muted)]">—</span>}
               </span>
               <span className="flex justify-center">
                 {row.verity ? (
                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-success)" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                     <polyline points="20 6 9 17 4 12" />
                   </svg>
-                ) : <span className="text-[var(--text-muted)]"></span>}
+                ) : <span className="text-[var(--text-muted)]">—</span>}
               </span>
             </div>
           ))}
@@ -742,6 +742,28 @@ function SectionDots({ sections, activeId, onJump }) {
 }
 
 // ============================================================
+//  BackToTop — NEW, purely additive. Fades in with the sticky
+//  CTA once the hero has scrolled past, since a page this long
+//  benefits from a quick way back up.
+// ============================================================
+function BackToTop({ visible, onClick }) {
+  return (
+    <button
+      onClick={onClick}
+      aria-label="Back to top"
+      className={`fixed bottom-20 right-4 z-[55] flex h-10 w-10 items-center justify-center rounded-full border border-[var(--border-light)] bg-[var(--bg-card)]/95 text-[var(--text-secondary)] shadow-[var(--shadow-md)] backdrop-blur-md transition-all duration-300 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] sm:bottom-6 sm:right-6 ${
+        visible ? "translate-y-0 opacity-100" : "pointer-events-none translate-y-4 opacity-0"
+      }`}
+    >
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M12 19V5" />
+        <path d="m5 12 7-7 7 7" />
+      </svg>
+    </button>
+  );
+}
+
+// ============================================================
 //  HowItWorks
 // ============================================================
 function HowItWorks() {
@@ -752,6 +774,12 @@ function HowItWorks() {
   ];
 
   const stepRefs = useRef([]);
+  // NEW: ref for the scrubbed progress line, replacing the raw
+  // document.createElement approach — same visual intent (a line
+  // that fills in as you scroll through this section), now a real
+  // JSX element with matching CSS so it actually renders, and no
+  // risk of duplicating itself on effect re-runs.
+  const progressLineRef = useRef(null);
 
   useEffect(() => {
     const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -778,12 +806,13 @@ function HowItWorks() {
   }, []);
 
   return (
-    <section id="how-it-works" className="border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
+    <section id="how-it-works" className="relative border-t border-[var(--border-light)] px-4 py-16 sm:px-6">
+      <div ref={progressLineRef} className="how-progress-line" aria-hidden="true" />
       <div className="mx-auto max-w-6xl">
         <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.2em] text-[var(--text-muted)]">the process</p>
         <div className="mb-10 flex flex-col gap-1.5 sm:flex-row sm:items-end sm:justify-between">
           <RevealHeading className="text-2xl font-bold text-[var(--text-primary)] sm:text-3xl">How it works</RevealHeading>
-          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out three steps.</p>
+          <p className="text-sm text-[var(--text-secondary)]">Repository in, report out — three steps.</p>
         </div>
         <div className="grid grid-cols-1 gap-0 sm:grid-cols-3">
           {steps.map((step, idx) => (
@@ -813,7 +842,7 @@ function HowItWorks() {
 function Testimonials() {
   const testimonials = [
     { quote: "CodeVerity caught a critical security flaw our team overlooked. The generated tests saved us hours.", author: "Sarah Chen", role: "Lead Engineer, Finlytics" },
-    { quote: "I use it before every PR. The bug detection is surprisingly accurate it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
+    { quote: "I use it before every PR. The bug detection is surprisingly accurate — it's like having a senior reviewer.", author: "Marcus Rivera", role: "Full-stack Developer, OpenSource Collective" },
     { quote: "We integrated it into our CI pipeline. Now every commit gets an instant AI audit. Game changer.", author: "Dr. Aisha Patel", role: "CTO, DevSafe" },
   ];
 
@@ -960,7 +989,7 @@ function Pricing() {
             );
           })}
         </div>
-        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off see full pricing page.</p>
+        <p className="mt-6 text-center text-[10px] text-[var(--text-muted)]">All prices in INR. Yearly plans offer 20% off — see full pricing page.</p>
       </div>
     </section>
   );
@@ -976,8 +1005,8 @@ function FAQ() {
     { q: "Is my code stored or shared?", a: "No. CodeVerity processes your repository in memory and never stores any source code. All analysis is temporary and encrypted." },
     { q: "Can I use CodeVerity for private repositories?", a: "Yes, with the Pro or Enterprise plan you can scan private repositories with full OAuth security." },
     { q: "How accurate is the AI bug detection?", a: "Our models are trained on millions of open-source fixes and achieve over 98% accuracy on common bug patterns, with continuous improvement." },
-    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would understanding architecture and intent, not just style violations and explains findings in plain English instead of rule IDs." },
-    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately no config files, no CI pipeline changes." },
+    { q: "How is this different from ESLint or SonarQube?", a: "Linters check syntax against fixed rules. CodeVerity reads the code the way a senior engineer would — understanding architecture and intent, not just style violations — and explains findings in plain English instead of rule IDs." },
+    { q: "Do I need to configure anything before my first scan?", a: "No setup required. Paste a public GitHub URL and CodeVerity analyzes it immediately — no config files, no CI pipeline changes." },
   ];
   const toggle = (idx) => setOpenIndex(openIndex === idx ? null : idx);
 
@@ -1044,7 +1073,11 @@ function Footer({ isLoggedIn }) {
               <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
               <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
               <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
-              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text([var(--accent-contrast)]">Terms</Link></li>
+              {/* FIXED: was `hover:text([var(--accent-contrast)]` — malformed
+                  arbitrary-value class (missing "!" and "-"), meaning this
+                  link's hover color never applied. Now matches every other
+                  footer link's pattern. */}
+              <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
             </ul>
           </div>
           <div>
@@ -1089,6 +1122,9 @@ export default function Home() {
   const [stats, setStats] = useState({ totalScans: 0, avgQuality: 0, avgTime: "0s" });
   const [statsLoading, setStatsLoading] = useState(true);
   const [showSampleModal, setShowSampleModal] = useState(false);
+  // NEW: drives BackToTop visibility, reusing the same "past hero"
+  // boundary the sticky CTA already tracks.
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const fetchStats = async () => {
@@ -1104,7 +1140,6 @@ export default function Home() {
             avgQuality: data.stats.avgQuality ?? 0,
             avgTime: data.stats.avgTime || "< 2 min",
           });
-          // ← NEW: refresh ScrollTrigger after page height may have changed
           requestAnimationFrame(() => ScrollTrigger.refresh());
         }
       } catch (err) {
@@ -1157,7 +1192,6 @@ export default function Home() {
   ];
   const [activeSection, setActiveSection] = useState("hero");
 
-  // ← CHANGED: routes through ScrollSmoother when available
   const jumpToSection = (id) => {
     const el = document.getElementById(id) || containerRef.current;
     if (!el) return;
@@ -1168,6 +1202,15 @@ export default function Home() {
     } else {
       const top = el.getBoundingClientRect().top + window.scrollY - 70;
       window.scrollTo({ top, behavior: "smooth" });
+    }
+  };
+
+  const scrollToTop = () => {
+    const smoother = ScrollSmoother.get();
+    if (smoother) {
+      smoother.scrollTo(0, true);
+    } else {
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
@@ -1201,13 +1244,13 @@ export default function Home() {
           });
         });
 
-        /* ---------- Sticky CTA ---------- */
+        /* ---------- Sticky CTA + back-to-top ---------- */
         if (heroSectionRef.current) {
           ScrollTrigger.create({
             trigger: heroSectionRef.current,
             start: "bottom top",
-            onEnter: () => setShowStickyCta(true),
-            onLeaveBack: () => setShowStickyCta(false),
+            onEnter: () => { setShowStickyCta(true); setShowBackToTop(true); },
+            onLeaveBack: () => { setShowStickyCta(false); setShowBackToTop(false); },
           });
         }
 
@@ -1458,18 +1501,14 @@ export default function Home() {
         requestAnimationFrame(animateBadges);
 
         /* ═══════════════════════════════════════════════════
-           NEW ANIMATIONS modern polish layer
+           MODERN POLISH LAYER
            ═══════════════════════════════════════════════════ */
 
-        /* ---------- (NEW) How-it-works scrubbed progress line ---------- */
-        if (howRef.current) {
-          howRef.current.style.position = "relative";
-          const line = document.createElement("div");
-          line.className = "how-progress-line";
-          howRef.current.appendChild(line);
-
+        /* ---------- How-it-works scrubbed progress line ---------- */
+        const howProgressLine = howRef.current?.querySelector(".how-progress-line");
+        if (howProgressLine) {
           gsap.fromTo(
-            line,
+            howProgressLine,
             { scaleX: 0 },
             {
               scaleX: 1,
@@ -1484,9 +1523,8 @@ export default function Home() {
           );
         }
 
-        /* ---------- (NEW) Section heading parallax drift ---------- */
+        /* ---------- Section heading parallax drift ---------- */
         gsap.utils.toArray("section h2").forEach((el) => {
-          // Skip if reduced motion was on at mount (the whole block wouldn't run)
           gsap.fromTo(
             el,
             { y: 12 },
@@ -1503,7 +1541,7 @@ export default function Home() {
           );
         });
 
-        /* ---------- (NEW) Testimonial cards blur + stagger reveal ---------- */
+        /* ---------- Testimonial cards blur + stagger reveal ---------- */
         if (testimonialRef.current) {
           const cards = testimonialRef.current.querySelectorAll(".testimonial-card");
           if (cards.length) {
@@ -1527,7 +1565,7 @@ export default function Home() {
           }
         }
 
-        /* ---------- (NEW) Pricing cards subtle lift on scroll ---------- */
+        /* ---------- Pricing cards subtle lift on scroll ---------- */
         if (pricingRef.current) {
           const cards = pricingRef.current.querySelectorAll(".grid > div");
           if (cards.length) {
@@ -1549,7 +1587,7 @@ export default function Home() {
           }
         }
 
-        /* ---------- (NEW) FAQ rows cascading reveal ---------- */
+        /* ---------- FAQ rows cascading reveal ---------- */
         if (faqRef.current) {
           const rows = faqRef.current.querySelectorAll("button");
           if (rows.length) {
@@ -1572,6 +1610,19 @@ export default function Home() {
           }
         }
 
+        /* ---------- Comparison rows: subtle accent-line on scroll ---------- */
+        if (comparisonRef.current) {
+          const rows = comparisonRef.current.querySelectorAll(".comparison-row");
+          rows.forEach((row) => {
+            row.addEventListener("mouseenter", () => {
+              gsap.to(row, { backgroundColor: "var(--accent-soft)", duration: 0.25 });
+            });
+            row.addEventListener("mouseleave", () => {
+              gsap.to(row, { backgroundColor: "transparent", duration: 0.25 });
+            });
+          });
+        }
+
         return () => {
           ScrollTrigger.getAll().forEach((st) => st.kill());
           featureCardsRef.current.forEach((el) => el?._cleanup?.());
@@ -1590,6 +1641,7 @@ export default function Home() {
           { opacity: 1, y: 0, rotateX: 0, rotateY: 0, scale: 1, clearProps: "all" },
         );
         setShowStickyCta(false);
+        setShowBackToTop(false);
       });
 
       return () => mm.revert();
@@ -1623,11 +1675,11 @@ export default function Home() {
 
   return (
     <div ref={containerRef} className="relative min-h-screen overflow-hidden bg-transparent px-4 text-[var(--text-primary)] sm:px-6">
-      {/* ← CHANGED: bg-[var(--bg-primary)] → bg-transparent so the App-level background shows through */}
-
       <div ref={progressRef} className="fixed left-0 top-0 z-[60] h-[3px] w-full origin-left bg-[var(--accent)]" style={{ transform: "scaleX(0)" }} aria-hidden="true" />
 
       <SectionDots sections={SECTIONS} activeId={activeSection} onJump={jumpToSection} />
+
+      <BackToTop visible={showBackToTop} onClick={scrollToTop} />
 
       {showSampleModal && <SampleReportModal onClose={() => setShowSampleModal(false)} />}
 
@@ -1681,6 +1733,21 @@ export default function Home() {
         }
         .feature-card { will-change: transform; }
         .testimonial-card { will-change: transform, opacity, filter; }
+        /* NEW: real CSS for the how-it-works scrubbed progress line —
+           previously created via document.createElement with no
+           matching styles, so it rendered as an invisible 0x0 div.
+           Sits as a thin bar under the section's top border, filling
+           left-to-right as you scroll through the section. */
+        .how-progress-line {
+          position: absolute;
+          top: -1px;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(to right, var(--accent), var(--accent-secondary, var(--accent)));
+          transform-origin: left center;
+          transform: scaleX(0);
+        }
         @media (prefers-reduced-motion: reduce) {
           .marquee-track { animation: none; }
         }
@@ -1689,8 +1756,6 @@ export default function Home() {
       <div ref={bgGlow1Ref} className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl" />
       <div ref={bgGlow2Ref} className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
       <div ref={bgGridRef} className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
-
-      {/* ← REMOVED: <NeuralNetworkBackground /> now rendered at App level as ScrollReactiveBackground */}
 
       <div id="hero" ref={heroSectionRef} className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}>
         <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
@@ -1721,7 +1786,7 @@ export default function Home() {
             </p>
 
             <p ref={descriptionRef} className={`mx-auto mb-6 max-w-2xl leading-relaxed text-[var(--text-secondary)] lg:mx-0 ${compactClasses.description}`}>
-              Drop any public GitHub URL and get a complete AI-powered repository audit architecture analysis, security findings, bug detection, performance insights, and generated tests.
+              Drop any public GitHub URL and get a complete AI-powered repository audit — architecture analysis, security findings, bug detection, performance insights, and generated tests.
             </p>
 
             <HeroRepoInput isAuthed={!!token} />
