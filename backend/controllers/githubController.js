@@ -53,6 +53,35 @@ function sanitizeFilePath(filePath) {
   return normalized;
 }
 
+/**
+ * AI sometimes returns "backend/routes/auth.js:31" as a single string,
+ * or "path#L31". Split it into a clean file path and a line number.
+ * Handles bare paths too returns { file, line: null } in that case.
+ */
+function splitFileAndLine(raw) {
+  if (!raw || typeof raw !== "string") {
+    return { file: raw || null, line: null };
+  }
+  const trimmed = raw.trim();
+  // Matches "path/to/file.ext:123" or "path/to/file.ext#L123" or "...#123"
+  const match = trimmed.match(/^(.+?)(?::|#L?)(\d+)$/);
+  if (match) {
+    return { file: match[1], line: Number(match[2]) };
+  }
+  return { file: trimmed, line: null };
+}
+
+/**
+ * Coerce a value to a number or null. Handles strings, empty strings,
+ * undefined, and NaN anything that isn't a valid positive integer
+ * becomes null.
+ */
+function toLineNumber(value) {
+  if (value === null || value === undefined || value === "") return null;
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
 // ─── Timeout wrapper ─────────────────────────────────────────
 function withTimeout(promise, ms, label = "operation") {
   let timer;
@@ -128,14 +157,22 @@ function findingsFromAI(aiAnalysis) {
   const out = [];
 
   for (const b of aiAnalysis.bugs || []) {
+    // AI often returns "path/to/file.js:31" as a single string.
+    // Split it here so the whole pipeline (report → RepoEditor →
+    // Auto-Fix) receives a clean path and a real line number.
+    const { file, line } = splitFileAndLine(
+      pickField(b, ["file", "path", "filePath"]),
+    );
     out.push(
       makeFinding({
         severity: pickField(b, ["severity", "level"], "medium"),
         category: "bug",
         source: "ai",
-        file: pickField(b, ["file", "path", "filePath"]),
-        line: pickField(b, ["line", "lineNumber", "lineStart"]),
-        endLine: pickField(b, ["endLine", "lineEnd"]),
+        file,
+        line:
+          line ??
+          toLineNumber(pickField(b, ["line", "lineNumber", "lineStart"])),
+        endLine: toLineNumber(pickField(b, ["endLine", "lineEnd"])),
         title: pickField(b, ["title", "name"]),
         description: pickField(b, [
           "description",
@@ -152,14 +189,19 @@ function findingsFromAI(aiAnalysis) {
   }
 
   for (const s of aiAnalysis.securityIssues || []) {
+    const { file, line } = splitFileAndLine(
+      pickField(s, ["file", "path", "filePath"]),
+    );
     out.push(
       makeFinding({
         severity: pickField(s, ["severity", "level"], "high"),
         category: "security",
         source: "ai",
-        file: pickField(s, ["file", "path", "filePath"]),
-        line: pickField(s, ["line", "lineNumber", "lineStart"]),
-        endLine: pickField(s, ["endLine", "lineEnd"]),
+        file,
+        line:
+          line ??
+          toLineNumber(pickField(s, ["line", "lineNumber", "lineStart"])),
+        endLine: toLineNumber(pickField(s, ["endLine", "lineEnd"])),
         title: pickField(s, ["title", "name"]),
         description: pickField(s, [
           "description",
@@ -180,13 +222,15 @@ function findingsFromAI(aiAnalysis) {
 
 // ─── Map scanner outputs into findings ───────────────────────
 function findingsFromSecrets(secrets) {
-  return (secrets || []).map((s) =>
-    makeFinding({
+  return (secrets || []).map((s) => {
+    const { file, line } = splitFileAndLine(pickField(s, ["file", "path"]));
+    return makeFinding({
       severity: pickField(s, ["severity"], "critical"),
       category: "security",
       source: "secret-scan",
-      file: pickField(s, ["file", "path"]),
-      line: pickField(s, ["line", "lineNumber"]),
+      file,
+      line:
+        line ?? toLineNumber(pickField(s, ["line", "lineNumber"])),
       title: pickField(s, ["type", "rule", "title"], "Secret detected"),
       description:
         pickField(s, ["description", "match", "message"]) ||
@@ -197,18 +241,20 @@ function findingsFromSecrets(secrets) {
         "Move the secret to an environment variable and rotate the exposed credential immediately.",
       references: ["https://cwe.mitre.org/data/definitions/798.html"],
       raw: s,
-    }),
-  );
+    });
+  });
 }
 
 function findingsFromSecurity(secVulns) {
-  return (secVulns || []).map((v) =>
-    makeFinding({
+  return (secVulns || []).map((v) => {
+    const { file, line } = splitFileAndLine(pickField(v, ["file", "path"]));
+    return makeFinding({
       severity: pickField(v, ["severity", "level"], "medium"),
       category: "security",
       source: "security-scan",
-      file: pickField(v, ["file", "path"]),
-      line: pickField(v, ["line", "lineNumber"]),
+      file,
+      line:
+        line ?? toLineNumber(pickField(v, ["line", "lineNumber"])),
       title: pickField(v, ["rule", "title", "name"], "Security issue"),
       description:
         pickField(v, ["message", "description", "detail"]) ||
@@ -217,8 +263,8 @@ function findingsFromSecurity(secVulns) {
       suggestedFix: pickField(v, ["fix", "suggestedFix", "remediation"]),
       references: pickField(v, ["references", "refs"], []),
       raw: v,
-    }),
-  );
+    });
+  });
 }
 
 function findingsFromDependencies(depVulns) {
@@ -309,7 +355,7 @@ export const analyzeGithubRepo = async (req, res) => {
       });
     }
 
-    // ── 3. Static analysis  all in parallel ─────────────────
+    // ── 3. Static analysis all in parallel ─────────────────
     let depVulns = [];
     let secrets = [];
     let secVulns = [];
@@ -470,11 +516,8 @@ export const analyzeGithubRepo = async (req, res) => {
     );
 
     // ── 9. Assemble report payload ───────────────────────────
-    //    Legacy top-level fields kept for the existing frontend.
-    //    New namespaced fields (findings, metrics, ai, static, meta)
-    //    are what the new frontend will read.
     const analysis = {
-      // Legacy  top-level (frontend currently reads these)
+      // Legacy top-level (frontend currently reads these)
       ...aiAnalysis,
       healthScore,
       securityVulnerabilities: secVulns,
@@ -489,11 +532,11 @@ export const analyzeGithubRepo = async (req, res) => {
       cveList,
       readmeScore,
 
-      // New  unified findings
+      // New unified findings
       findings,
       findingsSummary,
 
-      // New  namespaced
+      // New namespaced
       ai: aiAnalysis,
       static: {
         security: secVulns,
@@ -566,6 +609,16 @@ export const generateTestCases = async (req, res) => {
   }
 };
 
+// ─── Strip markdown code fences if the AI wrapped its output ──
+function stripCodeFences(text) {
+  if (!text || typeof text !== "string") return text;
+  const trimmed = text.trim();
+  // ```lang\n...\n``` or ```\n...\n```
+  const fenceMatch = trimmed.match(/^```[a-zA-Z0-9_-]*\s*\n([\s\S]*?)\n```\s*$/);
+  if (fenceMatch) return fenceMatch[1];
+  return trimmed;
+}
+
 // ─── Auto-Fix (creates PR) ──────────────────────────────────
 export const autoFixIssue = async (req, res) => {
   try {
@@ -575,7 +628,6 @@ export const autoFixIssue = async (req, res) => {
       filePath,
       lineNumber,
       description,
-      currentCode,
       suggestedFix,
     } = req.body;
 
@@ -585,7 +637,15 @@ export const autoFixIssue = async (req, res) => {
         .json({ error: "repoUrl and filePath are required." });
     }
 
-    const safePath = sanitizeFilePath(filePath);
+    // Defensive: strip any ":31" or "#L31" suffix that snuck in from
+    // an older report before the splitFileAndLine fix. This is what
+    // the whole Auto-Fix 404 was caused by.
+    const { file: cleanFilePath, line: embeddedLine } =
+      splitFileAndLine(filePath);
+    const safePath = sanitizeFilePath(cleanFilePath);
+    const parsedLineNumber =
+      toLineNumber(lineNumber) ?? embeddedLine ?? null;
+
     const user = await User.findById(req.user.id).select("+githubAccessToken");
     if (!user) return res.status(401).json({ error: "User not found" });
 
@@ -614,6 +674,7 @@ export const autoFixIssue = async (req, res) => {
 
     const octokit = new Octokit({ auth: githubToken });
 
+    // ── Fetch the actual file from GitHub ────────────────────
     let fileContent, sha;
     try {
       const { data } = await octokit.repos.getContent({
@@ -624,32 +685,62 @@ export const autoFixIssue = async (req, res) => {
       fileContent = Buffer.from(data.content, "base64").toString("utf-8");
       sha = data.sha;
     } catch (err) {
-      console.error("Error fetching file:", err);
+      console.error("Error fetching file:", {
+        path: safePath,
+        status: err.status,
+        message: err.message,
+      });
       return res
         .status(404)
-        .json({ error: "File not found in the repository." });
+        .json({ error: `File not found in the repository: ${safePath}` });
     }
 
-    let fixedCode = suggestedFix;
-    if (!fixedCode) {
-      const prompt = `
-        You are an expert code fixer. Given the following code snippet and a bug description,
-        generate the corrected version of the code. Only output the fixed code, no explanation.
+    // ── Always ask the AI to regenerate the full file ────────
+    // `suggestedFix` from the report is a short instruction like
+    // "Add oauthStartLimiter to the callback routes" it is NOT
+    // a rewritten file. Using it verbatim as file content would
+    // overwrite the whole file with one sentence. So we always
+    // call the AI, passing suggestedFix as context.
+    const prompt = `You are an expert code fixer. Given a file and a bug description,
+produce a corrected version of the ENTIRE file. Apply the fix surgically —
+change only the lines needed to resolve the bug. Do not reformat, rename,
+or refactor unrelated code.
 
-        Bug description: ${description || "Fix the issue at line " + lineNumber}
+Bug description: ${description || "Fix the issue"}${
+      parsedLineNumber ? ` (around line ${parsedLineNumber})` : ""
+    }${suggestedFix ? `\nSuggested approach: ${suggestedFix}` : ""}
 
-        Current code:
-        \`\`\`
-        ${fileContent}
-        \`\`\`
+File: ${safePath}
 
-        Output ONLY the fixed code, no extra text.
-      `;
-      const response = await analyzeWithGroq(prompt);
-      fixedCode = response.result || "";
-      if (!fixedCode) {
-        return res.status(500).json({ error: "AI failed to generate a fix." });
-      }
+Current contents:
+\`\`\`
+${fileContent}
+\`\`\`
+
+Output ONLY the corrected file content. No explanations, no markdown fences,
+no commentary just the new file contents, ready to commit.`;
+
+    const response = await analyzeWithGroq(prompt);
+    const rawFixedCode = response.result || "";
+    const fixedCode = stripCodeFences(rawFixedCode);
+
+    if (!fixedCode || fixedCode.length < 20) {
+      return res
+        .status(500)
+        .json({ error: "AI failed to generate a valid fix." });
+    }
+
+    // Guard against the AI returning something suspiciously short
+    // (like just the one-line suggestion text). Real files are much
+    // longer than a sentence.
+    if (fixedCode.length < fileContent.length * 0.3) {
+      console.error("Auto-fix rejected output too short", {
+        originalLength: fileContent.length,
+        fixedLength: fixedCode.length,
+      });
+      return res.status(500).json({
+        error: "AI fix was too short to be a valid file rewrite. Please try again.",
+      });
     }
 
     const branchName = `auto-fix-${issueId || Date.now()}`;
@@ -683,7 +774,7 @@ export const autoFixIssue = async (req, res) => {
       owner,
       repo,
       title: `Fix: ${description || "Auto-fix issue"}`,
-      body: `This PR automatically fixes the issue identified by CodeVerity.\n\n**Issue:** ${description}\n**File:** ${safePath}\n**Line:** ${lineNumber || "N/A"}`,
+      body: `This PR automatically fixes the issue identified by CodeVerity.\n\n**Issue:** ${description || "N/A"}\n**File:** ${safePath}\n**Line:** ${parsedLineNumber ?? "N/A"}`,
       head: branchName,
       base: defaultBranch,
     });
@@ -743,7 +834,10 @@ export const getRepoContents = async (req, res) => {
       path: safePath,
     });
 
-    const files = data.map((item) => ({
+    // GitHub returns an array for directories, a single object for files.
+    // Normalize to array so the frontend can always iterate.
+    const items = Array.isArray(data) ? data : [data];
+    const files = items.map((item) => ({
       name: item.name,
       path: item.path,
       type: item.type,
