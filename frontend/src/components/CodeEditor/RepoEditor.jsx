@@ -11,6 +11,7 @@ import {
   AlertTriangle,
   Lightbulb,
   Check,
+  ChevronRight,
 } from "lucide-react";
 import { usePreferences } from "../../context/PreferencesContext";
 import { useToast } from "../../hooks/useToast";
@@ -21,12 +22,6 @@ import {
 } from "../../api/github";
 import axios from "../../api/axios";
 
-/* ─────────────────────────────────────────────────────────────
-   Register the CodeVerity Monaco theme from CSS custom
-   properties. Called both on mount and whenever the app theme
-   switches, so the editor follows light/dark like the rest of
-   the page.
-───────────────────────────────────────────────────────────── */
 function registerMonacoTheme(monaco) {
   if (!monaco) return;
   const styles = getComputedStyle(document.documentElement);
@@ -43,7 +38,7 @@ function registerMonacoTheme(monaco) {
       "editorLineNumber.foreground": styles
         .getPropertyValue("--text-muted")
         .trim(),
-      "editorGutter.background": styles
+      "editor.gutter.background": styles
         .getPropertyValue("--bg-primary")
         .trim(),
     },
@@ -64,6 +59,11 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [repoContentLoading, setRepoContentLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
+  // NEW: per-folder expansion state
+  const [expandedFolders, setExpandedFolders] = useState({});
+  const [folderContents, setFolderContents] = useState({});
+  const [folderLoading, setFolderLoading] = useState({});
+
   const editorRef = useRef(null);
   const monacoRef = useRef(null);
   const decorationsRef = useRef([]);
@@ -81,6 +81,10 @@ export default function RepoEditor({ repoUrl, reportId }) {
       }
 
       setFiles(data.files || []);
+      // Reset folder state when repo changes
+      setExpandedFolders({});
+      setFolderContents({});
+      setFolderLoading({});
 
       if (reportId) {
         const reportRes = await axios.get(`/report/${reportId}`);
@@ -140,14 +144,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [repoUrl, reportId]);
 
-  /* ─── Re-register Monaco theme when the app theme changes ─── */
   useEffect(() => {
     if (monacoRef.current) {
       registerMonacoTheme(monacoRef.current);
     }
   }, [theme]);
 
-  /* ─── Escape closes the mobile sidebar ─── */
   useEffect(() => {
     if (!sidebarOpen) return;
     const onKey = (e) => {
@@ -156,6 +158,36 @@ export default function RepoEditor({ repoUrl, reportId }) {
     document.addEventListener("keydown", onKey);
     return () => document.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
+
+  /* ─── NEW: toggle a folder and lazy-fetch its contents ─── */
+  const toggleFolder = async (folder) => {
+    const folderPath = folder.path;
+    const willExpand = !expandedFolders[folderPath];
+
+    setExpandedFolders((prev) => ({ ...prev, [folderPath]: willExpand }));
+
+    // Already loaded → nothing to fetch
+    if (!willExpand || folderContents[folderPath]) return;
+
+    setFolderLoading((prev) => ({ ...prev, [folderPath]: true }));
+    try {
+      const res = await getRepoContents(repoUrl, folderPath);
+      const data = res.data;
+      if (data?.success) {
+        setFolderContents((prev) => ({
+          ...prev,
+          [folderPath]: data.files || [],
+        }));
+      } else {
+        error(data?.error || "Failed to load folder.");
+      }
+    } catch (err) {
+      console.error("Failed to load folder contents:", err);
+      error("Failed to load folder contents.");
+    } finally {
+      setFolderLoading((prev) => ({ ...prev, [folderPath]: false }));
+    }
+  };
 
   const openFile = async (file) => {
     setCurrentFile(file);
@@ -212,7 +244,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
     }
   };
 
-  /* ─── Apply Monaco decorations whenever file or errors change ─── */
   useEffect(() => {
     const editor = editorRef.current;
     const monaco = monacoRef.current;
@@ -238,25 +269,68 @@ export default function RepoEditor({ repoUrl, reportId }) {
 
     decorationsRef.current = editor.deltaDecorations(
       decorationsRef.current || [],
-      decorations
+      decorations,
     );
   }, [currentFile, errors]);
 
+  /* ─── File tree — folders now fetch children on expand ─── */
   const renderFileTree = (items, level = 0) => {
     if (!items || !items.length) return null;
-    return items.map((item) => (
-      <div key={item.path} style={{ paddingLeft: `${level * 16}px` }}>
-        {item.type === "dir" ? (
-          <details>
-            <summary className="flex cursor-pointer items-center gap-2 rounded px-2 py-1 text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)]">
+
+    return items.map((item) => {
+      const indent = { paddingLeft: `${level * 16}px` };
+
+      if (item.type === "dir") {
+        const isOpen = !!expandedFolders[item.path];
+        const children = folderContents[item.path];
+        const isLoading = !!folderLoading[item.path];
+
+        return (
+          <div key={item.path} style={indent}>
+            <button
+              type="button"
+              onClick={() => toggleFolder(item)}
+              aria-expanded={isOpen}
+              className="flex w-full cursor-pointer items-center gap-2 rounded px-2 py-1 text-left text-sm text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+            >
+              <ChevronRight
+                size={12}
+                className={`shrink-0 transition-transform duration-150 ${
+                  isOpen ? "rotate-90" : ""
+                }`}
+                aria-hidden="true"
+              />
               <FolderTree size={14} className="shrink-0" aria-hidden="true" />
               <span className="truncate">{item.name}</span>
-            </summary>
-            <div>
-              {item.children && renderFileTree(item.children, level + 1)}
-            </div>
-          </details>
-        ) : (
+              {isLoading && (
+                <Loader2
+                  size={12}
+                  className="ml-auto shrink-0 animate-spin text-[var(--accent)]"
+                  aria-hidden="true"
+                />
+              )}
+            </button>
+
+            {isOpen && (
+              <div>
+                {children && children.length > 0 ? (
+                  renderFileTree(children, level + 1)
+                ) : !isLoading && children ? (
+                  <div
+                    className="py-1 text-xs text-[var(--text-muted)]"
+                    style={{ paddingLeft: `${(level + 1) * 16 + 24}px` }}
+                  >
+                    Empty
+                  </div>
+                ) : null}
+              </div>
+            )}
+          </div>
+        );
+      }
+
+      return (
+        <div key={item.path} style={indent}>
           <button
             type="button"
             onClick={() => openFile(item)}
@@ -275,9 +349,9 @@ export default function RepoEditor({ repoUrl, reportId }) {
               </span>
             )}
           </button>
-        )}
-      </div>
-    ));
+        </div>
+      );
+    });
   };
 
   if (repoContentLoading) {
