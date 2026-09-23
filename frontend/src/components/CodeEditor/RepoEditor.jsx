@@ -22,6 +22,19 @@ import {
 } from "../../api/github";
 import axios from "../../api/axios";
 
+/**
+ * Split "path/to/file.js:31" or "path/to/file.js#L31" into a clean
+ * path and a numeric line. Defensive reports stored before the
+ * backend fix still carry the ":line" suffix in the file field.
+ */
+function splitFileAndLine(raw) {
+  if (!raw || typeof raw !== "string") return { file: raw || "", line: null };
+  const trimmed = raw.trim();
+  const match = trimmed.match(/^(.+?)(?::|#L?)(\d+)$/);
+  if (match) return { file: match[1], line: Number(match[2]) };
+  return { file: trimmed, line: null };
+}
+
 function registerMonacoTheme(monaco) {
   if (!monaco) return;
   const styles = getComputedStyle(document.documentElement);
@@ -59,7 +72,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [repoContentLoading, setRepoContentLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  // NEW: per-folder expansion state
+  // Per-folder expansion state
   const [expandedFolders, setExpandedFolders] = useState({});
   const [folderContents, setFolderContents] = useState({});
   const [folderLoading, setFolderLoading] = useState({});
@@ -81,7 +94,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
       }
 
       setFiles(data.files || []);
-      // Reset folder state when repo changes
       setExpandedFolders({});
       setFolderContents({});
       setFolderLoading({});
@@ -96,10 +108,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
         if (findings.length > 0) {
           for (const f of findings) {
             if (!f.file) continue;
+            // Defensive: old reports stored "path:line" as one string.
+            const { file, line } = splitFileAndLine(f.file);
             allErrors.push({
               _id: f.id,
-              file: f.file,
-              line: f.line || 1,
+              file,
+              line: line ?? f.line ?? null,
               severity: f.severity,
               category: f.category,
               message: f.title || f.description,
@@ -108,17 +122,19 @@ export default function RepoEditor({ repoUrl, reportId }) {
           }
         } else {
           for (const b of report.bugs || []) {
+            const { file, line } = splitFileAndLine(b.file || "unknown");
             allErrors.push({
               ...b,
-              file: b.file || "unknown",
-              line: b.line || 1,
+              file,
+              line: line ?? b.line ?? null,
             });
           }
           for (const s of report.securityIssues || []) {
+            const { file, line } = splitFileAndLine(s.file || "unknown");
             allErrors.push({
               ...s,
-              file: s.file || "unknown",
-              line: s.line || 1,
+              file,
+              line: line ?? s.line ?? null,
             });
           }
         }
@@ -159,14 +175,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
     return () => document.removeEventListener("keydown", onKey);
   }, [sidebarOpen]);
 
-  /* ─── NEW: toggle a folder and lazy-fetch its contents ─── */
   const toggleFolder = async (folder) => {
     const folderPath = folder.path;
     const willExpand = !expandedFolders[folderPath];
 
     setExpandedFolders((prev) => ({ ...prev, [folderPath]: willExpand }));
 
-    // Already loaded → nothing to fetch
     if (!willExpand || folderContents[folderPath]) return;
 
     setFolderLoading((prev) => ({ ...prev, [folderPath]: true }));
@@ -206,20 +220,64 @@ export default function RepoEditor({ repoUrl, reportId }) {
     }
   };
 
+  /* ─── Auto-Fix ───────────────────────────────────────────────
+     Handles three defensive cases:
+       1. The file path may carry a ":31" suffix from an old report.
+          Strip it before sending to GitHub (Octokit 404s on that).
+       2. The line number may be "" coerce to a real number or null.
+       3. `content` holds whichever file the user last opened, which
+          is not necessarily the file the finding refers to. Fetch the
+          correct file's content before calling auto-fix, or the AI
+          has nothing to work with. */
   const handleFix = async (errObj, lineNumber) => {
+    // 1. Clean the file path strip any ":31" suffix.
+    const rawPath = currentFile?.path || errObj.file || "";
+    const { file: cleanPath, line: embeddedLine } = splitFileAndLine(rawPath);
+
+    if (!cleanPath) {
+      error("Cannot determine the file to fix.");
+      return;
+    }
+
+    // 2. Coerce the line number to a real number or null.
+    const candidateLine =
+      Number(lineNumber) ||
+      Number(errObj.line) ||
+      embeddedLine ||
+      null;
+    const parsedLine = Number.isFinite(candidateLine) && candidateLine > 0
+      ? candidateLine
+      : null;
+
     const issueId =
-      errObj._id || errObj.id || `${currentFile.path}:${lineNumber}`;
+      errObj._id || errObj.id || `${cleanPath}:${parsedLine || 0}`;
     setFixLoading((prev) => ({ ...prev, [issueId]: true }));
 
     try {
+      // 3. Ensure we send the actual content of the file being fixed.
+      //    If the user already has that file open, reuse the state.
+      //    Otherwise, fetch it fresh.
+      let codeToSend = content;
+      const isCurrentlyOpen =
+        currentFile && currentFile.path === cleanPath && codeToSend;
+
+      if (!isCurrentlyOpen) {
+        try {
+          const fileRes = await getFileContent(repoUrl, cleanPath);
+          codeToSend = fileRes.data?.content || "";
+        } catch (fetchErr) {
+          console.error("Failed to fetch file for auto-fix:", fetchErr);
+        }
+      }
+
       const res = await autoFixIssue({
         repoUrl,
         issueId,
-        filePath: currentFile.path,
+        filePath: cleanPath,
         description:
           errObj.message || errObj.issue || errObj.title || "Fix issue",
-        lineNumber: lineNumber || errObj.line || 1,
-        currentCode: content,
+        lineNumber: parsedLine,
+        currentCode: codeToSend,
         suggestedFix: errObj.suggestedFix || errObj.fix || "",
       });
       const result = res.data;
@@ -227,7 +285,12 @@ export default function RepoEditor({ repoUrl, reportId }) {
       if (result.success) {
         success(`Fix PR #${result.prNumber} created!`);
         window.open(result.prUrl, "_blank", "noopener,noreferrer");
-        setFixedLines((prev) => ({ ...prev, [lineNumber]: true }));
+        // Mark the line as fixed use the parsed line for the key so
+        // it matches regardless of which file is open.
+        setFixedLines((prev) => ({
+          ...prev,
+          [`${cleanPath}:${parsedLine}`]: true,
+        }));
       } else {
         error(result.error || "Failed to create fix PR.");
         if (result.action === "connect_github") {
@@ -273,7 +336,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
     );
   }, [currentFile, errors]);
 
-  /* ─── File tree — folders now fetch children on expand ─── */
+  /* ─── File tree ───────────────────────────────────────────── */
   const renderFileTree = (items, level = 0) => {
     if (!items || !items.length) return null;
 
@@ -470,7 +533,13 @@ export default function RepoEditor({ repoUrl, reportId }) {
             </div>
             {errors[currentFile.path].map((err, idx) => {
               const issueId = err._id || err.id || idx;
-              const isFixed = fixedLines[err.line];
+              const { file: cleanErrPath } = splitFileAndLine(
+                err.file || currentFile.path,
+              );
+              const isFixed =
+                fixedLines[
+                  `${cleanErrPath}:${err.line || 0}`
+                ];
               const isLoading = fixLoading[issueId];
 
               return (

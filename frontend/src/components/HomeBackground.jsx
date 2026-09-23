@@ -50,15 +50,15 @@ export default function HomeBackground() {
       {/* Base */}
       <div className="absolute inset-0 bg-[var(--bg-primary)]" />
 
-      {/* Aurora blobs — slow drifting mesh gradient */}
+      {/* Aurora blobs slow drifting mesh gradient */}
       <div className="home-aurora home-aurora-1" />
       <div className="home-aurora home-aurora-2" />
       <div className="home-aurora home-aurora-3" />
 
-      {/* Dot grid with radial mask — fades at edges */}
+      {/* Dot grid with radial mask fades at edges */}
       <div className="home-grid absolute inset-0" />
 
-      {/* Cursor spotlight — soft accent glow that trails the pointer */}
+      {/* Cursor spotlight soft accent glow that trails the pointer */}
       <div ref={spotlightRef} className="home-spotlight absolute inset-0" />
 
       {/* Film grain */}

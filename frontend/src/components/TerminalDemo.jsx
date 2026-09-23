@@ -96,11 +96,11 @@ export default function TerminalDemo() {
         <span className="h-2.5 w-2.5 rounded-full bg-[#febc2e]" />
         <span className="h-2.5 w-2.5 rounded-full bg-[#28c840]" />
         <span className="ml-3 font-mono text-[10px] text-[var(--text-muted)]">
-          codeverity — zsh — 80×24
+          codeverity zsh 80×24
         </span>
       </div>
 
-      {/* Body — all lines rendered, only opacity changes.
+      {/* Body all lines rendered, only opacity changes.
           Terminal height is fixed from mount, so no layout shift. */}
       <div className="space-y-1 p-4 font-mono text-[11px] leading-relaxed sm:text-xs">
         {LINES.map((line, i) => (
