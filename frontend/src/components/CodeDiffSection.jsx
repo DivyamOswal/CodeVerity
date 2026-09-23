@@ -175,7 +175,7 @@ export default function CodeDiffSection() {
                   RESOLVED
                 </span>
                 <p className="text-[var(--text-secondary)]">
-                  Parameterized query — input is escaped by the driver.
+                  Parameterized query input is escaped by the driver.
                 </p>
               </div>
             </div>
