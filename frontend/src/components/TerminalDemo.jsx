@@ -22,9 +22,30 @@ const TONE = {
 
 export default function TerminalDemo() {
   const [visibleCount, setVisibleCount] = useState(0);
+  const [isVisible, setIsVisible] = useState(true);
   const timersRef = useRef([]);
+  const containerRef = useRef(null);
 
+  /* ─── Pause animation when scrolled out of view ─── */
   useEffect(() => {
+    const el = containerRef.current;
+    if (!el) return;
+
+    // If IntersectionObserver isn't available, just stay visible
+    if (typeof IntersectionObserver === "undefined") return;
+
+    const obs = new IntersectionObserver(
+      ([entry]) => setIsVisible(entry.isIntersecting),
+      { threshold: 0 },
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+
+  /* ─── Animation cycle (pauses when off-screen) ─── */
+  useEffect(() => {
+    if (!isVisible) return;
+
     const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     if (reduce) {
       setVisibleCount(LINES.length);
@@ -62,10 +83,13 @@ export default function TerminalDemo() {
       cancelled = true;
       clearAll();
     };
-  }, []);
+  }, [isVisible]);
 
   return (
-    <div className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[#0b0b12]/95 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] backdrop-blur-md">
+    <div
+      ref={containerRef}
+      className="overflow-hidden rounded-xl border border-[var(--border-light)] bg-[#0b0b12]/95 shadow-[0_30px_60px_-20px_rgba(0,0,0,0.6)] backdrop-blur-md"
+    >
       {/* Chrome */}
       <div className="flex items-center gap-2 border-b border-[var(--border-light)] px-4 py-2.5">
         <span className="h-2.5 w-2.5 rounded-full bg-[#ff5f57]" />
@@ -76,12 +100,15 @@ export default function TerminalDemo() {
         </span>
       </div>
 
-      {/* Body */}
+      {/* Body — all lines rendered, only opacity changes.
+          Terminal height is fixed from mount, so no layout shift. */}
       <div className="space-y-1 p-4 font-mono text-[11px] leading-relaxed sm:text-xs">
-        {LINES.slice(0, visibleCount).map((line, i) => (
+        {LINES.map((line, i) => (
           <div
             key={i}
-            className={`${TONE[line.tone]} transition-opacity duration-200`}
+            className={`${TONE[line.tone]} transition-opacity duration-200 ${
+              i < visibleCount ? "opacity-100" : "opacity-0"
+            }`}
           >
             {line.text}
           </div>

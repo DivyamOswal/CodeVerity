@@ -115,7 +115,7 @@ function MagneticWrap({ children, strength = 18, className = "" }) {
   }, [strength]);
 
   return (
-    <div ref={ref} className={`inline-block will-change-transform ${className}`}>
+    <div ref={ref} className={`inline-block ${className}`}>
       {children}
     </div>
   );
@@ -517,6 +517,8 @@ function ComparisonSection() {
 
 // ============================================================
 //  CodeIntelligenceOrb
+//  - Render pauses when off-screen (perf)
+//  - No permanent will-change (perf)
 // ============================================================
 function CodeIntelligenceOrb({ badgeRefs }) {
   const outerRef = useRef(null);
@@ -618,15 +620,26 @@ function CodeIntelligenceOrb({ badgeRefs }) {
       scene.add(particles);
 
       let animationFrame;
+      let isVisible = true;
       const render = () => renderer.render(scene, camera);
 
+      // Pause rendering when off-screen. The orb scene is the heaviest
+      // thing on the page — no reason to burn frames when it's hidden.
+      const visObs = new IntersectionObserver(
+        ([entry]) => { isVisible = entry.isIntersecting; },
+        { threshold: 0 },
+      );
+      visObs.observe(mount);
+
       const animate = () => {
-        group.rotation.y += 0.0035;
-        group.rotation.x += (stateRef.current.target.x - group.rotation.x) * 0.04;
-        group.rotation.y += (stateRef.current.target.y - group.rotation.y) * 0.02;
-        particles.rotation.y -= 0.0018;
-        halo.rotation.z += 0.002;
-        render();
+        if (isVisible) {
+          group.rotation.y += 0.0035;
+          group.rotation.x += (stateRef.current.target.x - group.rotation.x) * 0.04;
+          group.rotation.y += (stateRef.current.target.y - group.rotation.y) * 0.02;
+          particles.rotation.y -= 0.0018;
+          halo.rotation.z += 0.002;
+          render();
+        }
         animationFrame = requestAnimationFrame(animate);
       };
 
@@ -665,6 +678,7 @@ function CodeIntelligenceOrb({ badgeRefs }) {
 
       cleanup = () => {
         cancelAnimationFrame(animationFrame);
+        visObs.disconnect();
         resizeObserver.disconnect();
         mount.removeEventListener("mousemove", handleMouseMove);
         mount.removeEventListener("mouseleave", handleMouseLeave);
@@ -947,7 +961,7 @@ function Pricing() {
               <div
                 key={plan.id}
                 ref={(el) => (cardsRef.current[idx] = el)}
-                style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+                style={{ transformStyle: "preserve-3d" }}
                 className={`relative overflow-hidden rounded-xl border bg-[var(--bg-card)] p-6 text-left transition-all duration-200 ${plan.highlight ? "border-[var(--accent)]" : "border-[var(--border-light)] hover:border-[var(--accent)]/30"}`}
               >
                 {plan.highlight && <span className="absolute inset-x-0 top-0 h-1 bg-[var(--accent)]" />}
@@ -1362,7 +1376,7 @@ export default function Home() {
                 trigger: featureGridRef.current,
                 start: "top 92%",
                 end: "bottom 25%",
-                scrub: 1,
+                scrub: 2,
               },
             });
 
@@ -1487,35 +1501,16 @@ export default function Home() {
           );
         }
 
-        /* ---------- Section heading parallax drift ---------- */
-        gsap.utils.toArray("section h2").forEach((el) => {
-          gsap.fromTo(
-            el,
-            { y: 12 },
-            {
-              y: -12,
-              ease: "none",
-              scrollTrigger: {
-                trigger: el,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: true,
-              },
-            },
-          );
-        });
-
-        /* ---------- Testimonial cards blur + stagger reveal ---------- */
+        /* ---------- Testimonial cards stagger reveal ---------- */
         if (testimonialRef.current) {
           const cards = testimonialRef.current.querySelectorAll(".testimonial-card");
           if (cards.length) {
             gsap.fromTo(
               cards,
-              { opacity: 0, y: 40, filter: "blur(8px)" },
+              { opacity: 0, y: 40 },
               {
                 opacity: 1,
                 y: 0,
-                filter: "blur(0px)",
                 duration: 0.8,
                 stagger: 0.12,
                 ease: "power3.out",
@@ -1695,8 +1690,6 @@ export default function Home() {
           from { transform: translateX(0); }
           to { transform: translateX(-50%); }
         }
-        .feature-card { will-change: transform; }
-        .testimonial-card { will-change: transform, opacity, filter; }
         .how-progress-line {
           position: absolute;
           top: -1px;
@@ -1783,7 +1776,7 @@ export default function Home() {
           {/* Right column: orb + terminal stacked */}
           <div className="mx-auto flex w-full max-w-md flex-col gap-4 lg:mx-0">
             <div ref={orbPerspectiveRef} style={{ perspective: "1400px" }}>
-              <div ref={orbTiltRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
+              <div ref={orbTiltRef} style={{ transformStyle: "preserve-3d" }}>
                 <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
               </div>
             </div>
@@ -1811,19 +1804,19 @@ export default function Home() {
           >
             <div
               ref={(el) => (featureCardsRef.current[0] = el)}
-              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+              style={{ transformStyle: "preserve-3d" }}
             >
               <Feature icon={<BugIcon />} title="AI Bug Detection" desc="Pinpoints logic errors, edge cases, and anti-patterns across your entire codebase." index={0} />
             </div>
             <div
               ref={(el) => (featureCardsRef.current[1] = el)}
-              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+              style={{ transformStyle: "preserve-3d" }}
             >
               <Feature icon={<ShieldIcon />} title="Security Analysis" desc="Scans for OWASP vulnerabilities, exposed secrets, and injection risks instantly." index={1} />
             </div>
             <div
               ref={(el) => (featureCardsRef.current[2] = el)}
-              style={{ transformStyle: "preserve-3d", willChange: "transform" }}
+              style={{ transformStyle: "preserve-3d" }}
             >
               <Feature icon={<FlaskIcon />} title="Smart Test Generation" desc="Creates useful test cases from your repository to help verify fixes and prevent regressions." index={2} />
             </div>
