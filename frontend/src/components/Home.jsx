@@ -8,6 +8,8 @@ import {
   formatPrice,
   formatTokens,
 } from "../components/PricingPlans";
+import CodeDiffSection from "../components/CodeDiffSection";
+import TerminalDemo from "../components/TerminalDemo";
 
 // ============================================================
 //  Color helpers
@@ -742,9 +744,7 @@ function SectionDots({ sections, activeId, onJump }) {
 }
 
 // ============================================================
-//  BackToTop — NEW, purely additive. Fades in with the sticky
-//  CTA once the hero has scrolled past, since a page this long
-//  benefits from a quick way back up.
+//  BackToTop
 // ============================================================
 function BackToTop({ visible, onClick }) {
   return (
@@ -774,11 +774,6 @@ function HowItWorks() {
   ];
 
   const stepRefs = useRef([]);
-  // NEW: ref for the scrubbed progress line, replacing the raw
-  // document.createElement approach — same visual intent (a line
-  // that fills in as you scroll through this section), now a real
-  // JSX element with matching CSS so it actually renders, and no
-  // risk of duplicating itself on effect re-runs.
   const progressLineRef = useRef(null);
 
   useEffect(() => {
@@ -1073,10 +1068,6 @@ function Footer({ isLoggedIn }) {
               <li><Link to="/about" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">About</Link></li>
               <li><Link to="/support" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Support</Link></li>
               <li><Link to="/privacy" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Privacy</Link></li>
-              {/* FIXED: was `hover:text([var(--accent-contrast)]` — malformed
-                  arbitrary-value class (missing "!" and "-"), meaning this
-                  link's hover color never applied. Now matches every other
-                  footer link's pattern. */}
               <li><Link to="/terms" className="!text-[var(--accent-contrast)]/85 text-[12px] transition hover:!text-[var(--accent-contrast)]">Terms</Link></li>
             </ul>
           </div>
@@ -1122,8 +1113,6 @@ export default function Home() {
   const [stats, setStats] = useState({ totalScans: 0, avgQuality: 0, avgTime: "0s" });
   const [statsLoading, setStatsLoading] = useState(true);
   const [showSampleModal, setShowSampleModal] = useState(false);
-  // NEW: drives BackToTop visibility, reusing the same "past hero"
-  // boundary the sticky CTA already tracks.
   const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
@@ -1164,9 +1153,6 @@ export default function Home() {
   const featureLabelRef = useRef(null);
   const featureGridRef = useRef(null);
   const featureCardsRef = useRef([]);
-  const bgGlow1Ref = useRef(null);
-  const bgGlow2Ref = useRef(null);
-  const bgGridRef = useRef(null);
 
   const howRef = useRef(null);
   const comparisonRef = useRef(null);
@@ -1450,24 +1436,6 @@ export default function Home() {
           });
         });
 
-        /* ---------- Parallax glows ---------- */
-        const bgGlow1 = bgGlow1Ref.current;
-        const bgGlow2 = bgGlow2Ref.current;
-        const bgGrid = bgGridRef.current;
-
-        if (bgGlow1) {
-          const setY1 = gsap.quickTo(bgGlow1, "y", { duration: 0.3, ease: "power1.out" });
-          ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY1(self.progress * 200) });
-        }
-        if (bgGlow2) {
-          const setY2 = gsap.quickTo(bgGlow2, "y", { duration: 0.3, ease: "power1.out" });
-          ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY2(-self.progress * 150) });
-        }
-        if (bgGrid) {
-          const setY3 = gsap.quickTo(bgGrid, "y", { duration: 0.3, ease: "power1.out" });
-          ScrollTrigger.create({ trigger: containerRef.current, start: "top top", end: "bottom top", onUpdate: (self) => setY3(self.progress * 50) });
-        }
-
         /* ---------- Orb badges ---------- */
         const animateBadges = () => {
           const badges = orbBadgeRefs.current.filter(Boolean);
@@ -1499,10 +1467,6 @@ export default function Home() {
           });
         };
         requestAnimationFrame(animateBadges);
-
-        /* ═══════════════════════════════════════════════════
-           MODERN POLISH LAYER
-           ═══════════════════════════════════════════════════ */
 
         /* ---------- How-it-works scrubbed progress line ---------- */
         const howProgressLine = howRef.current?.querySelector(".how-progress-line");
@@ -1610,7 +1574,7 @@ export default function Home() {
           }
         }
 
-        /* ---------- Comparison rows: subtle accent-line on scroll ---------- */
+        /* ---------- Comparison rows: hover accent-line ---------- */
         if (comparisonRef.current) {
           const rows = comparisonRef.current.querySelectorAll(".comparison-row");
           rows.forEach((row) => {
@@ -1733,11 +1697,6 @@ export default function Home() {
         }
         .feature-card { will-change: transform; }
         .testimonial-card { will-change: transform, opacity, filter; }
-        /* NEW: real CSS for the how-it-works scrubbed progress line —
-           previously created via document.createElement with no
-           matching styles, so it rendered as an invisible 0x0 div.
-           Sits as a thin bar under the section's top border, filling
-           left-to-right as you scroll through the section. */
         .how-progress-line {
           position: absolute;
           top: -1px;
@@ -1752,10 +1711,6 @@ export default function Home() {
           .marquee-track { animation: none; }
         }
       `}} />
-
-      <div ref={bgGlow1Ref} className="pointer-events-none absolute left-1/2 top-[25%] h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[var(--accent-soft)] opacity-70 blur-3xl" />
-      <div ref={bgGlow2Ref} className="pointer-events-none absolute bottom-0 right-0 h-[500px] w-[500px] rounded-full bg-[var(--accent-soft)] opacity-40 blur-3xl" />
-      <div ref={bgGridRef} className="pointer-events-none absolute inset-0 opacity-[0.04]" style={{ backgroundImage: "radial-gradient(var(--accent) 1px, transparent 1px)", backgroundSize: "28px 28px" }} />
 
       <div id="hero" ref={heroSectionRef} className={`relative z-10 mx-auto flex min-h-screen w-full max-w-7xl flex-col items-center justify-center ${compactClasses.container}`}>
         <div className="grid w-full grid-cols-1 items-center gap-12 lg:grid-cols-[1.05fr_1fr] lg:gap-10">
@@ -1825,10 +1780,14 @@ export default function Home() {
             </div>
           </div>
 
-          <div ref={orbPerspectiveRef} className="mx-auto w-full max-w-md lg:mx-0" style={{ perspective: "1400px" }}>
-            <div ref={orbTiltRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
-              <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
+          {/* Right column: orb + terminal stacked */}
+          <div className="mx-auto flex w-full max-w-md flex-col gap-4 lg:mx-0">
+            <div ref={orbPerspectiveRef} style={{ perspective: "1400px" }}>
+              <div ref={orbTiltRef} style={{ transformStyle: "preserve-3d", willChange: "transform" }}>
+                <CodeIntelligenceOrb badgeRefs={orbBadgeRefs} />
+              </div>
             </div>
+            <TerminalDemo />
           </div>
         </div>
 
@@ -1873,6 +1832,7 @@ export default function Home() {
       </div>
 
       <div className="relative z-10 mx-auto max-w-6xl">
+        <CodeDiffSection />
         <div ref={howRef}><HowItWorks /></div>
         <div ref={comparisonRef}><ComparisonSection /></div>
         <div ref={testimonialRef}><Testimonials /></div>

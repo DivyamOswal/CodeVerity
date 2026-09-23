@@ -23,7 +23,7 @@ import PageLoader from "./components/PageLoader";
 import RouteProgressBar from "./components/RouteProgressBar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import RouteChangeLoader from "./components/RouteChangeLoader";
-import ScrollReactiveBackground from "./components/ScrollReactiveBackground.jsx";
+import HomeBackground from "./components/HomeBackground";
 
 // ─── Lazy-loaded pages ───────────────────────────────────────
 const Home = lazy(() => import("./components/Home"));
@@ -199,7 +199,7 @@ function Layout() {
       <RouteChangeLoader minMs={700} />
       <RouteProgressBar />
 
-      {isHome && <ScrollReactiveBackground />}
+      {isHome && <HomeBackground />}
       {showNav && <Navbar />}
 
       <SmoothScroll>
