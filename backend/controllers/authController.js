@@ -401,8 +401,10 @@ export const githubAuth = async (req, res) => {
     if (isConnect) {
       // Full-page navigation, so Authorization header isn't available.
       // Read the JWT from the HttpOnly cookie set at login/register.
+      // Use getCookie (raw header parse) instead of req.cookies — the
+      // latter requires cookie-parser middleware, which isn't registered.
       const token =
-        req.headers.authorization?.split(" ")[1] || req.cookies?.token;
+        req.headers.authorization?.split(" ")[1] || getCookie(req, "token");
       if (token) {
         try {
           const decoded = jwt.verify(token, process.env.JWT_SECRET);
