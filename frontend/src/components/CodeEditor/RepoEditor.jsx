@@ -12,7 +12,8 @@ import {
   Lightbulb,
   Check,
   ChevronRight,
-  ExternalLink,        // ← NEW
+  ExternalLink,
+  Save,
 } from "lucide-react";
 import { usePreferences } from "../../context/PreferencesContext";
 import { useToast } from "../../hooks/useToast";
@@ -20,19 +21,26 @@ import {
   getRepoContents,
   getFileContent,
   autoFixIssue,
+  saveFileToGitHub,
 } from "../../api/github";
 import axios from "../../api/axios";
 
 /**
  * Split "path/to/file.js:31" or "path/to/file.js#L31" into a clean
- * path and a numeric line. Defensive reports stored before the
- * backend fix still carry the ":line" suffix in the file field.
+ * path and a numeric line. Also strips the junk suffixes the AI
+ * sometimes emits when it has no real line number: ":null",
+ * ":undefined", ":NaN". Defensive reports stored before the backend
+ * fix still carry the ":line" suffix in the file field.
  */
 function splitFileAndLine(raw) {
   if (!raw || typeof raw !== "string") return { file: raw || "", line: null };
   const trimmed = raw.trim();
+  // Real line number: "path:123" or "path#L123"
   const match = trimmed.match(/^(.+?)(?::|#L?)(\d+)$/);
   if (match) return { file: match[1], line: Number(match[2]) };
+  // Junk suffix with no real line number
+  const junk = trimmed.match(/^(.+?):(null|undefined|NaN)$/i);
+  if (junk) return { file: junk[1], line: null };
   return { file: trimmed, line: null };
 }
 
@@ -67,12 +75,17 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [files, setFiles] = useState([]);
   const [currentFile, setCurrentFile] = useState(null);
   const [content, setContent] = useState("");
+  const [originalContent, setOriginalContent] = useState("");
   const [errors, setErrors] = useState({});
   const [fixLoading, setFixLoading] = useState({});
   const [fixedLines, setFixedLines] = useState({});
   const [repoContentLoading, setRepoContentLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [loadError, setLoadError] = useState(null);   // ← NEW
+  const [loadError, setLoadError] = useState(null);
+
+  // Commit-to-GitHub state
+  const [commitDialogOpen, setCommitDialogOpen] = useState(false);
+  const [commitLoading, setCommitLoading] = useState(false);
 
   // Per-folder expansion state
   const [expandedFolders, setExpandedFolders] = useState({});
@@ -83,16 +96,19 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const monacoRef = useRef(null);
   const decorationsRef = useRef([]);
 
+  // Derived: does the editor hold unsaved edits?
+  const isDirty = !!currentFile && content !== originalContent;
+
   const loadRepo = async () => {
     if (!repoUrl) return;
     setRepoContentLoading(true);
-    setLoadError(null);                              // ← NEW
+    setLoadError(null);
     try {
       const res = await getRepoContents(repoUrl);
       const data = res.data;
 
       if (!data.success) {
-        setLoadError({                                // ← NEW
+        setLoadError({
           message: data.error || "Failed to load repository.",
           action: data.action || null,
         });
@@ -155,8 +171,8 @@ export default function RepoEditor({ repoUrl, reportId }) {
       }
     } catch (err) {
       console.error("Failed to load repo:", err);
-      const data = err.response?.data || {};          // ← NEW
-      setLoadError({                                  // ← NEW
+      const data = err.response?.data || {};
+      setLoadError({
         message: data.error || "Failed to load repository.",
         action: data.action || null,
       });
@@ -220,7 +236,9 @@ export default function RepoEditor({ repoUrl, reportId }) {
       const res = await getFileContent(repoUrl, file.path);
       const data = res.data;
       if (data.success) {
-        setContent(data.content || "");
+        const text = data.content || "";
+        setContent(text);
+        setOriginalContent(text); // snapshot for dirty tracking
       } else {
         error(data.error || "Failed to load file.");
       }
@@ -230,17 +248,41 @@ export default function RepoEditor({ repoUrl, reportId }) {
     }
   };
 
-  /* ─── Auto-Fix ───────────────────────────────────────────────
-     Handles three defensive cases:
-       1. The file path may carry a ":31" suffix from an old report.
-          Strip it before sending to GitHub (Octokit 404s on that).
-       2. The line number may be "" coerce to a real number or null.
-       3. `content` holds whichever file the user last opened, which
-          is not necessarily the file the finding refers to. Fetch the
-          correct file's content before calling auto-fix, or the AI
-          has nothing to work with. */
+  /* ─── Commit to GitHub ─────────────────────────────────── */
+  const handleCommit = async (commitMessage) => {
+    if (!currentFile) return;
+    setCommitLoading(true);
+    try {
+      const res = await saveFileToGitHub({
+        repoUrl,
+        filePath: currentFile.path,
+        content,
+        commitMessage,
+      });
+      const result = res.data;
+
+      if (result.success) {
+        success(`PR #${result.prNumber} opened for ${currentFile.name}`);
+        window.open(result.prUrl, "_blank", "noopener,noreferrer");
+        // Editor content now matches what's on the remote branch.
+        setOriginalContent(content);
+        setCommitDialogOpen(false);
+      } else {
+        error(result.error || "Failed to commit changes.");
+      }
+    } catch (err) {
+      console.error("Commit error:", err);
+      const msg =
+        err.response?.data?.error || "Failed to commit changes.";
+      error(msg);
+    } finally {
+      setCommitLoading(false);
+    }
+  };
+
+  /* ─── Auto-Fix ─────────────────────────────────────────── */
   const handleFix = async (errObj, lineNumber) => {
-    // 1. Clean the file path strip any ":31" suffix.
+    // 1. Clean the file path — strip any ":31", "#L31", or ":null" suffix.
     const rawPath = currentFile?.path || errObj.file || "";
     const { file: cleanPath, line: embeddedLine } = splitFileAndLine(rawPath);
 
@@ -265,8 +307,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
 
     try {
       // 3. Ensure we send the actual content of the file being fixed.
-      //    If the user already has that file open, reuse the state.
-      //    Otherwise, fetch it fresh.
       let codeToSend = content;
       const isCurrentlyOpen =
         currentFile && currentFile.path === cleanPath && codeToSend;
@@ -295,8 +335,6 @@ export default function RepoEditor({ repoUrl, reportId }) {
       if (result.success) {
         success(`Fix PR #${result.prNumber} created!`);
         window.open(result.prUrl, "_blank", "noopener,noreferrer");
-        // Mark the line as fixed use the parsed line for the key so
-        // it matches regardless of which file is open.
         setFixedLines((prev) => ({
           ...prev,
           [`${cleanPath}:${parsedLine}`]: true,
@@ -346,7 +384,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
     );
   }, [currentFile, errors]);
 
-  /* ─── File tree ───────────────────────────────────────────── */
+  /* ─── File tree ───────────────────────────────────────── */
   const renderFileTree = (items, level = 0) => {
     if (!items || !items.length) return null;
 
@@ -427,7 +465,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
     });
   };
 
-  /* ─── NEW: dedicated render branch for load failures ──────── */
+  /* ─── Render branch for load failures ──────────────────── */
   if (loadError) {
     return (
       <div className="rounded-xl border border-[var(--color-danger)]/25 bg-[var(--color-danger-soft)] p-6 text-center">
@@ -445,7 +483,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
         <div className="mt-4 flex flex-wrap justify-center gap-2">
           {loadError.action === "connect_github" && (
             <a
-              href="/settings"
+              href="/settings?tab=Integrations"
               className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] shadow-[0_8px_20px_-8px_var(--accent-soft-strong)] transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
             >
               <ExternalLink size={12} aria-hidden="true" />
@@ -517,6 +555,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
       </div>
 
       <div className="flex min-w-0 flex-1 flex-col">
+        {/* ─── Toolbar ─────────────────────────────────────── */}
         <div className="flex items-center justify-between gap-2 border-b border-[var(--border-light)] bg-[var(--bg-card)] px-3 py-2 sm:px-4">
           <div className="flex min-w-0 items-center gap-2">
             <button
@@ -530,12 +569,35 @@ export default function RepoEditor({ repoUrl, reportId }) {
             <span className="truncate text-xs text-[var(--text-secondary)] sm:text-sm">
               {currentFile ? currentFile.path : "Select a file"}
             </span>
+            {isDirty && (
+              <span className="hidden shrink-0 text-xs text-[var(--color-warning)] sm:inline">
+                • Unsaved changes
+              </span>
+            )}
           </div>
           {currentFile && (
             <div className="flex shrink-0 items-center gap-2">
               <span className="hidden text-xs text-[var(--text-muted)] sm:inline">
                 {errors[currentFile.path]?.length || 0} issues
               </span>
+              <button
+                type="button"
+                onClick={() => setCommitDialogOpen(true)}
+                disabled={!isDirty || commitLoading}
+                className="inline-flex items-center gap-1.5 rounded-md bg-[var(--accent)] px-2.5 py-1 text-xs font-medium text-[var(--accent-contrast)] transition-all hover:bg-[var(--accent-hover)] active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] disabled:cursor-not-allowed disabled:bg-[var(--bg-hover)] disabled:text-[var(--text-muted)] disabled:opacity-60"
+                aria-label="Commit changes to GitHub"
+              >
+                {commitLoading ? (
+                  <Loader2
+                    className="animate-spin"
+                    size={12}
+                    aria-hidden="true"
+                  />
+                ) : (
+                  <Save size={12} aria-hidden="true" />
+                )}
+                Commit
+              </button>
               <button
                 type="button"
                 onClick={() => setCurrentFile(null)}
@@ -653,6 +715,156 @@ export default function RepoEditor({ repoUrl, reportId }) {
             })}
           </div>
         )}
+      </div>
+
+      {/* ─── Commit dialog ──────────────────────────────────── */}
+      <CommitDialog
+        open={commitDialogOpen}
+        filePath={currentFile?.path || ""}
+        loading={commitLoading}
+        onCancel={() => {
+          if (!commitLoading) setCommitDialogOpen(false);
+        }}
+        onCommit={handleCommit}
+      />
+    </div>
+  );
+}
+
+/* ─── Commit dialog ──────────────────────────────────────── */
+function CommitDialog({ open, filePath, loading, onCancel, onCommit }) {
+  const [message, setMessage] = useState("");
+
+  // Reset the message each time the dialog opens. Default to a
+  // conventional-commit style message so the user can just hit Enter.
+  useEffect(() => {
+    if (open && filePath) {
+      setMessage(`chore: update ${filePath}`);
+    } else if (!open) {
+      setMessage("");
+    }
+  }, [open, filePath]);
+
+  // Escape to close, Cmd/Ctrl+Enter to submit
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !loading) onCancel?.();
+      if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && !loading) {
+        onCommit?.(message.trim());
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, loading, message, onCancel, onCommit]);
+
+  // Lock body scroll while open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  const canSubmit = message.trim().length > 0 && !loading;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      role="presentation"
+    >
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        onClick={loading ? undefined : onCancel}
+        aria-hidden="true"
+      />
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="commit-title"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl"
+      >
+        <div className="flex items-center gap-3 border-b border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-4">
+          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[var(--accent-soft)] text-[var(--accent)]">
+            <Save size={16} strokeWidth={2.1} aria-hidden="true" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2
+              id="commit-title"
+              className="truncate text-sm font-semibold text-[var(--text-primary)] sm:text-base"
+            >
+              Commit changes
+            </h2>
+            <p className="truncate text-xs text-[var(--text-muted)]">
+              {filePath}
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            aria-label="Close"
+            className="shrink-0 rounded-md p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+
+        <div className="px-5 py-4">
+          <label
+            htmlFor="commit-message"
+            className="mb-1.5 block text-xs font-medium text-[var(--text-secondary)]"
+          >
+            Commit message
+          </label>
+          <input
+            id="commit-message"
+            type="text"
+            value={message}
+            onChange={(e) => setMessage(e.target.value)}
+            autoFocus
+            disabled={loading}
+            placeholder="Describe your change"
+            className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-2 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-muted)] focus:border-[var(--accent)] focus:outline-none focus:ring-2 focus:ring-[var(--accent)]/30 disabled:cursor-not-allowed disabled:opacity-60"
+          />
+          <p className="mt-2 text-xs text-[var(--text-muted)]">
+            A new branch and pull request will be created. Press{" "}
+            <kbd className="rounded border border-[var(--border-light)] bg-[var(--bg-primary)] px-1 py-0.5 font-mono text-[10px]">
+              {navigator.platform?.includes("Mac") ? "⌘" : "Ctrl"}
+            </kbd>
+            {" + "}
+            <kbd className="rounded border border-[var(--border-light)] bg-[var(--bg-primary)] px-1 py-0.5 font-mono text-[10px]">
+              Enter
+            </kbd>{" "}
+            to submit.
+          </p>
+        </div>
+
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={() => onCommit(message.trim())}
+            disabled={!canSubmit}
+            className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] shadow-lg transition-all hover:bg-[var(--accent-hover)] active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:text-sm"
+          >
+            {loading && (
+              <Loader2 className="animate-spin" size={14} aria-hidden="true" />
+            )}
+            Commit & Open PR
+          </button>
+        </div>
       </div>
     </div>
   );

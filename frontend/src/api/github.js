@@ -27,13 +27,22 @@ export const autoFixIssue = (payload) =>
   axios.post("/github/auto-fix", payload);
 
 // ─────────────────────────────────────────────────────────────
-// Repo browsing  used by RepoEditor.jsx
+// Repo browsing — used by RepoEditor.jsx
 // ─────────────────────────────────────────────────────────────
 export const getRepoContents = (repoUrl, path = "") =>
   axios.get("/github/repo/contents", { params: { repoUrl, path } });
 
 export const getFileContent = (repoUrl, filePath) =>
   axios.get("/github/repo/file", { params: { repoUrl, filePath } });
+
+// ─────────────────────────────────────────────────────────────
+// Save editor changes back to GitHub as a PR
+// Called from RepoEditor.jsx commit dialog
+// Payload: { repoUrl, filePath, content, commitMessage }
+// Response: { success, prUrl, prNumber, branch }
+// ─────────────────────────────────────────────────────────────
+export const saveFileToGitHub = (payload) =>
+  axios.post("/github/repo/save", payload);
 
 export const commentOnPR = (repoUrl, prNumber, reportId) =>
   axios.post("/github/pr/comment", { repoUrl, prNumber, reportId });
