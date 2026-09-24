@@ -34,3 +34,6 @@ export const getRepoContents = (repoUrl, path = "") =>
 
 export const getFileContent = (repoUrl, filePath) =>
   axios.get("/github/repo/file", { params: { repoUrl, filePath } });
+
+export const commentOnPR = (repoUrl, prNumber, reportId) =>
+  axios.post("/github/pr/comment", { repoUrl, prNumber, reportId });
