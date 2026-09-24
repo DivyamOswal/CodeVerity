@@ -1,5 +1,6 @@
 // backend/controllers/githubController.js
 import { analyzeWithGroq, generateTests } from "../utils/groq.js";
+import { postFindingsToPR } from "../utils/githubPRComments.js";
 import {
   cloneAndParseGithubRepo,
   parseGithubRepo,
@@ -891,5 +892,115 @@ export const getFileContent = async (req, res) => {
         ? 400
         : 500;
     res.status(status).json({ error: err.message });
+  }
+};
+
+// ─── Comment on PR (posts findings as GitHub review comments) ──
+export const commentOnPR = async (req, res) => {
+  try {
+    const { repoUrl, prNumber, reportId } = req.body;
+
+    if (!repoUrl || !prNumber || !reportId) {
+      return res.status(400).json({
+        error: "repoUrl, prNumber, and reportId are required.",
+      });
+    }
+
+    const user = await User.findById(req.user.id).select("+githubAccessToken");
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const githubToken = user.getGithubToken();
+    if (!githubToken) {
+      return res.status(403).json({
+        error: "Please connect your GitHub account to post PR comments.",
+        action: "connect_github",
+      });
+    }
+
+    const report = await Report.findById(reportId);
+    if (!report) return res.status(404).json({ error: "Report not found" });
+    if (report.userId.toString() !== user._id.toString()) {
+      return res.status(403).json({ error: "You don't have access to this report." });
+    }
+
+    const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
+    if (!match) return res.status(400).json({ error: "Invalid GitHub URL" });
+    const [owner, repo] = match[1].replace(/\.git$/, "").split("/");
+
+    const octokit = new Octokit({ auth: githubToken });
+
+    // Prefer the unified findings array; fall back to legacy arrays.
+    const rawFindings =
+      Array.isArray(report.findings) && report.findings.length > 0
+        ? report.findings
+        : [
+            ...(report.bugs || []).map((b) => ({
+              title: b.title,
+              description: b.description,
+              severity: b.severity || b.impact || "medium",
+              category: "bug",
+              file: b.file,
+              line: b.line,
+              suggestedFix: b.suggestedFix || b.fix,
+            })),
+            ...(report.securityIssues || []).map((s) => ({
+              title: s.issue || s.title,
+              description: s.description,
+              severity: s.severity || "high",
+              category: "security",
+              file: s.file,
+              line: s.line,
+              suggestedFix: s.recommendation,
+            })),
+          ];
+
+    // Normalize file paths (strip any ":31" suffix from old reports).
+    const findings = rawFindings.map((f) => {
+      const { file, line } = splitFileAndLine(f.file);
+      return {
+        ...f,
+        file,
+        line: line ?? toLineNumber(f.line) ?? null,
+      };
+    });
+
+    const reportUrl = `${process.env.FRONTEND_URL}/report/${reportId}`;
+
+    const result = await postFindingsToPR({
+      octokit,
+      owner,
+      repo,
+      pullNumber: Number(prNumber),
+      findings,
+      reportUrl,
+    });
+
+    if (result.inlineCount === 0 && result.summaryCount === 0) {
+      return res.status(400).json({
+        error: "No critical or high severity findings to post.",
+      });
+    }
+
+    await addAuditLog(
+      user.workspaceId,
+      user._id,
+      "pr_comment",
+      `Posted ${result.inlineCount} inline + ${result.summaryCount} summary findings to ${owner}/${repo}#${prNumber}`,
+      { repoUrl, prNumber, reportId },
+    );
+
+    res.json({ success: true, ...result });
+  } catch (err) {
+    console.error("commentOnPR error:", err);
+    const status = err.status || 500;
+    const message =
+      status === 403
+        ? "You don't have permission to comment on this PR."
+        : status === 404
+          ? "PR or repository not found. Check the PR number."
+          : status === 422
+            ? "GitHub rejected the comment position. This shouldn't happen — try again."
+            : err.message || "Failed to post comments.";
+    res.status(status).json({ error: message });
   }
 };

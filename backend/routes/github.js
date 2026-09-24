@@ -7,6 +7,7 @@ import {
   generateTestCases,
   getRepoContents,
   getFileContent,
+  commentOnPR,
 } from "../controllers/githubController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -38,5 +39,6 @@ router.post("/auto-fix", auth, autoFixIssue);
 // ─── Repository read routes ─────────────────────────────────
 router.get("/repo/contents", auth, repoReadLimiter, getRepoContents);
 router.get("/repo/file", auth, repoReadLimiter, getFileContent);
+router.post("/pr/comment", auth, commentOnPR);
 
 export default router;
