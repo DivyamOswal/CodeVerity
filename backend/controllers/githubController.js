@@ -105,17 +105,27 @@ function sanitizeFilePath(filePath) {
 /**
  * AI sometimes returns "backend/routes/auth.js:31" as a single string,
  * or "path#L31". Split it into a clean file path and a line number.
- * Handles bare paths too returns { file, line: null } in that case.
+ * Handles bare paths too — returns { file, line: null } in that case.
+ *
+ * Also strips junk suffixes the AI sometimes emits when it doesn't
+ * have a real line number to give: "path:null", "path:undefined",
+ * "path:NaN". Without this, Auto-Fix would send "server/inngest/index.ts:null"
+ * to GitHub and get a 404 for a file that doesn't exist.
  */
 function splitFileAndLine(raw) {
   if (!raw || typeof raw !== "string") {
     return { file: raw || null, line: null };
   }
   const trimmed = raw.trim();
-  // Matches "path/to/file.ext:123" or "path/to/file.ext#L123" or "...#123"
+  // Real line number: "path/to/file.ext:123", "path/to/file.ext#L123", or "...#123"
   const match = trimmed.match(/^(.+?)(?::|#L?)(\d+)$/);
   if (match) {
     return { file: match[1], line: Number(match[2]) };
+  }
+  // Junk suffix with no real line number: "path:null" / ":undefined" / ":NaN"
+  const junk = trimmed.match(/^(.+?):(null|undefined|NaN)$/i);
+  if (junk) {
+    return { file: junk[1], line: null };
   }
   return { file: trimmed, line: null };
 }
@@ -686,9 +696,9 @@ export const autoFixIssue = async (req, res) => {
         .json({ error: "repoUrl and filePath are required." });
     }
 
-    // Defensive: strip any ":31" or "#L31" suffix that snuck in from
-    // an older report before the splitFileAndLine fix. This is what
-    // the whole Auto-Fix 404 was caused by.
+    // Defensive: strip any ":31", "#L31", or ":null" suffix that snuck
+    // in from an older report or an AI response without a real line
+    // number. This is what the whole Auto-Fix 404 was caused by.
     const { file: cleanFilePath, line: embeddedLine } =
       splitFileAndLine(filePath);
     const safePath = sanitizeFilePath(cleanFilePath);
@@ -1004,7 +1014,8 @@ export const commentOnPR = async (req, res) => {
             })),
           ];
 
-    // Normalize file paths (strip any ":31" suffix from old reports).
+    // Normalize file paths (strip ":31", "#L31", or ":null" suffixes
+    // that may have come from older reports).
     const findings = rawFindings.map((f) => {
       const { file, line } = splitFileAndLine(f.file);
       return {
@@ -1059,5 +1070,135 @@ export const commentOnPR = async (req, res) => {
             ? "GitHub rejected the comment position. This shouldn't happen — try again."
             : err.message || "Failed to post comments.";
     res.status(status).json({ error: message });
+  }
+};
+
+// ─── Save file edits back to GitHub (creates PR) ──────────────
+export const saveFileToGitHub = async (req, res) => {
+  try {
+    const { repoUrl, filePath, content, commitMessage } = req.body;
+
+    if (!repoUrl || !filePath || typeof content !== "string") {
+      return res.status(400).json({
+        error: "repoUrl, filePath, and content are required.",
+      });
+    }
+
+    // Monaco can hold large files; cap the payload so a stray paste
+    // doesn't blow past Express's JSON body limit (default 100 kB).
+    if (content.length > 200_000) {
+      return res.status(413).json({
+        error: "File is too large to commit from the editor (max 200 KB).",
+      });
+    }
+
+    // Strip any junk suffix the AI may have left on the path.
+    const { file: cleanFilePath } = splitFileAndLine(filePath);
+    const safePath = sanitizeFilePath(cleanFilePath);
+
+    const user = await User.findById(req.user.id).select("+githubAccessToken");
+    if (!user) return res.status(401).json({ error: "User not found" });
+
+    const githubToken = user.getGithubToken();
+    if (!githubToken) {
+      return res.status(403).json({
+        error: "Please connect your GitHub account to save files.",
+        action: "connect_github",
+      });
+    }
+
+    const urlParts = repoUrl.replace("https://github.com/", "").split("/");
+    if (urlParts.length < 2) {
+      return res.status(400).json({ error: "Invalid GitHub URL." });
+    }
+    const owner = urlParts[0];
+    const repo = urlParts[1].replace(/\.git$/, "");
+
+    const octokit = new Octokit({ auth: githubToken });
+
+    // ── 1. Fetch the current file to get its SHA ────────────
+    // GitHub requires the current blob SHA when updating a file;
+    // without it the commit is treated as a create and 422s.
+    let sha;
+    try {
+      const { data } = await octokit.repos.getContent({
+        owner,
+        repo,
+        path: safePath,
+      });
+      sha = data.sha;
+    } catch (err) {
+      console.error("Save: file fetch failed:", {
+        path: safePath,
+        status: err.status,
+        message: err.message,
+      });
+      return res
+        .status(404)
+        .json({ error: `File not found in the repository: ${safePath}` });
+    }
+
+    // ── 2. Resolve the repo's real default branch ───────────
+    const { data: repoData } = await octokit.repos.get({ owner, repo });
+    const defaultBranch = repoData.default_branch || "main";
+
+    const { data: refData } = await octokit.git.getRef({
+      owner,
+      repo,
+      ref: `heads/${defaultBranch}`,
+    });
+
+    // ── 3. Create a branch and commit ───────────────────────
+    const branchName = `editor-save-${Date.now()}`;
+    const message = (commitMessage || "").trim() || `Update ${safePath}`;
+
+    await octokit.git.createRef({
+      owner,
+      repo,
+      ref: `refs/heads/${branchName}`,
+      sha: refData.object.sha,
+    });
+
+    await octokit.repos.createOrUpdateFileContents({
+      owner,
+      repo,
+      path: safePath,
+      message,
+      content: Buffer.from(content, "utf-8").toString("base64"),
+      sha,
+      branch: branchName,
+    });
+
+    // ── 4. Open the PR ──────────────────────────────────────
+    const { data: pr } = await octokit.pulls.create({
+      owner,
+      repo,
+      title: message,
+      body: `Updated \`${safePath}\` via the CodeVerity editor.\n\n**Repository:** ${owner}/${repo}\n**Base:** \`${defaultBranch}\``,
+      head: branchName,
+      base: defaultBranch,
+    });
+
+    await addAuditLog(
+      user.workspaceId,
+      user._id,
+      "editor_save",
+      `Saved ${safePath} via editor — PR #${pr.number}`,
+      { repoUrl, filePath: safePath, prUrl: pr.html_url },
+    );
+
+    res.json({
+      success: true,
+      prUrl: pr.html_url,
+      prNumber: pr.number,
+      branch: branchName,
+    });
+  } catch (err) {
+    console.error("saveFileToGitHub error:", {
+      status: err.status,
+      message: err.message,
+    });
+    const { status, body } = githubErrorResponse(err);
+    res.status(status).json(body);
   }
 };

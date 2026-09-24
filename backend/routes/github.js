@@ -8,6 +8,7 @@ import {
   getRepoContents,
   getFileContent,
   commentOnPR,
+  saveFileToGitHub,
 } from "../controllers/githubController.js";
 import auth from "../middleware/authMiddleware.js";
 
@@ -40,5 +41,6 @@ router.post("/auto-fix", auth, autoFixIssue);
 router.get("/repo/contents", auth, repoReadLimiter, getRepoContents);
 router.get("/repo/file", auth, repoReadLimiter, getFileContent);
 router.post("/pr/comment", auth, commentOnPR);
+router.post("/save-file", auth, saveFileToGitHub);
 
 export default router;
