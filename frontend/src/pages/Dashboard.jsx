@@ -10,7 +10,11 @@ import {
   Check,
   ArrowRight,
   AlertCircle,
-  Search as SearchIcon,
+  Sparkles,
+  TrendingUp,
+  History,
+  FolderGit2,
+  Rocket,
 } from "lucide-react";
 
 import { fetchDashboard } from "../api/dashboard";
@@ -23,7 +27,7 @@ import { gsap, useGSAP } from "../lib/gsap";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000/api";
 
-/* Grade styles hoisted out of ReportRow so they aren't rebuilt per render. */
+// ─── Grade styles ─────────────────────────────────────────────
 const GRADE_STYLES = {
   A: {
     text: "text-[var(--color-success)]",
@@ -66,6 +70,34 @@ const FEATURES = [
   { label: "Roadmap", Icon: ArrowRight },
 ];
 
+// ─── Helpers ──────────────────────────────────────────────────
+function getRepoOwner(repoUrl) {
+  const m = String(repoUrl || "").match(/github\.com\/([^\/]+)/);
+  return m ? m[1] : null;
+}
+
+function getRepoName(repoUrl) {
+  return (
+    String(repoUrl || "")
+      .replace("https://github.com/", "")
+      .replace(/\.git$/, "") || "Unknown repo"
+  );
+}
+
+function initialsOf(label) {
+  if (!label) return "?";
+  const parts = label.trim().split(/[\s\/\-_.]+/).filter(Boolean);
+  if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return label.slice(0, 2).toUpperCase();
+}
+
+function greetingForName(name) {
+  if (!name) return "Welcome back";
+  const first = name.trim().split(/\s+/)[0];
+  return `Welcome back, ${first}`;
+}
+
+// ─── Size system ──────────────────────────────────────────────
 function sizeFor(compact) {
   return compact
     ? {
@@ -102,13 +134,13 @@ function sizeFor(compact) {
         heading: "text-xl sm:text-2xl",
         subHeading: "text-xs",
         statsGap: "gap-3",
-        statCardPadding: "p-4",
-        statValue: "text-2xl",
-        analyzerPadding: "p-5 sm:p-6",
-        analyzerHeaderGap: "mb-5 gap-3",
-        analyzerIconSize: "h-10 w-10",
-        analyzerTitle: "text-sm sm:text-base",
-        analyzerDesc: "text-[11px] sm:text-xs",
+        statCardPadding: "p-5",
+        statValue: "text-3xl",
+        analyzerPadding: "p-6 sm:p-8",
+        analyzerHeaderGap: "mb-6 gap-3",
+        analyzerIconSize: "h-11 w-11",
+        analyzerTitle: "text-base sm:text-lg",
+        analyzerDesc: "text-xs sm:text-sm",
         inputHeight: "h-12",
         inputPadding: "pl-9 pr-4",
         buttonPadding: "px-6 py-3 text-xs",
@@ -118,12 +150,15 @@ function sizeFor(compact) {
         recentTitle: "text-sm",
         recentSub: "text-[10px]",
         reportRowPadding: "px-3 py-3",
-        emptyStatePadding: "py-12 px-6",
-        footerMargin: "mt-6",
+        emptyStatePadding: "py-14 px-6",
+        footerMargin: "mt-8",
         footerText: "text-[10px]",
       };
 }
 
+// ═══════════════════════════════════════════════════════════════
+// MAIN COMPONENT
+// ═══════════════════════════════════════════════════════════════
 export default function Dashboard() {
   const { error: toastError } = useToast();
   const [data, setData] = useState(null);
@@ -426,20 +461,31 @@ export default function Dashboard() {
       value: data.stats?.totalScans ?? 0,
       sub: "repositories analyzed",
       Icon: Activity,
+      accent: "accent",
     },
     {
       label: "Avg code quality",
       value: `${avgQuality}%`,
       sub: "across all reports",
-      Icon: Boxes,
+      Icon: TrendingUp,
+      accent: "success",
     },
     {
       label: "DevOps score",
       value: `${data.stats?.devopsScore ?? 0}%`,
       sub: "CI/CD & infrastructure",
       Icon: Cog,
+      accent: "info",
     },
   ];
+
+  // Extract unique repos for quick-pick chips
+  const recentRepos = Array.from(
+    new Map(
+      (data.recentReports || [])
+        .map((r) => [r.repoUrl, r])
+    ).values()
+  ).slice(0, 4);
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
@@ -460,52 +506,77 @@ export default function Dashboard() {
           ref={mainContainerRef}
           className={`mx-auto w-full max-w-7xl ${c.mainPadding} ${c.topPadding}`}
         >
-          <div className="space-y-5">
-            {/* HEADER */}
-            <div className={`flex flex-col ${c.headerSpacing}`}>
-              <div className="flex flex-wrap items-center gap-2">
-                <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-                <span className="text-[10px] font-medium uppercase tracking-[0.18em] text-[var(--text-muted)]">
-                  System online
-                </span>
+          {/* Ambient backdrop */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute left-1/2 top-24 h-[420px] w-[720px] -translate-x-1/2 rounded-full opacity-60 blur-3xl"
+            style={{
+              background:
+                "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 65%)",
+            }}
+          />
 
-                {data?.user &&
-                  typeof data.user.tokensRemaining === "number" && (
-                    <>
-                      <span className="text-[10px] text-[var(--text-muted)]">
-                        •
-                      </span>
-                      <span className="inline-flex items-center gap-1 font-mono text-[10px] text-[var(--text-muted)]">
+          <div className="relative space-y-6">
+            {/* ═══════════ HEADER ═══════════ */}
+            <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+              <div className="min-w-0">
+                {/* Status line */}
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--color-success)]">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[var(--color-success)] opacity-60" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+                    </span>
+                    System online
+                  </span>
+
+                  {data?.user &&
+                    typeof data.user.tokensRemaining === "number" && (
+                      <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-2.5 py-1 font-mono text-[10px] text-[var(--text-secondary)]">
                         <Zap
                           size={11}
                           aria-hidden="true"
                           className="text-[var(--accent)]"
                         />
-                        {data.user.tokensRemaining.toLocaleString()} tokens
-                        remaining
-                        {data.user.totalTokensUsed > 0 && (
-                          <span className="text-[var(--text-muted)]/60">
-                            &nbsp;({data.user.totalTokensUsed.toLocaleString()}{" "}
-                            used)
-                          </span>
-                        )}
+                        <span className="font-semibold text-[var(--text-primary)] tabular-nums">
+                          {data.user.tokensRemaining.toLocaleString()}
+                        </span>
+                        <span className="text-[var(--text-muted)]">
+                          tokens
+                        </span>
                       </span>
-                    </>
-                  )}
+                    )}
+                </div>
+
+                <h1
+                  className={`mt-3 font-bold tracking-tight text-[var(--text-primary)] ${c.heading}`}
+                >
+                  {greetingForName(data?.user?.name)}
+                </h1>
+                <p className={`mt-1 text-[var(--text-muted)] ${c.subHeading}`}>
+                  Analyze a repository or pick up where you left off.
+                </p>
               </div>
 
-              <h2
-                className={`mt-1 font-bold tracking-tight text-[var(--text-primary)] ${c.heading}`}
-              >
-                Repository Dashboard
-              </h2>
-              <p className={`text-[var(--text-muted)] ${c.subHeading}`}>
-                Analyze your GitHub repositories and get AI-powered engineering
-                insights.
-              </p>
-            </div>
+              {data.recentReports?.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate("/history")}
+                  className="group inline-flex shrink-0 items-center gap-2 self-start rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2 text-[12px] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+                >
+                  <History size={13} strokeWidth={2.2} aria-hidden="true" />
+                  View all reports
+                  <ArrowRight
+                    size={12}
+                    strokeWidth={2.4}
+                    aria-hidden="true"
+                    className="transition-transform duration-200 group-hover:translate-x-0.5"
+                  />
+                </button>
+              )}
+            </header>
 
-            {/* STATS */}
+            {/* ═══════════ STATS ═══════════ */}
             <div
               ref={statsContainerRef}
               className={`grid grid-cols-1 ${c.statsGap} sm:grid-cols-3`}
@@ -521,30 +592,33 @@ export default function Dashboard() {
               ))}
             </div>
 
-            {/* ANALYZER */}
+            {/* ═══════════ ANALYZER ═══════════ */}
             <div
               ref={analyzerRef}
-              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] transition-colors duration-200 hover:border-[var(--accent)]/25"
+              className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[var(--shadow-lg)] transition-colors duration-200 hover:border-[var(--accent)]/30"
             >
+              {/* Top accent gradient */}
               <div
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent"
               />
-              <div className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
-              <div className="pointer-events-none absolute -bottom-24 -left-24 h-56 w-56 rounded-full bg-[var(--accent-soft)] blur-3xl" />
+              {/* Corner glows */}
+              <div className="pointer-events-none absolute -right-24 -top-24 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
+              <div className="pointer-events-none absolute -bottom-28 -left-28 h-64 w-64 rounded-full bg-[var(--accent-soft)] blur-3xl" />
 
               <div className={`relative ${c.analyzerPadding}`}>
+                {/* Header */}
                 <div className={`flex items-start ${c.analyzerHeaderGap}`}>
                   <div
-                    className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/20 bg-[var(--accent-soft)] text-[var(--accent)] ${c.analyzerIconSize}`}
+                    className={`flex shrink-0 items-center justify-center rounded-xl border border-[var(--accent)]/25 bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_8px_20px_-10px_var(--accent-soft-strong)] ${c.analyzerIconSize}`}
                   >
-                    <Activity
-                      size={compact ? 14 : 17}
+                    <Rocket
+                      size={compact ? 15 : 19}
                       strokeWidth={1.9}
                       aria-hidden="true"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <h2
                       className={`font-semibold text-[var(--text-primary)] ${c.analyzerTitle}`}
                     >
@@ -553,13 +627,14 @@ export default function Dashboard() {
                     <p
                       className={`mt-1 leading-relaxed text-[var(--text-muted)] ${c.analyzerDesc}`}
                     >
-                      Paste a public repository URL for a complete AI-powered
-                      engineering audit.
+                      Paste a public repo URL for architecture, bug,
+                      security, and test-generation analysis — in one pass.
                     </p>
                   </div>
                 </div>
 
-                <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-[var(--border-light)] sm:bg-[var(--bg-input)] sm:transition-colors sm:focus-within:border-[var(--accent)]/60">
+                {/* Input row */}
+                <div className="flex flex-col gap-2.5 sm:flex-row sm:gap-0 sm:overflow-hidden sm:rounded-xl sm:border sm:border-[var(--border-light)] sm:bg-[var(--bg-input)] sm:transition-colors sm:focus-within:border-[var(--accent)]/60 sm:focus-within:shadow-[0_0_0_4px_var(--accent-soft)]">
                   <div className="relative min-w-0 flex-1">
                     <span className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-mono text-xs text-[var(--accent)]">
                       $
@@ -583,7 +658,7 @@ export default function Dashboard() {
                     onClick={generateReport}
                     disabled={loading}
                     aria-label={loading ? "Analyzing repository" : undefined}
-                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] sm:m-1 sm:min-w-[176px] sm:rounded-lg ${c.buttonPadding} ${
+                    className={`shrink-0 rounded-xl font-semibold transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] sm:m-1 sm:min-w-[180px] sm:rounded-lg ${c.buttonPadding} ${
                       loading
                         ? "cursor-not-allowed bg-[var(--bg-hover)] text-[var(--text-muted)]"
                         : "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_8px_24px_-8px_var(--accent-soft-strong)] hover:bg-[var(--accent-hover)] hover:scale-[1.02] active:scale-95"
@@ -610,10 +685,11 @@ export default function Dashboard() {
                   </button>
                 </div>
 
+                {/* Error */}
                 {error && (
                   <div
                     role="alert"
-                    className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/20 bg-[var(--color-danger-soft)] px-3 py-2.5 text-xs text-[var(--color-danger)] animate-[cv-dash-fadeUp-sm_0.2s_ease_both]"
+                    className="mt-3 flex items-center gap-2 rounded-lg border border-[var(--color-danger)]/25 bg-[var(--color-danger-soft)] px-3 py-2.5 text-xs text-[var(--color-danger)] animate-[cv-dash-fadeUp-sm_0.2s_ease_both]"
                   >
                     <AlertCircle
                       size={14}
@@ -625,7 +701,54 @@ export default function Dashboard() {
                   </div>
                 )}
 
-                <div className={`mt-4 flex flex-wrap ${c.featuresGap}`}>
+                {/* Recent repos quick-pick */}
+                {recentRepos.length > 0 && (
+                  <div className="mt-5">
+                    <p className="mb-2 flex items-center gap-1.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                      <Sparkles
+                        size={10}
+                        strokeWidth={2.4}
+                        aria-hidden="true"
+                        className="text-[var(--accent)]"
+                      />
+                      Re-scan a recent repo
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {recentRepos.map((r) => {
+                        const owner = getRepoOwner(r.repoUrl);
+                        const name = getRepoName(r.repoUrl);
+                        return (
+                          <button
+                            key={r.repoUrl}
+                            type="button"
+                            onClick={() => {
+                              setRepoUrl(r.repoUrl);
+                              setError("");
+                            }}
+                            className="group flex items-center gap-2 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-2.5 py-1.5 text-left transition-all duration-150 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:bg-[var(--bg-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+                          >
+                            <RepoAvatar
+                              owner={owner}
+                              fallback={initialsOf(name)}
+                              size={18}
+                            />
+                            <span className="font-mono text-[11px] text-[var(--text-secondary)] transition-colors group-hover:text-[var(--text-primary)]">
+                              {name.length > 32 ? `${name.slice(0, 32)}…` : name}
+                            </span>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Features strip */}
+                <div
+                  className={`${recentRepos.length > 0 ? "mt-5" : "mt-5"} flex flex-wrap items-center gap-1.5 border-t border-[var(--border-dark)] pt-4 ${c.featuresGap}`}
+                >
+                  <span className="mr-1 font-mono text-[10px] uppercase tracking-[0.12em] text-[var(--text-muted)]">
+                    Includes
+                  </span>
                   {FEATURES.map(({ label, Icon }) => (
                     <span
                       key={label}
@@ -644,7 +767,7 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* RECENT REPORTS */}
+            {/* ═══════════ RECENT REPORTS ═══════════ */}
             {data.recentReports?.length > 0 && (
               <div
                 ref={recentReportsRef}
@@ -670,26 +793,17 @@ export default function Dashboard() {
                       Your latest repository analysis results
                     </p>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <span
-                      key={statsKey}
-                      className="hidden items-center gap-1.5 text-[10px] text-[var(--color-success)] sm:flex"
-                    >
-                      <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)] animate-pulse" />
-                      Live
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => navigate("/history")}
-                      className={`rounded-lg font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${
-                        compact
-                          ? "px-2 py-1 text-[10px]"
-                          : "px-2.5 py-1.5 text-[11px]"
-                      }`}
-                    >
-                      View all →
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={() => navigate("/history")}
+                    className={`rounded-lg font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft)] active:scale-[0.96] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${
+                      compact
+                        ? "px-2 py-1 text-[10px]"
+                        : "px-2.5 py-1.5 text-[11px]"
+                    }`}
+                  >
+                    View all →
+                  </button>
                 </div>
 
                 <div className="space-y-1.5 p-2">
@@ -709,36 +823,76 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* EMPTY STATE */}
+            {/* ═══════════ EMPTY STATE ═══════════ */}
             {!data.recentReports?.length && (
               <div
                 ref={emptyStateRef}
-                className="empty-state rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center"
+                className="empty-state relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] text-center"
               >
-                <div className={`${c.emptyStatePadding}`}>
-                  <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-muted)]">
-                    <Boxes size={20} strokeWidth={1.7} aria-hidden="true" />
+                <div
+                  aria-hidden="true"
+                  className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+                />
+                <div className={`relative ${c.emptyStatePadding}`}>
+                  <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-[var(--accent)]/25 bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_12px_28px_-16px_var(--accent-soft-strong)]">
+                    <FolderGit2 size={22} strokeWidth={1.8} aria-hidden="true" />
                   </div>
                   <h3
-                    className={`font-semibold text-[var(--text-secondary)] ${
-                      compact ? "text-xs" : "text-sm"
+                    className={`font-semibold text-[var(--text-primary)] ${
+                      compact ? "text-sm" : "text-base"
                     }`}
                   >
                     No reports yet
                   </h3>
                   <p
-                    className={`mx-auto mt-1.5 max-w-sm leading-relaxed text-[var(--text-muted)] ${
-                      compact ? "text-[10px]" : "text-[11px]"
+                    className={`mx-auto mt-2 max-w-md leading-relaxed text-[var(--text-muted)] ${
+                      compact ? "text-[11px]" : "text-xs"
                     }`}
                   >
                     Enter a public GitHub repository above to generate your
-                    first CodeVerity audit.
+                    first CodeVerity audit. Every report includes a graded
+                    summary, security scan, bug detection, and test suggestions.
                   </p>
+
+                  <div className="mx-auto mt-6 grid max-w-2xl grid-cols-1 gap-3 sm:grid-cols-3">
+                    {[
+                      {
+                        n: "01",
+                        label: "Paste a repo URL",
+                        desc: "Any public GitHub repository",
+                      },
+                      {
+                        n: "02",
+                        label: "Get your audit",
+                        desc: "Architecture, security, bugs, tests",
+                      },
+                      {
+                        n: "03",
+                        label: "Act on findings",
+                        desc: "Fix inline or open a PR",
+                      },
+                    ].map((step) => (
+                      <div
+                        key={step.n}
+                        className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-left"
+                      >
+                        <p className="font-mono text-[10px] font-bold tracking-wider text-[var(--accent)]">
+                          {step.n}
+                        </p>
+                        <p className="mt-2 text-[12px] font-semibold text-[var(--text-primary)]">
+                          {step.label}
+                        </p>
+                        <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+                          {step.desc}
+                        </p>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* FOOTER */}
+            {/* ═══════════ FOOTER ═══════════ */}
             <div
               className={`flex items-center justify-center gap-2 py-3 text-[var(--text-muted)] ${c.footerText} ${c.footerMargin}`}
             >
@@ -765,41 +919,77 @@ function StatCard({
   compact,
   statValueClass,
   statPaddingClass,
+  accent = "accent",
 }) {
   const animated = useCountUp(value, 800);
 
+  // Subtle numeric fill bar so each stat has a visual anchor.
+  const numeric = parseFloat(String(value).replace("%", "")) || 0;
+  const hasPct = String(value).includes("%");
+  const fillPct = hasPct ? Math.min(Math.max(numeric, 0), 100) : 100;
+
+  const accentTone = {
+    accent: {
+      ring: "border-[var(--accent)]/20 hover:border-[var(--accent)]/50",
+      icon: "bg-[var(--accent-soft)] text-[var(--accent)]",
+      bar: "var(--accent)",
+    },
+    success: {
+      ring: "border-[var(--color-success)]/20 hover:border-[var(--color-success)]/50",
+      icon: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
+      bar: "var(--color-success)",
+    },
+    info: {
+      ring: "border-[var(--color-info)]/20 hover:border-[var(--color-info)]/50",
+      icon: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
+      bar: "var(--color-info)",
+    },
+  }[accent] || {
+    ring: "border-[var(--accent)]/20 hover:border-[var(--accent)]/50",
+    icon: "bg-[var(--accent-soft)] text-[var(--accent)]",
+    bar: "var(--accent)",
+  };
+
   return (
     <div
-      className={`group relative overflow-hidden rounded-xl border border-[var(--accent)]/20 bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-md)] ${statPaddingClass}`}
+      className={`group relative overflow-hidden rounded-xl border bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[var(--shadow-md)] ${accentTone.ring} ${statPaddingClass}`}
     >
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-40 transition-opacity duration-200 group-hover:opacity-80"
-      />
-      <div className="pointer-events-none absolute -right-8 -top-8 h-20 w-20 rounded-full bg-[var(--accent-soft)] blur-2xl" />
       <div className="relative flex items-start justify-between">
-        <div>
-          <p className="text-[10px] font-medium uppercase tracking-[0.12em] text-[var(--text-muted)]">
+        <div className="min-w-0">
+          <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
             {label}
           </p>
           <p
-            className={`mt-2 font-bold tabular-nums text-[var(--text-primary)] ${statValueClass}`}
+            className={`mt-2 font-bold tabular-nums leading-none text-[var(--text-primary)] ${statValueClass}`}
           >
             {animated}
           </p>
-          <p className="mt-1 text-[10px] text-[var(--text-muted)]">{sub}</p>
+          <p className="mt-2 text-[10px] text-[var(--text-muted)]">{sub}</p>
         </div>
         <div
-          className={`flex items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)] transition-transform duration-200 group-hover:scale-110 ${
-            compact ? "h-6 w-6" : "h-8 w-8"
+          className={`flex items-center justify-center rounded-lg transition-transform duration-200 group-hover:scale-110 ${accentTone.icon} ${
+            compact ? "h-7 w-7" : "h-9 w-9"
           }`}
         >
           <Icon
-            size={compact ? 12 : 15}
+            size={compact ? 13 : 16}
             strokeWidth={1.9}
             aria-hidden="true"
           />
         </div>
+      </div>
+
+      {/* Progress fill for percentage stats, subtle bar for others */}
+      <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-[var(--bg-hover)]">
+        <div
+          className="h-full rounded-full transition-all duration-700 ease-out"
+          style={{
+            width: `${fillPct}%`,
+            background: accentTone.bar,
+            boxShadow: `0 0 8px ${accentTone.bar}`,
+            opacity: hasPct ? 1 : 0.6,
+          }}
+        />
       </div>
     </div>
   );
@@ -819,8 +1009,8 @@ function ReportRow({ report, onView, compact }) {
       )
     : 0;
 
-  const repoName =
-    report.repoUrl?.replace("https://github.com/", "") ?? "Unknown repo";
+  const repoName = getRepoName(report.repoUrl);
+  const owner = getRepoOwner(report.repoUrl);
   const date = report.createdAt
     ? new Date(report.createdAt).toLocaleDateString("en-US", {
         month: "short",
@@ -829,28 +1019,41 @@ function ReportRow({ report, onView, compact }) {
     : "";
 
   const rowPadding = compact ? "px-2 py-2" : "px-3 py-3";
-  const gradeSize = compact ? "h-7 w-7 text-[10px]" : "h-8 w-8 text-[11px]";
-  const repoFontSize = compact ? "text-[11px]" : "text-xs";
+  const gradeSize = compact ? "h-8 w-9 text-[11px]" : "h-9 w-11 text-[12px]";
+  const repoFontSize = compact ? "text-[11px]" : "text-[13px]";
   const dateFontSize = "text-[10px]";
-  const scoreBadgePadding = compact
-    ? "px-1.5 py-0.5 text-[10px]"
-    : "px-2 py-1 text-[10px]";
   const viewButtonPadding = compact
     ? "px-2 py-1 text-[10px]"
     : "px-3 py-1.5 text-[10px]";
+  const avatarSize = compact ? 26 : 32;
 
   return (
     <div
       className={`group flex items-center gap-3 rounded-xl border border-transparent transition-all duration-150 hover:border-[var(--border-light)] hover:bg-[var(--bg-primary)] ${rowPadding}`}
     >
+      {/* Repo avatar */}
+      <div
+        className="relative shrink-0"
+        style={{ width: avatarSize, height: avatarSize }}
+      >
+        <RepoAvatar
+          owner={owner}
+          fallback={initialsOf(repoName)}
+          size={avatarSize}
+        />
+      </div>
+
+      {/* Grade badge */}
       <span
         className={`flex shrink-0 items-center justify-center rounded-lg border font-bold ${gradeColor.text} ${gradeColor.bg} ${gradeColor.border} ${gradeSize}`}
       >
         {grade}
       </span>
+
+      {/* Repo info */}
       <div className="min-w-0 flex-1">
         <p
-          className={`truncate font-medium text-[var(--text-secondary)] group-hover:text-[var(--text-primary)] ${repoFontSize}`}
+          className={`truncate font-medium text-[var(--text-secondary)] transition-colors group-hover:text-[var(--text-primary)] ${repoFontSize}`}
         >
           {repoName}
         </p>
@@ -859,6 +1062,7 @@ function ReportRow({ report, onView, compact }) {
         </p>
       </div>
 
+      {/* Mini score bars */}
       {report.scores && (
         <div className="hidden h-7 items-end gap-1 md:flex">
           {[
@@ -876,12 +1080,14 @@ function ReportRow({ report, onView, compact }) {
         </div>
       )}
 
-      <div
-        className={`hidden rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] text-[var(--text-secondary)] sm:block ${scoreBadgePadding}`}
-      >
-        {avg}%
+      {/* Average score badge */}
+      <div className="hidden items-center gap-1.5 rounded-md border border-[var(--border-light)] bg-[var(--bg-card)] px-2 py-1 sm:flex">
+        <span className="font-mono text-[10px] font-bold tabular-nums text-[var(--text-secondary)]">
+          {avg}%
+        </span>
       </div>
 
+      {/* Action */}
       <button
         type="button"
         onClick={onView}
@@ -890,6 +1096,38 @@ function ReportRow({ report, onView, compact }) {
         View →
       </button>
     </div>
+  );
+}
+
+/* GitHub avatar with graceful fallback to initials when the image
+   fails to load (private repos, network issues, or non-github urls). */
+function RepoAvatar({ owner, fallback, size = 32 }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!owner || failed) {
+    return (
+      <span
+        className="flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--accent-soft)] font-mono font-bold text-[var(--accent)]"
+        style={{ width: size, height: size, fontSize: size * 0.36 }}
+        aria-hidden="true"
+      >
+        {fallback}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={`https://github.com/${owner}.png?size=64`}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] object-cover"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    />
   );
 }
 
@@ -931,14 +1169,14 @@ function DashboardSkeleton({ compact }) {
     : "px-4 py-6 sm:px-6 lg:px-8";
   const topPadding = compact ? "pt-20" : "pt-24";
   const statsGap = compact ? "gap-2" : "gap-3";
-  const statPad = compact ? "p-3" : "p-4";
+  const statPad = compact ? "p-3" : "p-5";
 
   return (
     <div className="min-h-screen bg-[var(--bg-primary)] text-[var(--text-primary)]">
       <main className={`mx-auto w-full max-w-7xl ${mainPadding} ${topPadding}`}>
-        <div className="animate-pulse space-y-5">
-          <div className="space-y-2">
-            <div className="h-2 w-28 rounded bg-[var(--bg-hover)]" />
+        <div className="animate-pulse space-y-6">
+          <div className="space-y-3">
+            <div className="h-4 w-32 rounded-full bg-[var(--bg-hover)]" />
             <div className="h-6 w-56 rounded bg-[var(--bg-hover)]" />
             <div className="h-2.5 w-80 max-w-full rounded bg-[var(--bg-hover)]" />
           </div>
@@ -950,27 +1188,28 @@ function DashboardSkeleton({ compact }) {
                 className={`rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${statPad}`}
               >
                 <div className="flex items-start justify-between">
-                  <div className="space-y-2">
+                  <div className="space-y-3">
                     <div className="h-2 w-20 rounded bg-[var(--bg-hover)]" />
-                    <div className="h-6 w-16 rounded bg-[var(--bg-hover)]" />
+                    <div className="h-7 w-16 rounded bg-[var(--bg-hover)]" />
                     <div className="h-2 w-24 rounded bg-[var(--bg-hover)]" />
                   </div>
-                  <div className="h-8 w-8 rounded-lg bg-[var(--bg-hover)]" />
+                  <div className="h-9 w-9 rounded-lg bg-[var(--bg-hover)]" />
                 </div>
+                <div className="mt-3 h-[3px] w-full rounded-full bg-[var(--bg-hover)]" />
               </div>
             ))}
           </div>
 
-          <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 sm:p-6">
+          <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] p-5 sm:p-8">
             <div className="flex items-start gap-3">
-              <div className="h-10 w-10 shrink-0 rounded-xl bg-[var(--bg-hover)]" />
+              <div className="h-11 w-11 shrink-0 rounded-xl bg-[var(--bg-hover)]" />
               <div className="flex-1 space-y-2">
                 <div className="h-3 w-52 max-w-full rounded bg-[var(--bg-hover)]" />
                 <div className="h-2.5 w-72 max-w-full rounded bg-[var(--bg-hover)]" />
               </div>
             </div>
-            <div className="mt-5 h-12 w-full rounded-xl bg-[var(--bg-hover)]" />
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-6 h-12 w-full rounded-xl bg-[var(--bg-hover)]" />
+            <div className="mt-5 flex flex-wrap gap-2 border-t border-[var(--border-dark)] pt-4">
               {Array.from({ length: 5 }, (_, i) => (
                 <div
                   key={i}
@@ -989,6 +1228,7 @@ function DashboardSkeleton({ compact }) {
               {Array.from({ length: 4 }, (_, i) => (
                 <div key={i} className="flex items-center gap-3 px-3 py-3">
                   <div className="h-8 w-8 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
+                  <div className="h-9 w-11 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
                   <div className="flex-1 space-y-1.5">
                     <div className="h-2.5 w-44 max-w-full rounded bg-[var(--bg-hover)]" />
                     <div className="h-2 w-28 rounded bg-[var(--bg-hover)]" />
