@@ -12,6 +12,7 @@ import {
   Sun,
   Monitor,
   AlertCircle,
+  X,
 } from "lucide-react";
 
 import axios from "../api/axios";
@@ -110,6 +111,26 @@ export default function Settings() {
   const [newPass, setNewPass] = useState("");
   const [confPass, setConfPass] = useState("");
 
+  // ─── Confirm modal state ─────────────────────────────────
+  // { title, description, confirmLabel, onConfirm, danger }
+  const [confirmState, setConfirmState] = useState(null);
+  const [confirmLoading, setConfirmLoading] = useState(false);
+
+  const closeConfirm = () => {
+    if (confirmLoading) return; // don't close while request is in flight
+    setConfirmState(null);
+  };
+
+  const runConfirm = async () => {
+    if (!confirmState?.onConfirm) return;
+    setConfirmLoading(true);
+    try {
+      await confirmState.onConfirm();
+    } finally {
+      setConfirmLoading(false);
+    }
+  };
+
   const fetchUser = useCallback(async () => {
     setLoading(true);
     try {
@@ -143,7 +164,33 @@ export default function Settings() {
       navigate("/login");
       return;
     }
+
+    // Read the OAuth return status before fetchUser so the toast fires
+    // even if fetchUser takes a moment. Then clean the URL so a refresh
+    // doesn't re-trigger the toast.
+    const params = new URLSearchParams(window.location.search);
+    const ghStatus = params.get("github");
+    const initialTab = params.get("tab");
+
+    if (initialTab && TABS.some((t) => t.id === initialTab)) {
+      setTab(initialTab);
+    }
+
+    if (ghStatus === "connected") {
+      success("GitHub connected successfully.");
+    } else if (ghStatus === "error") {
+      toastError("Failed to connect GitHub. Please try again.");
+    }
+
+    if (ghStatus || initialTab) {
+      params.delete("github");
+      params.delete("tab");
+      const cleaned = params.toString();
+      navigate(`/settings${cleaned ? `?${cleaned}` : ""}`, { replace: true });
+    }
+
     fetchUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuth, fetchUser]);
 
   const saveProfile = async () => {
@@ -216,49 +263,90 @@ export default function Settings() {
     success("Preferences saved.");
   };
 
-  const clearHistory = async () => {
-    if (!window.confirm("Delete all reports? This cannot be undone.")) return;
-    try {
-      await axios.delete("/report/all");
-      success("All reports deleted.");
-    } catch (err) {
-      toastError(err.response?.data?.error ?? "Failed to clear history.");
-    }
+  // ─── Destructive actions now use the in-app modal ────────
+
+  const clearHistory = () => {
+    setConfirmState({
+      title: "Clear report history?",
+      description:
+        "All your past analysis reports will be permanently deleted. This cannot be undone.",
+      confirmLabel: "Clear History",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await axios.delete("/report/all");
+          success("All reports deleted.");
+          setConfirmState(null);
+        } catch (err) {
+          toastError(
+            err.response?.data?.error ?? "Failed to clear history."
+          );
+        }
+      },
+    });
   };
 
-  const deleteAccount = async () => {
-    if (
-      !window.confirm(
-        "This will permanently delete your account and all reports. Are you sure?"
-      )
-    )
-      return;
-    try {
-      await axios.delete("/auth/account");
-      logout();
-      navigate("/register");
-    } catch (err) {
-      toastError(err.response?.data?.error ?? "Delete failed.");
-    }
+  const deleteAccount = () => {
+    setConfirmState({
+      title: "Delete your account?",
+      description:
+        "Your account, reports, and all associated data will be permanently deleted. This cannot be undone.",
+      confirmLabel: "Delete Account",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await axios.delete("/auth/account");
+          logout();
+          navigate("/register");
+        } catch (err) {
+          toastError(err.response?.data?.error ?? "Delete failed.");
+        }
+      },
+    });
   };
 
   const connectGitHub = () => {
     const backendUrl =
       import.meta.env.VITE_API_URL || "https://codeverity.onrender.com/api";
     const base = backendUrl.replace(/\/api$/, "");
-    window.location.href = `${base}/api/auth/github?returnTo=/settings`;
+    // connect=true tells the backend to attach the token to the
+    // currently-logged-in user instead of running the email-matching
+    // login flow (which switches accounts when the GitHub email
+    // differs from the CodeVerity email).
+    window.location.href = `${base}/api/auth/github?connect=true`;
   };
 
-  const disconnectGitHub = async () => {
-    if (!window.confirm("Disconnect GitHub? Auto‑Fix will no longer work."))
-      return;
-    try {
-      await axios.delete("/auth/github");
-      setUser((prev) => ({ ...prev, githubAccessToken: null }));
-      success("GitHub account disconnected.");
-    } catch (err) {
-      toastError("Failed to disconnect.");
-    }
+  const disconnectGitHub = () => {
+    setConfirmState({
+      title: "Disconnect GitHub?",
+      description:
+        "Auto‑Fix will no longer be able to open pull requests on your behalf. You can reconnect at any time.",
+      confirmLabel: "Disconnect",
+      danger: true,
+      onConfirm: async () => {
+        try {
+          await axios.delete("/auth/github");
+
+          // Reset BOTH fields. The UI reads hasGithubConnected, but
+          // the API used to only return githubAccessToken — so nulling
+          // just the token left the card showing "connected" until a
+          // full page refresh re-fetched /auth/me. Clear both here so
+          // the Integrations panel flips immediately.
+          setUser((prev) => ({
+            ...prev,
+            githubAccessToken: null,
+            hasGithubConnected: false,
+          }));
+
+          success("GitHub account disconnected.");
+          setConfirmState(null);
+        } catch (err) {
+          toastError(
+            err.response?.data?.error ?? "Failed to disconnect GitHub."
+          );
+        }
+      },
+    });
   };
 
   const c = sizeFor(compact);
@@ -696,6 +784,149 @@ export default function Settings() {
             <span>•</span>
             <span>AI Repository Intelligence</span>
           </div>
+        </div>
+      </div>
+
+      {/* CONFIRM MODAL */}
+      <ConfirmDialog
+        open={!!confirmState}
+        title={confirmState?.title}
+        description={confirmState?.description}
+        confirmLabel={confirmState?.confirmLabel ?? "Confirm"}
+        danger={confirmState?.danger !== false}
+        loading={confirmLoading}
+        onConfirm={runConfirm}
+        onCancel={closeConfirm}
+      />
+    </div>
+  );
+}
+
+// ─── Reusable confirmation modal ──────────────────────────────
+// Replaces window.confirm so we get consistent theming and can
+// show a spinner while the request is in flight.
+function ConfirmDialog({
+  open,
+  title,
+  description,
+  confirmLabel = "Confirm",
+  danger = true,
+  loading = false,
+  onConfirm,
+  onCancel,
+}) {
+  // Close on Escape
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => {
+      if (e.key === "Escape" && !loading) onCancel?.();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, loading, onCancel]);
+
+  // Prevent body scroll while open
+  useEffect(() => {
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[100] flex items-center justify-center p-4"
+      role="presentation"
+    >
+      {/* Backdrop */}
+      <div
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm animate-in fade-in duration-150"
+        onClick={loading ? undefined : onCancel}
+        aria-hidden="true"
+      />
+
+      {/* Dialog */}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="confirm-title"
+        aria-describedby="confirm-description"
+        className="relative w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-2xl"
+      >
+        {/* Header strip */}
+        <div
+          className={`flex items-center gap-3 border-b border-[var(--border-light)] px-5 py-4 ${
+            danger ? "bg-[var(--color-danger-soft)]" : "bg-[var(--bg-primary)]"
+          }`}
+        >
+          <div
+            className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+              danger
+                ? "bg-[var(--color-danger)]/15 text-[var(--color-danger)]"
+                : "bg-[var(--accent-soft)] text-[var(--accent)]"
+            }`}
+          >
+            <AlertTriangle size={16} strokeWidth={2.1} aria-hidden="true" />
+          </div>
+          <h2
+            id="confirm-title"
+            className="min-w-0 flex-1 truncate text-sm font-semibold text-[var(--text-primary)] sm:text-base"
+          >
+            {title}
+          </h2>
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            aria-label="Close"
+            className="shrink-0 rounded-md p-1 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            <X size={16} aria-hidden="true" />
+          </button>
+        </div>
+
+        {/* Body */}
+        <div className="px-5 py-4">
+          <p
+            id="confirm-description"
+            className="text-xs leading-relaxed text-[var(--text-secondary)] sm:text-sm"
+          >
+            {description}
+          </p>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col-reverse gap-2 border-t border-[var(--border-light)] bg-[var(--bg-primary)] px-5 py-4 sm:flex-row sm:justify-end">
+          <button
+            type="button"
+            onClick={onCancel}
+            disabled={loading}
+            className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:text-sm"
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onConfirm}
+            disabled={loading}
+            className={`inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-2 text-xs font-semibold shadow-lg transition-all active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto sm:text-sm ${
+              danger
+                ? "bg-[var(--color-danger)] text-white hover:opacity-90 focus-visible:ring-[var(--color-danger)]/50"
+                : "bg-[var(--accent)] text-[var(--accent-contrast)] hover:bg-[var(--accent-hover)] focus-visible:ring-[var(--accent)]/50"
+            }`}
+          >
+            {loading && (
+              <span
+                className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent"
+                aria-hidden="true"
+              />
+            )}
+            {confirmLabel}
+          </button>
         </div>
       </div>
     </div>

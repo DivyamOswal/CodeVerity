@@ -67,6 +67,36 @@ const clearOAuthStateCookie = (res) => {
   });
 };
 
+/**
+ * Set the JWT as an HttpOnly cookie.
+ *
+ * The frontend still receives the token in the response body and stores
+ * it in localStorage for the Authorization header. The cookie exists so
+ * that endpoints reached via full-page navigation — specifically
+ * GET /auth/github?connect=true — can identify the current user. Without
+ * it, the connect flow can't tell which account to attach the GitHub
+ * token to, and falls back to email matching (which switches accounts
+ * when the GitHub email differs from the CodeVerity email).
+ */
+const setAuthCookie = (res, token) => {
+  res.cookie("token", token, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax", // required: GitHub redirect is a top-level GET
+    maxAge: 24 * 60 * 60 * 1000, // 1d, matches JWT expiry
+    path: "/",
+  });
+};
+
+const clearAuthCookie = (res) => {
+  res.clearCookie("token", {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "lax",
+    path: "/",
+  });
+};
+
 const redirectWithError = (res, errorMessage) => {
   res.redirect(
     `${FRONTEND_URL}/oauth-error?error=${encodeURIComponent(errorMessage)}`
@@ -132,6 +162,7 @@ export const register = async (req, res) => {
     );
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
     res.status(201).json({
       token,
       user: {
@@ -216,6 +247,7 @@ export const login = async (req, res) => {
     }
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
     res.json({
       token,
       user: {
@@ -231,6 +263,15 @@ export const login = async (req, res) => {
     console.error("Login error:", err);
     res.status(500).json({ error: "Login failed." });
   }
+};
+
+/* =========================================================
+   LOGOUT
+========================================================= */
+
+export const logout = async (req, res) => {
+  clearAuthCookie(res);
+  res.json({ success: true });
 };
 
 /* =========================================================
@@ -337,6 +378,7 @@ export const googleAuthCallback = async (req, res) => {
     }
 
     const token = generateToken(user);
+    setAuthCookie(res, token);
     res.redirect(
       `${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(token)}`
     );
@@ -357,6 +399,8 @@ export const githubAuth = async (req, res) => {
 
     let userId = null;
     if (isConnect) {
+      // Full-page navigation, so Authorization header isn't available.
+      // Read the JWT from the HttpOnly cookie set at login/register.
       const token =
         req.headers.authorization?.split(" ")[1] || req.cookies?.token;
       if (token) {
@@ -523,6 +567,7 @@ export const githubAuthCallback = async (req, res) => {
     }
 
     const jwtToken = generateToken(user);
+    setAuthCookie(res, jwtToken);
     res.redirect(
       `${FRONTEND_URL}/oauth-success?token=${encodeURIComponent(jwtToken)}`
     );

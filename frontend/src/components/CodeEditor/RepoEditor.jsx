@@ -12,6 +12,7 @@ import {
   Lightbulb,
   Check,
   ChevronRight,
+  ExternalLink,        // ← NEW
 } from "lucide-react";
 import { usePreferences } from "../../context/PreferencesContext";
 import { useToast } from "../../hooks/useToast";
@@ -71,6 +72,7 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const [fixedLines, setFixedLines] = useState({});
   const [repoContentLoading, setRepoContentLoading] = useState(false);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [loadError, setLoadError] = useState(null);   // ← NEW
 
   // Per-folder expansion state
   const [expandedFolders, setExpandedFolders] = useState({});
@@ -84,12 +86,16 @@ export default function RepoEditor({ repoUrl, reportId }) {
   const loadRepo = async () => {
     if (!repoUrl) return;
     setRepoContentLoading(true);
+    setLoadError(null);                              // ← NEW
     try {
       const res = await getRepoContents(repoUrl);
       const data = res.data;
 
       if (!data.success) {
-        error(data.error || "Failed to load repository.");
+        setLoadError({                                // ← NEW
+          message: data.error || "Failed to load repository.",
+          action: data.action || null,
+        });
         return;
       }
 
@@ -149,7 +155,11 @@ export default function RepoEditor({ repoUrl, reportId }) {
       }
     } catch (err) {
       console.error("Failed to load repo:", err);
-      error("Failed to load repository.");
+      const data = err.response?.data || {};          // ← NEW
+      setLoadError({                                  // ← NEW
+        message: data.error || "Failed to load repository.",
+        action: data.action || null,
+      });
     } finally {
       setRepoContentLoading(false);
     }
@@ -416,6 +426,43 @@ export default function RepoEditor({ repoUrl, reportId }) {
       );
     });
   };
+
+  /* ─── NEW: dedicated render branch for load failures ──────── */
+  if (loadError) {
+    return (
+      <div className="rounded-xl border border-[var(--color-danger)]/25 bg-[var(--color-danger-soft)] p-6 text-center">
+        <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-[var(--color-danger-soft)] text-[var(--color-danger)] ring-1 ring-[var(--color-danger)]/30">
+          <AlertTriangle size={18} strokeWidth={2} aria-hidden="true" />
+        </div>
+        <p className="text-sm font-semibold text-[var(--text-primary)]">
+          {loadError.action === "connect_github"
+            ? "GitHub connection expired"
+            : "Couldn't load repository"}
+        </p>
+        <p className="mx-auto mt-1 max-w-sm text-xs leading-relaxed text-[var(--text-muted)]">
+          {loadError.message}
+        </p>
+        <div className="mt-4 flex flex-wrap justify-center gap-2">
+          {loadError.action === "connect_github" && (
+            <a
+              href="/settings"
+              className="inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2 text-xs font-semibold text-[var(--accent-contrast)] shadow-[0_8px_20px_-8px_var(--accent-soft-strong)] transition-colors hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+            >
+              <ExternalLink size={12} aria-hidden="true" />
+              Reconnect GitHub
+            </a>
+          )}
+          <button
+            type="button"
+            onClick={loadRepo}
+            className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-4 py-2 text-xs font-medium text-[var(--text-secondary)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (repoContentLoading) {
     return (
