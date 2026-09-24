@@ -1,5 +1,5 @@
 // src/components/Result.jsx
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useAuth } from "../App";
 import {
   RadarChart,
@@ -34,9 +34,15 @@ import {
   FileCode2,
   ClipboardCheck,
   Wrench,
+  GitPullRequest,
+  ExternalLink,
+  X as CloseIcon,
 } from "lucide-react";
 
-import { generateTests as defaultGenerateTests } from "../api/github";
+import {
+  generateTests as defaultGenerateTests,
+  commentOnPR,
+} from "../api/github";
 import { usePreferences } from "../context/PreferencesContext";
 import RepoEditor from "../components/CodeEditor/RepoEditor";
 import { useToast } from "../hooks/useToast";
@@ -145,6 +151,7 @@ export default function Result({
   const [testError, setTestError] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [fixing, setFixing] = useState({});
+  const [showPRModal, setShowPRModal] = useState(false);
 
   const { compact } = usePreferences();
   const s = sizeFor(compact);
@@ -209,6 +216,9 @@ export default function Result({
       }
       return counts;
     })();
+
+  const criticalHighCount =
+    (severityCounts.critical || 0) + (severityCounts.high || 0);
 
   const chartData = [
     { metric: "Code Quality", value: scores.codeQuality || 0 },
@@ -409,6 +419,23 @@ export default function Result({
                 {grade}
               </div>
             </div>
+
+            {criticalHighCount > 0 && repoUrl && reportId && (
+              <button
+                type="button"
+                onClick={() => setShowPRModal(true)}
+                className={`inline-flex items-center gap-2 rounded-lg border border-[var(--accent)]/40 bg-[var(--accent-soft)] font-semibold text-[var(--accent)] transition-all duration-150 hover:bg-[var(--accent-soft-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97] ${
+                  compact ? "px-3 py-2 text-[11px]" : "px-4 py-2.5 text-xs"
+                }`}
+              >
+                <GitPullRequest size={14} strokeWidth={2} aria-hidden="true" />
+                <span>Post to PR</span>
+                <span className="rounded-md bg-[var(--accent)] px-1.5 py-0.5 text-[9px] font-bold text-[var(--accent-contrast)]">
+                  {criticalHighCount}
+                </span>
+              </button>
+            )}
+
             {onDownload && (
               <button
                 type="button"
@@ -1885,6 +1912,16 @@ export default function Result({
             <RepoEditor repoUrl={data.repoUrl} reportId={reportId} />
           </div>
         )}
+
+        {/* ─── Post to PR Modal ─────────────────────────── */}
+        {showPRModal && (
+          <PostToPRModal
+            onClose={() => setShowPRModal(false)}
+            repoUrl={repoUrl}
+            reportId={reportId}
+            criticalHighCount={criticalHighCount}
+          />
+        )}
       </div>
     </div>
   );
@@ -2408,6 +2445,212 @@ function FindingRow({ finding, onFix, fixing, compact }) {
           )}
         </div>
       )}
+    </div>
+  );
+}
+
+// ─── PostToPRModal ────────────────────────────────────────────
+function PostToPRModal({ onClose, repoUrl, reportId, criticalHighCount }) {
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState(null);
+  const [err, setErr] = useState(null);
+  const { success, error: toastError } = useToast();
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "Escape" && !loading) onClose();
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [loading, onClose]);
+
+  const parsePRNumber = (raw) => {
+    const t = raw.trim();
+    if (!t) return null;
+    const urlMatch = t.match(/\/pull\/(\d+)/);
+    if (urlMatch) return Number(urlMatch[1]);
+    const numMatch = t.match(/^#?(\d+)$/);
+    if (numMatch) return Number(numMatch[1]);
+    return null;
+  };
+
+  const prNumber = parsePRNumber(input);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!prNumber) {
+      setErr("Enter a PR number or full URL.");
+      return;
+    }
+    setLoading(true);
+    setErr(null);
+    setResult(null);
+    try {
+      const res = await commentOnPR(repoUrl, prNumber, reportId);
+      const data = res.data;
+      setResult(data);
+      const total = (data.inlineCount || 0) + (data.summaryCount || 0);
+      if (total > 0) {
+        success(
+          `Posted ${total} finding${total === 1 ? "" : "s"} to PR #${prNumber}`
+        );
+      }
+    } catch (e2) {
+      const msg = e2.response?.data?.error || "Failed to post comments.";
+      setErr(msg);
+      toastError(msg);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm"
+      onClick={(e) => {
+        if (e.target === e.currentTarget && !loading) onClose();
+      }}
+    >
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="pr-modal-title"
+        className="w-full max-w-md overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] shadow-[0_30px_80px_-30px_rgba(0,0,0,0.7)]"
+      >
+        <div className="h-[2px] w-full bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent" />
+
+        <div className="p-6">
+          <div className="flex items-start gap-3">
+            <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_8px_20px_-8px_var(--accent-soft-strong)]">
+              <GitPullRequest size={18} strokeWidth={2} aria-hidden="true" />
+            </span>
+            <div className="min-w-0">
+              <h3
+                id="pr-modal-title"
+                className="text-base font-bold text-[var(--text-primary)]"
+              >
+                Post findings to PR
+              </h3>
+              <p className="mt-0.5 text-[12.5px] leading-relaxed text-[var(--text-muted)]">
+                {criticalHighCount} critical + high finding
+                {criticalHighCount === 1 ? "" : "s"} will be posted. Findings
+                whose lines are in the PR diff get inline comments; the rest
+                are listed in a summary comment.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              disabled={loading}
+              aria-label="Close"
+              className="shrink-0 rounded-lg p-1.5 text-[var(--text-muted)] transition-colors hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
+            >
+              <CloseIcon size={14} aria-hidden="true" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="mt-5 space-y-3">
+            <div>
+              <label
+                htmlFor="pr-input"
+                className="mb-1.5 block font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]"
+              >
+                Pull request
+              </label>
+              <input
+                id="pr-input"
+                type="text"
+                value={input}
+                onChange={(e) => {
+                  setInput(e.target.value);
+                  if (err) setErr(null);
+                }}
+                placeholder="123 — or paste the full PR URL"
+                autoFocus
+                disabled={loading || Boolean(result)}
+                className="w-full rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3.5 py-2.5 font-mono text-[13px] text-[var(--text-primary)] outline-none transition-colors focus:border-[var(--accent)] focus:ring-2 focus:ring-[var(--accent)]/30 disabled:opacity-60"
+              />
+              {input && prNumber && (
+                <p className="mt-1.5 flex items-center gap-1.5 text-[11px] text-[var(--text-muted)]">
+                  <span className="h-1 w-1 rounded-full bg-[var(--accent)]" />
+                  Will post to PR #{prNumber}
+                </p>
+              )}
+              {err && (
+                <p className="mt-1.5 text-[11px] text-[var(--color-danger)]">
+                  {err}
+                </p>
+              )}
+            </div>
+
+            {result && (
+              <div className="rounded-lg border border-[var(--color-success)]/30 bg-[var(--color-success-soft)] p-3">
+                <p className="text-[12.5px] font-semibold text-[var(--color-success)]">
+                  ✓ Posted to PR #{prNumber}
+                </p>
+                <p className="mt-1 text-[11.5px] text-[var(--text-secondary)]">
+                  {result.inlineCount} inline · {result.summaryCount} in summary
+                  {result.skippedCount > 0
+                    ? ` · ${result.skippedCount} skipped`
+                    : ""}
+                </p>
+                {result.reviewUrl && (
+                  <a
+                    href={result.reviewUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="mt-2 inline-flex items-center gap-1 text-[11.5px] font-medium text-[var(--accent)] hover:underline"
+                  >
+                    Open on GitHub
+                    <ExternalLink size={11} aria-hidden="true" />
+                  </a>
+                )}
+              </div>
+            )}
+
+            <div className="flex gap-2.5 pt-1">
+              {result ? (
+                <button
+                  type="button"
+                  onClick={onClose}
+                  className="flex-1 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-[13px] font-semibold text-[var(--accent-contrast)] transition-all hover:bg-[var(--accent-hover)]"
+                >
+                  Done
+                </button>
+              ) : (
+                <>
+                  <button
+                    type="submit"
+                    disabled={loading || !prNumber}
+                    className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-[var(--accent)] px-4 py-2.5 text-[13px] font-semibold text-[var(--accent-contrast)] shadow-[0_8px_20px_-8px_var(--accent-soft-strong)] transition-all hover:bg-[var(--accent-hover)] disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {loading ? (
+                      <>
+                        <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[var(--accent-contrast)]/40 border-t-[var(--accent-contrast)]" />
+                        Posting…
+                      </>
+                    ) : (
+                      <>
+                        <GitPullRequest size={13} strokeWidth={2.2} />
+                        Post comments
+                      </>
+                    )}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={onClose}
+                    disabled={loading}
+                    className="flex-1 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-4 py-2.5 text-[13px] font-medium text-[var(--text-secondary)] transition-all hover:bg-[var(--bg-hover)] hover:text-[var(--text-primary)] disabled:opacity-50"
+                  >
+                    Cancel
+                  </button>
+                </>
+              )}
+            </div>
+          </form>
+        </div>
+      </div>
     </div>
   );
 }
