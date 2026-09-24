@@ -1,5 +1,6 @@
 // src/pages/History.jsx
 import { useEffect, useState, useMemo } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "axios";
 import {
   Search,
@@ -11,6 +12,10 @@ import {
   ChevronRight,
   Filter,
   Inbox,
+  Plus,
+  Sparkles,
+  TrendingUp,
+  Layers,
 } from "lucide-react";
 
 import { generateTests } from "../api/github";
@@ -21,10 +26,45 @@ import { useToast } from "../hooks/useToast";
 const API = import.meta.env.VITE_API_URL;
 const PAGE_SIZE = 20;
 
-// -----------------------------------------------------------------
-// ScanLine – reuses the global .animate-scanline utility from
-// index.css.
-// -----------------------------------------------------------------
+// ─── Helpers ──────────────────────────────────────────────────
+function getRepoOwner(repoUrl) {
+  const m = String(repoUrl || "").match(/github\.com\/([^\/]+)/);
+  return m ? m[1] : null;
+}
+
+function getRepoName(repoUrl) {
+  return (
+    String(repoUrl || "")
+      .replace("https://github.com/", "")
+      .replace(/\.git$/, "") || "Unknown repo"
+  );
+}
+
+function initialsOf(label) {
+  if (!label) return "?";
+  const parts = label.trim().split(/[\s\/\-_.]+/).filter(Boolean);
+  if (parts.length > 1) return (parts[0][0] + parts[1][0]).toUpperCase();
+  return label.slice(0, 2).toUpperCase();
+}
+
+// Build a compact page list like 1 … 3 4 [5] 6 7 … 12
+function pageList(current, total, max = 7) {
+  if (total <= max) return Array.from({ length: total }, (_, i) => i + 1);
+  const pages = [];
+  const span = Math.floor((max - 3) / 2);
+  let start = Math.max(2, current - span);
+  let end = Math.min(total - 1, current + span);
+  if (current - span < 2) end = Math.min(total - 1, max - 2);
+  if (current + span > total - 1) start = Math.max(2, total - max + 3);
+  pages.push(1);
+  if (start > 2) pages.push("…");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("…");
+  pages.push(total);
+  return pages;
+}
+
+// ─── ScanLine ─────────────────────────────────────────────────
 function ScanLine() {
   return (
     <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-md">
@@ -36,8 +76,7 @@ function ScanLine() {
   );
 }
 
-// GitHub brand mark  custom SVG because lucide-react no longer
-// exports the Github icon.
+// ─── GitHub brand mark ────────────────────────────────────────
 function GithubIcon({ size = 14, className = "" }) {
   return (
     <svg
@@ -53,9 +92,38 @@ function GithubIcon({ size = 14, className = "" }) {
   );
 }
 
-// -----------------------------------------------------------------
-// Skeleton report card
-// -----------------------------------------------------------------
+// ─── Repo avatar with initials fallback ───────────────────────
+function RepoAvatar({ owner, fallback, size = 32 }) {
+  const [failed, setFailed] = useState(false);
+
+  if (!owner || failed) {
+    return (
+      <span
+        className="flex items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--accent-soft)] font-mono font-bold text-[var(--accent)]"
+        style={{ width: size, height: size, fontSize: size * 0.36 }}
+        aria-hidden="true"
+      >
+        {fallback}
+      </span>
+    );
+  }
+
+  return (
+    <img
+      src={`https://github.com/${owner}.png?size=64`}
+      alt=""
+      width={size}
+      height={size}
+      loading="lazy"
+      onError={() => setFailed(true)}
+      className="rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] object-cover"
+      style={{ width: size, height: size }}
+      aria-hidden="true"
+    />
+  );
+}
+
+// ─── Skeleton card ────────────────────────────────────────────
 function SkeletonCard({ compact }) {
   const pad = compact ? "p-3" : "p-4";
   return (
@@ -63,13 +131,13 @@ function SkeletonCard({ compact }) {
       <div className={`border-b border-[var(--border-dark)] ${pad}`}>
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="h-8 w-8 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
+            <div className="h-9 w-9 shrink-0 rounded-lg bg-[var(--bg-hover)]" />
             <div className="space-y-1.5">
               <div className="h-2 w-14 rounded bg-[var(--bg-hover)]" />
               <div className="h-3 w-28 rounded bg-[var(--bg-hover)]" />
             </div>
           </div>
-          <div className="h-5 w-8 shrink-0 rounded-md bg-[var(--bg-hover)]" />
+          <div className="h-5 w-10 shrink-0 rounded-md bg-[var(--bg-hover)]" />
         </div>
         <div className="mt-3 space-y-1.5">
           <div className="h-2.5 w-full rounded bg-[var(--bg-hover)]" />
@@ -93,6 +161,7 @@ function SkeletonCard({ compact }) {
   );
 }
 
+// ─── Sizing ───────────────────────────────────────────────────
 function sizeFor(compact) {
   return compact
     ? {
@@ -115,9 +184,9 @@ function sizeFor(compact) {
       };
 }
 
-// -----------------------------------------------------------------
-// Main History Component
-// -----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+// MAIN HISTORY
+// ═══════════════════════════════════════════════════════════════
 export default function History() {
   const [reports, setReports] = useState([]);
   const [pagination, setPagination] = useState(null);
@@ -132,6 +201,7 @@ export default function History() {
 
   const { compact, showScores } = usePreferences();
   const { success, error } = useToast();
+  const navigate = useNavigate();
   const s = sizeFor(compact);
 
   const loadPage = async (nextPage = 1, { initial = false } = {}) => {
@@ -241,11 +311,26 @@ export default function History() {
   const hasPrev = pagination?.hasPrev ?? page > 1;
   const hasNext = pagination?.hasNext ?? page < totalPages;
 
+  // Distribution used in the grade summary header strip
+  const distribution = useMemo(() => {
+    const totals = { A: 0, B: 0, C: 0, D: 0, F: 0 };
+    for (const r of reports) {
+      const letter = (r.grade ?? "N/A")[0];
+      if (totals[letter] !== undefined) totals[letter] += 1;
+    }
+    return totals;
+  }, [reports]);
+
+  const distributionTotal = Object.values(distribution).reduce(
+    (a, b) => a + b,
+    0
+  );
+
   // ---- Full Report View ----
   if (selected) {
     return (
       <div className="min-h-screen overflow-x-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
-        <div className="sticky top-16 z-40 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/80 backdrop-blur">
+        <div className="sticky top-16 z-40 border-b border-[var(--border-light)] bg-[var(--bg-primary)]/85 backdrop-blur-md">
           <div className="mx-auto flex max-w-7xl items-center gap-2 px-4 py-3 sm:gap-4 sm:px-6 lg:px-8">
             <button
               type="button"
@@ -262,9 +347,13 @@ export default function History() {
             </button>
             <div className="h-5 w-px bg-[var(--border-light)]" />
             <div className="flex min-w-0 items-center gap-2">
-              <GithubIcon size={14} className="shrink-0 text-[var(--text-muted)]" />
+              <RepoAvatar
+                owner={getRepoOwner(selected.repoUrl)}
+                fallback={initialsOf(getRepoName(selected.repoUrl))}
+                size={20}
+              />
               <span className="truncate font-mono text-[11px] text-[var(--text-muted)]">
-                {selected.repoUrl}
+                {getRepoName(selected.repoUrl)}
               </span>
             </div>
           </div>
@@ -283,19 +372,48 @@ export default function History() {
   // ---- Main History View ----
   return (
     <div className="min-h-screen overflow-x-hidden bg-[var(--bg-primary)] text-[var(--text-primary)]">
+      {/* Ambient backdrop */}
       <div
-        className={`mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${s.containerPadding} ${s.topPadding}`}
+        aria-hidden="true"
+        className="pointer-events-none absolute left-1/2 top-24 h-[380px] w-[720px] -translate-x-1/2 rounded-full opacity-50 blur-3xl"
+        style={{
+          background:
+            "radial-gradient(ellipse at center, var(--accent-soft) 0%, transparent 65%)",
+        }}
+      />
+
+      <div
+        className={`relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 ${s.containerPadding} ${s.topPadding}`}
       >
-        {/* HEADER */}
+        {/* ═══════════ HEADER ═══════════ */}
         <div className={s.headerMargin}>
-          <div className="flex flex-col justify-between gap-4 lg:flex-row lg:items-end">
-            <div>
+          <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+            <div className="min-w-0">
+              <div className="flex items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--border-light)] bg-[var(--bg-card)] px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                  <Layers
+                    size={10}
+                    strokeWidth={2.2}
+                    aria-hidden="true"
+                    className="text-[var(--accent)]"
+                  />
+                  Audit log
+                </span>
+                {totalReports > 0 && (
+                  <span className="inline-flex items-center gap-1.5 rounded-full border border-[var(--color-success)]/25 bg-[var(--color-success-soft)] px-2.5 py-1 font-mono text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--color-success)]">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[var(--color-success)]" />
+                    {totalReports} review{totalReports === 1 ? "" : "s"}
+                  </span>
+                )}
+              </div>
+
               <h1
-                className={`font-bold leading-[1.05] tracking-tight text-[var(--text-primary)] ${
+                className={`mt-3 font-bold leading-[1.05] tracking-tight text-[var(--text-primary)] ${
                   compact ? "text-2xl sm:text-3xl" : "text-3xl sm:text-4xl"
                 }`}
               >
-                Review <span className="text-[var(--accent)]">History</span>
+                Review{" "}
+                <span className="text-[var(--accent)]">History</span>
               </h1>
               <p
                 className={`mt-2 max-w-xl leading-5 text-[var(--text-secondary)] ${
@@ -307,84 +425,132 @@ export default function History() {
               </p>
             </div>
 
-            <div className="relative flex w-fit items-center gap-3 overflow-hidden rounded-lg border border-[var(--border-light)] bg-[var(--bg-card)] px-3.5 py-2.5 shadow-[var(--shadow-md)]">
-              <div
+            <button
+              type="button"
+              onClick={() => navigate("/dashboard")}
+              className={`group inline-flex shrink-0 items-center gap-2 self-start rounded-lg bg-[var(--accent)] px-4 py-2.5 text-[12px] font-semibold text-[var(--accent-contrast)] shadow-[0_8px_24px_-8px_var(--accent-soft-strong)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--accent-hover)] hover:shadow-[0_12px_28px_-10px_var(--accent-soft-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.97]`}
+            >
+              <Plus size={14} strokeWidth={2.4} aria-hidden="true" />
+              New scan
+              <ArrowRight
+                size={13}
+                strokeWidth={2.4}
                 aria-hidden="true"
-                className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+                className="transition-transform duration-200 group-hover:translate-x-0.5"
               />
-              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[var(--accent-soft)] text-[var(--accent)]">
-                <FileText size={16} strokeWidth={2} aria-hidden="true" />
-              </div>
-              <div>
-                <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
-                  Total Reviews
-                </p>
-                <p className="font-mono text-base font-semibold text-[var(--text-primary)]">
-                  {totalReports}
-                </p>
-              </div>
-            </div>
+            </button>
           </div>
         </div>
 
-        {/* GRADE SUMMARY */}
+        {/* ═══════════ GRADE SUMMARY ═══════════ */}
         {reports.length > 0 && (
-          <div className={`mb-4 grid grid-cols-2 ${s.gradeGap} sm:grid-cols-5`}>
-            {["A", "B", "C", "D", "F"].map((g) => {
-              const count = reports.filter(
-                (r) => (r.grade ?? "N/A")[0] === g
-              ).length;
-              const style = gradeStyle(g);
-              const label =
-                g === "A"
-                  ? "Excellent"
-                  : g === "B"
-                    ? "Good"
-                    : g === "C"
-                      ? "Average"
-                      : g === "D"
-                        ? "Needs work"
-                        : "Critical";
-              const active = filterGrade === g;
-              return (
-                <button
-                  key={g}
-                  type="button"
-                  onClick={() => setFilterGrade(active ? "all" : g)}
-                  aria-pressed={active}
-                  className={`group rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.98] ${
-                    compact ? "p-2" : "p-3"
-                  } ${
-                    active
-                      ? `${style.border} ${style.background} shadow-[var(--shadow-md)]`
-                      : "border-[var(--border-light)] bg-[var(--bg-card)] hover:-translate-y-0.5 hover:border-[var(--accent)]/40"
-                  }`}
-                >
-                  <div className="flex items-center justify-between">
-                    <span
-                      className={`flex h-7 w-7 items-center justify-center rounded-lg font-mono text-[11px] font-bold ${style.badge}`}
-                    >
-                      {g}
-                    </span>
-                    <span className="text-[10px] text-[var(--text-muted)]">
-                      {active ? "Selected" : "Filter"}
-                    </span>
-                  </div>
-                  <p
-                    className={`mt-2 font-mono font-semibold text-[var(--text-primary)] ${
-                      compact ? "text-base" : "text-lg"
+          <div
+            className={`mb-4 overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${
+              compact ? "p-3" : "p-4"
+            }`}
+          >
+            {/* Distribution bar */}
+            {distributionTotal > 0 && (
+              <div className="mb-3">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-[var(--text-muted)]">
+                    Grade distribution
+                  </p>
+                  <p className="font-mono text-[10px] text-[var(--text-muted)]">
+                    {totalReports} total
+                  </p>
+                </div>
+                <div className="flex h-1.5 w-full overflow-hidden rounded-full bg-[var(--bg-hover)]">
+                  {["A", "B", "C", "D", "F"].map((g) => {
+                    const count = distribution[g] || 0;
+                    if (count === 0) return null;
+                    const pct = (count / distributionTotal) * 100;
+                    const style = gradeStyle(g);
+                    return (
+                      <div
+                        key={g}
+                        className="h-full transition-all duration-700"
+                        style={{
+                          width: `${pct}%`,
+                          background: gradeHex(g),
+                        }}
+                        title={`${count} grade ${g}`}
+                      />
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Filter chips */}
+            <div className={`grid grid-cols-2 ${s.gradeGap} sm:grid-cols-5`}>
+              {["A", "B", "C", "D", "F"].map((g) => {
+                const count = distribution[g] || 0;
+                const style = gradeStyle(g);
+                const label =
+                  g === "A"
+                    ? "Excellent"
+                    : g === "B"
+                      ? "Good"
+                      : g === "C"
+                        ? "Average"
+                        : g === "D"
+                          ? "Needs work"
+                          : "Critical";
+                const active = filterGrade === g;
+                return (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setFilterGrade(active ? "all" : g)}
+                    aria-pressed={active}
+                    disabled={count === 0 && !active}
+                    className={`group relative overflow-hidden rounded-xl border text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)] active:scale-[0.98] disabled:opacity-50 ${
+                      compact ? "p-2.5" : "p-3"
+                    } ${
+                      active
+                        ? `${style.border} ${style.background} shadow-[var(--shadow-md)]`
+                        : "border-[var(--border-light)] bg-[var(--bg-primary)] hover:-translate-y-0.5 hover:border-[var(--accent)]/40"
                     }`}
                   >
-                    {count}
-                  </p>
-                  <p className="text-[10px] text-[var(--text-muted)]">{label}</p>
-                </button>
-              );
-            })}
+                    {active && (
+                      <span
+                        aria-hidden="true"
+                        className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-current opacity-60"
+                      />
+                    )}
+                    <div className="flex items-center justify-between">
+                      <span
+                        className={`flex h-7 w-7 items-center justify-center rounded-lg font-mono text-[11px] font-bold ${style.badge}`}
+                      >
+                        {g}
+                      </span>
+                      {active && (
+                        <span
+                          className={`font-mono text-[9px] font-bold uppercase tracking-wider ${style.text}`}
+                        >
+                          Filter
+                        </span>
+                      )}
+                    </div>
+                    <p
+                      className={`mt-2 font-mono font-bold tabular-nums text-[var(--text-primary)] ${
+                        compact ? "text-lg" : "text-xl"
+                      }`}
+                    >
+                      {count}
+                    </p>
+                    <p className="text-[10px] text-[var(--text-muted)]">
+                      {label}
+                    </p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
         )}
 
-        {/* TOOLBAR */}
+        {/* ═══════════ TOOLBAR ═══════════ */}
         {reports.length > 0 && (
           <div
             className={`relative mb-4 overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] ${s.toolbarPadding}`}
@@ -445,20 +611,14 @@ export default function History() {
             </div>
             {(search || filterGrade !== "all") && (
               <div className="mt-2 flex items-center justify-between border-t border-[var(--border-dark)] pt-2">
-                <p className="text-[10px] text-[var(--text-muted)]">
-                  Showing{" "}
-                  <span className="font-mono font-medium text-[var(--text-secondary)]">
-                    {filtered.length}
-                  </span>{" "}
-                  on this page
+                <p className="flex items-center gap-2 text-[10px] text-[var(--text-muted)]">
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--accent-soft)] px-2 py-0.5 font-mono text-[10px] font-semibold text-[var(--accent)]">
+                    {filtered.length} match{filtered.length === 1 ? "" : "es"}
+                  </span>
                   {totalPages > 1 && (
-                    <>
-                      {" "}
-                      ·{" "}
-                      <span className="font-mono text-[var(--text-muted)]">
-                        {totalReports} total
-                      </span>
-                    </>
+                    <span className="font-mono text-[var(--text-muted)]">
+                      · {totalReports} total
+                    </span>
                   )}
                 </p>
                 <button
@@ -467,7 +627,7 @@ export default function History() {
                     setSearch("");
                     setFilterGrade("all");
                   }}
-                  className="rounded text-[11px] text-[var(--accent)] transition-colors duration-150 hover:text-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.97]"
+                  className="rounded text-[11px] font-medium text-[var(--accent)] transition-colors duration-150 hover:text-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.97]"
                 >
                   Clear filters
                 </button>
@@ -476,7 +636,7 @@ export default function History() {
           </div>
         )}
 
-        {/* LOADING */}
+        {/* ═══════════ LOADING ═══════════ */}
         {(loading || pageLoading) && (
           <div
             className={`grid grid-cols-1 ${s.reportGridGap} md:grid-cols-2 xl:grid-cols-3`}
@@ -487,35 +647,88 @@ export default function History() {
           </div>
         )}
 
-        {/* EMPTY STATE */}
+        {/* ═══════════ EMPTY STATE ═══════════ */}
         {!loading && !pageLoading && reports.length === 0 && (
-          <div className="flex min-h-[420px] items-center justify-center">
-            <div className="max-w-md text-center">
-              <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
-                <Inbox
-                  size={28}
-                  strokeWidth={1.6}
-                  aria-hidden="true"
-                  className="text-[var(--text-muted)]"
-                />
+          <div className="relative overflow-hidden rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)]">
+            <div
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-50"
+            />
+            <div className="relative px-6 py-14 sm:px-10 sm:py-16">
+              <div className="mx-auto max-w-md text-center">
+                <div className="mx-auto mb-5 flex h-16 w-16 items-center justify-center rounded-2xl border border-[var(--accent)]/25 bg-[var(--accent-soft)] text-[var(--accent)] shadow-[0_12px_28px_-16px_var(--accent-soft-strong)]">
+                  <Inbox size={26} strokeWidth={1.7} aria-hidden="true" />
+                </div>
+                <h2 className="text-lg font-semibold text-[var(--text-primary)]">
+                  No reviews yet
+                </h2>
+                <p className="mx-auto mt-2 max-w-sm text-[13px] leading-5 text-[var(--text-muted)]">
+                  Run your first repository scan and this page becomes your
+                  audit log — every report, every grade, searchable forever.
+                </p>
               </div>
-              <h2 className="text-lg font-semibold text-[var(--text-primary)]">
-                No reviews yet
-              </h2>
-              <p className="mt-2 text-[13px] leading-5 text-[var(--text-muted)]">
-                Analyze a GitHub repository and your AI-powered code audit will
-                appear here.
-              </p>
+
+              <div className="mx-auto mt-8 grid max-w-3xl grid-cols-1 gap-3 sm:grid-cols-3">
+                {[
+                  {
+                    n: "01",
+                    title: "Paste a repo URL",
+                    desc: "Any public GitHub repository",
+                  },
+                  {
+                    n: "02",
+                    title: "Get your audit",
+                    desc: "Architecture, security, bugs, tests",
+                  },
+                  {
+                    n: "03",
+                    title: "Find it here",
+                    desc: "Compare, filter, and re-export",
+                  },
+                ].map((step) => (
+                  <div
+                    key={step.n}
+                    className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-primary)] p-4 text-left"
+                  >
+                    <p className="font-mono text-[10px] font-bold tracking-wider text-[var(--accent)]">
+                      {step.n}
+                    </p>
+                    <p className="mt-2 text-[12px] font-semibold text-[var(--text-primary)]">
+                      {step.title}
+                    </p>
+                    <p className="mt-1 text-[11px] leading-relaxed text-[var(--text-muted)]">
+                      {step.desc}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-8 flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => navigate("/dashboard")}
+                  className="group inline-flex items-center gap-2 rounded-lg bg-[var(--accent)] px-5 py-2.5 text-[12.5px] font-semibold text-[var(--accent-contrast)] shadow-[0_8px_24px_-8px_var(--accent-soft-strong)] transition-all duration-200 hover:-translate-y-0.5 hover:bg-[var(--accent-hover)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-card)] active:scale-[0.97]"
+                >
+                  <Sparkles size={13} strokeWidth={2.4} aria-hidden="true" />
+                  Run your first scan
+                  <ArrowRight
+                    size={13}
+                    strokeWidth={2.4}
+                    aria-hidden="true"
+                    className="transition-transform duration-200 group-hover:translate-x-0.5"
+                  />
+                </button>
+              </div>
             </div>
           </div>
         )}
 
-        {/* NO FILTER RESULTS */}
+        {/* ═══════════ NO MATCHES ═══════════ */}
         {!loading &&
           !pageLoading &&
           reports.length > 0 &&
           filtered.length === 0 && (
-            <div className="rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] py-12 text-center">
+            <div className="rounded-2xl border border-[var(--border-light)] bg-[var(--bg-card)] py-14 text-center">
               <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl bg-[var(--bg-primary)] text-[var(--text-muted)]">
                 <Search size={22} strokeWidth={2} aria-hidden="true" />
               </div>
@@ -531,14 +744,14 @@ export default function History() {
                   setSearch("");
                   setFilterGrade("all");
                 }}
-                className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3 py-1.5 text-[11px] font-medium text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.97]"
+                className="mt-4 rounded-lg bg-[var(--accent-soft)] px-3.5 py-1.5 text-[11px] font-semibold text-[var(--accent)] transition-colors duration-150 hover:bg-[var(--accent-soft-strong)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.97]"
               >
                 Clear filters
               </button>
             </div>
           )}
 
-        {/* REPORT GRID */}
+        {/* ═══════════ REPORT GRID ═══════════ */}
         {!loading && !pageLoading && filtered.length > 0 && (
           <div
             className={`grid grid-cols-1 ${s.reportGridGap} md:grid-cols-2 xl:grid-cols-3`}
@@ -556,7 +769,7 @@ export default function History() {
           </div>
         )}
 
-        {/* PAGINATION */}
+        {/* ═══════════ PAGINATION ═══════════ */}
         {!loading &&
           !pageLoading &&
           reports.length > 0 &&
@@ -573,30 +786,61 @@ export default function History() {
                 </span>{" "}
                 · {totalReports} total
               </p>
-              <div className="flex gap-2">
+              <div className="flex items-center gap-1.5">
                 <button
                   type="button"
                   onClick={() => loadPage(page - 1)}
                   disabled={!hasPrev}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
+                  aria-label="Previous page"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--border-light)] disabled:hover:text-[var(--text-secondary)]"
                 >
                   <ChevronLeft size={14} strokeWidth={2} aria-hidden="true" />
-                  Previous
                 </button>
+
+                {pageList(page, totalPages).map((p, i) => {
+                  if (p === "…") {
+                    return (
+                      <span
+                        key={`ellipsis-${i}`}
+                        className="px-1 font-mono text-[11px] text-[var(--text-muted)]"
+                      >
+                        …
+                      </span>
+                    );
+                  }
+                  const active = p === page;
+                  return (
+                    <button
+                      key={p}
+                      type="button"
+                      onClick={() => loadPage(p)}
+                      disabled={active}
+                      aria-current={active ? "page" : undefined}
+                      className={`min-w-[32px] rounded-lg px-2.5 py-1.5 font-mono text-[12px] font-medium tabular-nums transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 ${
+                        active
+                          ? "bg-[var(--accent)] text-[var(--accent-contrast)] shadow-[0_6px_16px_-8px_var(--accent-soft-strong)]"
+                          : "border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] hover:border-[var(--accent)]/40 hover:text-[var(--accent)]"
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  );
+                })}
+
                 <button
                   type="button"
                   onClick={() => loadPage(page + 1)}
                   disabled={!hasNext}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] px-3 py-1.5 text-xs font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 disabled:active:scale-100"
+                  aria-label="Next page"
+                  className="inline-flex h-8 w-8 items-center justify-center rounded-lg border border-[var(--border-light)] bg-[var(--bg-primary)] text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:border-[var(--border-light)] disabled:hover:text-[var(--text-secondary)]"
                 >
-                  Next
                   <ChevronRight size={14} strokeWidth={2} aria-hidden="true" />
                 </button>
               </div>
             </div>
           )}
 
-        {/* FOOTER */}
+        {/* ═══════════ FOOTER ═══════════ */}
         {!loading && reports.length > 0 && (
           <div
             className={`flex items-center justify-center gap-2 text-[11px] text-[var(--text-muted)] ${s.footerMargin}`}
@@ -608,7 +852,7 @@ export default function History() {
         )}
       </div>
 
-      {/* View loading overlay */}
+      {/* ═══════════ VIEW LOADING OVERLAY ═══════════ */}
       {viewLoading && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
           <div className="flex flex-col items-center gap-3 rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] px-6 py-5 shadow-xl">
@@ -621,9 +865,9 @@ export default function History() {
   );
 }
 
-// -----------------------------------------------------------------
-// Report Card
-// -----------------------------------------------------------------
+// ═══════════════════════════════════════════════════════════════
+// REPORT CARD
+// ═══════════════════════════════════════════════════════════════
 function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   const grade = r.grade ?? "N/A";
   const styles = gradeStyle(grade[0]);
@@ -638,7 +882,8 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
       )
     : 0;
 
-  const repoName = r.repoUrl?.replace("https://github.com/", "") ?? "Unknown";
+  const repoName = getRepoName(r.repoUrl);
+  const owner = getRepoOwner(r.repoUrl);
   const date = r.createdAt
     ? new Date(r.createdAt).toLocaleDateString("en-US", {
         month: "short",
@@ -649,6 +894,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 
   const pad = compact ? "p-3" : "p-4";
   const scoreSize = compact ? "text-xl" : "text-2xl";
+  const avatarSize = compact ? 32 : 36;
 
   return (
     <div
@@ -661,19 +907,30 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
           onView();
         }
       }}
-      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
+      className="group flex cursor-pointer flex-col overflow-hidden rounded-xl border border-[var(--border-light)] bg-[var(--bg-card)] transition-all duration-200 hover:-translate-y-1 hover:border-[var(--accent)]/40 hover:shadow-[var(--shadow-lg)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[var(--bg-primary)]"
     >
-      <div className={`border-b border-[var(--border-dark)] ${pad}`}>
+      {/* Header */}
+      <div className={`relative border-b border-[var(--border-dark)] ${pad}`}>
+        {/* Top accent gradient appears on hover */}
+        <span
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-x-0 top-0 h-[2px] bg-gradient-to-r from-transparent via-[var(--accent)] to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+        />
         <div className="flex items-start justify-between gap-3">
           <div className="flex min-w-0 items-center gap-2.5">
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[var(--bg-primary)] text-[var(--text-muted)] transition-colors duration-150 group-hover:text-[var(--accent)]">
-              <GithubIcon size={14} className="shrink-0 text-[var(--text-muted)]" />
-            </div>
+            <RepoAvatar
+              owner={owner}
+              fallback={initialsOf(repoName)}
+              size={avatarSize}
+            />
             <div className="min-w-0">
-              <p className="mb-0.5 font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+              <p className="mb-0.5 font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]">
                 Repository
               </p>
-              <h2 className="truncate font-mono text-sm font-semibold text-[var(--text-primary)]">
+              <h2
+                className="truncate font-mono text-sm font-semibold text-[var(--text-primary)]"
+                title={repoName}
+              >
                 {repoName}
               </h2>
             </div>
@@ -694,10 +951,11 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
         </p>
       </div>
 
-      <div className={pad}>
+      {/* Body */}
+      <div className={`flex flex-1 flex-col ${pad}`}>
         <div className="flex items-center justify-between">
           <div>
-            <p className="font-mono text-[10px] uppercase tracking-wide text-[var(--text-muted)]">
+            <p className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--text-muted)]">
               Overall Score
             </p>
             <div className="mt-0.5 flex items-baseline gap-1">
@@ -709,7 +967,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
               </span>
             </div>
           </div>
-          <div className="relative h-10 w-10">
+          <div className="relative h-11 w-11">
             <svg viewBox="0 0 36 36" className="-rotate-90">
               <path
                 d="M18 2.0845a15.9155 15.9155 0 0 1 0 31.831a15.9155 15.9155 0 0 1 0-31.831"
@@ -723,8 +981,13 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="3"
+                strokeLinecap="round"
                 strokeDasharray={`${avg}, 100`}
-                className={styles.text}
+                className={`${styles.text} transition-all duration-700`}
+                style={{
+                  filter: "drop-shadow(0 0 4px currentColor)",
+                  opacity: 0.9,
+                }}
               />
             </svg>
           </div>
@@ -732,7 +995,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
 
         {showScores && (
           <div
-            className={`mt-3.5 space-y-2.5 ${compact ? "mt-2.5 space-y-2" : ""}`}
+            className={`mt-4 space-y-2.5 ${compact ? "mt-3 space-y-2" : ""}`}
           >
             {[
               ["Code Quality", r.scores?.codeQuality],
@@ -782,9 +1045,10 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
           </div>
         )}
 
+        {/* Footer */}
         <div
-          className={`mt-4 flex items-center justify-between border-t border-[var(--border-dark)] pt-3 ${
-            compact ? "mt-3 pt-2" : ""
+          className={`mt-auto flex items-center justify-between border-t border-[var(--border-dark)] pt-3 ${
+            compact ? "mt-3 pt-2" : "mt-4"
           }`}
         >
           <span className="flex items-center gap-1.5 font-mono text-[10px] text-[var(--text-muted)]">
@@ -795,6 +1059,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
             <button
               type="button"
               onClick={onDownload}
+              aria-label="Download PDF"
               className={`inline-flex items-center gap-1 rounded-md border border-[var(--border-light)] bg-[var(--bg-primary)] text-[11px] font-medium text-[var(--text-secondary)] transition-all duration-150 hover:border-[var(--accent)]/40 hover:text-[var(--accent)] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--accent)]/50 active:scale-[0.96] ${
                 compact ? "px-2 py-1" : "px-2.5 py-1.5"
               }`}
@@ -811,7 +1076,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
             >
               <ScanLine />
               <span className="relative z-10 flex items-center gap-1 whitespace-nowrap">
-                View Report
+                View
                 <ArrowRight
                   size={12}
                   strokeWidth={2.2}
@@ -827,9 +1092,7 @@ function ReportCard({ report: r, onView, onDownload, compact, showScores }) {
   );
 }
 
-// -----------------------------------------------------------------
-// ScoreBar
-// -----------------------------------------------------------------
+// ─── Score bar ────────────────────────────────────────────────
 function ScoreBar({ label, value, compact }) {
   const val = typeof value === "number" ? Math.min(Math.max(value, 0), 100) : 0;
   const color =
@@ -861,39 +1124,37 @@ function ScoreBar({ label, value, compact }) {
   );
 }
 
-// -----------------------------------------------------------------
-// Grade Styles
-// -----------------------------------------------------------------
+// ─── Grade styles ─────────────────────────────────────────────
 function gradeStyle(letter) {
   const map = {
     A: {
       badge: "bg-[var(--color-success-soft)] text-[var(--color-success)]",
       text: "text-[var(--color-success)]",
-      border: "border-[var(--color-success)]/20",
+      border: "border-[var(--color-success)]/30",
       background: "bg-[var(--color-success-soft)]",
     },
     B: {
       badge: "bg-[var(--color-info-soft)] text-[var(--color-info)]",
       text: "text-[var(--color-info)]",
-      border: "border-[var(--color-info)]/20",
+      border: "border-[var(--color-info)]/30",
       background: "bg-[var(--color-info-soft)]",
     },
     C: {
       badge: "bg-[var(--color-warning-soft)] text-[var(--color-warning)]",
       text: "text-[var(--color-warning)]",
-      border: "border-[var(--color-warning)]/20",
+      border: "border-[var(--color-warning)]/30",
       background: "bg-[var(--color-warning-soft)]",
     },
     D: {
       badge: "bg-[var(--color-caution-soft)] text-[var(--color-caution)]",
       text: "text-[var(--color-caution)]",
-      border: "border-[var(--color-caution)]/20",
+      border: "border-[var(--color-caution)]/30",
       background: "bg-[var(--color-caution-soft)]",
     },
     F: {
       badge: "bg-[var(--color-danger-soft)] text-[var(--color-danger)]",
       text: "text-[var(--color-danger)]",
-      border: "border-[var(--color-danger)]/20",
+      border: "border-[var(--color-danger)]/30",
       background: "bg-[var(--color-danger-soft)]",
     },
   };
@@ -904,5 +1165,18 @@ function gradeStyle(letter) {
       border: "border-[var(--border-light)]",
       background: "bg-[var(--bg-hover)]",
     }
+  );
+}
+
+// Distribution bar needs raw hex so it can interpolate widths
+function gradeHex(letter) {
+  return (
+    {
+      A: "var(--color-success)",
+      B: "var(--color-info)",
+      C: "var(--color-warning)",
+      D: "var(--color-caution)",
+      F: "var(--color-danger)",
+    }[letter] || "var(--text-muted)"
   );
 }
