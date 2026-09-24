@@ -40,6 +40,54 @@ function statusForError(err) {
   return 500;
 }
 
+/**
+ * Map an Octokit / GitHub API error to an HTTP status + response body.
+ * GitHub returns 401 ("Bad credentials") when the user's OAuth token
+ * is expired, revoked, or was issued for a different OAuth app than
+ * the one currently configured. That maps to 401 with an `action` flag
+ * so the frontend can prompt the user to reconnect instead of showing
+ * a generic 500. Internal errors (path traversal, invalid URL) carry
+ * no `.status` and fall through to the 400 branch.
+ */
+function githubErrorResponse(err) {
+  const msg = err.message || "GitHub request failed";
+  const status = err.status || err.response?.status;
+
+  if (status === 401 || /bad credentials/i.test(msg)) {
+    return {
+      status: 401,
+      body: {
+        error:
+          "Your GitHub connection has expired. Please reconnect GitHub in Settings.",
+        action: "connect_github",
+      },
+    };
+  }
+  if (status === 403) {
+    return {
+      status: 403,
+      body: {
+        error:
+          "GitHub denied access. Check that your account has permission to read this repository.",
+        action: "connect_github",
+      },
+    };
+  }
+  if (status === 404) {
+    return { status: 404, body: { error: "Repository or file not found." } };
+  }
+  if (status === 429) {
+    return {
+      status: 429,
+      body: { error: "GitHub rate limit reached. Try again in a few minutes." },
+    };
+  }
+  if (/not allowed|required|invalid github url/i.test(msg)) {
+    return { status: 400, body: { error: msg } };
+  }
+  return { status: 500, body: { error: msg } };
+}
+
 function sanitizeFilePath(filePath) {
   if (!filePath || typeof filePath !== "string") {
     throw new Error("File path is required and must be a string.");
@@ -797,14 +845,12 @@ no commentary just the new file contents, ready to commit.`;
       tokensRemaining: user.tokensRemaining,
     });
   } catch (err) {
-    console.error("Auto‑fix error:", err);
-    const status =
-      err.message.includes("not allowed") || err.message.includes("required")
-        ? 400
-        : 500;
-    res
-      .status(status)
-      .json({ error: err.message || "Failed to create auto‑fix PR." });
+    console.error("Auto‑fix error:", {
+      status: err.status,
+      message: err.message,
+    });
+    const { status, body } = githubErrorResponse(err);
+    res.status(status).json(body);
   }
 };
 
@@ -819,9 +865,10 @@ export const getRepoContents = async (req, res) => {
 
     const githubToken = user.getGithubToken();
     if (!githubToken) {
-      return res
-        .status(403)
-        .json({ error: "GitHub token required. Please connect your account." });
+      return res.status(403).json({
+        error: "GitHub token required. Please connect your account.",
+        action: "connect_github",
+      });
     }
 
     const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
@@ -849,12 +896,12 @@ export const getRepoContents = async (req, res) => {
 
     res.json({ success: true, files });
   } catch (err) {
-    console.error("Get repo contents error:", err);
-    const status =
-      err.message.includes("not allowed") || err.message.includes("required")
-        ? 400
-        : 500;
-    res.status(status).json({ error: err.message });
+    console.error("Get repo contents error:", {
+      status: err.status,
+      message: err.message,
+    });
+    const { status, body } = githubErrorResponse(err);
+    res.status(status).json(body);
   }
 };
 
@@ -869,7 +916,10 @@ export const getFileContent = async (req, res) => {
 
     const githubToken = user.getGithubToken();
     if (!githubToken) {
-      return res.status(403).json({ error: "GitHub token required." });
+      return res.status(403).json({
+        error: "GitHub token required. Please connect your account.",
+        action: "connect_github",
+      });
     }
 
     const match = repoUrl.match(/github\.com\/([^\/]+\/[^\/]+)/);
@@ -886,12 +936,12 @@ export const getFileContent = async (req, res) => {
     const content = Buffer.from(data.content, "base64").toString("utf-8");
     res.json({ success: true, content, sha: data.sha });
   } catch (err) {
-    console.error("Get file content error:", err);
-    const status =
-      err.message.includes("not allowed") || err.message.includes("required")
-        ? 400
-        : 500;
-    res.status(status).json({ error: err.message });
+    console.error("Get file content error:", {
+      status: err.status,
+      message: err.message,
+    });
+    const { status, body } = githubErrorResponse(err);
+    res.status(status).json(body);
   }
 };
 
@@ -993,6 +1043,13 @@ export const commentOnPR = async (req, res) => {
   } catch (err) {
     console.error("commentOnPR error:", err);
     const status = err.status || 500;
+    if (status === 401 || /bad credentials/i.test(err.message || "")) {
+      return res.status(401).json({
+        error:
+          "Your GitHub connection has expired. Please reconnect GitHub in Settings.",
+        action: "connect_github",
+      });
+    }
     const message =
       status === 403
         ? "You don't have permission to comment on this PR."

@@ -4,6 +4,7 @@ import rateLimit from "express-rate-limit";
 import {
   register,
   login,
+  logout,
   googleAuth,
   googleAuthCallback,
   githubAuth,
@@ -58,6 +59,10 @@ const meLimiter = rateLimit({
 // ─── Normal authentication ──────────────────────────────────
 router.post("/register", authLimiter, register);
 router.post("/login", authLimiter, login);
+// Logout clears the HttpOnly auth cookie. No `auth` middleware — a user
+// whose JWT just expired should still be able to clear the cookie so the
+// browser doesn't keep sending a stale value to /github?connect=true.
+router.post("/logout", logout);
 
 // ─── Google OAuth ───────────────────────────────────────────
 router.get("/google", oauthStartLimiter, googleAuth);
