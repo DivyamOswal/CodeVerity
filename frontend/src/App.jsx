@@ -148,6 +148,16 @@ function AuthProvider({ children }) {
   }, []);
 
   const logout = useCallback(() => {
+    // Clear the HttpOnly auth cookie on the server first. This is what
+    // prevents the "previous user's GitHub token attaches to the next
+    // user on this browser" bug — /auth/github?connect=true reads the
+    // token cookie, so it must not survive logout.
+    //
+    // Fire-and-forget: we clear local state immediately so the UI never
+    // waits on the network, and we don't care if the request fails (the
+    // cookie will just be overwritten on the next successful login).
+    axios.post("/auth/logout").catch(() => {});
+
     localStorage.removeItem("token");
     setToken(null);
     setUser(null);
