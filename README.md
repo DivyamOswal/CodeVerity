@@ -1,6 +1,6 @@
 # CodeVerity
 
-**AI-powered GitHub repository intelligence — paste a repo URL, get a complete audit: architecture review, bug detection, security findings, generated tests, and a quality score, in minutes.**
+**AI-powered GitHub repository intelligence paste a repo URL, get a complete audit: architecture review, bug detection, security findings, generated tests, and a quality score, in minutes.**
 
 <p align="center">
   <img src="https://img.shields.io/badge/status-active-22d3ee" alt="Status" />
@@ -15,13 +15,13 @@
 
 CodeVerity is a full-stack monorepo. It analyzes public (and, on paid plans, private) GitHub repositories using AI and returns a structured engineering report:
 
-- Architecture review — how the codebase is put together, with recommendations
-- Bug detection — logic errors, edge cases, anti-patterns, with suggested fixes
-- Security analysis — OWASP-style vulnerability scanning, exposed secrets, dependency CVEs
-- Quality scoring — code quality, security, performance, maintainability, rolled into an A–F grade
-- Test generation — unit tests, edge cases, integration tests, mocks generated from actual source
-- Technical debt estimation — hours-to-fix figure with an itemized breakdown
-- PDF export — every report can be downloaded and shared
+- Architecture review  how the codebase is put together, with recommendations
+- Bug detection logic errors, edge cases, anti-patterns, with suggested fixes
+- Security analysis OWASP-style vulnerability scanning, exposed secrets, dependency CVEs
+- Quality scoring code quality, security, performance, maintainability, rolled into an A–F grade
+- Test generation unit tests, edge cases, integration tests, mocks generated from actual source
+- Technical debt estimation  hours-to-fix figure with an itemized breakdown
+- PDF export  every report can be downloaded and shared
 
 Source code is processed in memory and never persisted. Reports are stored against the user's account and revisitable from History.
 
@@ -37,9 +37,9 @@ Source code is processed in memory and never persisted. Reports are stored again
 - Full scan history with search, filtering, sorting
 
 ### Auto-Fix
-- AI-generated pull requests — one click on a finding opens a PR with a surgical, file-level fix
-- PR review comments — post critical/high-severity findings as inline GitHub review comments
-- Test generation — generate test cases for any file from the report view
+- AI-generated pull requests one click on a finding opens a PR with a surgical, file-level fix
+- PR review comments post critical/high-severity findings as inline GitHub review comments
+- Test generation generate test cases for any file from the report view
 
 ### Team & workspace
 - Multi-member workspaces with role-based access (owner / admin / member / viewer)
@@ -88,7 +88,7 @@ Source code is processed in memory and never persisted. Reports are stored again
 | GitHub API | @octokit/rest |
 | Rate limiting | express-rate-limit |
 | Billing | Stripe |
-| Scanners | Custom modules — secrets, dependencies, CVEs, complexity, README quality |
+| Scanners | Custom modules  secrets, dependencies, CVEs, complexity, README quality |
 
 ---
 
@@ -113,7 +113,7 @@ codeverity/
 │ └── index.css (design tokens)
 └── vite.config.js
 
-### Request flow — Repository analysis
+### Request flow  Repository analysis
 
 Client --POST /api/github/analyze--> Express
 Express: clone+parse repo, run static scanners in parallel, call Groq for AI review,
@@ -121,7 +121,7 @@ normalize into findings[], compute health score + tech debt, persist Report to M
 Client <--{ analysis, reportId }--
 
 
-### Request flow — Auto-Fix
+### Request flow  Auto-Fix
 
 Client --POST /api/github/auto-fix--> Express
 Express: verify GitHub token, fetch file via Octokit, ask Groq to regenerate the file,
@@ -159,12 +159,12 @@ Create `backend/.env` and `frontend/.env` from the templates in [Environment var
 ### 4. Run dev
 
 ```bash
-# terminal 1 — backend (port 5000)
+# terminal 1  backend (port 5000)
 cd backend && npm run dev
 ```
 
 ```bash
-# terminal 2 — frontend (port 5173)
+# terminal 2  frontend (port 5173)
 cd frontend && npm run dev
 ```
 
@@ -226,7 +226,7 @@ frontend/
 ├── src/
 │ ├── api/ (axios clients for auth, github, workspace, report, dashboard, billing)
 │ ├── components/ (Auth/, CodeEditor/, Workspace/, CodeInput, GithubAnalyzer, History, Navbar, Result, ScoreBar, ScoreChart, PricingPlans)
-│ ├── context/ (PreferencesContext — theme, compact mode, score-bar visibility)
+│ ├── context/ (PreferencesContext  theme, compact mode, score-bar visibility)
 │ ├── hooks/ (useToast, useAuth)
 │ ├── lib/ (gsap setup)
 │ ├── pages/ (Home, Dashboard, Profile, Settings, WorkspaceSettings, Pricing, Checkout, Privacy, Terms, Support, Contact, About, AdminDashboard, OAuthSuccess)
@@ -301,13 +301,13 @@ The frontend theme is token-driven. All visual styling flows from `src/index.css
 - Shadows: `--shadow-xs` through `--shadow-xl` elevation scale
 - Dark/light: dark is default (`:root`); light is opt-in via `[data-theme="light"]`
 
-To retheme, edit token values in `index.css` — components consume tokens exclusively and require no changes.
+To retheme, edit token values in `index.css`  components consume tokens exclusively and require no changes.
 
 ---
 
 ## Deployment
 
-### Backend — Render
+### Backend  Render
 
 1. Create a Web Service pointing at `backend/`
 2. Build command: `npm install`
@@ -316,7 +316,7 @@ To retheme, edit token values in `index.css` — components consume tokens exclu
 5. Set `NODE_ENV=production` so cookies are flagged `Secure`
 6. If behind a proxy/LB (Render, Fly, Cloudflare), set `app.set("trust proxy", 1)` so `express-rate-limit` keys on real client IPs
 
-### Frontend — Vercel/Netlify
+### Frontend  Vercel/Netlify
 
 1. Root directory: `frontend/`
 2. Build command: `npm run build`
@@ -344,7 +344,7 @@ To retheme, edit token values in `index.css` — components consume tokens exclu
 - Constant-time login: bcrypt runs even for unknown emails to prevent user enumeration via timing
 - Rate limiting: strict on `/login` and `/register` (10 / 15 min / IP); moderate on OAuth start routes (30 / 15 min / IP)
 - Path traversal guards: all user-supplied file paths normalized and rejected if absolute or containing `..`
-- GitHub OAuth scope is `repo user:email` only — nothing broader
+- GitHub OAuth scope is `repo user:email` only  nothing broader
 
 ### Rotating ENCRYPTION_KEY
 
@@ -370,7 +370,7 @@ Do not rotate `ENCRYPTION_KEY` without a migration. Existing encrypted GitHub to
 ## Contributing
 
 1. Fork and create a feature branch: `git checkout -b feat/your-feature`
-2. Keep new UI consistent with the existing token system — no hardcoded colors
+2. Keep new UI consistent with the existing token system  no hardcoded colors
 3. Test in dark and light mode and at a mobile viewport before opening a PR
 4. Ensure `npm run lint` and `npm run build` pass in both `backend/` and `frontend/`
 5. Open a PR describing the change and why it's needed
@@ -383,13 +383,13 @@ Do not rotate `ENCRYPTION_KEY` without a migration. Existing encrypted GitHub to
 
 ### Reporting bugs
 
-Open an issue with steps to reproduce, expected vs actual, browser/Node version, and any console/network output. For security issues, do not open a public issue — email maintainers directly.
+Open an issue with steps to reproduce, expected vs actual, browser/Node version, and any console/network output. For security issues, do not open a public issue  email maintainers directly.
 
 ---
 
 ## License
 
-MIT — see [LICENSE](./LICENSE) for details.
+MIT  see [LICENSE](./LICENSE) for details.
 
 ---
 
@@ -403,6 +403,6 @@ MIT — see [LICENSE](./LICENSE) for details.
 
 <p align="center">
   <strong>CodeVerity</strong><br />
-  AI-powered GitHub repository intelligence — paste a repo URL, get a complete audit in minutes.<br />
+  AI-powered GitHub repository intelligence  paste a repo URL, get a complete audit in minutes.<br />
   Built with ❤️ for developers who care about their code.
 </p>
