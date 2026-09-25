@@ -51,7 +51,9 @@ async function processJob(job) {
     const result = await dispatch(job);
 
     job.status = "sent";
-    job.resendId = result?.id || null;
+    // Provider-agnostic: Brevo returns { messageId }, Resend returned { id }.
+    // The `resendId` schema field is reused for either provider's ID.
+    job.resendId = result?.messageId || result?.id || null;
     job.completedAt = new Date();
     job.lastError = null;
     await job.save();
