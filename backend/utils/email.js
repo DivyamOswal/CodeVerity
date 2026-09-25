@@ -1,11 +1,25 @@
 // backend/utils/email.js
-import { Resend } from "resend";
 import EmailJob from "../models/EmailJob.js";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+// ─────────────────────────────────────────────────────────────
+// Brevo (Sendinblue) transactional email client.
+//
+// Auth is a single API key sent as the `api-key` header. The
+// sender must be a verified Brevo "Sender" — add it at
+// app.brevo.com → Senders, Domains & Dedicated IPs → Senders.
+// Free tier sends up to 300 emails/day from a verified email
+// address, no custom domain required.
+//
+// Required env vars:
+//   BREVO_API_KEY      xkeysib-...
+//   BREVO_FROM_EMAIL   a verified sender (e.g. you@gmail.com)
+//   BREVO_FROM_NAME    display name (optional, defaults to CodeVerity)
+// ─────────────────────────────────────────────────────────────
+
+const BREVO_ENDPOINT = "https://api.brevo.com/v3/smtp/email";
 
 // ─────────────────────────────────────────────────────────────
-// Template builder (pure function  no I/O)
+// Template builder (pure function — no I/O)
 // ─────────────────────────────────────────────────────────────
 function buildInviteEmail({ workspaceName, inviteLink, role }) {
   const subject = `You're invited to join "${workspaceName}" on CodeVerity`;
@@ -23,29 +37,62 @@ function buildInviteEmail({ workspaceName, inviteLink, role }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// Raw sender  the only function that talks to Resend.
+// Raw sender — the only function that talks to Brevo.
 // Called by the queue worker (and by scripts/tests).
 // Throws on failure so the caller can decide what to do.
 // ─────────────────────────────────────────────────────────────
 export async function sendInviteEmail(to, workspaceName, inviteLink, role) {
+  const apiKey = process.env.BREVO_API_KEY;
+  if (!apiKey) {
+    throw new Error("BREVO_API_KEY is not set");
+  }
+
+  const fromEmail = process.env.BREVO_FROM_EMAIL;
+  if (!fromEmail) {
+    throw new Error(
+      "BREVO_FROM_EMAIL is not set — must be a verified Brevo sender",
+    );
+  }
+
+  const fromName = process.env.BREVO_FROM_NAME || "CodeVerity";
+
   const { subject, html } = buildInviteEmail({
     workspaceName,
     inviteLink,
     role,
   });
 
-  const { data, error } = await resend.emails.send({
-    from: process.env.FROM_EMAIL || "onboarding@resend.dev",
-    to: [to],
-    subject,
-    html,
+  const response = await fetch(BREVO_ENDPOINT, {
+    method: "POST",
+    headers: {
+      "api-key": apiKey,
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    body: JSON.stringify({
+      sender: { name: fromName, email: fromEmail },
+      to: [{ email: to }],
+      subject,
+      htmlContent: html,
+    }),
   });
 
-  if (error) {
-    throw new Error(error.message || "Resend rejected the send");
+  // Brevo returns 201/200 with { messageId } on success.
+  // On failure it returns 4xx/5xx with { code, message }.
+  if (!response.ok) {
+    let detail = `HTTP ${response.status}`;
+    try {
+      const errBody = await response.json();
+      detail = errBody.message || errBody.error || detail;
+    } catch {
+      // Body wasn't JSON — keep the HTTP status as the message.
+    }
+    throw new Error(`Brevo rejected the send: ${detail}`);
   }
 
-  console.log(`✅ Invite email sent to ${to} (id: ${data?.id})`);
+  const data = await response.json().catch(() => ({}));
+
+  console.log(`✅ Invite email sent to ${to} (id: ${data?.messageId})`);
   return data;
 }
 
@@ -83,10 +130,18 @@ export async function enqueueInviteEmail(
     job.lastAttemptAt = new Date();
     await job.save();
 
-    const result = await sendInviteEmail(normalizedTo, workspaceName, inviteLink, role);
+    const result = await sendInviteEmail(
+      normalizedTo,
+      workspaceName,
+      inviteLink,
+      role,
+    );
 
     job.status = "sent";
-    job.resendId = result?.id || null;
+    // Reusing the resendId field for the Brevo messageId — the field
+    // name is legacy but the type is identical (a provider-side ID).
+    // No schema change needed.
+    job.resendId = result?.messageId || null;
     job.completedAt = new Date();
     job.lastError = null;
     await job.save();
